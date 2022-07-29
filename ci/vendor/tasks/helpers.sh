@@ -19,6 +19,8 @@ function unpack_deps() {
 
     popd
   else
-    echo "Skipping unpack deps"
+    echo "Copying from ${CARGO_TARGET_DIR}"
+    cargo build
+    cp -r ${CARGO_TARGET_DIR} ${REPO_PATH}/target
   fi
 }
