@@ -2,8 +2,8 @@ apiVersion: vendir.k14s.io/v1alpha1
 directories:
 - contents:
   - git:
-      commitTitle: 'fix: correct dir'
-      sha: 72048916c77f44b0d12ac064c7e7434a763ec4ba
+      commitTitle: 'fix: run cargo build --locked'
+      sha: f22f2cfab818a98e9449fa626a4985e2d03532fc
     path: .
   path: vendor
 kind: LockConfig
