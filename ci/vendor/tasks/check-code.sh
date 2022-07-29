@@ -6,7 +6,6 @@ set -eu
 
 unpack_deps
 
-
 pushd repo
 
 make check-code

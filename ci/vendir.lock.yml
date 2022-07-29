@@ -2,8 +2,8 @@ apiVersion: vendir.k14s.io/v1alpha1
 directories:
 - contents:
   - git:
-      commitTitle: 'feat: add rust_task_image to fragments'
-      sha: 742fbb2f080333bc636cf80940ae3b78769291a3
+      commitTitle: 'fix: make rust specific tasks'
+      sha: 4fdaaa27315fa35fa07a492cf0ea1ace37c8ab7a
     path: .
   path: vendor
 kind: LockConfig
