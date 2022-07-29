@@ -2,8 +2,8 @@ apiVersion: vendir.k14s.io/v1alpha1
 directories:
 - contents:
   - git:
-      commitTitle: 'feat: cargo build instead of unpack'
-      sha: a398494ec42e51bd6ba89ba203fd168183dc865b
+      commitTitle: 'fix: correct dir'
+      sha: 72048916c77f44b0d12ac064c7e7434a763ec4ba
     path: .
   path: vendor
 kind: LockConfig
