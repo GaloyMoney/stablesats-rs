@@ -2,8 +2,8 @@ apiVersion: vendir.k14s.io/v1alpha1
 directories:
 - contents:
   - git:
-      commitTitle: 'fix: make rust specific tasks'
-      sha: 4fdaaa27315fa35fa07a492cf0ea1ace37c8ab7a
+      commitTitle: 'fix: remove bundled deps from rust-integration'
+      sha: 9afa9b65914a99578af43940a926c6ed04c220b8
     path: .
   path: vendor
 kind: LockConfig
