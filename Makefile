@@ -5,7 +5,7 @@ next-watch:
 	RUST_BACKTRACE=full cargo watch -s 'cargo nextest run'
 
 check-code:
-	cargo clippy -all-features
+	cargo clippy --all-features
 	cargo audit
 
 test-in-ci:
