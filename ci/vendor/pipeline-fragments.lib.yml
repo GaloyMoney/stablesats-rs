@@ -166,6 +166,9 @@ plan:
     - name: pipeline-tasks
     - name: repo
       path: #@ data.values.gh_repository + "-integration"
+    caches:
+    - path: cargo-home
+    - path: cargo-target-dir
     params:
       REPO_PATH: #@ data.values.gh_repository + "-integration"
       DOCKER_HOST_IP: ((staging-ssh.docker_host_ip))

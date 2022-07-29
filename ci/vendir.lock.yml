@@ -2,8 +2,8 @@ apiVersion: vendir.k14s.io/v1alpha1
 directories:
 - contents:
   - git:
-      commitTitle: 'fix: exclude target in rsync'
-      sha: dbb50e4c6037f8f38b2a0c88abda5688afca48cb
+      commitTitle: 'feat: cargo build instead of unpack'
+      sha: a398494ec42e51bd6ba89ba203fd168183dc865b
     path: .
   path: vendor
 kind: LockConfig
