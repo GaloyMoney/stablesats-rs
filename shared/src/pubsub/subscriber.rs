@@ -13,10 +13,10 @@ impl Subscriber {
         let config = RedisConfig::default();
         let client = SubscriberClient::new(config.clone());
         let _ = client.connect(None);
-        let _ = client
+        client
             .wait_for_connect()
             .await
-            .map_err(|e| SubscriberError::InitialConnectionError(e))?;
+            .map_err(SubscriberError::InitialConnection)?;
         let _ = client.manage_subscriptions();
         Ok(Self { client })
     }

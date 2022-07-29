@@ -12,17 +12,16 @@ impl Publisher {
         let config = RedisConfig::default();
         let client = RedisClient::new(config.clone());
         let _ = client.connect(None);
-        let _ = client
+        client
             .wait_for_connect()
             .await
-            .map_err(|e| PublisherError::InitialConnectionError(e))?;
+            .map_err(PublisherError::InitialConnection)?;
         Ok(Self { client })
     }
 
     pub async fn publish<P: MessagePayload>(&self, payload: P) -> Result<(), PublisherError> {
         let payload_str = serde_json::to_string(&Envelope::new(payload))?;
-        let _ = self
-            .client
+        self.client
             .publish(<P as MessagePayload>::channel(), payload_str)
             .await?;
         Ok(())

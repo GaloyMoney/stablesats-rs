@@ -37,6 +37,11 @@ impl EventMetadata {
         }
     }
 }
+impl Default for EventMetadata {
+    fn default() -> Self {
+        Self::new()
+    }
+}
 
 #[derive(Serialize, Deserialize, Debug)]
 #[serde(rename_all = "camelCase")]
