@@ -1,6 +1,6 @@
 use futures::stream::StreamExt;
 use serde::*;
-use shared::pubsub::*;
+use shared::{pubsub::*, payload};
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
 struct TestMessage {
@@ -9,15 +9,7 @@ struct TestMessage {
     value: u64,
 }
 
-impl MessagePayload for TestMessage {
-    fn message_type() -> &'static str {
-        "TestMessage"
-    }
-
-    fn channel() -> &'static str {
-        "pubsub.test.channel"
-    }
-}
+payload! { TestMessage, "pubsub.test.message" }
 
 #[tokio::test]
 async fn test() -> Result<(), anyhow::Error> {

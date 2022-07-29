@@ -65,6 +65,21 @@ pub trait MessagePayload:
     fn channel() -> &'static str;
 }
 
+#[macro_export]
+macro_rules! payload {
+    ($message_name:ident, $channel:literal) => {
+        impl MessagePayload for $message_name {
+            fn message_type() -> &'static str {
+                stringify!($message_name)
+            }
+
+            fn channel() -> &'static str {
+                concat!("galoy.dealerv2.", $channel)
+            }
+        }
+    };
+}
+
 pub mod serialize_as_string {
     use std::fmt::Display;
     use std::str::FromStr;
