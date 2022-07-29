@@ -1,6 +1,6 @@
 use futures::stream::StreamExt;
 use serde::*;
-use shared::{pubsub::*, payload};
+use shared::{payload, pubsub::*};
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
 struct TestMessage {
@@ -12,9 +12,13 @@ struct TestMessage {
 payload! { TestMessage, "pubsub.test.message" }
 
 #[tokio::test]
-async fn test() -> Result<(), anyhow::Error> {
-    let publisher = Publisher::new().await?;
-    let subscriber = Subscriber::new().await?;
+async fn pubsub_test() -> Result<(), anyhow::Error> {
+    let redis_host = std::env::var("REDIS_HOST").unwrap_or("localhost".to_string());
+    let config = PubSubConfig {
+        host: Some(redis_host),
+    };
+    let publisher = Publisher::new(config.clone()).await?;
+    let subscriber = Subscriber::new(config).await?;
     let mut stream = Box::pin(subscriber.subscribe::<TestMessage>().await?);
     let msg = TestMessage {
         test: "test".to_string(),
