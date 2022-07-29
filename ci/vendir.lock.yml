@@ -2,8 +2,8 @@ apiVersion: vendir.k14s.io/v1alpha1
 directories:
 - contents:
   - git:
-      commitTitle: 'ci: add REPO_PATH to check-code task'
-      sha: 4b688e8ee6e1980f71eb77307b902636a12f7be4
+      commitTitle: 'fix: exclude target in rsync'
+      sha: dbb50e4c6037f8f38b2a0c88abda5688afca48cb
     path: .
   path: vendor
 kind: LockConfig
