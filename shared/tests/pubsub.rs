@@ -26,6 +26,12 @@ async fn pubsub_test() -> Result<(), anyhow::Error> {
     };
     publisher.publish(msg.clone()).await?;
     let received = stream.next().await;
-    assert_eq!(msg, received.unwrap().unwrap().payload);
+    assert_eq!(
+        TestMessage {
+            test: "tasohetn".to_string(),
+            value: 0,
+        },
+        received.unwrap().unwrap().payload
+    );
     Ok(())
 }
