@@ -79,7 +79,7 @@ macro_rules! payload {
             }
 
             fn channel() -> &'static str {
-                concat!("galoy.dealerv2.", $channel)
+                concat!("galoy.stablesats.", $channel)
             }
         }
     };
