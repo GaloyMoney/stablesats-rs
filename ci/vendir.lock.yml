@@ -2,8 +2,8 @@ apiVersion: vendir.k14s.io/v1alpha1
 directories:
 - contents:
   - git:
-      commitTitle: 'feat: add rust_task_image to fragments'
-      sha: 742fbb2f080333bc636cf80940ae3b78769291a3
+      commitTitle: 'feat: add cargo caches to check-code'
+      sha: eb5953e5492454da0f783334984df69070ca8954
     path: .
   path: vendor
 kind: LockConfig

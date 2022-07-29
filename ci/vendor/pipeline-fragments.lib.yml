@@ -66,6 +66,9 @@ plan:
     - name: bundled-deps
     - name: pipeline-tasks
     - name: repo
+    caches:
+    - path: cargo-home
+    - path: cargo-target-dir
     run:
       path: pipeline-tasks/ci/vendor/tasks/check-code.sh
 on_failure: #@ slack_failure_notification()
