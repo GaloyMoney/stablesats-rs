@@ -1,6 +1,7 @@
 use fred::{clients::SubscriberClient, prelude::*};
 use futures::stream::{Stream, StreamExt};
 
+use super::config::*;
 use super::error::SubscriberError;
 use super::message::*;
 
@@ -9,9 +10,12 @@ pub struct Subscriber {
 }
 
 impl Subscriber {
-    pub async fn new() -> Result<Self, SubscriberError> {
-        let config = RedisConfig::default();
-        let client = SubscriberClient::new(config.clone());
+    pub async fn new(PubSubConfig { host }: PubSubConfig) -> Result<Self, SubscriberError> {
+        let mut config = RedisConfig::default();
+        if let Some(host) = host {
+            config.server = ServerConfig::new_centralized(host, 6379);
+        }
+        let client = SubscriberClient::new(config);
         let _ = client.connect(None);
         client
             .wait_for_connect()

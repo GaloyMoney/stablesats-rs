@@ -1,5 +1,6 @@
 use fred::prelude::*;
 
+use super::config::*;
 use super::error::PublisherError;
 use super::message::*;
 
@@ -8,9 +9,12 @@ pub struct Publisher {
 }
 
 impl Publisher {
-    pub async fn new() -> Result<Self, PublisherError> {
-        let config = RedisConfig::default();
-        let client = RedisClient::new(config.clone());
+    pub async fn new(PubSubConfig { host }: PubSubConfig) -> Result<Self, PublisherError> {
+        let mut config = RedisConfig::default();
+        if let Some(host) = host {
+            config.server = ServerConfig::new_centralized(host, 6379);
+        }
+        let client = RedisClient::new(config);
         let _ = client.connect(None);
         client
             .wait_for_connect()

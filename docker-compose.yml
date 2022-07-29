@@ -9,3 +9,13 @@ services:
     environment:
     - ALLOW_EMPTY_PASSWORD=yes
     - REDIS_DISABLE_COMMANDS=FLUSHDB,FLUSHALL
+  integration-tests:
+    image: us.gcr.io/galoy-org/rust-concourse
+    depends_on:
+    - integration-deps
+    command: ["make","test-in-ci"]
+    environment:
+    - REDIS_HOST=redis
+    working_dir: /repo
+    volumes:
+      - ./:/repo
