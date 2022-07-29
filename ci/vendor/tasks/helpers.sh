@@ -19,8 +19,12 @@ function unpack_deps() {
 
     popd
   else
-    echo "Copying from ${CARGO_TARGET_DIR}"
+    pushd ${REPO_PATH:-repo} > /dev/null
+
     cargo build
-    cp -r ${CARGO_TARGET_DIR} ${REPO_PATH}/target
+    echo "Copying from ${CARGO_TARGET_DIR}"
+    cp -r ${CARGO_TARGET_DIR} ./target
+
+    popd
   fi
 }
