@@ -2,8 +2,8 @@ apiVersion: vendir.k14s.io/v1alpha1
 directories:
 - contents:
   - git:
-      commitTitle: 'feat: add rust-dependabot.yml'
-      sha: 8eefeec5d26ab37b59d128d3522f4563e05a2a9a
+      commitTitle: 'fix: reintroduce --exclude'
+      sha: 8579ed298396630f5549282f92ffb54aacbce026
     path: .
   path: vendor
 kind: LockConfig
