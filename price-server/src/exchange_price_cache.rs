@@ -3,8 +3,8 @@ use shared::money::*;
 use shared::time::*;
 
 pub struct ExchangePriceCache {
-    numerator_unit: CurrencyRaw,
-    denominator_unit: CurrencyRaw,
+    _numerator_unit: CurrencyRaw,
+    _denominator_unit: CurrencyRaw,
     last_update: Option<TimeStamp>,
     current_bid_price: Option<Money>,
     current_ask_price: Option<Money>,
@@ -13,8 +13,8 @@ pub struct ExchangePriceCache {
 impl ExchangePriceCache {
     pub fn new(numerator_unit: CurrencyRaw, denominator_unit: CurrencyRaw) -> Self {
         Self {
-            numerator_unit,
-            denominator_unit,
+            _numerator_unit: numerator_unit,
+            _denominator_unit: denominator_unit,
             last_update: None,
             current_bid_price: None,
             current_ask_price: None,
