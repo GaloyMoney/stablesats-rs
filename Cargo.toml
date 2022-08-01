@@ -4,4 +4,5 @@ members = [
   "shared",
   "price-server",
   "cli",
+  "okex-price"
 ]
