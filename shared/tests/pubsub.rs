@@ -19,7 +19,7 @@ async fn pubsub_test() -> Result<(), anyhow::Error> {
     };
     let publisher = Publisher::new(config.clone()).await?;
     let subscriber = Subscriber::new(config).await?;
-    let mut stream = Box::pin(subscriber.subscribe::<TestMessage>().await?);
+    let mut stream = subscriber.subscribe::<TestMessage>().await?;
     let msg = TestMessage {
         test: "test".to_string(),
         value: u64::MAX,

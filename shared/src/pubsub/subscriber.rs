@@ -27,20 +27,25 @@ impl Subscriber {
 
     pub async fn subscribe<M: MessagePayload>(
         &self,
-    ) -> Result<impl Stream<Item = Result<Envelope<M>, SubscriberError>>, SubscriberError> {
+    ) -> Result<
+        std::pin::Pin<Box<dyn Stream<Item = Result<Envelope<M>, SubscriberError>>>>,
+        SubscriberError,
+    > {
         let message_stream = self.client.on_message();
         self.client
             .subscribe(<M as MessagePayload>::channel())
             .await?;
-        Ok(message_stream.filter_map(|(channel, value)| async move {
-            if channel == <M as MessagePayload>::channel() {
-                if let RedisValue::String(v) = value {
-                    return Some(
-                        serde_json::from_str::<Envelope<M>>(&v).map_err(SubscriberError::from),
-                    );
+        Ok(Box::pin(message_stream.filter_map(
+            |(channel, value)| async move {
+                if channel == <M as MessagePayload>::channel() {
+                    if let RedisValue::String(v) = value {
+                        return Some(
+                            serde_json::from_str::<Envelope<M>>(&v).map_err(SubscriberError::from),
+                        );
+                    }
                 }
-            }
-            None
-        }))
+                None
+            },
+        )))
     }
 }
