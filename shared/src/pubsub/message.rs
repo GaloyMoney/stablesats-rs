@@ -1,6 +1,7 @@
-use chrono::prelude::*;
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
 use uuid::Uuid;
+
+use crate::time::*;
 
 #[derive(
     Copy, Clone, PartialEq, Eq, Hash, Debug, Default, serde::Serialize, serde::Deserialize,
@@ -24,8 +25,7 @@ impl std::fmt::Display for CorrelationId {
 #[derive(Clone, Serialize, Deserialize, Debug)]
 #[serde(rename_all = "camelCase")]
 pub struct EventMetadata {
-    #[serde(with = "chrono::serde::ts_seconds")]
-    pub published_at: DateTime<Utc>,
+    pub published_at: TimeStamp,
     pub correlation_id: CorrelationId,
 }
 
@@ -33,7 +33,7 @@ impl EventMetadata {
     pub fn new() -> Self {
         Self {
             correlation_id: CorrelationId::new(),
-            published_at: Utc::now(),
+            published_at: TimeStamp::now(),
         }
     }
 }
