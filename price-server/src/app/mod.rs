@@ -23,7 +23,7 @@ impl PriceApp {
         let _ = tokio::spawn(async move {
             while let Some(msg) = stream.next().await {
                 let payload = msg.payload;
-                let _ = price_cache.apply_update(payload).await;
+                price_cache.apply_update(payload).await;
             }
         });
         Ok(app)
