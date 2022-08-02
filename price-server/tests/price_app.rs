@@ -1,5 +1,5 @@
 use price_server::app::*;
-use shared::{payload::*, pubsub::*, time::*};
+use shared::{currency::*, payload::*, pubsub::*, time::*};
 use std::fs;
 
 #[derive(serde::Deserialize)]
@@ -21,17 +21,32 @@ async fn price_app_test() -> anyhow::Result<()> {
     };
     let publisher = Publisher::new(config.clone()).await?;
 
-    let _app = PriceApp::run(config).await?;
+    let app = PriceApp::run(config).await?;
+
+    let err = app
+        .get_cents_from_sats_for_immediate_buy(Sats::from_major(100_000_000))
+        .await;
+    assert!(err.is_err());
 
     let mut payloads = load_fixture()?.payloads.into_iter();
     let mut payload = payloads.next().unwrap();
+    publisher
+        .publish(OkexBtcUsdSwapPricePayload(payload.clone()))
+        .await?;
+    let err = app
+        .get_cents_from_sats_for_immediate_buy(Sats::from_major(100_000_000))
+        .await;
+    assert!(err.is_err());
+
     payload.timestamp = TimeStamp::now();
     publisher
         .publish(OkexBtcUsdSwapPricePayload(payload))
         .await?;
 
-    // let cents = app
-    //     .get_cents_from_sats_for_immediate_buy(Sats::from_major(1))
-    //     .await?;
+    let cents = app
+        .get_cents_from_sats_for_immediate_buy(Sats::from_major(100_000_000))
+        .await?;
+
+    assert_eq!(cents, u64::try_from(UsdCents::from_major(999999)).unwrap());
     Ok(())
 }

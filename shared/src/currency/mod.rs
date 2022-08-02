@@ -1,5 +1,6 @@
 use thiserror::Error;
 
+use rust_decimal::Decimal;
 use rusty_money::Money;
 
 #[derive(Error, Debug)]
@@ -12,7 +13,7 @@ pub enum CurrencyError {
 
 macro_rules! currency {
     ($name:ident, $code:ident) => {
-        #[derive(Clone)]
+        #[derive(Clone, Debug, PartialEq, Eq)]
         pub struct $name {
             inner: Money<'static, inner::stablesats::Currency>,
         }
@@ -28,14 +29,24 @@ macro_rules! currency {
                 }
             }
 
-            pub fn from_decimal(decimal: rust_decimal::Decimal) -> Self {
+            pub fn from_decimal(decimal: Decimal) -> Self {
                 Self {
                     inner: Money::from_decimal(decimal, inner::stablesats::$code),
                 }
             }
 
-            pub fn amount(&self) -> &rust_decimal::Decimal {
+            pub fn amount(&self) -> &Decimal {
                 self.inner.amount()
+            }
+        }
+
+        impl std::ops::Mul<Decimal> for $name {
+            type Output = Self;
+
+            fn mul(self, rhs: Decimal) -> Self::Output {
+                Self {
+                    inner: self.inner * rhs,
+                }
             }
         }
 
@@ -52,30 +63,16 @@ macro_rules! currency {
 currency! { UsdCents, USD_CENT }
 currency! { Sats, SAT }
 
-pub struct ExchangeRate {}
-
-// pub struct CentsSatsRate {
-//     inner: ExchangeRate<'static, inner::stablesats::Currency>,
-// }
-
-// impl CentsSatsRate {
-//     fn from_satoshi_price(price: UsdCents) -> Self {
-//         Self {
-//             inner: ExchangeRate::new(
-//                 inner::stablesats::USD_CENTS,
-//                 inner::stablesats::SATS,
-//                 price.amount().clone(),
-//             )
-//             .expect("Failed to create exchange rate"),
-//         }
-//     }
-
-//     pub fn convert(&self, cents: UsdCents) -> Sats {
-//         Sats {
-//             inner: self.inner.convert(cents.inner).expect("Failed to convert"),
-//         }
-//     }
-// }
+#[cfg(test)]
+mod tests {
+    use super::*;
+    #[test]
+    fn u64_try_from_usd_cents() {
+        let usd_cents = UsdCents::from_major(123);
+        let usd_cents_u64: u64 = usd_cents.try_into().unwrap();
+        assert_eq!(usd_cents_u64, 123);
+    }
+}
 
 mod inner {
     use rusty_money::define_currency_set;
@@ -103,7 +100,7 @@ mod inner {
     );
 
     #[cfg(test)]
-    mod test {
+    mod tests {
         use super::*;
         use rust_decimal::prelude::*;
         use rusty_money::Money;

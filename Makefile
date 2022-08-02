@@ -2,7 +2,7 @@ watch:
 	RUST_BACKTRACE=full cargo watch -s 'cargo test -- --nocapture'
 
 next-watch:
-	RUST_BACKTRACE=full cargo watch -s 'cargo nextest run'
+	cargo watch -s 'cargo nextest run'
 
 check-code:
 	cargo clippy --all-features
