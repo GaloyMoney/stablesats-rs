@@ -1,5 +1,6 @@
 use thiserror::Error;
 
+use crate::exchange_price_cache::ExchangePriceCacheError;
 use shared::{currency::CurrencyError, pubsub::SubscriberError};
 
 #[derive(Error, Debug)]
@@ -12,4 +13,6 @@ pub enum PriceAppError {
     CurrencyError(#[from] CurrencyError),
     #[error("{0}")]
     SubscriberError(#[from] SubscriberError),
+    #[error("{0}")]
+    ExchnagePriceCacheError(#[from] ExchangePriceCacheError),
 }

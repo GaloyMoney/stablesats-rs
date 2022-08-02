@@ -1,13 +1,16 @@
+use chrono::Duration;
 use std::sync::Arc;
 use thiserror::Error;
 use tokio::sync::RwLock;
 
-use shared::{money::*, payload::*, time::*};
+use shared::{currency::*, payload::*, time::*};
 
 #[derive(Error, Debug)]
 pub enum ExchangePriceCacheError {
-    #[error("UnexpectedMessage: {0}")]
-    UnexpectedMessage(String),
+    #[error("StalePrice: last update was at {0}")]
+    StalePrice(TimeStamp),
+    #[error("No price available")]
+    NoPriceAvaiable,
 }
 
 #[derive(Clone)]
@@ -16,41 +19,61 @@ pub struct ExchangePriceCache {
 }
 
 impl ExchangePriceCache {
-    pub fn new() -> Self {
+    pub fn new(stale_after: Duration) -> Self {
         Self {
-            inner: Arc::new(RwLock::new(ExchangePriceCacheInner::new())),
+            inner: Arc::new(RwLock::new(ExchangePriceCacheInner::new(stale_after))),
         }
     }
 
-    pub async fn apply_update(
-        &self,
-        payload: OkexBtcUsdSwapPricePayload,
-    ) -> Result<(), ExchangePriceCacheError> {
-        self.inner.write().await.update_price(payload).await;
-        Ok(())
+    pub async fn apply_update(&self, payload: OkexBtcUsdSwapPricePayload) {
+        self.inner.write().await.update_price(payload);
     }
 
-    //     pub async fn get_price(&self, exchange: Exchange) -> Option<Money> {
-    //         self.inner.read().await.get_price(exchange)
-    //     }
+    pub async fn price_of_one_sat(&self) -> Result<UsdCents, ExchangePriceCacheError> {
+        self.inner.read().await.price_of_one_sat()
+    }
+}
+
+struct BtcSatTick {
+    timestamp: TimeStamp,
+    price_of_one_sat: UsdCents,
 }
 
 struct ExchangePriceCacheInner {
-    last_update: Option<TimeStamp>,
+    stale_after: Duration,
+    tick: Option<BtcSatTick>,
 }
 
 impl ExchangePriceCacheInner {
-    fn new() -> Self {
-        Self { last_update: None }
+    fn new(stale_after: Duration) -> Self {
+        Self {
+            stale_after,
+            tick: None,
+        }
     }
 
-    async fn update_price(&mut self, payload: impl Into<PriceMessagePayload>) {
+    fn update_price(&mut self, payload: impl Into<PriceMessagePayload>) {
         let payload = payload.into();
-        if let Some(ref last_update) = self.last_update {
-            if last_update > &payload.timestamp {
+        if let Some(ref tick) = self.tick {
+            if &tick.timestamp > &payload.timestamp {
                 return;
             }
         }
-        self.last_update = Some(payload.timestamp);
+        if let Ok(price_of_one_sat) = UsdCents::try_from(payload.ask_price) {
+            self.tick = Some(BtcSatTick {
+                timestamp: payload.timestamp,
+                price_of_one_sat,
+            });
+        }
+    }
+
+    fn price_of_one_sat(&self) -> Result<UsdCents, ExchangePriceCacheError> {
+        if let Some(ref tick) = self.tick {
+            if &tick.timestamp - &TimeStamp::now() > self.stale_after {
+                return Err(ExchangePriceCacheError::StalePrice(tick.timestamp.clone()));
+            }
+            return Ok(tick.price_of_one_sat.clone());
+        }
+        Err(ExchangePriceCacheError::NoPriceAvaiable)
     }
 }

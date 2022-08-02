@@ -18,7 +18,7 @@ macro_rules! string_wrapper {
     ($name:ident) => {
         #[derive(Clone, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
         #[serde(transparent)]
-        pub struct $name(String);
+        pub struct $name(pub(super) String);
         impl std::fmt::Display for $name {
             fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
                 write!(f, "{}", self.0)
