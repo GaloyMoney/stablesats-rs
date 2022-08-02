@@ -24,12 +24,12 @@ impl std::fmt::Display for CorrelationId {
 
 #[derive(Clone, Serialize, Deserialize, Debug)]
 #[serde(rename_all = "camelCase")]
-pub struct EventMetadata {
+pub struct MessageMetadata {
     pub published_at: TimeStamp,
     pub correlation_id: CorrelationId,
 }
 
-impl EventMetadata {
+impl MessageMetadata {
     pub fn new() -> Self {
         Self {
             correlation_id: CorrelationId::new(),
@@ -37,7 +37,7 @@ impl EventMetadata {
         }
     }
 }
-impl Default for EventMetadata {
+impl Default for MessageMetadata {
     fn default() -> Self {
         Self::new()
     }
@@ -47,7 +47,7 @@ impl Default for EventMetadata {
 #[serde(rename_all = "camelCase")]
 pub struct Envelope<P: MessagePayload> {
     // pub tracing_data: TracingData,
-    pub meta: EventMetadata,
+    pub meta: MessageMetadata,
     pub payload_type: String,
     #[serde(bound = "P: DeserializeOwned")]
     pub payload: P,
@@ -56,7 +56,7 @@ pub struct Envelope<P: MessagePayload> {
 impl<P: MessagePayload> Envelope<P> {
     pub(super) fn new(payload: P) -> Self {
         Self {
-            meta: EventMetadata::new(),
+            meta: MessageMetadata::new(),
             payload_type: <P as MessagePayload>::message_type().to_string(),
             payload,
         }
