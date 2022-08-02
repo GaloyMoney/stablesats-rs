@@ -3,8 +3,8 @@ use thiserror::Error;
 use crate::exchange_price_cache::ExchangePriceCacheError;
 use shared::{currency::CurrencyError, pubsub::SubscriberError};
 
-#[derive(Error, Debug)]
 #[allow(clippy::large_enum_variant)]
+#[derive(Error, Debug)]
 pub enum PriceAppError {
     #[error("No price data available")]
     NoPriceDataAvailable,
