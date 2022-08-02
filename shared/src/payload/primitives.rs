@@ -14,9 +14,9 @@ pub struct PriceRatioRaw {
     pub(super) base: Decimal,
 }
 impl PriceRatioRaw {
-    pub fn rate(&self) -> Decimal {
-        let mut ret = self.base.clone();
-        let _ = ret.set_scale(self.offset).expect("failed to set scale");
+    pub fn numerator_amount(&self) -> Decimal {
+        let mut ret = self.base;
+        ret.set_scale(self.offset).expect("failed to set scale");
         ret
     }
 }
@@ -49,7 +49,7 @@ mod test {
             offset: 12,
             base: Decimal::new(123, 0),
         };
-        let rate = ratio.rate();
+        let rate = ratio.numerator_amount();
         assert_eq!(rate.to_string(), "0.000000000123".to_string());
     }
 }

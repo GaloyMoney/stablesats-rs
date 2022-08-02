@@ -4,22 +4,14 @@ use crate::currency::*;
 impl TryFrom<PriceRatioRaw> for UsdCents {
     type Error = CurrencyError;
 
-    fn try_from(
-        PriceRatioRaw {
-            numerator_unit,
-            mut base,
-            offset,
-            ..
-        }: PriceRatioRaw,
-    ) -> Result<Self, Self::Error> {
-        if numerator_unit.0 != UsdCents::code() {
+    fn try_from(ratio: PriceRatioRaw) -> Result<Self, Self::Error> {
+        if ratio.numerator_unit.0 != UsdCents::code() {
             return Err(CurrencyError::Conversion(
-                numerator_unit.to_string(),
+                ratio.numerator_unit.to_string(),
                 UsdCents::code(),
             ));
         }
-        base.set_scale(offset)?;
-        Ok(UsdCents::from_decimal(base))
+        Ok(UsdCents::from_decimal(ratio.numerator_amount()))
     }
 }
 
