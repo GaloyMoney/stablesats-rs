@@ -1,8 +1,11 @@
+mod primitives;
+
 use serde::{Deserialize, Serialize};
 
-use super::exchange::*;
 use super::pubsub::*;
 use super::time::*;
+
+pub use primitives::*;
 
 #[derive(Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -17,5 +20,10 @@ pub struct PriceMessagePayload {
 #[derive(Clone, Serialize, Deserialize)]
 #[serde(transparent)]
 pub struct OkexBtcUsdSwapPricePayload(pub PriceMessagePayload);
+impl From<OkexBtcUsdSwapPricePayload> for PriceMessagePayload {
+    fn from(payload: OkexBtcUsdSwapPricePayload) -> Self {
+        payload.0
+    }
+}
 
 crate::payload! { OkexBtcUsdSwapPricePayload, "price.okex.btc-usd-swap" }

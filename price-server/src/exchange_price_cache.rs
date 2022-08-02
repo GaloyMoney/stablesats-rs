@@ -1,29 +1,56 @@
-use shared::exchange::*;
-use shared::money::*;
-use shared::time::*;
+use std::sync::Arc;
+use thiserror::Error;
+use tokio::sync::RwLock;
 
+use shared::{money::*, payload::*, time::*};
+
+#[derive(Error, Debug)]
+pub enum ExchangePriceCacheError {
+    #[error("UnexpectedMessage: {0}")]
+    UnexpectedMessage(String),
+}
+
+#[derive(Clone)]
 pub struct ExchangePriceCache {
-    _numerator_unit: CurrencyRaw,
-    _denominator_unit: CurrencyRaw,
-    last_update: Option<TimeStamp>,
-    current_bid_price: Option<Money>,
-    current_ask_price: Option<Money>,
+    inner: Arc<RwLock<ExchangePriceCacheInner>>,
 }
 
 impl ExchangePriceCache {
-    pub fn new(numerator_unit: CurrencyRaw, denominator_unit: CurrencyRaw) -> Self {
+    pub fn new() -> Self {
         Self {
-            _numerator_unit: numerator_unit,
-            _denominator_unit: denominator_unit,
-            last_update: None,
-            current_bid_price: None,
-            current_ask_price: None,
+            inner: Arc::new(RwLock::new(ExchangePriceCacheInner::new())),
         }
     }
 
-    pub fn update_price(&mut self, timestamp: TimeStamp, bid_price: Money, ask_price: Money) {
-        self.last_update = Some(timestamp);
-        self.current_bid_price = Some(bid_price);
-        self.current_ask_price = Some(ask_price);
+    pub async fn apply_update(
+        &self,
+        payload: OkexBtcUsdSwapPricePayload,
+    ) -> Result<(), ExchangePriceCacheError> {
+        self.inner.write().await.update_price(payload).await;
+        Ok(())
+    }
+
+    //     pub async fn get_price(&self, exchange: Exchange) -> Option<Money> {
+    //         self.inner.read().await.get_price(exchange)
+    //     }
+}
+
+struct ExchangePriceCacheInner {
+    last_update: Option<TimeStamp>,
+}
+
+impl ExchangePriceCacheInner {
+    fn new() -> Self {
+        Self { last_update: None }
+    }
+
+    async fn update_price(&mut self, payload: impl Into<PriceMessagePayload>) {
+        let payload = payload.into();
+        if let Some(ref last_update) = self.last_update {
+            if last_update > &payload.timestamp {
+                return;
+            }
+        }
+        self.last_update = Some(payload.timestamp);
     }
 }

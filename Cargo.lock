@@ -957,6 +957,8 @@ dependencies = [
  "futures",
  "prost",
  "protobuf-src",
+ "serde",
+ "serde_json",
  "shared",
  "thiserror",
  "tokio",
@@ -1141,6 +1143,26 @@ dependencies = [
 ]
 
 [[package]]
+name = "rust_decimal_macros"
+version = "1.25.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "d1467556c7c115165aa0346bcf45bc947203bcc880efad85a09ba24ea17926c4"
+dependencies = [
+ "quote",
+ "rust_decimal",
+]
+
+[[package]]
+name = "rusty-money"
+version = "0.4.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "5b28f881005eac7ad8d46b6f075da5f322bd7f4f83a38720fc069694ddadd683"
+dependencies = [
+ "rust_decimal",
+ "rust_decimal_macros",
+]
+
+[[package]]
 name = "ryu"
 version = "1.0.10"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1244,6 +1266,7 @@ dependencies = [
  "fred",
  "futures",
  "rust_decimal",
+ "rusty-money",
  "serde",
  "serde_json",
  "thiserror",
