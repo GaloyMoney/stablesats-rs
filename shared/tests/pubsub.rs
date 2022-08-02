@@ -26,6 +26,6 @@ async fn pubsub_test() -> Result<(), anyhow::Error> {
     };
     publisher.publish(msg.clone()).await?;
     let received = stream.next().await;
-    assert_eq!(msg, received.unwrap().unwrap().payload);
+    assert_eq!(msg, received.unwrap().payload);
     Ok(())
 }
