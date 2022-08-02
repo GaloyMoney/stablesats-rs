@@ -55,7 +55,7 @@ impl ExchangePriceCacheInner {
     fn update_price(&mut self, payload: impl Into<PriceMessagePayload>) {
         let payload = payload.into();
         if let Some(ref tick) = self.tick {
-            if &tick.timestamp > &payload.timestamp {
+            if tick.timestamp > payload.timestamp {
                 return;
             }
         }
