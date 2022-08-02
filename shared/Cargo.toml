@@ -8,7 +8,7 @@ edition = "2021"
 fail-on-warnings = []
 
 [dependencies]
-anyhow = "1.0.58"
+anyhow = "1.0.59"
 # setting default-features = false to not include vulnerable time crate
 chrono = { version = "0.4.19", features = ["clock", "serde"], default-features = false }
 fred = { version = "5.1.0", features = ["subscriber-client"] }
