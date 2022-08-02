@@ -31,13 +31,9 @@ impl PriceApp {
 
     pub async fn get_cents_from_sats_for_immediate_buy(
         &self,
-        _sats: impl Into<Sats>,
+        sats: impl Into<Sats>,
     ) -> Result<u64, PriceAppError> {
-        let _cents = self.price_cache.price_of_one_sat().await?;
-        // cents * sats.major()
-        // get current price from cache
-        // execute calculator
-        // return
-        unimplemented!()
+        let cents = self.price_cache.price_of_one_sat().await?;
+        Ok(u64::try_from(cents * *sats.into().amount())?)
     }
 }

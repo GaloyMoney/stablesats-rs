@@ -16,7 +16,7 @@ impl TryFrom<PriceRatioRaw> for UsdCents {
 }
 
 #[cfg(test)]
-mod test {
+mod tests {
     use super::*;
     use crate::payload::*;
     use rust_decimal::prelude::*;
