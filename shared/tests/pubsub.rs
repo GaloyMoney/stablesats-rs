@@ -12,7 +12,7 @@ struct TestMessage {
 payload! { TestMessage, "pubsub.test.message" }
 
 #[tokio::test]
-async fn pubsub_test() -> Result<(), anyhow::Error> {
+async fn pubsub() -> Result<(), anyhow::Error> {
     let redis_host = std::env::var("REDIS_HOST").unwrap_or("localhost".to_string());
     let config = PubSubConfig {
         host: Some(redis_host),

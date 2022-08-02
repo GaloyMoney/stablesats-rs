@@ -16,7 +16,7 @@ fn load_fixture() -> anyhow::Result<Fixture> {
 }
 
 #[tokio::test]
-async fn price_app_test() -> anyhow::Result<()> {
+async fn price_app() -> anyhow::Result<()> {
     let redis_host = std::env::var("REDIS_HOST").unwrap_or("localhost".to_string());
     let config = PubSubConfig {
         host: Some(redis_host),
