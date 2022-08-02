@@ -1,5 +1,5 @@
 use price_server::app::*;
-use shared::{currency::*, payload::*, pubsub::*, time::*};
+use shared::{payload::*, pubsub::*, time::*};
 use std::fs;
 
 #[derive(serde::Deserialize)]
@@ -21,7 +21,7 @@ async fn price_app_test() -> anyhow::Result<()> {
     };
     let publisher = Publisher::new(config.clone()).await?;
 
-    let app = PriceApp::run(config).await?;
+    let _app = PriceApp::run(config).await?;
 
     let mut payloads = load_fixture()?.payloads.into_iter();
     let mut payload = payloads.next().unwrap();

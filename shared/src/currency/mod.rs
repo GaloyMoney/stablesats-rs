@@ -1,25 +1,41 @@
 use thiserror::Error;
 
-use rust_decimal::prelude::*;
-use rusty_money::{ExchangeRate, Money};
+use rusty_money::Money;
 
 #[derive(Error, Debug)]
 pub enum CurrencyError {
     #[error("CurrencyError: {0}")]
     Unknown(#[from] rust_decimal::Error),
+    #[error("Can't convert {0} to {1}")]
+    Conversion(String, &'static str),
 }
 
 macro_rules! currency {
     ($name:ident, $code:ident) => {
+        #[derive(Clone)]
         pub struct $name {
             inner: Money<'static, inner::stablesats::Currency>,
         }
 
         impl $name {
+            pub fn code() -> &'static str {
+                stringify!($code)
+            }
+
             pub fn from_major(minor: u64) -> Self {
                 Self {
                     inner: Money::from_major(minor as i64, inner::stablesats::$code),
                 }
+            }
+
+            pub fn from_decimal(decimal: rust_decimal::Decimal) -> Self {
+                Self {
+                    inner: Money::from_decimal(decimal, inner::stablesats::$code),
+                }
+            }
+
+            pub fn amount(&self) -> &rust_decimal::Decimal {
+                self.inner.amount()
             }
         }
 
@@ -33,8 +49,8 @@ macro_rules! currency {
     };
 }
 
-currency! { UsdCents, USD_CENTS }
-currency! { Sats, SATS }
+currency! { UsdCents, USD_CENT }
+currency! { Sats, SAT }
 
 pub struct ExchangeRate {}
 
@@ -65,21 +81,21 @@ mod inner {
     use rusty_money::define_currency_set;
     define_currency_set!(
       stablesats {
-        USD_CENTS: {
-          code: "USD_CENTS",
+        USD_CENT: {
+          code: "USD_CENT",
           exponent: 12,
           locale: Locale::EnUs,
           minor_units: 1000000000000,
-          name: "USD_CENTS",
+          name: "USD_CENT",
           symbol: "\u{00A2}",
           symbol_first: true,
         },
-        SATS: {
-            code: "SATS",
+        SAT: {
+            code: "SAT",
             exponent: 3,
             locale: Locale::EnUs,
             minor_units: 1000,
-            name: "SATS",
+            name: "SAT",
             symbol: "SAT",
             symbol_first: false,
         }
@@ -94,7 +110,7 @@ mod inner {
 
         #[test]
         fn stablesat_money() {
-            let money = Money::from_major(1, stablesats::USD_CENTS);
+            let money = Money::from_major(1, stablesats::USD_CENT);
             assert_eq!(money.amount(), &Decimal::new(1, 0));
         }
     }

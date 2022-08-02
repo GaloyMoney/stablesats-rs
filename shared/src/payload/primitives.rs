@@ -10,8 +10,8 @@ crate::string_wrapper! { CurrencyRaw }
 pub struct PriceRatioRaw {
     pub numerator_unit: CurrencyRaw,
     pub denominator_unit: CurrencyRaw,
-    offset: u32,
-    base: Decimal,
+    pub(super) offset: u32,
+    pub(super) base: Decimal,
 }
 impl PriceRatioRaw {
     pub fn rate(&self) -> Decimal {
