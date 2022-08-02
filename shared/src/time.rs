@@ -16,7 +16,7 @@ impl PartialOrd for TimeStamp {
 }
 impl std::fmt::Display for TimeStamp {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-        write!(f, "{}", self.0)
+        write!(f, "{}", self.0.timestamp())
     }
 }
 impl std::ops::Sub for &TimeStamp {

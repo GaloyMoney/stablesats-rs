@@ -6,10 +6,6 @@ use shared::{currency::CurrencyError, pubsub::SubscriberError};
 #[allow(clippy::large_enum_variant)]
 #[derive(Error, Debug)]
 pub enum PriceAppError {
-    #[error("No price data available")]
-    NoPriceDataAvailable,
-    #[error("Price data is stale")]
-    StalePriceData,
     #[error("{0}")]
     CurrencyError(#[from] CurrencyError),
     #[error("{0}")]

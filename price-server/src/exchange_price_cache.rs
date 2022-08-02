@@ -9,7 +9,7 @@ use shared::{currency::*, payload::*, time::*};
 pub enum ExchangePriceCacheError {
     #[error("StalePrice: last update was at {0}")]
     StalePrice(TimeStamp),
-    #[error("No price available")]
+    #[error("No price data available")]
     NoPriceAvaiable,
 }
 
@@ -69,7 +69,7 @@ impl ExchangePriceCacheInner {
 
     fn price_of_one_sat(&self) -> Result<UsdCents, ExchangePriceCacheError> {
         if let Some(ref tick) = self.tick {
-            if &tick.timestamp - &TimeStamp::now() > self.stale_after {
+            if &TimeStamp::now() - &tick.timestamp > self.stale_after {
                 return Err(ExchangePriceCacheError::StalePrice(tick.timestamp.clone()));
             }
             return Ok(tick.price_of_one_sat.clone());

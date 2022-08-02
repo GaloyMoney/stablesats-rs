@@ -1,6 +1,8 @@
+use futures::stream::StreamExt;
+use std::fs;
+
 use price_server::app::*;
 use shared::{currency::*, payload::*, pubsub::*, time::*};
-use std::fs;
 
 #[derive(serde::Deserialize)]
 struct Fixture {
@@ -20,28 +22,35 @@ async fn price_app_test() -> anyhow::Result<()> {
         host: Some(redis_host),
     };
     let publisher = Publisher::new(config.clone()).await?;
+    let subscriber = Subscriber::new(config.clone()).await?;
+    let mut stream = subscriber.subscribe::<OkexBtcUsdSwapPricePayload>().await?;
 
     let app = PriceApp::run(config).await?;
 
     let err = app
         .get_cents_from_sats_for_immediate_buy(Sats::from_major(100_000_000))
         .await;
-    assert!(err.is_err());
+    assert_eq!(format!("{}", err.unwrap_err()), "No price data available");
 
     let mut payloads = load_fixture()?.payloads.into_iter();
     let mut payload = payloads.next().unwrap();
     publisher
         .publish(OkexBtcUsdSwapPricePayload(payload.clone()))
         .await?;
+    stream.next().await;
     let err = app
         .get_cents_from_sats_for_immediate_buy(Sats::from_major(100_000_000))
         .await;
-    assert!(err.is_err());
+    assert_eq!(
+        format!("{}", err.unwrap_err()),
+        "StalePrice: last update was at 1"
+    );
 
     payload.timestamp = TimeStamp::now();
     publisher
         .publish(OkexBtcUsdSwapPricePayload(payload))
         .await?;
+    stream.next().await;
 
     let cents = app
         .get_cents_from_sats_for_immediate_buy(Sats::from_major(100_000_000))
