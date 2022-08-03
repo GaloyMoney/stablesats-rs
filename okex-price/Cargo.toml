@@ -16,3 +16,6 @@ tokio-tungstenite = {version = "0.17.2", features = ["native-tls"] }
 url="2.2.2"
 shared = { path = "../shared" }
 rust_decimal = "1.25.0"
+
+[dev-dependencies]
+chrono = { version = "0.4.19", features = ["clock", "serde"], default-features = false }
