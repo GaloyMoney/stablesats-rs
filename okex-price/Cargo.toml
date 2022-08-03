@@ -15,3 +15,4 @@ tokio = {version = "1.20.1", features = ["full"]}
 tokio-tungstenite = {version = "0.17.2", features = ["native-tls"] }
 url="2.2.2"
 shared = { path = "../shared" }
+rust_decimal = "1.25.0"

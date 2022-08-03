@@ -844,6 +844,7 @@ version = "0.1.0"
 dependencies = [
  "anyhow",
  "futures",
+ "rust_decimal",
  "serde",
  "serde_json",
  "shared",

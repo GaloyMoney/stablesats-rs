@@ -16,12 +16,19 @@ pub async fn subscribe_btc_usd_swap(
     let (ws_stream, _) = connect_async(config.url).await?;
     let (mut sender, receiver) = ws_stream.split();
 
-    let subscribe_args = Subscribe::new();
-    let serialized_args = serde_json::to_string(&subscribe_args)?;
-    let item = Message::Text(serialized_args);
+    let subscribe_args = serde_json::json!({
+        "op": "subscribe",
+        "args": [
+           {
+                "channel": "tickers",
+                "instId": "BTC-USD-SWAP"
+            }
+        ]
+    })
+    .to_string();
+    let item = Message::Text(subscribe_args);
 
-    let subscribe = sender.send(item);
-    subscribe.await?;
+    sender.send(item).await?;
 
     Ok(Box::pin(receiver.filter_map(|message| async {
         if let Ok(msg) = message {
