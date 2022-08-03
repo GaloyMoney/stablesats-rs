@@ -24,7 +24,7 @@ const DEFAULT_CONFIG: &str = "stablesats.yml";
 pub async fn run() -> anyhow::Result<()> {
     let cli = Cli::parse();
     let config_path = cli.config.unwrap_or_else(|| PathBuf::from(DEFAULT_CONFIG));
-    let config = Config::from_path(config_path)?;
+    let _config = Config::from_path(config_path)?;
 
     match cli.command {
         Commands::Run {} => {
