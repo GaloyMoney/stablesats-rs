@@ -10,7 +10,7 @@ fail-on-warnings = []
 [dependencies]
 shared = { path = "../shared" }
 
-anyhow = "1.0.58"
+anyhow = "1.0.60"
 chrono = { version = "0.4.19", features = ["clock", "serde"], default-features = false }
 prost = "0.11"
 tonic = "0.8"
