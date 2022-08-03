@@ -8,7 +8,7 @@ edition = "2021"
 [dependencies]
 shared = { path = "../shared" }
 
-anyhow = "1.0.60"
+anyhow = "1.0.59"
 clap = { version =  "3.2", features = ["derive"] }
 serde = { version = "1.0.141", features = ["derive"] }
 serde_yaml = "0.9.4"

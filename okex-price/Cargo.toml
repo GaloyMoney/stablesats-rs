@@ -6,7 +6,6 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-anyhow = "1.0.58"
 futures = "0.3.21"
 serde = {version = "1.0.140", features = ["derive"]}
 serde_json = "1.0.82"
@@ -18,4 +17,5 @@ shared = { path = "../shared" }
 rust_decimal = "1.25.0"
 
 [dev-dependencies]
+anyhow = "1.0.59"
 chrono = { version = "0.4.19", features = ["clock", "serde"], default-features = false }

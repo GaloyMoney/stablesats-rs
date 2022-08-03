@@ -36,7 +36,8 @@ impl std::ops::Sub for TimeStamp {
 #[serde(transparent)]
 pub struct TimeStampMilliStr(String);
 impl TryFrom<&TimeStampMilliStr> for TimeStamp {
-    type Error = anyhow::Error;
+    type Error = std::num::ParseIntError;
+
     fn try_from(value: &TimeStampMilliStr) -> Result<Self, Self::Error> {
         let millis = value.0.parse::<i64>()?;
         let naive = NaiveDateTime::from_timestamp(millis / 1000, 0);
