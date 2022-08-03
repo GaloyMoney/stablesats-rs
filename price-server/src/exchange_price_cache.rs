@@ -10,7 +10,7 @@ pub enum ExchangePriceCacheError {
     #[error("StalePrice: last update was at {0}")]
     StalePrice(TimeStamp),
     #[error("No price data available")]
-    NoPriceAvaiable,
+    NoPriceAvailable,
 }
 
 #[derive(Clone)]
@@ -74,6 +74,6 @@ impl ExchangePriceCacheInner {
             }
             return Ok(tick.price_of_one_sat.clone());
         }
-        Err(ExchangePriceCacheError::NoPriceAvaiable)
+        Err(ExchangePriceCacheError::NoPriceAvailable)
     }
 }

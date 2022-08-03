@@ -11,5 +11,5 @@ pub enum PriceAppError {
     #[error("{0}")]
     SubscriberError(#[from] SubscriberError),
     #[error("{0}")]
-    ExchnagePriceCacheError(#[from] ExchangePriceCacheError),
+    ExchangePriceCacheError(#[from] ExchangePriceCacheError),
 }
