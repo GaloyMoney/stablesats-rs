@@ -1,3 +1,5 @@
+build:
+	cargo build
 watch:
 	RUST_BACKTRACE=full cargo watch -s 'cargo test -- --nocapture'
 
