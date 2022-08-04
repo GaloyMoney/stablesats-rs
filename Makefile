@@ -14,3 +14,7 @@ check-code:
 
 test-in-ci:
 	cargo nextest run --all-features --verbose --locked
+
+cli-run:
+	cargo run --bin stablesats run
+

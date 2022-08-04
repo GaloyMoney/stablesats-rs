@@ -7,9 +7,11 @@ edition = "2021"
 
 [dependencies]
 shared = { path = "../shared" }
+price-server = { path = "../price-server" }
 
 anyhow = "1.0.59"
 clap = { version =  "3.2", features = ["derive"] }
 serde = { version = "1.0.141", features = ["derive"] }
 serde_yaml = "0.9.4"
 tokio = "1.20.1"
+futures = "0.3.21"
