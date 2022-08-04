@@ -8,6 +8,10 @@ impl TimeStamp {
     pub fn now() -> Self {
         Self(Utc::now())
     }
+
+    pub fn duration_since(&self) -> Duration {
+        &Self::now() - self
+    }
 }
 impl PartialOrd for TimeStamp {
     fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {

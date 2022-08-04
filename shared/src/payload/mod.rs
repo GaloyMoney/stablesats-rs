@@ -1,3 +1,4 @@
+mod constants;
 mod convert;
 mod primitives;
 
@@ -6,6 +7,7 @@ use serde::{Deserialize, Serialize};
 use super::pubsub::*;
 use super::time::*;
 
+pub use constants::*;
 pub use primitives::*;
 
 #[derive(Clone, Serialize, Deserialize)]
@@ -24,6 +26,12 @@ pub struct OkexBtcUsdSwapPricePayload(pub PriceMessagePayload);
 impl From<OkexBtcUsdSwapPricePayload> for PriceMessagePayload {
     fn from(payload: OkexBtcUsdSwapPricePayload) -> Self {
         payload.0
+    }
+}
+impl std::ops::Deref for OkexBtcUsdSwapPricePayload {
+    type Target = PriceMessagePayload;
+    fn deref(&self) -> &Self::Target {
+        &self.0
     }
 }
 
