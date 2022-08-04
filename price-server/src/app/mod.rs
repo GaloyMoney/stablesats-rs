@@ -33,7 +33,72 @@ impl PriceApp {
         &self,
         sats: impl Into<Sats>,
     ) -> Result<u64, PriceAppError> {
-        let cents = self.price_cache.price_of_one_sat().await?;
+        let cents = self.price_cache.ask_price_of_one_sat().await?;
         Ok(u64::try_from(cents * *sats.into().amount())?)
     }
+
+    pub async fn get_cents_from_sats_for_immediate_sell(
+        &self,
+        sats: impl Into<Sats>,
+    ) -> Result<u64, PriceAppError> {
+        let cents = self.price_cache.ask_price_of_one_sat().await?;
+        Ok(u64::try_from(cents * *sats.into().amount())?)
+    }
+
+    pub async fn get_cents_from_sats_for_future_buy(
+        &self,
+        sats: impl Into<Sats>,
+    ) -> Result<u64, PriceAppError> {
+        let cents = self.price_cache.ask_price_of_one_sat().await?;
+        Ok(u64::try_from(cents * *sats.into().amount())?)
+    }
+
+    pub async fn get_cents_from_sats_for_future_sell(
+        &self,
+        sats: impl Into<Sats>,
+    ) -> Result<u64, PriceAppError> {
+        let cents = self.price_cache.ask_price_of_one_sat().await?;
+        Ok(u64::try_from(cents * *sats.into().amount())?)
+    }
+
+    pub async fn get_sats_from_cents_for_immediate_buy(
+        &self,
+        sats: impl Into<Sats>,
+    ) -> Result<u64, PriceAppError> {
+        let cents = self.price_cache.ask_price_of_one_sat().await?;
+        Ok(u64::try_from(cents * *sats.into().amount())?)
+    }
+
+    pub async fn get_sats_from_cents_for_immediate_sell(
+        &self,
+        sats: impl Into<Sats>,
+    ) -> Result<u64, PriceAppError> {
+        let cents = self.price_cache.ask_price_of_one_sat().await?;
+        Ok(u64::try_from(cents * *sats.into().amount())?)
+    }
+
+    pub async fn get_cents_per_sats_exchange_mid_rate(
+        &self,
+        sats: impl Into<Sats>,
+    ) -> Result<u64, PriceAppError> {
+        let cents = self.price_cache.ask_price_of_one_sat().await?;
+        Ok(u64::try_from(cents * *sats.into().amount())?)
+    }
+
+    pub async fn get_sats_from_cents_for_future_buy(
+        &self,
+        sats: impl Into<Sats>,
+    ) -> Result<u64, PriceAppError> {
+        let cents = self.price_cache.ask_price_of_one_sat().await?;
+        Ok(u64::try_from(cents * *sats.into().amount())?)
+    }
+
+    pub async fn get_sats_from_cents_for_future_sell(
+        &self,
+        sats: impl Into<Sats>,
+    ) -> Result<u64, PriceAppError> {
+        let cents = self.price_cache.ask_price_of_one_sat().await?;
+        Ok(u64::try_from(cents * *sats.into().amount())?)
+    }
+    
 }

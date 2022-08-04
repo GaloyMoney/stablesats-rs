@@ -23,9 +23,9 @@ macro_rules! currency {
                 stringify!($code)
             }
 
-            pub fn from_major(minor: u64) -> Self {
+            pub fn from_major(major: u64) -> Self {
                 Self {
-                    inner: Money::from_major(minor as i64, inner::stablesats::$code),
+                    inner: Money::from_major(major as i64, inner::stablesats::$code),
                 }
             }
 

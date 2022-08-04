@@ -29,8 +29,12 @@ impl ExchangePriceCache {
         self.inner.write().await.update_price(payload);
     }
 
-    pub async fn price_of_one_sat(&self) -> Result<UsdCents, ExchangePriceCacheError> {
-        self.inner.read().await.price_of_one_sat()
+    pub async fn ask_price_of_one_sat(&self) -> Result<UsdCents, ExchangePriceCacheError> {
+        self.inner.read().await.ask_price_of_one_sat()
+    }
+
+    pub async fn bid_price_of_one_sat(&self) -> Result<UsdCents, ExchangePriceCacheError> {
+        self.inner.read().await.bid_price_of_one_sat()
     }
 }
 
@@ -67,7 +71,7 @@ impl ExchangePriceCacheInner {
         }
     }
 
-    fn price_of_one_sat(&self) -> Result<UsdCents, ExchangePriceCacheError> {
+    fn ask_price_of_one_sat(&self) -> Result<UsdCents, ExchangePriceCacheError> {
         if let Some(ref tick) = self.tick {
             if &TimeStamp::now() - &tick.timestamp > self.stale_after {
                 return Err(ExchangePriceCacheError::StalePrice(tick.timestamp.clone()));
@@ -76,4 +80,15 @@ impl ExchangePriceCacheInner {
         }
         Err(ExchangePriceCacheError::NoPriceAvailable)
     }
+
+    fn bid_price_of_one_sat(&self) -> Result<UsdCents, ExchangePriceCacheError> {
+        if let Some(ref tick) = self.tick {
+            if &TimeStamp::now() - &tick.timestamp > self.stale_after {
+                return Err(ExchangePriceCacheError::StalePrice(tick.timestamp.clone()));
+            }
+            return Ok(tick.price_of_one_sat.clone());
+        }
+        Err(ExchangePriceCacheError::NoPriceAvailable)
+    }
+
 }
