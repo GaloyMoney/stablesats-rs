@@ -11,8 +11,8 @@ use shared::{payload::*, pubsub::*};
 pub use price_feed::*;
 
 pub async fn run(
-    pubsub_cfg: PubSubConfig,
     price_feed_config: PriceFeedConfig,
+    pubsub_cfg: PubSubConfig,
 ) -> Result<(), PriceFeedError> {
     let publisher = Publisher::new(pubsub_cfg).await?;
 
