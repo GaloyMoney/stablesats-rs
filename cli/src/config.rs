@@ -7,6 +7,7 @@ use shared::pubsub::PubSubConfig;
 
 #[derive(Debug, Clone, Deserialize)]
 pub struct Config {
+    #[serde(default)]
     pub pubsub: PubSubConfig,
     #[serde(default)]
     pub price_server: PriceServerWrapper,

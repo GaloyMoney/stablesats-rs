@@ -1,7 +1,8 @@
-pubsub:
-  host: localhost
+## This file documents the defaults:
 
-## defaults:
+# pubsub:
+#   host: localhost
+
 # price_server:
   # enabled: true
   # config:
