@@ -100,5 +100,4 @@ impl PriceApp {
         let cents = self.price_cache.bid_price_of_one_sat().await?;
         Ok(u64::try_from(cents * *sats.into().amount())?)
     }
-    
 }

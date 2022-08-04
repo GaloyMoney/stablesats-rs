@@ -64,14 +64,16 @@ impl ExchangePriceCacheInner {
                 return;
             }
         }
-        if let (Ok(ask_price_of_one_sat), Ok(bid_price_of_one_sat)) = (UsdCents::try_from(payload.ask_price), UsdCents::try_from(payload.bid_price)) {
+        if let (Ok(ask_price_of_one_sat), Ok(bid_price_of_one_sat)) = (
+            UsdCents::try_from(payload.ask_price),
+            UsdCents::try_from(payload.bid_price),
+        ) {
             self.tick = Some(BtcSatTick {
-                timestamp: payload.timestamp.clone(),
+                timestamp: payload.timestamp,
                 ask_price_of_one_sat,
                 bid_price_of_one_sat,
             });
         }
-        
     }
 
     fn ask_price_of_one_sat(&self) -> Result<UsdCents, ExchangePriceCacheError> {
@@ -93,5 +95,4 @@ impl ExchangePriceCacheInner {
         }
         Err(ExchangePriceCacheError::NoPriceAvailable)
     }
-
 }
