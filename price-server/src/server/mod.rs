@@ -1,14 +1,19 @@
+mod config;
 mod convert;
+mod error;
 
 pub mod proto {
     tonic::include_proto!("services.price.v1");
 }
 
 use proto::{price_server::Price, *};
-use tonic::{Request, Response, Status};
+use tonic::{transport::Server, Request, Response, Status};
 
 use crate::app::*;
 use shared::currency::*;
+
+pub use config::*;
+pub use error::*;
 
 pub struct PriceService {
     app: PriceApp,
@@ -134,4 +139,16 @@ impl Price for PriceService {
     ) -> Result<Response<GetCentsPerSatsExchangeMidRateResponse>, Status> {
         Err(Status::unimplemented(""))
     }
+}
+
+pub(crate) async fn start(
+    server_config: PriceServerConfig,
+    app: PriceApp,
+) -> Result<(), PriceServerError> {
+    let price_service = PriceService { app };
+    Server::builder()
+        .add_service(proto::price_server::PriceServer::new(price_service))
+        .serve(([0, 0, 0, 0], server_config.listen_port).into())
+        .await?;
+    Ok(())
 }

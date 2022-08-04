@@ -1,2 +1,8 @@
 pubsub:
   host: localhost
+
+## defaults:
+# price_server:
+  # enabled: true
+  # config:
+  #   listen_port: 3325
