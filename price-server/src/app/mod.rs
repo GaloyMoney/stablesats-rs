@@ -81,7 +81,7 @@ impl PriceApp {
         &self,
         sats: impl Into<Sats>,
     ) -> Result<u64, PriceAppError> {
-        let cents = self.price_cache.ask_price_of_one_sat().await?;
+        let cents = self.price_cache.mid_price_of_one_sat().await?;
         Ok(u64::try_from(cents * *sats.into().amount())?)
     }
 
