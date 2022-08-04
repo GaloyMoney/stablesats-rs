@@ -40,7 +40,8 @@ impl ExchangePriceCache {
 
 struct BtcSatTick {
     timestamp: TimeStamp,
-    price_of_one_sat: UsdCents,
+    ask_price_of_one_sat: UsdCents,
+    bid_price_of_one_sat: UsdCents,
 }
 
 struct ExchangePriceCacheInner {
@@ -63,12 +64,14 @@ impl ExchangePriceCacheInner {
                 return;
             }
         }
-        if let Ok(price_of_one_sat) = UsdCents::try_from(payload.ask_price) {
+        if let (Ok(ask_price_of_one_sat), Ok(bid_price_of_one_sat)) = (UsdCents::try_from(payload.ask_price), UsdCents::try_from(payload.bid_price)) {
             self.tick = Some(BtcSatTick {
-                timestamp: payload.timestamp,
-                price_of_one_sat,
+                timestamp: payload.timestamp.clone(),
+                ask_price_of_one_sat,
+                bid_price_of_one_sat,
             });
         }
+        
     }
 
     fn ask_price_of_one_sat(&self) -> Result<UsdCents, ExchangePriceCacheError> {
@@ -76,7 +79,7 @@ impl ExchangePriceCacheInner {
             if &TimeStamp::now() - &tick.timestamp > self.stale_after {
                 return Err(ExchangePriceCacheError::StalePrice(tick.timestamp.clone()));
             }
-            return Ok(tick.price_of_one_sat.clone());
+            return Ok(tick.ask_price_of_one_sat.clone());
         }
         Err(ExchangePriceCacheError::NoPriceAvailable)
     }
@@ -86,7 +89,7 @@ impl ExchangePriceCacheInner {
             if &TimeStamp::now() - &tick.timestamp > self.stale_after {
                 return Err(ExchangePriceCacheError::StalePrice(tick.timestamp.clone()));
             }
-            return Ok(tick.price_of_one_sat.clone());
+            return Ok(tick.bid_price_of_one_sat.clone());
         }
         Err(ExchangePriceCacheError::NoPriceAvailable)
     }
