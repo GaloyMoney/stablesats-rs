@@ -2,22 +2,12 @@ mod convert;
 
 pub mod proto {
     tonic::include_proto!("services.price.v1");
-
-    mod convert {
-        use super::*;
-        use shared::currency::*;
-
-        impl From<GetCentsFromSatsForImmediateBuyRequest> for Sats {
-            fn from(req: GetCentsFromSatsForImmediateBuyRequest) -> Self {
-                Sats::from_major(req.amount_in_satoshis)
-            }
-        }
-    }
 }
 
 use proto::{price_server::Price, *};
 use tonic::{Request, Response, Status};
 
+use shared::currency::*;
 use crate::app::*;
 
 pub struct PriceService {
@@ -31,7 +21,7 @@ impl Price for PriceService {
         request: Request<GetCentsFromSatsForImmediateBuyRequest>,
     ) -> Result<Response<GetCentsFromSatsForImmediateBuyResponse>, Status> {
         let req = request.into_inner();
-        let amount_in_cents = self.app.get_cents_from_sats_for_immediate_buy(req).await?;
+        let amount_in_cents = self.app.get_cents_from_sats_for_immediate_buy(Sats::from_major(req.amount_in_satoshis)).await?;
         Ok(Response::new(GetCentsFromSatsForImmediateBuyResponse {
             amount_in_cents,
         }))
@@ -39,51 +29,71 @@ impl Price for PriceService {
 
     async fn get_cents_from_sats_for_immediate_sell(
         &self,
-        _request: Request<GetCentsFromSatsForImmediateSellRequest>,
+        request: Request<GetCentsFromSatsForImmediateSellRequest>,
     ) -> Result<Response<GetCentsFromSatsForImmediateSellResponse>, Status> {
-        Err(Status::unimplemented(""))
+        let req = request.into_inner();
+        let amount_in_cents = self.app.get_cents_from_sats_for_immediate_sell(Sats::from_major(req.amount_in_satoshis)).await?;
+        Ok(Response::new(GetCentsFromSatsForImmediateSellResponse {
+            amount_in_cents,
+        }))
     }
 
     async fn get_cents_from_sats_for_future_buy(
         &self,
-        _request: Request<GetCentsFromSatsForFutureBuyRequest>,
+        request: Request<GetCentsFromSatsForFutureBuyRequest>,
     ) -> Result<Response<GetCentsFromSatsForFutureBuyResponse>, Status> {
-        Err(Status::unimplemented(""))
+        let req = request.into_inner();
+        let amount_in_cents = self.app.get_cents_from_sats_for_future_buy(Sats::from_major(req.amount_in_satoshis)).await?;
+        Ok(Response::new(GetCentsFromSatsForFutureBuyResponse {
+            amount_in_cents,
+        }))
     }
 
     async fn get_cents_from_sats_for_future_sell(
         &self,
-        _request: Request<GetCentsFromSatsForFutureSellRequest>,
+        request: Request<GetCentsFromSatsForFutureSellRequest>,
     ) -> Result<Response<GetCentsFromSatsForFutureSellResponse>, Status> {
-        Err(Status::unimplemented(""))
+        let req = request.into_inner();
+        let amount_in_cents = self.app.get_cents_from_sats_for_future_sell(Sats::from_major(req.amount_in_satoshis)).await?;
+        Ok(Response::new(GetCentsFromSatsForFutureSellResponse {
+            amount_in_cents,
+        }))
     }
 
     async fn get_sats_from_cents_for_immediate_buy(
         &self,
-        _request: Request<GetSatsFromCentsForImmediateBuyRequest>,
+        request: Request<GetSatsFromCentsForImmediateBuyRequest>,
     ) -> Result<Response<GetSatsFromCentsForImmediateBuyResponse>, Status> {
-        Err(Status::unimplemented(""))
+        let req = request.into_inner();
+        let amount_in_satoshis = self.app.get_sats_from_cents_for_immediate_buy(Sats::from_major(req.amount_in_cents)).await?;
+        Ok(Response::new(GetSatsFromCentsForImmediateBuyResponse { amount_in_satoshis }))
     }
 
     async fn get_sats_from_cents_for_immediate_sell(
         &self,
-        _request: Request<GetSatsFromCentsForImmediateSellRequest>,
+        request: Request<GetSatsFromCentsForImmediateSellRequest>,
     ) -> Result<Response<GetSatsFromCentsForImmediateSellResponse>, Status> {
-        Err(Status::unimplemented(""))
+        let req = request.into_inner();
+        let amount_in_satoshis = self.app.get_sats_from_cents_for_immediate_sell(Sats::from_major(req.amount_in_cents)).await?;
+        Ok(Response::new(GetSatsFromCentsForImmediateSellResponse { amount_in_satoshis }))
     }
 
     async fn get_sats_from_cents_for_future_buy(
         &self,
-        _request: Request<GetSatsFromCentsForFutureBuyRequest>,
+        request: Request<GetSatsFromCentsForFutureBuyRequest>,
     ) -> Result<Response<GetSatsFromCentsForFutureBuyResponse>, Status> {
-        Err(Status::unimplemented(""))
+        let req = request.into_inner();
+        let amount_in_satoshis = self.app.get_sats_from_cents_for_future_buy(Sats::from_major(req.amount_in_cents)).await?;
+        Ok(Response::new(GetSatsFromCentsForFutureBuyResponse { amount_in_satoshis }))
     }
 
     async fn get_sats_from_cents_for_future_sell(
         &self,
-        _request: Request<GetSatsFromCentsForFutureSellRequest>,
+        request: Request<GetSatsFromCentsForFutureSellRequest>,
     ) -> Result<Response<GetSatsFromCentsForFutureSellResponse>, Status> {
-        Err(Status::unimplemented(""))
+        let req = request.into_inner();
+        let amount_in_satoshis = self.app.get_sats_from_cents_for_future_sell(Sats::from_major(req.amount_in_cents)).await?;
+        Ok(Response::new(GetSatsFromCentsForFutureSellResponse { amount_in_satoshis }))
     }
 
     async fn get_cents_per_sats_exchange_mid_rate(

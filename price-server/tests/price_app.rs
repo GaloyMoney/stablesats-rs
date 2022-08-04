@@ -57,5 +57,12 @@ async fn price_app() -> anyhow::Result<()> {
         .await?;
 
     assert_eq!(cents, u64::try_from(UsdCents::from_major(999999)).unwrap());
+
+    let cents = app
+    .get_cents_from_sats_for_immediate_sell(Sats::from_major(100_000_000))
+    .await?;
+
+    assert_eq!(cents, u64::try_from(UsdCents::from_major(888888)).unwrap());
+
     Ok(())
 }
