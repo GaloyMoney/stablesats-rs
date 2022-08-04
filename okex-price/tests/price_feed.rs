@@ -28,7 +28,7 @@ async fn subscribes_to_okex() -> anyhow::Result<()> {
     let price_tick = received.next().await.expect("expected price tick");
 
     assert_eq!(
-        price_tick.clone().arg,
+        price_tick.arg,
         ChannelArgs {
             channel: "tickers".to_string(),
             inst_id: "BTC-USD-SWAP".to_string(),

@@ -135,9 +135,18 @@ impl Price for PriceService {
 
     async fn get_cents_per_sats_exchange_mid_rate(
         &self,
-        _request: Request<GetCentsPerSatsExchangeMidRateRequest>,
+        request: Request<GetCentsPerSatsExchangeMidRateRequest>,
     ) -> Result<Response<GetCentsPerSatsExchangeMidRateResponse>, Status> {
-        Err(Status::unimplemented(""))
+        let req = request.into_inner();
+
+        let mid_amount_in_cents = self
+            .app
+            .get_cents_per_sats_exchange_mid_rate(Sats::from_major(req.amount_in_satoshis))
+            .await?;
+        let ratio_in_cents_per_satoshis = f64::from_bits(mid_amount_in_cents);
+        Ok(Response::new(GetCentsPerSatsExchangeMidRateResponse {
+            ratio_in_cents_per_satoshis,
+        }))
     }
 }
 
