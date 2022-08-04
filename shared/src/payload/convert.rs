@@ -1,4 +1,4 @@
-use super::primitives::PriceRatioRaw;
+use super::primitives::*;
 use crate::currency::*;
 
 impl TryFrom<PriceRatioRaw> for UsdCents {
@@ -18,21 +18,20 @@ impl TryFrom<PriceRatioRaw> for UsdCents {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::payload::*;
     use rust_decimal::prelude::*;
 
     #[test]
     fn convert_to_usd_cents() {
         let ratio = PriceRatioRaw {
-            numerator_unit: CurrencyRaw("USD_CENT".to_string()),
-            denominator_unit: CurrencyRaw("BTC_SAT".to_string()),
+            numerator_unit: CurrencyRaw::from(UsdCents::code()),
+            denominator_unit: CurrencyRaw::from(Sats::code()),
             offset: 12,
             base: Decimal::new(9_999_990_000, 0),
         };
         let price_of_one_sat = UsdCents::try_from(ratio).unwrap();
         assert_eq!(
             price_of_one_sat.amount().to_string(),
-            "0.009999990000".to_string()
+            "0.00999999".to_string()
         );
     }
 }

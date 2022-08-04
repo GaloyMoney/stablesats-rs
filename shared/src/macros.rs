@@ -16,7 +16,7 @@ macro_rules! payload {
 #[macro_export]
 macro_rules! string_wrapper {
     ($name:ident) => {
-        #[derive(Clone, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
+        #[derive(Clone, Debug, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
         #[serde(transparent)]
         pub struct $name(pub(super) String);
         impl std::fmt::Display for $name {

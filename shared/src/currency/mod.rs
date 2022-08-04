@@ -61,7 +61,7 @@ macro_rules! currency {
 }
 
 currency! { UsdCents, USD_CENT }
-currency! { Sats, SAT }
+currency! { Sats, SATOSHI }
 
 #[cfg(test)]
 mod tests {
@@ -87,13 +87,13 @@ mod inner {
           symbol: "\u{00A2}",
           symbol_first: true,
         },
-        SAT: {
-            code: "SAT",
+        SATOSHI: {
+            code: "SATOSHI",
             exponent: 3,
             locale: Locale::EnUs,
             minor_units: 1000,
-            name: "SAT",
-            symbol: "SAT",
+            name: "SATOSHI",
+            symbol: "SATOSHI",
             symbol_first: false,
         }
       }

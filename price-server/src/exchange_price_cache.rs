@@ -78,7 +78,7 @@ impl ExchangePriceCacheInner {
 
     fn ask_price_of_one_sat(&self) -> Result<UsdCents, ExchangePriceCacheError> {
         if let Some(ref tick) = self.tick {
-            if &TimeStamp::now() - &tick.timestamp > self.stale_after {
+            if tick.timestamp.duration_since() > self.stale_after {
                 return Err(ExchangePriceCacheError::StalePrice(tick.timestamp.clone()));
             }
             return Ok(tick.ask_price_of_one_sat.clone());
@@ -88,7 +88,7 @@ impl ExchangePriceCacheInner {
 
     fn bid_price_of_one_sat(&self) -> Result<UsdCents, ExchangePriceCacheError> {
         if let Some(ref tick) = self.tick {
-            if &TimeStamp::now() - &tick.timestamp > self.stale_after {
+            if tick.timestamp.duration_since() > self.stale_after {
                 return Err(ExchangePriceCacheError::StalePrice(tick.timestamp.clone()));
             }
             return Ok(tick.bid_price_of_one_sat.clone());

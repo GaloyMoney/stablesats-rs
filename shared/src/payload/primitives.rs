@@ -1,9 +1,13 @@
 use rust_decimal::prelude::*;
 use serde::{Deserialize, Serialize};
 
+use crate::currency::*;
+
 crate::string_wrapper! { ExchangeIdRaw }
 crate::string_wrapper! { InstrumentIdRaw }
 crate::string_wrapper! { CurrencyRaw }
+
+const PRICE_IN_CENTS_PRECISION: u32 = 12;
 
 #[derive(Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -14,10 +18,23 @@ pub struct PriceRatioRaw {
     pub(super) base: Decimal,
 }
 impl PriceRatioRaw {
+    pub fn from_one_btc_in_usd_price(price: Decimal) -> Self {
+        let price_in_cents = price * Decimal::from(100);
+        let price_with_precision =
+            price_in_cents * Decimal::from(10_u64.pow(PRICE_IN_CENTS_PRECISION));
+        let base = price_with_precision / Decimal::from(100_000_000);
+        Self {
+            numerator_unit: CurrencyRaw::from(UsdCents::code()),
+            denominator_unit: CurrencyRaw::from(Sats::code()),
+            offset: PRICE_IN_CENTS_PRECISION,
+            base: base.trunc(),
+        }
+    }
+
     pub fn numerator_amount(&self) -> Decimal {
         let mut ret = self.base;
         ret.set_scale(self.offset).expect("failed to set scale");
-        ret
+        ret.normalize()
     }
 }
 
@@ -51,5 +68,20 @@ mod tests {
         };
         let rate = ratio.numerator_amount();
         assert_eq!(rate.to_string(), "0.000000000123".to_string());
+    }
+
+    #[test]
+    fn from_usd_btc_price() -> anyhow::Result<()> {
+        let amount = "9999.99".parse::<Decimal>()?;
+        let ratio = PriceRatioRaw::from_one_btc_in_usd_price(amount);
+
+        assert_eq!(ratio.numerator_unit, CurrencyRaw::from("USD_CENT"));
+        assert_eq!(ratio.denominator_unit, CurrencyRaw::from("SATOSHI"));
+
+        assert_eq!(ratio.offset, 12);
+        assert_eq!(&ratio.base.to_string(), "9999990000");
+        assert_eq!(&ratio.numerator_amount().to_string(), "0.00999999");
+
+        Ok(())
     }
 }
