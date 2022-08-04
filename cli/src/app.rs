@@ -37,18 +37,36 @@ async fn run_cmd(
     Config {
         pubsub,
         price_server,
+        okex_price_feed,
     }: Config,
 ) -> anyhow::Result<()> {
     let (send, mut receive) = tokio::sync::mpsc::channel(1);
+    let mut handles = Vec::new();
+
     if price_server.enabled {
         let price_send = send.clone();
-        let _ = tokio::spawn(async move {
+        let pubsub = pubsub.clone();
+        handles.push(tokio::spawn(async move {
             let _ = price_send.try_send(
                 price_server::run(price_server.config, pubsub)
                     .await
                     .context("Price Server error"),
             );
-        });
+        }));
     }
-    receive.recv().await.expect("Didn't receive msg")
+    if okex_price_feed.enabled {
+        let okex_send = send.clone();
+        handles.push(tokio::spawn(async move {
+            let _ = okex_send.try_send(
+                okex_price::run(okex_price_feed.config, pubsub)
+                    .await
+                    .context("Okex Price Feed error"),
+            );
+        }));
+    }
+    let reason = receive.recv().await.expect("Didn't receive msg");
+    for handle in handles {
+        handle.abort();
+    }
+    reason
 }

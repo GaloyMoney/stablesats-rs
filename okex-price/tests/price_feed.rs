@@ -53,12 +53,8 @@ async fn publishes_to_redis() -> anyhow::Result<()> {
     };
     let subscriber = Subscriber::new(pubsub_config.clone()).await?;
 
-    let price_feed_config = PriceFeedConfig {
-        url: Url::parse("wss://ws.okx.com:8443/ws/v5/public").unwrap(),
-    };
-
     let _ = tokio::spawn(async move {
-        let _ = okex_price::run(pubsub_config, price_feed_config).await;
+        let _ = okex_price::run(PriceFeedConfig::default(), pubsub_config).await;
     });
 
     let mut stream = subscriber.subscribe::<OkexBtcUsdSwapPricePayload>().await?;

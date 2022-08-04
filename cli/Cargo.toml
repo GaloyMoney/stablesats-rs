@@ -8,6 +8,7 @@ edition = "2021"
 [dependencies]
 shared = { path = "../shared" }
 price-server = { path = "../price-server" }
+okex-price = { path = "../okex-price" }
 
 anyhow = "1.0.59"
 clap = { version =  "3.2", features = ["derive"] }
