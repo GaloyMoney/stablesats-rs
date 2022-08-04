@@ -9,7 +9,7 @@ fail-on-warnings = []
 
 [dependencies]
 # setting default-features = false to not include vulnerable time crate
-chrono = { version = "0.4.19", features = ["clock", "serde"], default-features = false }
+chrono = { version = "0.4", features = ["clock", "serde"], default-features = false }
 fred = { version = "5.1.0", features = ["subscriber-client"] }
 futures = "0.3.21"
 rust_decimal = "1.25.0"

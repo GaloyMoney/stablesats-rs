@@ -18,4 +18,4 @@ rust_decimal = "1.25.0"
 
 [dev-dependencies]
 anyhow = "1.0.59"
-chrono = { version = "0.4.19", features = ["clock", "serde"], default-features = false }
+chrono = { version = "0.4", features = ["clock", "serde"], default-features = false }
