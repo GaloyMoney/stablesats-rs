@@ -85,15 +85,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "d468802bab17cbc0cc575e9b053f41e72aa36bfa6b7f55e3529ffa43161b97fa"
 
 [[package]]
-name = "autotools"
-version = "0.2.5"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c8138adefca3e5d2e73bfba83bd6eeaf904b26a7ac1b4a19892cfe16cc7e1701"
-dependencies = [
- "cc",
-]
-
-[[package]]
 name = "axum"
 version = "0.5.13"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1070,7 +1061,6 @@ dependencies = [
  "chrono",
  "futures",
  "prost",
- "protobuf-src",
  "serde",
  "serde_json",
  "shared",
@@ -1164,15 +1154,6 @@ checksum = "4dfaa718ad76a44b3415e6c4d53b17c8f99160dcb3a99b10470fce8ad43f6e3e"
 dependencies = [
  "bytes",
  "prost",
-]
-
-[[package]]
-name = "protobuf-src"
-version = "1.0.5+3.19.3"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "fe57f68bf9767f48f8cbcbceb5da21524e2b1330a821c1c2502c447d8043f078"
-dependencies = [
- "autotools",
 ]
 
 [[package]]

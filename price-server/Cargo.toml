@@ -19,7 +19,6 @@ thiserror = "1.0.31"
 serde = "1.0.141"
 
 [build-dependencies]
-protobuf-src = "1.0.5"
 tonic-build = { version = "0.8", features = ["prost"] }
 
 [dev-dependencies]
