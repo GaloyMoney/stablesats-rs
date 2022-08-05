@@ -1,12 +1,17 @@
 #@ load("@ytt:data", "data")
 
 #@ load("vendor/pipeline-fragments.lib.yml",
+#@   "build_edge_image",
+#@   "public_docker_registry",
 #@   "rust_check_code",
 #@   "rust_integration_test",
 #@   "repo_resource",
+#@   "edge_image_resource",
 #@   "version_resource",
+#@   "gh_release_resource",
 #@   "pipeline_tasks_resource",
 #@   "release_task_image_config",
+#@   "rust_task_image_config",
 #@   "slack_resource_type",
 #@   "slack_resource"
 #@ )
@@ -14,13 +19,16 @@
 groups:
 - name: stablesats-rs
   jobs:
+    - build-edge-image
     - check-code
     - test-integration
     - release
+    - set-dev-version
 
 jobs:
 - #@ rust_check_code()
 - #@ rust_integration_test()
+- #@ build_edge_image()
 - name: release
   serial: true
   plan:
@@ -29,6 +37,11 @@ jobs:
       passed:
       - test-integration
       - check-code
+      - build-edge-image
+    - get: edge-image
+      passed: [ build-edge-image ]
+      params:
+        format: oci
     - get: pipeline-tasks
     - get: version
   - task: prep-release
@@ -47,8 +60,9 @@ jobs:
   - task: update-repo
     config:
       platform: linux
-      image_resource: #@ release_task_image_config()
+      image_resource: #@ rust_task_image_config()
       inputs:
+      - name: artifacts
       - name: pipeline-tasks
       - name: repo
       - name: version
@@ -56,12 +70,137 @@ jobs:
       - name: repo
       run:
         path: pipeline-tasks/ci/tasks/update-repo.sh
+  - in_parallel:
+    - task: build-osx-release
+      privileged: true
+      config:
+        platform: linux
+        image_resource:
+          type: registry-image
+          source:
+            username: #@ data.values.osxcross_docker_username
+            password: #@ data.values.osxcross_docker_password
+            repository: #@ data.values.osxcross_repository
+        inputs:
+        - name: version
+        - name: pipeline-tasks
+        - name: repo
+        outputs:
+        - name: x86_64-apple-darwin
+        caches:
+        - path: cargo-home
+        - path: cargo-target-dir
+        params:
+          TARGET: x86_64-apple-darwin
+          OUT: x86_64-apple-darwin
+        run:
+          path: pipeline-tasks/ci/tasks/build-release.sh
+    - task: build-static-release
+      privileged: true
+      config:
+        platform: linux
+        image_resource:
+          type: registry-image
+          source: { repository: clux/muslrust, tag: stable }
+        inputs:
+        - name: version
+        - name: pipeline-tasks
+        - name: repo
+        outputs:
+        - name: x86_64-unknown-linux-musl
+        caches:
+        - path: cargo-home
+        - path: cargo-target-dir
+        params:
+          TARGET: x86_64-unknown-linux-musl
+          OUT: x86_64-unknown-linux-musl
+        run:
+          path: pipeline-tasks/ci/tasks/build-release.sh
+  - put: repo-out
+    params:
+      tag: artifacts/gh-release-tag
+      repository: repo
+      merge: true
+  - put: version
+    params:
+      file: version/version
+  - in_parallel:
+    - do:
+      - task: github-release
+        config:
+          image_resource: #@ rust_task_image_config()
+          platform: linux
+          inputs:
+          - name: x86_64-apple-darwin
+          - name: x86_64-unknown-linux-musl
+          - name: version
+          - name: pipeline-tasks
+          - name: artifacts
+          outputs:
+          - name: artifacts
+          params:
+            BRANCH: #@ data.values.git_branch
+          run:
+            path: pipeline-tasks/ci/tasks/github-release.sh
+      - put: gh-release
+        params:
+          name: artifacts/gh-release-name
+          tag: artifacts/gh-release-tag
+          body: artifacts/gh-release-notes.md
+          globs: [artifacts/binaries/*]
+      - put: latest-image
+        params:
+          image: edge-image/image.tar
+          additional_tags: version/version
+
+- name: set-dev-version
+  plan:
+  - in_parallel:
+    - { get: repo }
+    - { get: pipeline-tasks }
+    - get: version
+      trigger: true
+      params: { bump: patch }
+      passed: [release]
+  - task: set-dev-version
+    config:
+      image_resource: #@ release_task_image_config()
+      platform: linux
+      inputs:
+      - name: version
+      - name: repo
+      - name: pipeline-tasks
+      outputs:
+      - name: repo
+      run:
+        path: pipeline-tasks/ci/tasks/set-dev-version.sh
+      params:
+        BRANCH: #@ data.values.git_branch
+  - put: repo
+    params:
+      repository: repo
+      rebase: true
 
 resources:
 - #@ repo_resource()
 - #@ pipeline_tasks_resource()
 - #@ slack_resource()
 - #@ version_resource()
+- #@ gh_release_resource()
+- #@ edge_image_resource()
+- name: repo-out
+  type: git
+  source:
+    uri: #@ data.values.git_uri
+    branch: #@ data.values.git_branch
+    private_key: #@ data.values.github_private_key
+- name: latest-image
+  type: registry-image
+  source:
+    tag: latest
+    username: #@ data.values.docker_registry_user
+    password: #@ data.values.docker_registry_password
+    repository: #@ public_docker_registry() + "/" + data.values.gh_repository
 
 resource_types:
 - #@ slack_resource_type()
