@@ -8,7 +8,7 @@ pub use error::*;
 use shared::{currency::*, payload::OkexBtcUsdSwapPricePayload, pubsub::*};
 
 pub struct PriceApp {
-    price_cache: ExchangePriceCache,
+    pub price_cache: ExchangePriceCache,
 }
 
 impl PriceApp {
@@ -33,7 +33,7 @@ impl PriceApp {
         &self,
         sats: impl Into<Sats>,
     ) -> Result<u64, PriceAppError> {
-        let cents = self.price_cache.ask_price_of_one_sat().await?;
+        let cents = self.price_cache.latest_tick().await?.ask_price_of_one_sat;
         Ok(u64::try_from(cents * *sats.into().amount())?)
     }
 
@@ -41,7 +41,7 @@ impl PriceApp {
         &self,
         sats: impl Into<Sats>,
     ) -> Result<u64, PriceAppError> {
-        let cents = self.price_cache.bid_price_of_one_sat().await?;
+        let cents = self.price_cache.latest_tick().await?.bid_price_of_one_sat;
         Ok(u64::try_from(cents * *sats.into().amount())?)
     }
 
@@ -49,7 +49,7 @@ impl PriceApp {
         &self,
         sats: impl Into<Sats>,
     ) -> Result<u64, PriceAppError> {
-        let cents = self.price_cache.ask_price_of_one_sat().await?;
+        let cents = self.price_cache.latest_tick().await?.ask_price_of_one_sat;
         Ok(u64::try_from(cents * *sats.into().amount())?)
     }
 
@@ -57,7 +57,7 @@ impl PriceApp {
         &self,
         sats: impl Into<Sats>,
     ) -> Result<u64, PriceAppError> {
-        let cents = self.price_cache.bid_price_of_one_sat().await?;
+        let cents = self.price_cache.latest_tick().await?.bid_price_of_one_sat;
         Ok(u64::try_from(cents * *sats.into().amount())?)
     }
 
@@ -65,7 +65,7 @@ impl PriceApp {
         &self,
         sats: impl Into<Sats>,
     ) -> Result<u64, PriceAppError> {
-        let cents = self.price_cache.ask_price_of_one_sat().await?;
+        let cents = self.price_cache.latest_tick().await?.ask_price_of_one_sat;
         Ok(u64::try_from(cents * *sats.into().amount())?)
     }
 
@@ -73,7 +73,7 @@ impl PriceApp {
         &self,
         sats: impl Into<Sats>,
     ) -> Result<u64, PriceAppError> {
-        let cents = self.price_cache.bid_price_of_one_sat().await?;
+        let cents = self.price_cache.latest_tick().await?.bid_price_of_one_sat;
         Ok(u64::try_from(cents * *sats.into().amount())?)
     }
 
@@ -81,7 +81,7 @@ impl PriceApp {
         &self,
         sats: impl Into<Sats>,
     ) -> Result<u64, PriceAppError> {
-        let cents = self.price_cache.mid_price_of_one_sat().await?;
+        let cents = self.price_cache.latest_tick().await?.mid_price_of_one_sat();
         Ok(u64::try_from(cents * *sats.into().amount())?)
     }
 
@@ -89,7 +89,7 @@ impl PriceApp {
         &self,
         sats: impl Into<Sats>,
     ) -> Result<u64, PriceAppError> {
-        let cents = self.price_cache.ask_price_of_one_sat().await?;
+        let cents = self.price_cache.latest_tick().await?.ask_price_of_one_sat;
         Ok(u64::try_from(cents * *sats.into().amount())?)
     }
 
@@ -97,7 +97,7 @@ impl PriceApp {
         &self,
         sats: impl Into<Sats>,
     ) -> Result<u64, PriceAppError> {
-        let cents = self.price_cache.bid_price_of_one_sat().await?;
+        let cents = self.price_cache.latest_tick().await?.bid_price_of_one_sat;
         Ok(u64::try_from(cents * *sats.into().amount())?)
     }
 }
