@@ -2,8 +2,10 @@
 name = "okex-price"
 version = "0.1.2-dev"
 edition = "2021"
-
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+authors = ["Justin Carter <justin@galoy.io>"]
+license = "MIT"
+repository = "https://github.com/GaloyMoney/stablesats-rs"
+description = "Publishes okex price feed to redis"
 
 [dependencies]
 futures = "0.3.21"

@@ -2,6 +2,10 @@
 name = "price-server"
 version = "0.1.2-dev"
 edition = "2021"
+authors = ["Justin Carter <justin@galoy.io>"]
+license = "MIT"
+repository = "https://github.com/GaloyMoney/stablesats-rs"
+description = "Server that exposes prices for hedging"
 
 [features]
 
