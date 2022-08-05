@@ -1479,10 +1479,13 @@ dependencies = [
  "futures",
  "okex-price",
  "price-server",
+ "rust_decimal",
  "serde",
  "serde_yaml",
  "shared",
  "tokio",
+ "tonic",
+ "url",
 ]
 
 [[package]]
