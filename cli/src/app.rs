@@ -10,7 +10,13 @@ use super::price_client::*;
 #[clap(author, version, about, long_about = None)]
 struct Cli {
     /// Sets a custom config file
-    #[clap(short, long, parse(from_os_str), value_name = "FILE")]
+    #[clap(
+        short,
+        long,
+        parse(from_os_str),
+        env = "STABLESATS_CONFIG",
+        value_name = "FILE"
+    )]
     config: Option<PathBuf>,
 
     #[clap(subcommand)]
