@@ -1,3 +1,10 @@
+# [stablesats release v0.1.2](https://github.com/GaloyMoney/stablesats/releases/tag/v0.1.2)
+
+
+### Miscellaneous Tasks
+
+- Complete manifest for Cargo.toml files
+
 # [stablesats release v0.1.1](https://github.com/GaloyMoney/stablesats/releases/tag/v0.1.1)
 
 
