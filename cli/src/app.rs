@@ -15,9 +15,10 @@ struct Cli {
         long,
         parse(from_os_str),
         env = "STABLESATS_CONFIG",
+        default_value = "stablesats.yml",
         value_name = "FILE"
     )]
-    config: Option<PathBuf>,
+    config: PathBuf,
 
     #[clap(subcommand)]
     command: Command,
@@ -38,15 +39,12 @@ enum Command {
     },
 }
 
-const DEFAULT_CONFIG: &str = "stablesats.yml";
-
 pub async fn run() -> anyhow::Result<()> {
     let cli = Cli::parse();
-    let config_path = cli.config.unwrap_or_else(|| PathBuf::from(DEFAULT_CONFIG));
 
     match cli.command {
         Command::Run => {
-            let config = Config::from_path(config_path)?;
+            let config = Config::from_path(cli.config)?;
             run_cmd(config).await?
         }
         Command::Price {
