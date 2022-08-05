@@ -176,7 +176,7 @@ jobs:
         path: pipeline-tasks/ci/tasks/set-dev-version.sh
       params:
         BRANCH: #@ data.values.git_branch
-  - put: repo
+  - put: repo-out
     params:
       repository: repo
       rebase: true
