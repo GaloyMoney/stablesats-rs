@@ -21,6 +21,7 @@ staging_ssh_pub_key: ((staging-ssh.ssh_public_key))
 git_version_branch: version
 gh_org: GaloyMoney
 gh_repository: stablesats-rs
+crates_api_token: ((crates-api-token.token))
 
 slack_channel: stablesats-rs-github
 slack_username: concourse

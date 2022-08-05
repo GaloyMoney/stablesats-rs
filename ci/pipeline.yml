@@ -24,6 +24,7 @@ groups:
     - test-integration
     - release
     - set-dev-version
+    - publish
 
 jobs:
 - #@ rust_check_code()
@@ -116,7 +117,7 @@ jobs:
           OUT: x86_64-unknown-linux-musl
         run:
           path: pipeline-tasks/ci/tasks/build-release.sh
-  - put: repo-out
+  - put: repo
     params:
       tag: artifacts/gh-release-tag
       repository: repo
@@ -153,10 +154,42 @@ jobs:
           image: edge-image/image.tar
           additional_tags: version/version
 
+- name: publish
+  public: true
+  plan:
+  - in_parallel:
+    - { get: repo, passed: [release] }
+    - { get: version, passed: [release], trigger: true }
+    - { get: pipeline-tasks }
+  - task: publish-to-crates
+    config:
+      image_resource: #@ rust_task_image_config()
+      platform: linux
+      inputs:
+      - name: version
+      - name: pipeline-tasks
+      - name: repo
+      params:
+        CRATES_API_TOKEN: #@ data.values.crates_api_token
+      caches:
+      - path: cargo-home
+      - path: cargo-target-dir
+      run:
+        path: pipeline-tasks/ci/tasks/publish-to-crates.sh
+  - task: verify-publish
+    config:
+      image_resource: #@ rust_task_image_config()
+      platform: linux
+      inputs:
+      - name: version
+      - name: pipeline-tasks
+      run:
+        path: pipeline-tasks/ci/tasks/verify-publish.sh
+
 - name: set-dev-version
   plan:
   - in_parallel:
-    - { get: repo }
+    - { get: repo, passed: [release] }
     - { get: pipeline-tasks }
     - get: version
       trigger: true
@@ -176,7 +209,7 @@ jobs:
         path: pipeline-tasks/ci/tasks/set-dev-version.sh
       params:
         BRANCH: #@ data.values.git_branch
-  - put: repo-out
+  - put: repo
     params:
       repository: repo
       rebase: true
@@ -188,12 +221,6 @@ resources:
 - #@ version_resource()
 - #@ gh_release_resource()
 - #@ edge_image_resource()
-- name: repo-out
-  type: git
-  source:
-    uri: #@ data.values.git_uri
-    branch: #@ data.values.git_branch
-    private_key: #@ data.values.github_private_key
 - name: latest-image
   type: registry-image
   source:
