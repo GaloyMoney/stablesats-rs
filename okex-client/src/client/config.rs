@@ -1,11 +1,6 @@
-use shared::string_wrapper;
-
-string_wrapper! { ApiKey }
-string_wrapper! { SecretKey }
-string_wrapper! { PassPhrase }
-
+#[derive(Debug)]
 pub struct ApiConfig {
-    pub api_key: ApiKey,
-    pub secret_key: SecretKey,
-    pub passphrase: PassPhrase,
+    pub api_key: Option<String>,
+    pub secret_key: Option<String>,
+    pub passphrase: Option<String>,
 }
