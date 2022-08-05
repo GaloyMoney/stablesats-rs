@@ -86,7 +86,19 @@ impl PriceClient {
                     response.into_inner().amount_in_cents,
                 );
             }
-            _ => unimplemented!(),
+            (Direction::Sell, Some(time_in_seconds)) => {
+                let request = tonic::Request::new(proto::GetCentsFromSatsForFutureSellRequest {
+                    amount_in_satoshis: amount.try_into()?,
+                    time_in_seconds,
+                });
+                let response = client.get_cents_from_sats_for_future_sell(request).await?;
+                print_price(
+                    direction,
+                    expiry,
+                    amount,
+                    response.into_inner().amount_in_cents,
+                );
+            }
         }
         Ok(())
     }
@@ -99,7 +111,7 @@ fn print_price(direction: Direction, expiry: Option<u64>, original_amount: Decim
             direction, original_amount, expiry, amount
         ),
         None => println!(
-            "Price to {:?} {} sats immediately- {} cents",
+            "Price to {:?} {} sats immediately - {} cents",
             direction, original_amount, amount
         ),
     }

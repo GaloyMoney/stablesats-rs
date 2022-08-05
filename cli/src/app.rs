@@ -25,6 +25,7 @@ enum Command {
     Price {
         #[clap(short, long, action, arg_enum, value_parser, default_value_t = Direction::Buy)]
         direction: Direction,
+        /// For option price expiry in seconds
         #[clap(short, long, action)]
         expiry: Option<u64>,
         amount: Decimal,
@@ -36,10 +37,12 @@ const DEFAULT_CONFIG: &str = "stablesats.yml";
 pub async fn run() -> anyhow::Result<()> {
     let cli = Cli::parse();
     let config_path = cli.config.unwrap_or_else(|| PathBuf::from(DEFAULT_CONFIG));
-    let config = Config::from_path(config_path)?;
 
     match cli.command {
-        Command::Run => run_cmd(config).await?,
+        Command::Run => {
+            let config = Config::from_path(config_path)?;
+            run_cmd(config).await?
+        }
         Command::Price {
             direction,
             expiry,
@@ -56,6 +59,7 @@ async fn run_cmd(
         okex_price_feed,
     }: Config,
 ) -> anyhow::Result<()> {
+    println!("Starting server process");
     let (send, mut receive) = tokio::sync::mpsc::channel(1);
     let mut handles = Vec::new();
 
