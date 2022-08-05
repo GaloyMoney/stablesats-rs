@@ -1,6 +1,6 @@
 use futures::stream::StreamExt;
 use serde::*;
-use shared::{payload, pubsub::*};
+use stablesats_shared::{payload, pubsub::*};
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
 struct TestMessage {

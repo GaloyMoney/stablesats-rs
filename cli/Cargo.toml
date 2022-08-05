@@ -8,7 +8,7 @@ repository = "https://github.com/GaloyMoney/stablesats-rs"
 description = "The stablesats cli binary"
 
 [dependencies]
-shared = { path = "../shared" }
+shared = { path = "../shared", package = "stablesats-shared" }
 price-server = { path = "../price-server" }
 okex-price = { path = "../okex-price" }
 

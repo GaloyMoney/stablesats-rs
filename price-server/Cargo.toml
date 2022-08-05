@@ -12,7 +12,7 @@ description = "Server that exposes prices for hedging"
 fail-on-warnings = []
 
 [dependencies]
-shared = { path = "../shared" }
+shared = { path = "../shared", package = "stablesats-shared" }
 
 chrono = { version = "0.4", features = ["clock", "serde"], default-features = false }
 prost = "0.11"

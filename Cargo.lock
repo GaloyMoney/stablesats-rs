@@ -864,7 +864,7 @@ dependencies = [
  "rust_decimal",
  "serde",
  "serde_json",
- "shared",
+ "stablesats-shared",
  "thiserror",
  "tokio",
  "tokio-tungstenite",
@@ -1073,7 +1073,7 @@ dependencies = [
  "protobuf-src",
  "serde",
  "serde_json",
- "shared",
+ "stablesats-shared",
  "thiserror",
  "tokio",
  "tonic",
@@ -1420,23 +1420,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "shared"
-version = "0.1.3-dev"
-dependencies = [
- "anyhow",
- "chrono",
- "fred",
- "futures",
- "rust_decimal",
- "rusty-money",
- "serde",
- "serde_json",
- "thiserror",
- "tokio",
- "uuid",
-]
-
-[[package]]
 name = "signal-hook-registry"
 version = "1.4.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1482,10 +1465,27 @@ dependencies = [
  "rust_decimal",
  "serde",
  "serde_yaml",
- "shared",
+ "stablesats-shared",
  "tokio",
  "tonic",
  "url",
+]
+
+[[package]]
+name = "stablesats-shared"
+version = "0.1.3-dev"
+dependencies = [
+ "anyhow",
+ "chrono",
+ "fred",
+ "futures",
+ "rust_decimal",
+ "rusty-money",
+ "serde",
+ "serde_json",
+ "thiserror",
+ "tokio",
+ "uuid",
 ]
 
 [[package]]
