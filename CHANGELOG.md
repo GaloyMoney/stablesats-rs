@@ -76,7 +76,7 @@
 - More price-server scafolding
 - Return pined stream from subscribe
 - Clippy
-- Commit Cargo.lock as we are buiding a binary
+- Commit Cargo.lock as we are building a binary
 - Missing -
 - Add check-code
 - Remove --all-features from watch commands
