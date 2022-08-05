@@ -4,7 +4,9 @@
 #@   "rust_check_code",
 #@   "rust_integration_test",
 #@   "repo_resource",
+#@   "version_resource",
 #@   "pipeline_tasks_resource",
+#@   "release_task_image_config",
 #@   "slack_resource_type",
 #@   "slack_resource"
 #@ )
@@ -14,15 +16,52 @@ groups:
   jobs:
     - check-code
     - test-integration
+    - release
 
 jobs:
 - #@ rust_check_code()
 - #@ rust_integration_test()
+- name: release
+  serial: true
+  plan:
+  - in_parallel:
+    - get: repo
+      passed:
+      - test-integration
+      - check-code
+    - get: pipeline-tasks
+    - get: version
+  - task: prep-release
+    config:
+      platform: linux
+      image_resource: #@ release_task_image_config()
+      inputs:
+      - name: pipeline-tasks
+      - name: repo
+      - name: version
+      outputs:
+      - name: version
+      - name: artifacts
+      run:
+        path: pipeline-tasks/ci/vendor/tasks/prep-release-src.sh
+  - task: update-repo
+    config:
+      platform: linux
+      image_resource: #@ release_task_image_config()
+      inputs:
+      - name: pipeline-tasks
+      - name: repo
+      - name: version
+      outputs:
+      - name: repo
+      run:
+        path: pipeline-tasks/ci/tasks/update-repo.sh
 
 resources:
 - #@ repo_resource()
 - #@ pipeline_tasks_resource()
 - #@ slack_resource()
+- #@ version_resource()
 
 resource_types:
 - #@ slack_resource_type()
