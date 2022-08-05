@@ -6,7 +6,7 @@ VERSION="$(cat version/version)"
 
 pushd repo
 
-git checkout "v${VERSION}"
+git checkout "${VERSION}"
 
 cat <<EOF | cargo login
 ${CRATES_API_TOKEN}
