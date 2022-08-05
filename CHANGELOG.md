@@ -2,6 +2,10 @@
 
 
 
+# [stablesats release v0.1.1](https://github.com/GaloyMoney/stablesats/releases/tag/v0.1.1)
+
+
+
 # [stablesats release v0.1.0](https://github.com/GaloyMoney/stablesats/releases/tag/v0.1.0)
 
 
