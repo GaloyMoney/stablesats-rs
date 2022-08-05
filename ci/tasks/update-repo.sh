@@ -8,9 +8,18 @@ git config --global user.name "CI Bot"
 
 pushd repo
 
-version="$(cat ../version/version)"
+VERSION="$(cat ../version/version)"
 
-for file in $(find . -name Cargo.toml -d 2); do
+cat <<EOF >new_change_log.md
+# [stablesats release v${VERSION}](https://github.com/GaloyMoney/stablesats/releases/tag/v${VERSION})
+
+$(cat ../artifacts/gh-release-notes.md)
+
+$(cat CHANGELOG.md)
+EOF
+mv new_change_log.md CHANGELOG.md
+
+for file in $(find . -mindepth 2 -name Cargo.toml); do
     sed -i'' "0,/version/{s/version.*/version = \"${VERSION}\"/}" ${file}
     name=$(grep "name = " ${file} | sed 's/name = "\(.*\)"/\1/')
     sed -i'' "/^name = \"${name}/,/version/{s/version.*/version = \"${VERSION}\"/}" ./Cargo.lock

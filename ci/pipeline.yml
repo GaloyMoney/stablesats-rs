@@ -1,12 +1,16 @@
 #@ load("@ytt:data", "data")
 
 #@ load("vendor/pipeline-fragments.lib.yml",
+#@   "build_edge_image",
 #@   "rust_check_code",
 #@   "rust_integration_test",
 #@   "repo_resource",
+#@   "edge_image_resource",
 #@   "version_resource",
+#@   "gh_release_resource",
 #@   "pipeline_tasks_resource",
 #@   "release_task_image_config",
+#@   "rust_task_image_config",
 #@   "slack_resource_type",
 #@   "slack_resource"
 #@ )
@@ -14,6 +18,7 @@
 groups:
 - name: stablesats-rs
   jobs:
+    - build-edge-image
     - check-code
     - test-integration
     - release
@@ -21,6 +26,7 @@ groups:
 jobs:
 - #@ rust_check_code()
 - #@ rust_integration_test()
+- #@ build_edge_image()
 - name: release
   serial: true
   plan:
@@ -47,8 +53,9 @@ jobs:
   - task: update-repo
     config:
       platform: linux
-      image_resource: #@ release_task_image_config()
+      image_resource: #@ rust_task_image_config()
       inputs:
+      - name: artifacts
       - name: pipeline-tasks
       - name: repo
       - name: version
@@ -56,12 +63,100 @@ jobs:
       - name: repo
       run:
         path: pipeline-tasks/ci/tasks/update-repo.sh
+  - in_parallel:
+    - task: build-osx-release
+      privileged: true
+      config:
+        platform: linux
+        image_resource:
+          type: registry-image
+          source:
+            username: #@ data.values.osxcross_docker_username
+            password: #@ data.values.osxcross_docker_password
+            repository: #@ data.values.osxcross_repository
+        inputs:
+        - name: version
+        - name: pipeline-tasks
+        - name: repo
+        outputs:
+        - name: x86_64-apple-darwin
+        caches:
+        - path: cargo-home
+        - path: cargo-target-dir
+        params:
+          TARGET: x86_64-apple-darwin
+          OUT: x86_64-apple-darwin
+        run:
+          path: pipeline-tasks/ci/tasks/build-release.sh
+    - task: build-static-release
+      privileged: true
+      config:
+        platform: linux
+        image_resource:
+          type: registry-image
+          source: { repository: clux/muslrust, tag: stable }
+        inputs:
+        - name: version
+        - name: pipeline-tasks
+        - name: repo
+        outputs:
+        - name: x86_64-unknown-linux-musl
+        caches:
+        - path: cargo-home
+        - path: cargo-target-dir
+        params:
+          TARGET: x86_64-unknown-linux-musl
+          OUT: x86_64-unknown-linux-musl
+        run:
+          path: pipeline-tasks/ci/tasks/build-release.sh
+  - in_parallel:
+    - do:
+      - put: repo-out
+        params:
+          tag: artifacts/gh-release-tag
+          repository: repo
+          merge: true
+      - put: version
+        params:
+          file: version/version
+  - in_parallel:
+    - do:
+      - task: github-release
+        config:
+          image_resource: #@ rust_task_image_config()
+          platform: linux
+          inputs:
+          - name: x86_64-apple-darwin
+          - name: x86_64-unknown-linux-musl
+          - name: version
+          - name: pipeline-tasks
+          - name: artifacts
+          outputs:
+          - name: artifacts
+          params:
+            BRANCH: #@ data.values.git_branch
+          run:
+            path: pipeline-tasks/ci/tasks/github-release.sh
+      - put: gh-release
+        params:
+          name: artifacts/gh-release-name
+          tag: artifacts/gh-release-tag
+          body: artifacts/gh-release-notes.md
+          globs: [artifacts/binaries/*]
 
 resources:
 - #@ repo_resource()
 - #@ pipeline_tasks_resource()
 - #@ slack_resource()
 - #@ version_resource()
+- #@ gh_release_resource()
+- #@ edge_image_resource()
+- name: repo-out
+  type: git
+  source:
+    uri: #@ data.values.git_uri
+    branch: #@ data.values.git_branch
+    private_key: #@ data.values.github_private_key
 
 resource_types:
 - #@ slack_resource_type()

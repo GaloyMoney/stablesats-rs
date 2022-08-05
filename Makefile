@@ -18,3 +18,8 @@ test-in-ci:
 cli-run:
 	cargo run --bin stablesats run
 
+build-x86_64-unknown-linux-musl-release:
+	cargo build --release --locked --target x86_64-unknown-linux-musl
+
+build-x86_64-apple-darwin-release:
+	bin/osxcross-compile.sh
