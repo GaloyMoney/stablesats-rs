@@ -1,3 +1,5 @@
+use thiserror::Error;
+
 use rust_decimal::prelude::*;
 use serde::{Deserialize, Serialize};
 
@@ -8,6 +10,12 @@ crate::string_wrapper! { InstrumentIdRaw }
 crate::string_wrapper! { CurrencyRaw }
 
 const PRICE_IN_CENTS_PRECISION: u32 = 12;
+
+#[derive(Error, Debug)]
+pub enum ConvertU64ToF64Error {
+    #[error("Error converting u64 to f64 type")]
+    ConversionError,
+}
 
 #[derive(Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -35,6 +43,19 @@ impl PriceRatioRaw {
         let mut ret = self.base;
         ret.set_scale(self.offset).expect("failed to set scale");
         ret.normalize()
+    }
+}
+
+pub struct ConvertU64ToF64 {
+    pub amount: u64,
+}
+
+impl ConvertU64ToF64 {
+    pub fn convert(&self) -> Result<f64, ConvertU64ToF64Error> {
+        match f64::from_u64(self.amount) {
+            Some(result) => Ok(result),
+            None => Err(ConvertU64ToF64Error::ConversionError),
+        }
     }
 }
 
@@ -83,5 +104,14 @@ mod tests {
         assert_eq!(&ratio.numerator_amount().to_string(), "0.00999999");
 
         Ok(())
+    }
+
+    #[test]
+    fn convert_u64_to_f64() {
+        let amount_to_convert = ConvertU64ToF64 { amount: 200 }.convert().unwrap();
+
+        assert_eq!(amount_to_convert, f64::from(200));
+
+        assert_ne!(amount_to_convert, f64::from(100));
     }
 }

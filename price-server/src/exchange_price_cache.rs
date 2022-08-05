@@ -1,5 +1,4 @@
 use chrono::Duration;
-use rust_decimal::Decimal;
 use std::sync::Arc;
 use thiserror::Error;
 use tokio::sync::RwLock;
@@ -30,23 +29,22 @@ impl ExchangePriceCache {
         self.inner.write().await.update_price(payload);
     }
 
-    pub async fn ask_price_of_one_sat(&self) -> Result<UsdCents, ExchangePriceCacheError> {
-        self.inner.read().await.ask_price_of_one_sat()
-    }
-
-    pub async fn bid_price_of_one_sat(&self) -> Result<UsdCents, ExchangePriceCacheError> {
-        self.inner.read().await.bid_price_of_one_sat()
-    }
-
-    pub async fn mid_price_of_one_sat(&self) -> Result<UsdCents, ExchangePriceCacheError> {
-        self.inner.read().await.mid_price_of_one_sat()
+    pub async fn latest_tick(&self) -> Result<BtcSatTick, ExchangePriceCacheError> {
+        self.inner.read().await.latest_tick()
     }
 }
 
-struct BtcSatTick {
+#[derive(Clone)]
+pub struct BtcSatTick {
     timestamp: TimeStamp,
-    ask_price_of_one_sat: UsdCents,
-    bid_price_of_one_sat: UsdCents,
+    pub ask_price_of_one_sat: UsdCents,
+    pub bid_price_of_one_sat: UsdCents,
+}
+
+impl BtcSatTick {
+    pub fn mid_price_of_one_sat(&self) -> UsdCents {
+        (self.bid_price_of_one_sat.clone() + self.ask_price_of_one_sat.clone()) / 2
+    }
 }
 
 struct ExchangePriceCacheInner {
@@ -81,36 +79,12 @@ impl ExchangePriceCacheInner {
         }
     }
 
-    fn ask_price_of_one_sat(&self) -> Result<UsdCents, ExchangePriceCacheError> {
+    fn latest_tick(&self) -> Result<BtcSatTick, ExchangePriceCacheError> {
         if let Some(ref tick) = self.tick {
             if tick.timestamp.duration_since() > self.stale_after {
                 return Err(ExchangePriceCacheError::StalePrice(tick.timestamp.clone()));
             }
-            return Ok(tick.ask_price_of_one_sat.clone());
-        }
-        Err(ExchangePriceCacheError::NoPriceAvailable)
-    }
-
-    fn bid_price_of_one_sat(&self) -> Result<UsdCents, ExchangePriceCacheError> {
-        if let Some(ref tick) = self.tick {
-            if tick.timestamp.duration_since() > self.stale_after {
-                return Err(ExchangePriceCacheError::StalePrice(tick.timestamp.clone()));
-            }
-            return Ok(tick.bid_price_of_one_sat.clone());
-        }
-        Err(ExchangePriceCacheError::NoPriceAvailable)
-    }
-
-    fn mid_price_of_one_sat(&self) -> Result<UsdCents, ExchangePriceCacheError> {
-        if let Some(ref tick) = self.tick {
-            if &TimeStamp::now() - &tick.timestamp > self.stale_after {
-                return Err(ExchangePriceCacheError::StalePrice(tick.timestamp.clone()));
-            }
-            let mid_price_of_one_sat = (tick.ask_price_of_one_sat.amount()
-                + tick.bid_price_of_one_sat.amount())
-                / Decimal::new(2, 1);
-
-            return Ok(UsdCents::from_decimal(mid_price_of_one_sat));
+            return Ok(tick.clone());
         }
         Err(ExchangePriceCacheError::NoPriceAvailable)
     }
@@ -118,43 +92,16 @@ impl ExchangePriceCacheInner {
 
 #[cfg(test)]
 mod tests {
-    use rust_decimal::prelude::FromPrimitive;
 
     use super::*;
     #[test]
     fn test_price_of_one_sat() {
         let tick = BtcSatTick {
             timestamp: TimeStamp::now(),
-            bid_price_of_one_sat: UsdCents::from_major(9999),
-            ask_price_of_one_sat: UsdCents::from_major(8888),
+            bid_price_of_one_sat: UsdCents::from_major(5000),
+            ask_price_of_one_sat: UsdCents::from_major(10000),
         };
 
-        let exchange_price = ExchangePriceCacheInner {
-            stale_after: Duration::seconds(5),
-            tick: Some(tick),
-        };
-
-        let bid_price_of_one_sat = exchange_price
-            .bid_price_of_one_sat()
-            .expect("Error getting bid price");
-        let ask_price_of_one_sat = exchange_price
-            .ask_price_of_one_sat()
-            .expect("Error getting ask price");
-        let mid_price_of_one_sat = exchange_price
-            .mid_price_of_one_sat()
-            .expect("Error getting mid price");
-
-        assert_eq!(
-            bid_price_of_one_sat.amount(),
-            &Decimal::from_u64(9999).unwrap()
-        );
-        assert_eq!(
-            ask_price_of_one_sat.amount(),
-            &Decimal::from_u64(8888).unwrap()
-        );
-        assert_eq!(
-            mid_price_of_one_sat.amount(),
-            &Decimal::from_f64(94435.0).unwrap()
-        );
+        assert_eq!(tick.mid_price_of_one_sat(), UsdCents::from_major(7500));
     }
 }
