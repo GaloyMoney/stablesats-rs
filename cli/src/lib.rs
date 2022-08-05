@@ -3,3 +3,5 @@
 
 pub mod app;
 pub mod config;
+
+mod price_client;

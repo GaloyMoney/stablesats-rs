@@ -1,8 +1,10 @@
 use anyhow::Context;
 use clap::{Parser, Subcommand};
+use rust_decimal::Decimal;
 use std::path::PathBuf;
 
 use super::config::Config;
+use super::price_client::*;
 
 #[derive(Parser)]
 #[clap(author, version, about, long_about = None)]
@@ -12,12 +14,21 @@ struct Cli {
     config: Option<PathBuf>,
 
     #[clap(subcommand)]
-    command: Commands,
+    command: Command,
 }
 
 #[derive(Subcommand)]
-enum Commands {
-    Run {},
+enum Command {
+    /// Runs the configured processes
+    Run,
+    /// Gets a quote from the price server
+    Price {
+        #[clap(short, long, action, arg_enum, value_parser, default_value_t = Direction::Buy)]
+        direction: Direction,
+        #[clap(short, long, action)]
+        expiry: Option<u64>,
+        amount: Decimal,
+    },
 }
 
 const DEFAULT_CONFIG: &str = "stablesats.yml";
@@ -28,7 +39,12 @@ pub async fn run() -> anyhow::Result<()> {
     let config = Config::from_path(config_path)?;
 
     match cli.command {
-        Commands::Run {} => run_cmd(config).await?,
+        Command::Run => run_cmd(config).await?,
+        Command::Price {
+            direction,
+            expiry,
+            amount,
+        } => price_cmd(direction, expiry, amount).await?,
     }
     Ok(())
 }
@@ -69,4 +85,13 @@ async fn run_cmd(
         handle.abort();
     }
     reason
+}
+
+async fn price_cmd(
+    direction: Direction,
+    expiry: Option<u64>,
+    amount: Decimal,
+) -> anyhow::Result<()> {
+    let client = PriceClient::new(PriceClientConfig::default());
+    client.get_price(direction, expiry, amount).await
 }
