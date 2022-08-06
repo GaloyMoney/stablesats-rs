@@ -8,7 +8,6 @@ RUN mkdir stablesats && cd stablesats \
   && mv stablesats /usr/local/bin && cd ../ && rm -rf ./stablesats
 
 FROM scratch
-  RUN mkdir /bin
   COPY --from=load /usr/local/bin/stablesats /bin/stablesats
   USER 1000
   ARG VERSION
