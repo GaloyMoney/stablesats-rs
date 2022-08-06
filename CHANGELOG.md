@@ -1,3 +1,11 @@
+# [stablesats release v0.1.4](https://github.com/GaloyMoney/stablesats/releases/tag/v0.1.4)
+
+
+### Miscellaneous Tasks
+
+- Add support for sentinal + redis pw
+- Put stablesats under /bin in release image
+
 # [stablesats release v0.1.3](https://github.com/GaloyMoney/stablesats/releases/tag/v0.1.3)
 
 

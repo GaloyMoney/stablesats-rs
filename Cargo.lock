@@ -856,7 +856,7 @@ dependencies = [
 
 [[package]]
 name = "okex-price"
-version = "0.1.4-dev"
+version = "0.1.4"
 dependencies = [
  "anyhow",
  "chrono",
@@ -1064,7 +1064,7 @@ dependencies = [
 
 [[package]]
 name = "price-server"
-version = "0.1.4-dev"
+version = "0.1.4"
 dependencies = [
  "anyhow",
  "chrono",
@@ -1455,7 +1455,7 @@ dependencies = [
 
 [[package]]
 name = "stablesats"
-version = "0.1.4-dev"
+version = "0.1.4"
 dependencies = [
  "anyhow",
  "clap",
@@ -1473,7 +1473,7 @@ dependencies = [
 
 [[package]]
 name = "stablesats-shared"
-version = "0.1.4-dev"
+version = "0.1.4"
 dependencies = [
  "anyhow",
  "chrono",
