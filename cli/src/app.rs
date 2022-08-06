@@ -3,7 +3,7 @@ use clap::{Parser, Subcommand};
 use rust_decimal::Decimal;
 use std::path::PathBuf;
 
-use super::config::Config;
+use super::config::*;
 use super::price_client::*;
 
 #[derive(Parser)]
@@ -27,7 +27,11 @@ struct Cli {
 #[derive(Subcommand)]
 enum Command {
     /// Runs the configured processes
-    Run,
+    Run {
+        /// Optional env var for redis password
+        #[clap(env = "REDIS_PASSWORD")]
+        redis_password: Option<String>,
+    },
     /// Gets a quote from the price server
     Price {
         #[clap(short, long, action, arg_enum, value_parser, default_value_t = Direction::Buy)]
@@ -43,8 +47,8 @@ pub async fn run() -> anyhow::Result<()> {
     let cli = Cli::parse();
 
     match cli.command {
-        Command::Run => {
-            let config = Config::from_path(cli.config)?;
+        Command::Run { redis_password } => {
+            let config = Config::from_path(cli.config, EnvOverride { redis_password })?;
             run_cmd(config).await?
         }
         Command::Price {

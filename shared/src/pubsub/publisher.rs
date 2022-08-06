@@ -9,12 +9,8 @@ pub struct Publisher {
 }
 
 impl Publisher {
-    pub async fn new(PubSubConfig { host }: PubSubConfig) -> Result<Self, PublisherError> {
-        let mut config = RedisConfig::default();
-        if let Some(host) = host {
-            config.server = ServerConfig::new_centralized(host, 6379);
-        }
-        let client = RedisClient::new(config);
+    pub async fn new(config: PubSubConfig) -> Result<Self, PublisherError> {
+        let client = RedisClient::new(config.into());
         let _ = client.connect(None);
         client
             .wait_for_connect()
