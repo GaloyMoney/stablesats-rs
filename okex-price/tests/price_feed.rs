@@ -50,6 +50,7 @@ async fn publishes_to_redis() -> anyhow::Result<()> {
     let redis_host = std::env::var("REDIS_HOST").unwrap_or("localhost".to_string());
     let pubsub_config = PubSubConfig {
         host: Some(redis_host),
+        ..PubSubConfig::default()
     };
     let subscriber = Subscriber::new(pubsub_config.clone()).await?;
 

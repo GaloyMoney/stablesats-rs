@@ -10,12 +10,8 @@ pub struct Subscriber {
 }
 
 impl Subscriber {
-    pub async fn new(PubSubConfig { host }: PubSubConfig) -> Result<Self, SubscriberError> {
-        let mut config = RedisConfig::default();
-        if let Some(host) = host {
-            config.server = ServerConfig::new_centralized(host, 6379);
-        }
-        let client = SubscriberClient::new(config);
+    pub async fn new(config: PubSubConfig) -> Result<Self, SubscriberError> {
+        let client = SubscriberClient::new(config.into());
         let _ = client.connect(None);
         client
             .wait_for_connect()

@@ -16,11 +16,21 @@ pub struct Config {
     pub okex_price_feed: PriceFeedConfigWrapper,
 }
 
+pub struct EnvOverride {
+    pub redis_password: Option<String>,
+}
+
 impl Config {
-    pub fn from_path(path: impl AsRef<Path>) -> anyhow::Result<Self> {
+    pub fn from_path(
+        path: impl AsRef<Path>,
+        EnvOverride { redis_password }: EnvOverride,
+    ) -> anyhow::Result<Self> {
         let config_file = std::fs::read_to_string(path).context("Couldn't read config file")?;
-        let config: Config =
+        let mut config: Config =
             serde_yaml::from_str(&config_file).context("Couldn't parse config file")?;
+        if let Some(redis_password) = redis_password {
+            config.pubsub.password = Some(redis_password);
+        }
         Ok(config)
     }
 }
