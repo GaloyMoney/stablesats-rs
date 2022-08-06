@@ -1,3 +1,16 @@
+# [stablesats release v0.1.3](https://github.com/GaloyMoney/stablesats/releases/tag/v0.1.3)
+
+
+### Bug Fixes
+
+- Shared name is taken on crates.io
+
+### Miscellaneous Tasks
+
+- Remove author, about from cli
+- Add Dockerfile.release
+- Add BUILDTIME + COMMITHASH to docker image
+
 # [stablesats release v0.1.2](https://github.com/GaloyMoney/stablesats/releases/tag/v0.1.2)
 
 
