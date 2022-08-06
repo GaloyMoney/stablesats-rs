@@ -7,7 +7,7 @@ use super::config::Config;
 use super::price_client::*;
 
 #[derive(Parser)]
-#[clap(author, version, about, long_about = None)]
+#[clap(version, long_about = None)]
 struct Cli {
     /// Sets a custom config file
     #[clap(
