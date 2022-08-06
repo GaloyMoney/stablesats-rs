@@ -1,0 +1,19 @@
+FROM alpine:latest as load
+
+ARG VERSION
+ENV VERSION ${VERSION}
+RUN mkdir stablesats && cd stablesats \
+  && wget https://github.com/GaloyMoney/stablesats-rs/releases/download/${VERSION}/stablesats-x86_64-unknown-linux-musl-${VERSION}.tar.gz -O stablesats.tar.gz \
+  && tar --strip-components=1 -xf stablesats.tar.gz \
+  && mv stablesats /usr/local/bin && cd ../ && rm -rf ./stablesats
+
+FROM scratch
+  COPY --from=load /usr/local/bin/stablesats /stablesats
+  USER 1000
+  ARG VERSION
+  ARG BUILDTIME
+  ARG COMMITHASH
+  ENV VERSION ${VERSION}
+  ENV BUILDTIME ${BUILDTIME}
+  ENV COMMITHASH ${COMMITHASH}
+  CMD ["/stablesats"]

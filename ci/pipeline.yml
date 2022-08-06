@@ -38,11 +38,6 @@ jobs:
       passed:
       - test-integration
       - check-code
-      - build-edge-image
-    - get: edge-image
-      passed: [ build-edge-image ]
-      params:
-        format: oci
     - get: pipeline-tasks
     - get: version
   - task: prep-release
@@ -149,9 +144,40 @@ jobs:
           tag: artifacts/gh-release-tag
           body: artifacts/gh-release-notes.md
           globs: [artifacts/binaries/*]
+    - do:
+      - task: prepare-docker-build
+        config:
+          platform: linux
+          image_resource: #@ rust_task_image_config()
+          inputs:
+          - name: pipeline-tasks
+          - name: version
+          - name: repo
+          outputs:
+          - name: repo
+          run:
+            path: pipeline-tasks/ci/vendor/tasks/prep-docker-build-env.sh
+      - task: build
+        privileged: true
+        config:
+          platform: linux
+          image_resource:
+            type: registry-image
+            source:
+              repository: vito/oci-build-task
+          inputs:
+          - name: repo
+          outputs:
+          - name: image
+          params:
+            CONTEXT: repo
+            BUILD_ARGS_FILE: repo/.env
+            DOCKERFILE: "repo/Dockerfile.release"
+          run:
+            path: build
       - put: latest-image
         params:
-          image: edge-image/image.tar
+          image: image/image.tar
           additional_tags: version/version
 
 - name: publish
