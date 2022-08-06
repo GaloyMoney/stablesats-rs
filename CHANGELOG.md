@@ -1,3 +1,10 @@
+# [stablesats release v0.1.5](https://github.com/GaloyMoney/stablesats/releases/tag/v0.1.5)
+
+
+### Bug Fixes
+
+- Dockerfile.release ca not mkdir
+
 # [stablesats release v0.1.4](https://github.com/GaloyMoney/stablesats/releases/tag/v0.1.4)
 
 
