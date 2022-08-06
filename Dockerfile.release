@@ -8,7 +8,8 @@ RUN mkdir stablesats && cd stablesats \
   && mv stablesats /usr/local/bin && cd ../ && rm -rf ./stablesats
 
 FROM scratch
-  COPY --from=load /usr/local/bin/stablesats /stablesats
+  RUN mkdir /bin
+  COPY --from=load /usr/local/bin/stablesats /bin/stablesats
   USER 1000
   ARG VERSION
   ARG BUILDTIME
@@ -16,4 +17,4 @@ FROM scratch
   ENV VERSION ${VERSION}
   ENV BUILDTIME ${BUILDTIME}
   ENV COMMITHASH ${COMMITHASH}
-  CMD ["/stablesats"]
+  CMD ["stablesats"]
