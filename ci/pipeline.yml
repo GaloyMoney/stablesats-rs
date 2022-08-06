@@ -24,7 +24,6 @@ groups:
     - test-integration
     - release
     - set-dev-version
-    - publish
 
 jobs:
 - #@ rust_check_code()
@@ -120,97 +119,62 @@ jobs:
   - put: version
     params:
       file: version/version
-  - in_parallel:
-    - do:
-      - task: github-release
-        config:
-          image_resource: #@ rust_task_image_config()
-          platform: linux
-          inputs:
-          - name: x86_64-apple-darwin
-          - name: x86_64-unknown-linux-musl
-          - name: version
-          - name: pipeline-tasks
-          - name: artifacts
-          outputs:
-          - name: artifacts
-          params:
-            BRANCH: #@ data.values.git_branch
-          run:
-            path: pipeline-tasks/ci/tasks/github-release.sh
-      - put: gh-release
-        params:
-          name: artifacts/gh-release-name
-          tag: artifacts/gh-release-tag
-          body: artifacts/gh-release-notes.md
-          globs: [artifacts/binaries/*]
-    - do:
-      - task: prepare-docker-build
-        config:
-          platform: linux
-          image_resource: #@ rust_task_image_config()
-          inputs:
-          - name: pipeline-tasks
-          - name: version
-          - name: repo
-          outputs:
-          - name: repo
-          run:
-            path: pipeline-tasks/ci/vendor/tasks/prep-docker-build-env.sh
-      - task: build
-        privileged: true
-        config:
-          platform: linux
-          image_resource:
-            type: registry-image
-            source:
-              repository: vito/oci-build-task
-          inputs:
-          - name: repo
-          outputs:
-          - name: image
-          params:
-            CONTEXT: repo
-            BUILD_ARGS_FILE: repo/.env
-            DOCKERFILE: "repo/Dockerfile.release"
-          run:
-            path: build
-      - put: latest-image
-        params:
-          image: image/image.tar
-          additional_tags: version/version
-
-- name: publish
-  public: true
-  plan:
-  - in_parallel:
-    - { get: repo, passed: [release] }
-    - { get: version, passed: [release], trigger: true }
-    - { get: pipeline-tasks }
-  - task: publish-to-crates
+  - task: github-release
     config:
       image_resource: #@ rust_task_image_config()
       platform: linux
       inputs:
+      - name: x86_64-apple-darwin
+      - name: x86_64-unknown-linux-musl
       - name: version
       - name: pipeline-tasks
-      - name: repo
+      - name: artifacts
+      outputs:
+      - name: artifacts
       params:
-        CRATES_API_TOKEN: #@ data.values.crates_api_token
-      caches:
-      - path: cargo-home
-      - path: cargo-target-dir
+        BRANCH: #@ data.values.git_branch
       run:
-        path: pipeline-tasks/ci/tasks/publish-to-crates.sh
-  - task: verify-publish
+        path: pipeline-tasks/ci/tasks/github-release.sh
+  - put: gh-release
+    params:
+      name: artifacts/gh-release-name
+      tag: artifacts/gh-release-tag
+      body: artifacts/gh-release-notes.md
+      globs: [artifacts/binaries/*]
+  - task: prepare-docker-build
     config:
-      image_resource: #@ rust_task_image_config()
       platform: linux
+      image_resource: #@ rust_task_image_config()
       inputs:
-      - name: version
       - name: pipeline-tasks
+      - name: version
+      - name: repo
+      outputs:
+      - name: repo
       run:
-        path: pipeline-tasks/ci/tasks/verify-publish.sh
+        path: pipeline-tasks/ci/vendor/tasks/prep-docker-build-env.sh
+  - task: build
+    privileged: true
+    config:
+      platform: linux
+      image_resource:
+        type: registry-image
+        source:
+          repository: vito/oci-build-task
+      inputs:
+      - name: repo
+      outputs:
+      - name: image
+      params:
+        CONTEXT: repo
+        BUILD_ARGS_FILE: repo/.env
+        DOCKERFILE: "repo/Dockerfile.release"
+      run:
+        path: build
+  - put: latest-image
+    params:
+      image: image/image.tar
+      additional_tags: version/version
 
 - name: set-dev-version
   plan:
