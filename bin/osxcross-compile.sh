@@ -9,6 +9,10 @@ echo
 # This prevents the host zlib from being linked
 export LIBZ_SYS_STATIC=1
 
+# For cross compiling ring https://github.com/briansmith/ring/blob/main/BUILDING.md#cross-compiling
+export TARGET_CC=/workspace/osxcross/target/bin/x86_64h-apple-darwin21.4-cc
+export TARGET_AR=/workspace/osxcross/target/bin/x86_64h-apple-darwin21.4-ar
+
 cargo build --release --target "${MACOS_TARGET}" --all-features
 
 echo
