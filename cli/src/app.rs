@@ -31,6 +31,9 @@ enum Command {
         /// Optional env var for redis password
         #[clap(env = "REDIS_PASSWORD")]
         redis_password: Option<String>,
+        /// Output config on crash
+        #[clap(env = "CRASH_REPORT_CONFIG")]
+        crash_report_config: Option<bool>,
     },
     /// Gets a quote from the price server
     Price {
@@ -47,9 +50,20 @@ pub async fn run() -> anyhow::Result<()> {
     let cli = Cli::parse();
 
     match cli.command {
-        Command::Run { redis_password } => {
+        Command::Run {
+            redis_password,
+            crash_report_config,
+        } => {
             let config = Config::from_path(cli.config, EnvOverride { redis_password })?;
-            run_cmd(config).await?
+            match (run_cmd(config.clone()).await, crash_report_config) {
+                (Err(e), Some(true)) => {
+                    println!("Config:");
+                    println!("{}", serde_yaml::to_string(&config).unwrap());
+                    return Err(e);
+                }
+                (Err(e), _) => return Err(e),
+                _ => (),
+            }
         }
         Command::Price {
             direction,

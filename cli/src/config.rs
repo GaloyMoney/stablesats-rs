@@ -1,12 +1,12 @@
 use anyhow::Context;
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 use std::path::Path;
 
 use okex_price::PriceFeedConfig;
 use price_server::PriceServerConfig;
 use shared::pubsub::PubSubConfig;
 
-#[derive(Debug, Clone, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Config {
     #[serde(default)]
     pub pubsub: PubSubConfig,
@@ -35,7 +35,7 @@ impl Config {
     }
 }
 
-#[derive(Debug, Clone, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct PriceServerWrapper {
     pub enabled: bool,
     #[serde(default)]
@@ -50,7 +50,7 @@ impl Default for PriceServerWrapper {
     }
 }
 
-#[derive(Debug, Clone, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct PriceFeedConfigWrapper {
     pub enabled: bool,
     #[serde(default)]

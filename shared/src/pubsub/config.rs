@@ -1,7 +1,7 @@
 use fred::prelude::*;
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 
-#[derive(Clone, Deserialize, Debug)]
+#[derive(Clone, Serialize, Deserialize, Debug)]
 pub struct PubSubConfig {
     pub host: Option<String>,
     #[serde(default = "default_port")]
@@ -10,14 +10,14 @@ pub struct PubSubConfig {
     pub sentinel: Option<SentinelConfig>,
 }
 
-#[derive(Clone, Deserialize, Debug)]
+#[derive(Clone, Serialize, Deserialize, Debug)]
 pub struct SentinelConfig {
     pub hosts: Vec<HostPortTuple>,
     #[serde(default = "default_service_name")]
     pub service_name: String,
 }
 
-#[derive(Clone, Deserialize, Debug)]
+#[derive(Clone, Serialize, Deserialize, Debug)]
 pub struct HostPortTuple {
     pub host: String,
     #[serde(default = "default_sentinel_port")]
