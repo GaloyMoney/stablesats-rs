@@ -57,7 +57,7 @@ pub async fn run() -> anyhow::Result<()> {
             let config = Config::from_path(cli.config, EnvOverride { redis_password })?;
             match (run_cmd(config.clone()).await, crash_report_config) {
                 (Err(e), Some(true)) => {
-                    println!("Config:");
+                    println!("Stablesats was started with the following config:");
                     println!("{}", serde_yaml::to_string(&config).unwrap());
                     return Err(e);
                 }
