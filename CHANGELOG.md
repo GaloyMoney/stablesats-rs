@@ -1,3 +1,19 @@
+# [stablesats release v0.1.6](https://github.com/GaloyMoney/stablesats/releases/tag/v0.1.6)
+
+
+### Bug Fixes
+
+- Default wrapper config to true
+- Use rustls-tls-webpki-roots for wss
+- Price_app asserts
+
+### Miscellaneous Tasks
+
+- Better config dump output
+- Option to report confg on crash
+- Switch edge image to ubuntu
+- Better error output
+
 # [stablesats release v0.1.5](https://github.com/GaloyMoney/stablesats/releases/tag/v0.1.5)
 
 
