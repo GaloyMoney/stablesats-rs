@@ -31,7 +31,10 @@ async fn price_app() -> anyhow::Result<()> {
     let err = app
         .get_cents_from_sats_for_immediate_buy(Sats::from_major(100_000_000))
         .await;
-    assert_eq!(format!("{}", err.unwrap_err()), "No price data available");
+    assert_eq!(
+        format!("{}", err.unwrap_err()),
+        "PriceAppError: No price data available"
+    );
 
     let mut payloads = load_fixture()?.payloads.into_iter();
     let mut payload = payloads.next().unwrap();
@@ -44,7 +47,7 @@ async fn price_app() -> anyhow::Result<()> {
         .await;
     assert_eq!(
         format!("{}", err.unwrap_err()),
-        "StalePrice: last update was at 1"
+        "PriceAppError: StalePrice: last update was at 1"
     );
 
     payload.timestamp = TimeStamp::now();
