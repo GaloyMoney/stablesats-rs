@@ -1,84 +1,82 @@
 mod config;
+mod constants;
 mod error;
+mod headers;
+mod signature;
 
-use config::*;
-use data_encoding::BASE64;
+use chrono::Utc;
 use reqwest::Client as ReqwestClient;
-use ring::hmac;
+use serde::Deserialize;
+
+pub use config::*;
+pub use constants::*;
+pub use error::*;
+pub use headers::*;
 use shared::string_wrapper;
-use shared::time::TimeStamp;
+use signature::*;
 
-use self::error::OkexClientError;
+string_wrapper!(CodeRaw);
+string_wrapper!(MessageRaw);
+string_wrapper!(ChainName);
+string_wrapper!(DepositAddressRaw);
+string_wrapper!(CurrencyRaw);
+string_wrapper!(BeneficiaryAccountRaw);
+string_wrapper!(ContractAddressRaw);
 
-string_wrapper! { ApiKey }
-string_wrapper! { PassPhrase }
-string_wrapper! { AccessSignature }
-string_wrapper! { SecretKey }
-
-fn generate_signature(
-    method: String,
-    request_path: String,
-    body: Option<String>,
-    secret_key: SecretKey,
-) -> String {
-    let timestamp = TimeStamp::now().to_string();
-    let body = body.unwrap_or("".to_string());
-    let pre_hash_str = format!("{}{}{}{}", timestamp, method, request_path, body);
-
-    let key = hmac::Key::new(hmac::HMAC_SHA256, secret_key.0.as_bytes());
-    let signature = hmac::sign(&key, pre_hash_str.as_bytes());
-    let sign_base64 = BASE64.encode(signature.as_ref());
-
-    sign_base64
+/// Response struct from OKEX
+#[derive(Debug, Deserialize, PartialEq)]
+pub struct OkexResponse {
+    pub code: CodeRaw,
+    pub msg: MessageRaw,
+    pub data: Vec<DepositAddressData>,
 }
 
-#[derive(Debug)]
-pub struct AuthHeaders {
-    pub ok_access_key: ApiKey,
-    pub ok_access_sign: AccessSignature,
-    pub ok_access_passphrase: PassPhrase,
-    pub ok_access_timestamp: TimeStamp,
-}
-
-impl TryFrom<ApiConfig> for AuthHeaders {
-    type Error = OkexClientError;
-
-    fn try_from(config: ApiConfig) -> Result<Self, Self::Error> {
-        if let (Some(api_key), Some(passphrase), Some(secret_key)) =
-            (config.api_key, config.passphrase, config.secret_key)
-        {
-            let ok_access_key = ApiKey::from(api_key);
-            let ok_access_passphrase = PassPhrase::from(passphrase);
-            let ok_access_timestamp = TimeStamp::now();
-            let ok_access_sign = AccessSignature(generate_signature(
-                "GET".to_string(),
-                "/users/self/verify".to_string(),
-                None,
-                SecretKey::from(secret_key),
-            ));
-
-            return Ok(Self {
-                ok_access_key,
-                ok_access_sign,
-                ok_access_passphrase,
-                ok_access_timestamp,
-            });
-        }
-        Err(OkexClientError::AuthHeadersError)
-    }
+#[derive(Clone, Deserialize, Debug, PartialEq)]
+#[serde(rename_all = "camelCase")]
+pub struct DepositAddressData {
+    pub chain: ChainName,
+    pub ct_addr: ContractAddressRaw,
+    pub ccy: CurrencyRaw,
+    pub to: BeneficiaryAccountRaw,
+    pub addr: DepositAddressRaw,
+    pub selected: bool,
 }
 
 #[derive(Debug)]
 pub struct OkexClient {
-    pub client: ReqwestClient,
-    pub headers: Result<AuthHeaders, OkexClientError>,
+    client: ReqwestClient,
+    config: ApiConfig,
 }
 
 impl OkexClient {
     pub fn new(config: ApiConfig) -> Self {
         Self {
             client: ReqwestClient::new(),
-            headers: AuthHeaders::try_from(config),
+            config,
         }
+    }
+
+    pub async fn get_funding_deposit_address(&self) -> Result<OkexResponse, OkexClientError> {
+        let request_path = "/api/v5/asset/deposit-address?ccy=BTC";
+        let request_timestamp = Utc::now();
+
+        let access_signature = AccessSignature::generate(
+            RequestMethod::GET,
+            request_path.to_string(),
+            None,
+            self.config.secret_key.clone(),
+            request_timestamp,
+        );
+
+        let headers =
+            AuthHeaders::create(access_signature, self.config.clone(), request_timestamp)?.headers;
+        let url = format!("{}{}", self.config.base_url, request_path);
+
+        let response = self.client.get(url).headers(headers).send().await?;
+        let response_text = response.text().await?;
+
+        let response_object = serde_json::from_str::<OkexResponse>(&response_text)?;
+
+        Ok(response_object)
     }
 }

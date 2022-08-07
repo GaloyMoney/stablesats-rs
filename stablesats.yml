@@ -4,15 +4,24 @@
 #   host: localhost
 
 # price_server:
-  # enabled: true
-  # server:
-  #   listen_port: 3325
-  # fees:
-  #   base_fee_rate: 0.005
-  #   immediate_fee_rate: 0.002
-  #   delayed_fee_rate: 0.0025
+# enabled: true
+# server:
+#   listen_port: 3325
+# fees:
+#   base_fee_rate: 0.005
+#   immediate_fee_rate: 0.002
+#   delayed_fee_rate: 0.0025
+# enabled: true
+# config:
+#   listen_port: 3325
 
 # okex_price_feed:
-  # enabled: true
-  # config:
-  #   url: "wss://ws.okx.com:8443/ws/v5/public"
+# enabled: true
+# config:
+#   url: "wss://ws.okx.com:8443/ws/v5/public"
+
+# okex_client:
+#   base_url: 'https://www.okx.com'
+#   api_key: 'api key'
+#   secret_key: 'secret key'
+#   pass_phrase: 'pass phrase'

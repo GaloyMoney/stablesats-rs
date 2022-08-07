@@ -893,12 +893,14 @@ name = "okex-client"
 version = "0.1.0"
 dependencies = [
  "anyhow",
+ "chrono",
  "data-encoding",
  "reqwest",
  "ring",
  "serde",
  "serde_json",
- "shared",
+ "serde_yaml",
+ "stablesats-shared",
  "thiserror",
  "tokio",
 ]
@@ -1320,8 +1322,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "ring"
-version = "0.16.20"
 name = "reqwest"
 version = "0.11.11"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1375,21 +1375,6 @@ dependencies = [
 
 [[package]]
 name = "rust_decimal"
-version = "1.25.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "3053cf52e236a3ed746dfc745aa9cacf1b791d846bdaf412f60a8d7d6e17c8fc"
-dependencies = [
- "cc",
- "libc",
- "once_cell",
- "spin",
- "untrusted",
- "web-sys",
- "winapi",
-]
-
-[[package]]
-name = "rust_decimal"
 version = "1.26.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "ee9164faf726e4f3ece4978b25ca877ddc6802fa77f38cdccb32c7f805ecd70c"
@@ -1401,9 +1386,9 @@ dependencies = [
 
 [[package]]
 name = "rust_decimal_macros"
-version = "1.25.0"
+version = "1.26.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d1467556c7c115165aa0346bcf45bc947203bcc880efad85a09ba24ea17926c4"
+checksum = "4903d8db81d2321699ca8318035d6ff805c548868df435813968795a802171b2"
 dependencies = [
  "quote",
  "rust_decimal",
@@ -2140,8 +2125,6 @@ dependencies = [
 ]
 
 [[package]]
-<<<<<<< HEAD
-=======
 name = "wasm-bindgen-futures"
 version = "0.4.32"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2154,7 +2137,6 @@ dependencies = [
 ]
 
 [[package]]
->>>>>>> 4b2f6ce (feat(wip): okex client library)
 name = "wasm-bindgen-macro"
 version = "0.2.82"
 source = "registry+https://github.com/rust-lang/crates.io-index"
