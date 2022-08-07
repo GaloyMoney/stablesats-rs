@@ -37,6 +37,7 @@ impl Config {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct PriceServerWrapper {
+    #[serde(default = "bool_true")]
     pub enabled: bool,
     #[serde(default)]
     pub config: PriceServerConfig,
@@ -52,6 +53,7 @@ impl Default for PriceServerWrapper {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct PriceFeedConfigWrapper {
+    #[serde(default = "bool_true")]
     pub enabled: bool,
     #[serde(default)]
     pub config: PriceFeedConfig,
@@ -63,4 +65,8 @@ impl Default for PriceFeedConfigWrapper {
             config: PriceFeedConfig::default(),
         }
     }
+}
+
+fn bool_true() -> bool {
+    true
 }
