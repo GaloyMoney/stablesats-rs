@@ -15,6 +15,9 @@ WORKSPACE="$(pwd)"
 export CARGO_HOME="$(pwd)/cargo-home"
 export CARGO_TARGET_DIR="$(pwd)/cargo-target-dir"
 
+export TARGET_CC=/workspace/osxcross/target/bin/x86_64h-apple-darwin21.4-cc
+export TARGET_AR=/workspace/osxcross/target/bin/x86_64h-apple-darwin21.4-ar
+
 [ -f /workspace/.cargo/config ] && cp /workspace/.cargo/config ${CARGO_HOME}/config
 
 pushd ${REPO}
