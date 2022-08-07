@@ -1,7 +1,7 @@
 FROM clux/muslrust:stable AS build
   COPY . /src
   WORKDIR /src
-  RUN cargo build --release --locked
+  RUN cargo build --locked
 
 FROM ubuntu
   RUN apt-get update && apt-get install -y redis-server
