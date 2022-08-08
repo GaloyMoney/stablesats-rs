@@ -50,13 +50,12 @@ macro_rules! currency {
             }
         }
 
-        impl std::ops::Add<$name> for $name {
-            type Output = Self;
+        impl std::ops::Add<&$name> for &$name {
+            type Output = $name;
 
-            fn add(self, rhs: $name) -> Self::Output {
-                Self {
-                    inner: self.inner + rhs.inner,
-                }
+            fn add(self, rhs: &$name) -> Self::Output {
+                let value = self.inner.amount() + rhs.inner.amount();
+                $name::from_decimal(value)
             }
         }
 

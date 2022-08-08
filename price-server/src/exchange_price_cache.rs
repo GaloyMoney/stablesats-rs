@@ -43,7 +43,7 @@ pub struct BtcSatTick {
 
 impl BtcSatTick {
     pub fn mid_price_of_one_sat(&self) -> UsdCents {
-        (self.bid_price_of_one_sat.clone() + self.ask_price_of_one_sat.clone()) / 2
+        (&self.bid_price_of_one_sat + &self.ask_price_of_one_sat) / 2
     }
 }
 
