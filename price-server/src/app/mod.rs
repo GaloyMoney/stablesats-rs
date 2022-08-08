@@ -8,7 +8,7 @@ pub use error::*;
 use shared::{currency::*, payload::OkexBtcUsdSwapPricePayload, pubsub::*};
 
 pub struct PriceApp {
-    pub price_cache: ExchangePriceCache,
+    price_cache: ExchangePriceCache,
 }
 
 impl PriceApp {

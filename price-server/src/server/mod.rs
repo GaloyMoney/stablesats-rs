@@ -10,7 +10,7 @@ use proto::{price_server::Price, *};
 use tonic::{transport::Server, Request, Response, Status};
 
 use crate::app::*;
-use shared::{currency::*, payload::ConvertU64ToF64};
+use shared::currency::*;
 
 pub use config::*;
 pub use error::*;
@@ -135,20 +135,15 @@ impl Price for PriceService {
 
     async fn get_cents_per_sats_exchange_mid_rate(
         &self,
-        request: Request<GetCentsPerSatsExchangeMidRateRequest>,
+        _request: Request<GetCentsPerSatsExchangeMidRateRequest>,
     ) -> Result<Response<GetCentsPerSatsExchangeMidRateResponse>, Status> {
-        let req = request.into_inner();
+        let sat_qty = 1;
 
         let mid_amount_in_cents = self
             .app
-            .get_cents_per_sats_exchange_mid_rate(Sats::from_major(req.amount_in_satoshis))
+            .get_cents_per_sats_exchange_mid_rate(Sats::from_major(sat_qty))
             .await?;
-        let ratio_in_cents_per_satoshis = ConvertU64ToF64 {
-            amount: mid_amount_in_cents,
-        }
-        .convert()
-        .unwrap();
-
+        let ratio_in_cents_per_satoshis = mid_amount_in_cents as f64;
         Ok(Response::new(GetCentsPerSatsExchangeMidRateResponse {
             ratio_in_cents_per_satoshis,
         }))

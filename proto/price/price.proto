@@ -77,9 +77,7 @@ message GetSatsFromCentsForFutureSellResponse {
   uint64 amount_in_satoshis = 1;
 }
 
-message GetCentsPerSatsExchangeMidRateRequest {
-  uint64 amount_in_satoshis = 1;
-}
+message GetCentsPerSatsExchangeMidRateRequest {}
 message GetCentsPerSatsExchangeMidRateResponse {
   double ratio_in_cents_per_satoshis = 1;
 }

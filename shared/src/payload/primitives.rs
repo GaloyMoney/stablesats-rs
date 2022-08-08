@@ -46,19 +46,6 @@ impl PriceRatioRaw {
     }
 }
 
-pub struct ConvertU64ToF64 {
-    pub amount: u64,
-}
-
-impl ConvertU64ToF64 {
-    pub fn convert(&self) -> Result<f64, ConvertU64ToF64Error> {
-        match f64::from_u64(self.amount) {
-            Some(result) => Ok(result),
-            None => Err(ConvertU64ToF64Error::ConversionError),
-        }
-    }
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -104,14 +91,5 @@ mod tests {
         assert_eq!(&ratio.numerator_amount().to_string(), "0.00999999");
 
         Ok(())
-    }
-
-    #[test]
-    fn convert_u64_to_f64() {
-        let amount_to_convert = ConvertU64ToF64 { amount: 200 }.convert().unwrap();
-
-        assert_eq!(amount_to_convert, f64::from(200));
-
-        assert_ne!(amount_to_convert, f64::from(100));
     }
 }
