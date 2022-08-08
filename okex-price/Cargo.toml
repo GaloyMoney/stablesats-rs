@@ -20,5 +20,5 @@ url = { version = "2.2.2", features = ["serde"] }
 rust_decimal = "1.26.1"
 
 [dev-dependencies]
-anyhow = "1.0.59"
+anyhow = "1.0.60"
 chrono = { version = "0.4", features = ["clock", "serde"], default-features = false }
