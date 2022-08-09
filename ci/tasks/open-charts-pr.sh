@@ -14,13 +14,13 @@ cat <<EOF >> ../body.md
 # Bump ${CHARTS_SUBDIR} image
 
 The ${CHARTS_SUBDIR} image will be bumped to digest:
-```
+\`\`\`
 ${digest}
-```
+\`\`\`
 
 Code diff contained in this image:
 
-https://github.com/GaloyMoney/${CHARTS_SUBDIR}/compare/${old_ref}...${ref}
+https://github.com/GaloyMoney/stablesats-rs/compare/${old_ref}...${ref}
 EOF
 
 gh pr close ${BOT_BRANCH} || true

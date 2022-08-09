@@ -10,7 +10,7 @@ pushd charts-repo
 
 yq -i e '.stablesats.image.digest = strenv(digest)' ./charts/${CHARTS_SUBDIR}/values.yaml
 yq -i e '.stablesats.image.git_ref = strenv(ref)' ./charts/${CHARTS_SUBDIR}/values.yaml
-yq -i e '.stablesats.appVersion = strenv(app_version)' ./charts/${CHARTS_SUBDIR}/Chart.yaml
+yq -i e '.appVersion = strenv(app_version)' ./charts/${CHARTS_SUBDIR}/Chart.yaml
 
 if [[ -z $(git config --global user.email) ]]; then
   git config --global user.email "bot@galoy.io"
