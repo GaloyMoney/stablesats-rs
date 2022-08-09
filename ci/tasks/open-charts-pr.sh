@@ -25,7 +25,7 @@ EOF
 
 gh pr close ${BOT_BRANCH} || true
 gh pr create \
-  --title chore-bump-stablesats-rs-image-${ref} \
+  --title "chore(deps) bump-stablesats-image-${ref}" \
   --body-file ../body.md \
   --base ${BRANCH} \
   --head ${BOT_BRANCH} \
