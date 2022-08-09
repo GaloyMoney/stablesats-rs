@@ -3,7 +3,7 @@ use serde::{Deserialize, Serialize};
 use std::path::Path;
 
 use okex_price::PriceFeedConfig;
-use price_server::PriceServerConfig;
+use price_server::{FeeCalculatorConfig, PriceServerConfig};
 use shared::pubsub::PubSubConfig;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -40,13 +40,16 @@ pub struct PriceServerWrapper {
     #[serde(default = "bool_true")]
     pub enabled: bool,
     #[serde(default)]
-    pub config: PriceServerConfig,
+    pub server: PriceServerConfig,
+    #[serde(default)]
+    pub fees: FeeCalculatorConfig,
 }
 impl Default for PriceServerWrapper {
     fn default() -> Self {
         Self {
             enabled: true,
-            config: PriceServerConfig::default(),
+            server: PriceServerConfig::default(),
+            fees: FeeCalculatorConfig::default(),
         }
     }
 }

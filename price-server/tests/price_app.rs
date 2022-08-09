@@ -26,7 +26,7 @@ async fn price_app() -> anyhow::Result<()> {
     let subscriber = Subscriber::new(config.clone()).await?;
     let mut stream = subscriber.subscribe::<OkexBtcUsdSwapPricePayload>().await?;
 
-    let app = PriceApp::run(config).await?;
+    let app = PriceApp::run(FeeCalculatorConfig::default(), config).await?;
 
     let err = app
         .get_cents_from_sats_for_immediate_buy(Sats::from_major(100_000_000))

@@ -1,13 +1,14 @@
 mod error;
-mod fees_calculator;
 
 use chrono::Duration;
 use futures::stream::StreamExt;
 
-use super::exchange_price_cache::ExchangePriceCache;
-pub use error::*;
-pub use fees_calculator::*;
 use shared::{currency::*, payload::OkexBtcUsdSwapPricePayload, pubsub::*};
+
+use super::exchange_price_cache::ExchangePriceCache;
+
+pub use crate::fee_calculator::*;
+pub use error::*;
 
 pub struct PriceApp {
     price_cache: ExchangePriceCache,
@@ -15,12 +16,15 @@ pub struct PriceApp {
 }
 
 impl PriceApp {
-    pub async fn run(pubsub_cfg: PubSubConfig) -> Result<Self, PriceAppError> {
+    pub async fn run(
+        fee_calc_cfg: FeeCalculatorConfig,
+        pubsub_cfg: PubSubConfig,
+    ) -> Result<Self, PriceAppError> {
         let subscriber = Subscriber::new(pubsub_cfg).await?;
         let mut stream = subscriber.subscribe::<OkexBtcUsdSwapPricePayload>().await?;
 
         let price_cache = ExchangePriceCache::new(Duration::seconds(30));
-        let fee_calculator = FeeCalculator::new();
+        let fee_calculator = FeeCalculator::new(fee_calc_cfg);
         let app = Self {
             price_cache: price_cache.clone(),
             fee_calculator,
