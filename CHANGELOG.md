@@ -1,3 +1,31 @@
+# [stablesats release v0.1.7](https://github.com/GaloyMoney/stablesats/releases/tag/v0.1.7)
+
+
+### Bug Fixes
+
+- Undo fix in change log
+- Path in Dockerfile
+- Move fee calculation to domain object
+- Remove conversion struct
+- Typo in change log md
+- Copy from debug folder in Dockerfile
+
+### Miscellaneous Tasks
+
+- Optionaly pass price-server-url
+- Do not load fee config from env
+- Add price fee calculator
+- Refactor ExchangePriceCache and unit test conversion method from u64 to f64
+- Bump serde from 1.0.142 to 1.0.143
+- Bump rust_decimal from 1.26.0 to 1.26.1
+- Bump anyhow from 1.0.59 to 1.0.60
+- Move TARGET_x var to osxcross-compile.sh
+- Build dev version in regular Dockerfile
+
+### Testing
+
+- Add mid price fn to ExchangePriceCacheInner
+
 # [stablesats release v0.1.6](https://github.com/GaloyMoney/stablesats/releases/tag/v0.1.6)
 
 
