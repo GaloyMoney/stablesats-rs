@@ -39,7 +39,7 @@ enum Command {
     /// Gets a quote from the price server
     Price {
         /// price server URL
-        #[clap(short, long, action, arg_enum, value_parser, env = "PRICE_SERVER_URL")]
+        #[clap(short, long, action, value_parser, env = "PRICE_SERVER_URL")]
         url: Option<Url>,
         #[clap(short, long, action, arg_enum, value_parser, default_value_t = Direction::Buy)]
         direction: Direction,
