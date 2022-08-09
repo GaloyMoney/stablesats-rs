@@ -2,6 +2,7 @@ use anyhow::Context;
 use clap::{Parser, Subcommand};
 use rust_decimal::Decimal;
 use std::path::PathBuf;
+use url::Url;
 
 use super::config::*;
 use super::price_client::*;
@@ -37,6 +38,9 @@ enum Command {
     },
     /// Gets a quote from the price server
     Price {
+        /// price server URL
+        #[clap(short, long, action, arg_enum, value_parser, env = "PRICE_SERVER_URL")]
+        url: Option<Url>,
         #[clap(short, long, action, arg_enum, value_parser, default_value_t = Direction::Buy)]
         direction: Direction,
         /// For option price expiry in seconds
@@ -66,10 +70,11 @@ pub async fn run() -> anyhow::Result<()> {
             }
         }
         Command::Price {
+            url,
             direction,
             expiry,
             amount,
-        } => price_cmd(direction, expiry, amount).await?,
+        } => price_cmd(url, direction, expiry, amount).await?,
     }
     Ok(())
 }
@@ -114,10 +119,14 @@ async fn run_cmd(
 }
 
 async fn price_cmd(
+    url: Option<Url>,
     direction: Direction,
     expiry: Option<u64>,
     amount: Decimal,
 ) -> anyhow::Result<()> {
-    let client = PriceClient::new(PriceClientConfig::default());
+    let client = PriceClient::new(
+        url.map(|url| PriceClientConfig { url })
+            .unwrap_or_else(PriceClientConfig::default),
+    );
     client.get_price(direction, expiry, amount).await
 }
