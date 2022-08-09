@@ -1,5 +1,3 @@
-use thiserror::Error;
-
 use rust_decimal::prelude::*;
 use serde::{Deserialize, Serialize};
 
@@ -10,12 +8,6 @@ crate::string_wrapper! { InstrumentIdRaw }
 crate::string_wrapper! { CurrencyRaw }
 
 const PRICE_IN_CENTS_PRECISION: u32 = 12;
-
-#[derive(Error, Debug)]
-pub enum ConvertU64ToF64Error {
-    #[error("Error converting u64 to f64 type")]
-    ConversionError,
-}
 
 #[derive(Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
