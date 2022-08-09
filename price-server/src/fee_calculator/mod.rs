@@ -2,12 +2,14 @@ mod config;
 
 use rust_decimal::prelude::*;
 
+use shared::currency::*;
+
 pub use config::*;
 
 pub struct FeeCalculator {
     base_fee_rate: Decimal,
     immediate_fee_rate: Decimal,
-    delay_fee_rate: Decimal,
+    delayed_fee_rate: Decimal,
 }
 
 impl FeeCalculator {
@@ -21,16 +23,16 @@ impl FeeCalculator {
         Self {
             base_fee_rate,
             immediate_fee_rate,
-            delay_fee_rate: delayed_fee_rate,
+            delayed_fee_rate,
         }
     }
 
-    pub fn apply_immediate_fee(&self) -> Decimal {
-        Decimal::new(1, 0) - (self.base_fee_rate + self.immediate_fee_rate)
+    pub fn apply_immediate_fee(&self, cents: UsdCents) -> UsdCents {
+        cents * (Decimal::from(1) - (self.base_fee_rate + self.immediate_fee_rate))
     }
 
-    pub fn apply_delayed_fee(&self) -> Decimal {
-        Decimal::new(1, 0) - (self.base_fee_rate + self.delay_fee_rate)
+    pub fn apply_delayed_fee(&self, cents: UsdCents) -> UsdCents {
+        cents * (Decimal::from(1) - (self.base_fee_rate + self.delayed_fee_rate))
     }
 }
 
@@ -39,12 +41,21 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test_fee_calculator() {
-        let fees = FeeCalculator::new(FeeCalculatorConfig::default());
+    fn fee_calculator() {
+        let fees = FeeCalculator::new(FeeCalculatorConfig {
+            base_fee_rate: "0.001".to_string().parse::<Decimal>().unwrap(),
+            immediate_fee_rate: "0.01".to_string().parse::<Decimal>().unwrap(),
+            delayed_fee_rate: "0.1".to_string().parse::<Decimal>().unwrap(),
+        });
 
-        let immediate_fee = Decimal::new(993, 3);
-        let delay_fee = Decimal::new(9925, 4);
-        assert_eq!(fees.apply_immediate_fee(), immediate_fee);
-        assert_eq!(fees.apply_delayed_fee(), delay_fee);
+        let usd_in = UsdCents::from_major(10_000);
+        assert_eq!(
+            fees.apply_immediate_fee(usd_in.clone()),
+            UsdCents::from_major(10_000 - 110)
+        );
+        assert_eq!(
+            fees.apply_delayed_fee(usd_in),
+            UsdCents::from_major(10_000 - 1010)
+        );
     }
 }

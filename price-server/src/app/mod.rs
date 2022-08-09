@@ -42,59 +42,59 @@ impl PriceApp {
         &self,
         sats: impl Into<Sats>,
     ) -> Result<u64, PriceAppError> {
-        let cents = self.price_cache.latest_tick().await?.ask_price_of_one_sat;
-        Ok(u64::try_from(
-            cents * *sats.into().amount() * self.fee_calculator.apply_immediate_fee(),
-        )?)
+        let price_of_one_sat = self.price_cache.latest_tick().await?.ask_price_of_one_sat;
+        Ok(u64::try_from(self.fee_calculator.apply_immediate_fee(
+            price_of_one_sat * *sats.into().amount(),
+        ))?)
     }
 
     pub async fn get_cents_from_sats_for_immediate_sell(
         &self,
         sats: impl Into<Sats>,
     ) -> Result<u64, PriceAppError> {
-        let cents = self.price_cache.latest_tick().await?.bid_price_of_one_sat;
-        Ok(u64::try_from(
-            cents * *sats.into().amount() * self.fee_calculator.apply_immediate_fee(),
-        )?)
+        let price_of_one_sat = self.price_cache.latest_tick().await?.bid_price_of_one_sat;
+        Ok(u64::try_from(self.fee_calculator.apply_immediate_fee(
+            price_of_one_sat * *sats.into().amount(),
+        ))?)
     }
 
     pub async fn get_cents_from_sats_for_future_buy(
         &self,
         sats: impl Into<Sats>,
     ) -> Result<u64, PriceAppError> {
-        let cents = self.price_cache.latest_tick().await?.ask_price_of_one_sat;
-        Ok(u64::try_from(
-            cents * *sats.into().amount() * self.fee_calculator.apply_delayed_fee(),
-        )?)
+        let price_of_one_sat = self.price_cache.latest_tick().await?.ask_price_of_one_sat;
+        Ok(u64::try_from(self.fee_calculator.apply_delayed_fee(
+            price_of_one_sat * *sats.into().amount(),
+        ))?)
     }
 
     pub async fn get_cents_from_sats_for_future_sell(
         &self,
         sats: impl Into<Sats>,
     ) -> Result<u64, PriceAppError> {
-        let cents = self.price_cache.latest_tick().await?.bid_price_of_one_sat;
-        Ok(u64::try_from(
-            cents * *sats.into().amount() * self.fee_calculator.apply_delayed_fee(),
-        )?)
+        let price_of_one_sat = self.price_cache.latest_tick().await?.bid_price_of_one_sat;
+        Ok(u64::try_from(self.fee_calculator.apply_delayed_fee(
+            price_of_one_sat * *sats.into().amount(),
+        ))?)
     }
 
     pub async fn get_sats_from_cents_for_immediate_buy(
         &self,
-        sats: impl Into<Sats>,
+        _sats: impl Into<Sats>,
     ) -> Result<u64, PriceAppError> {
         let cents = self.price_cache.latest_tick().await?.ask_price_of_one_sat;
         Ok(u64::try_from(
-            cents * *sats.into().amount() * self.fee_calculator.apply_immediate_fee(),
+            self.fee_calculator.apply_immediate_fee(cents),
         )?)
     }
 
     pub async fn get_sats_from_cents_for_immediate_sell(
         &self,
-        sats: impl Into<Sats>,
+        _sats: impl Into<Sats>,
     ) -> Result<u64, PriceAppError> {
         let cents = self.price_cache.latest_tick().await?.bid_price_of_one_sat;
         Ok(u64::try_from(
-            cents * *sats.into().amount() * self.fee_calculator.apply_immediate_fee(),
+            self.fee_calculator.apply_immediate_fee(cents),
         )?)
     }
 
@@ -108,21 +108,17 @@ impl PriceApp {
 
     pub async fn get_sats_from_cents_for_future_buy(
         &self,
-        sats: impl Into<Sats>,
+        _sats: impl Into<Sats>,
     ) -> Result<u64, PriceAppError> {
         let cents = self.price_cache.latest_tick().await?.ask_price_of_one_sat;
-        Ok(u64::try_from(
-            cents * *sats.into().amount() * self.fee_calculator.apply_delayed_fee(),
-        )?)
+        Ok(u64::try_from(self.fee_calculator.apply_delayed_fee(cents))?)
     }
 
     pub async fn get_sats_from_cents_for_future_sell(
         &self,
-        sats: impl Into<Sats>,
+        _sats: impl Into<Sats>,
     ) -> Result<u64, PriceAppError> {
         let cents = self.price_cache.latest_tick().await?.bid_price_of_one_sat;
-        Ok(u64::try_from(
-            cents * *sats.into().amount() * self.fee_calculator.apply_delayed_fee(),
-        )?)
+        Ok(u64::try_from(self.fee_calculator.apply_delayed_fee(cents))?)
     }
 }
