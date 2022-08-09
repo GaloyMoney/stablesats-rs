@@ -50,6 +50,25 @@ macro_rules! currency {
             }
         }
 
+        impl std::ops::Add<&$name> for &$name {
+            type Output = $name;
+
+            fn add(self, rhs: &$name) -> Self::Output {
+                let value = self.inner.amount() + rhs.inner.amount();
+                $name::from_decimal(value)
+            }
+        }
+
+        impl std::ops::Div<u32> for $name {
+            type Output = Self;
+
+            fn div(self, rhs: u32) -> Self::Output {
+                Self {
+                    inner: self.inner / rhs,
+                }
+            }
+        }
+
         impl TryFrom<$name> for u64 {
             type Error = CurrencyError;
 
@@ -59,7 +78,6 @@ macro_rules! currency {
         }
     };
 }
-
 currency! { UsdCents, USD_CENT }
 currency! { Sats, SATOSHI }
 

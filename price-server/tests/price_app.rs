@@ -26,7 +26,7 @@ async fn price_app() -> anyhow::Result<()> {
     let subscriber = Subscriber::new(config.clone()).await?;
     let mut stream = subscriber.subscribe::<OkexBtcUsdSwapPricePayload>().await?;
 
-    let app = PriceApp::run(config).await?;
+    let app = PriceApp::run(FeeCalculatorConfig::default(), config).await?;
 
     let err = app
         .get_cents_from_sats_for_immediate_buy(Sats::from_major(100_000_000))
@@ -59,12 +59,21 @@ async fn price_app() -> anyhow::Result<()> {
     let cents = app
         .get_cents_from_sats_for_immediate_buy(Sats::from_major(100_000_000))
         .await?;
-    assert_eq!(cents, u64::try_from(UsdCents::from_major(999999)).unwrap());
+
+    assert_eq!(cents, u64::try_from(UsdCents::from_major(992999)).unwrap());
 
     let cents = app
         .get_cents_from_sats_for_immediate_sell(Sats::from_major(100_000_000))
         .await?;
-    assert_eq!(cents, u64::try_from(UsdCents::from_major(888888)).unwrap());
+    assert_eq!(cents, u64::try_from(UsdCents::from_major(882665)).unwrap());
 
+    let future_buy = app
+        .get_cents_from_sats_for_future_buy(Sats::from_major(100_000_000))
+        .await?;
+
+    assert_eq!(
+        future_buy,
+        u64::try_from(UsdCents::from_major(992499)).unwrap()
+    );
     Ok(())
 }

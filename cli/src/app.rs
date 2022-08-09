@@ -90,7 +90,7 @@ async fn run_cmd(
         let pubsub = pubsub.clone();
         handles.push(tokio::spawn(async move {
             let _ = price_send.try_send(
-                price_server::run(price_server.config, pubsub)
+                price_server::run(price_server.server, price_server.fees, pubsub)
                     .await
                     .context("Price Server error"),
             );

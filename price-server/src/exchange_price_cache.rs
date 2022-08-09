@@ -29,19 +29,22 @@ impl ExchangePriceCache {
         self.inner.write().await.update_price(payload);
     }
 
-    pub async fn ask_price_of_one_sat(&self) -> Result<UsdCents, ExchangePriceCacheError> {
-        self.inner.read().await.ask_price_of_one_sat()
-    }
-
-    pub async fn bid_price_of_one_sat(&self) -> Result<UsdCents, ExchangePriceCacheError> {
-        self.inner.read().await.bid_price_of_one_sat()
+    pub async fn latest_tick(&self) -> Result<BtcSatTick, ExchangePriceCacheError> {
+        self.inner.read().await.latest_tick()
     }
 }
 
-struct BtcSatTick {
+#[derive(Clone)]
+pub struct BtcSatTick {
     timestamp: TimeStamp,
-    ask_price_of_one_sat: UsdCents,
-    bid_price_of_one_sat: UsdCents,
+    pub ask_price_of_one_sat: UsdCents,
+    pub bid_price_of_one_sat: UsdCents,
+}
+
+impl BtcSatTick {
+    pub fn mid_price_of_one_sat(&self) -> UsdCents {
+        (&self.bid_price_of_one_sat + &self.ask_price_of_one_sat) / 2
+    }
 }
 
 struct ExchangePriceCacheInner {
@@ -76,23 +79,29 @@ impl ExchangePriceCacheInner {
         }
     }
 
-    fn ask_price_of_one_sat(&self) -> Result<UsdCents, ExchangePriceCacheError> {
+    fn latest_tick(&self) -> Result<BtcSatTick, ExchangePriceCacheError> {
         if let Some(ref tick) = self.tick {
             if tick.timestamp.duration_since() > self.stale_after {
                 return Err(ExchangePriceCacheError::StalePrice(tick.timestamp.clone()));
             }
-            return Ok(tick.ask_price_of_one_sat.clone());
+            return Ok(tick.clone());
         }
         Err(ExchangePriceCacheError::NoPriceAvailable)
     }
+}
 
-    fn bid_price_of_one_sat(&self) -> Result<UsdCents, ExchangePriceCacheError> {
-        if let Some(ref tick) = self.tick {
-            if tick.timestamp.duration_since() > self.stale_after {
-                return Err(ExchangePriceCacheError::StalePrice(tick.timestamp.clone()));
-            }
-            return Ok(tick.bid_price_of_one_sat.clone());
-        }
-        Err(ExchangePriceCacheError::NoPriceAvailable)
+#[cfg(test)]
+mod tests {
+
+    use super::*;
+    #[test]
+    fn test_price_of_one_sat() {
+        let tick = BtcSatTick {
+            timestamp: TimeStamp::now(),
+            bid_price_of_one_sat: UsdCents::from_major(5000),
+            ask_price_of_one_sat: UsdCents::from_major(10000),
+        };
+
+        assert_eq!(tick.mid_price_of_one_sat(), UsdCents::from_major(7500));
     }
 }
