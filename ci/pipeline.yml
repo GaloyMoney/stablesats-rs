@@ -32,7 +32,6 @@ groups:
 
 jobs:
 - #@ rust_check_code()
-- #@ rust_integration_test()
 - #@ build_edge_image()
 - name: test-integration
   serial: true
