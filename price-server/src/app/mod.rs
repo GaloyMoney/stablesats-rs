@@ -93,7 +93,6 @@ impl PriceApp {
     ) -> Result<u64, PriceAppError> {
         let price_of_one_sat = self.price_cache.latest_tick().await?.bid_price_of_one_sat;
         let fee_on_one_sat = self.fee_calculator.apply_immediate_fee(price_of_one_sat);
-        let result = cents.amount() / fee_on_one_sat.amount();
         Ok(u64::try_from(cents.amount() / fee_on_one_sat.amount()).unwrap())
     }
 
