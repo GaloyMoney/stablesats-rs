@@ -9,3 +9,7 @@
 # Added by cargo
 
 /target
+
+# Use .envrc to set OKEX environment variables
+# Ignore here so that secrets are not committed
+.envrc
