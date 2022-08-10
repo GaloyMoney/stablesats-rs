@@ -9,8 +9,6 @@ use super::exchange_price_cache::ExchangePriceCache;
 
 pub use crate::fee_calculator::*;
 pub use error::*;
-pub use crate::cent_usd_converter::CentUsdConverter;
-pub use crate::sat_cent_converter::SatCentConverter;
 
 pub struct PriceApp {
     price_cache: ExchangePriceCache,
@@ -44,11 +42,9 @@ impl PriceApp {
         &self,
         sats: impl Into<Sats>,
     ) -> Result<u64, PriceAppError> {
-        let price_of_one_sat = self.price_cache.latest_tick().await?.ask_price_of_one_sat;
-        let converter = SatCentConverter { price_of_sat:price_of_one_sat };
-        let cents = converter.convert(sats.into());
+        let price_of_one_sat = self.price_cache.latest_tick().await?.bid_price_of_one_sat;
         Ok(u64::try_from(self.fee_calculator.apply_immediate_fee(
-            cents
+            price_of_one_sat * *sats.into().amount(),
         ))?)
     }
 
@@ -56,7 +52,7 @@ impl PriceApp {
         &self,
         sats: impl Into<Sats>,
     ) -> Result<u64, PriceAppError> {
-        let price_of_one_sat = self.price_cache.latest_tick().await?.bid_price_of_one_sat;
+        let price_of_one_sat = self.price_cache.latest_tick().await?.ask_price_of_one_sat;
         Ok(u64::try_from(self.fee_calculator.apply_immediate_fee(
             price_of_one_sat * *sats.into().amount(),
         ))?)
@@ -66,7 +62,7 @@ impl PriceApp {
         &self,
         sats: impl Into<Sats>,
     ) -> Result<u64, PriceAppError> {
-        let price_of_one_sat = self.price_cache.latest_tick().await?.ask_price_of_one_sat;
+        let price_of_one_sat = self.price_cache.latest_tick().await?.bid_price_of_one_sat;
         Ok(u64::try_from(self.fee_calculator.apply_delayed_fee(
             price_of_one_sat * *sats.into().amount(),
         ))?)
@@ -76,7 +72,7 @@ impl PriceApp {
         &self,
         sats: impl Into<Sats>,
     ) -> Result<u64, PriceAppError> {
-        let price_of_one_sat = self.price_cache.latest_tick().await?.bid_price_of_one_sat;
+        let price_of_one_sat = self.price_cache.latest_tick().await?.ask_price_of_one_sat;
         Ok(u64::try_from(self.fee_calculator.apply_delayed_fee(
             price_of_one_sat * *sats.into().amount(),
         ))?)
@@ -84,36 +80,22 @@ impl PriceApp {
 
     pub async fn get_sats_from_cents_for_immediate_buy(
         &self,
-        _sats: impl Into<Sats>,
+        cents: UsdCents,
     ) -> Result<u64, PriceAppError> {
-        let cents = self.price_cache.latest_tick().await?.ask_price_of_one_sat;
-        Ok(u64::try_from(
-            self.fee_calculator.apply_immediate_fee(cents),
-        )?)
+        let price_of_one_sat = self.price_cache.latest_tick().await?.ask_price_of_one_sat;
+        let fee_on_one_sat = self.fee_calculator.apply_immediate_fee(price_of_one_sat);
+        Ok(u64::try_from(cents.amount() / fee_on_one_sat.amount()).unwrap())
     }
 
     pub async fn get_sats_from_cents_for_immediate_sell(
         &self,
-        _sats: impl Into<Sats>,
+        cents: UsdCents,
     ) -> Result<u64, PriceAppError> {
-        let cents = self.price_cache.latest_tick().await?.bid_price_of_one_sat;
-        Ok(u64::try_from(
-            self.fee_calculator.apply_immediate_fee(cents),
-        )?)
+        let price_of_one_sat = self.price_cache.latest_tick().await?.bid_price_of_one_sat;
+        let fee_on_one_sat = self.fee_calculator.apply_immediate_fee(price_of_one_sat);
+        let result = cents.amount() / fee_on_one_sat.amount();
+        Ok(u64::try_from(cents.amount() / fee_on_one_sat.amount()).unwrap())
     }
-
-    // pub async fn get_sats_from_cents_for_immediate_sell(
-    //     &self,
-    //     cents: impl Into<UsdCents>,
-    // ) -> Result<u64, PriceAppError> {
-    //     let price_of_one_sat = self.price_cache.latest_tick().await?.bid_price_of_one_sat;
-
-    //     let amount_in_usd = CentUsdConverter { cents: cents.into() };
-
-    //     Ok(u64::try_from(
-    //         self.fee_calculator.apply_immediate_fee(cents),
-    //     )?)
-    // }
 
     pub async fn get_cents_per_sats_exchange_mid_rate(
         &self,
@@ -125,17 +107,19 @@ impl PriceApp {
 
     pub async fn get_sats_from_cents_for_future_buy(
         &self,
-        _sats: impl Into<Sats>,
+        cents: UsdCents,
     ) -> Result<u64, PriceAppError> {
-        let cents = self.price_cache.latest_tick().await?.ask_price_of_one_sat;
-        Ok(u64::try_from(self.fee_calculator.apply_delayed_fee(cents))?)
+        let price_of_one_sat = self.price_cache.latest_tick().await?.ask_price_of_one_sat;
+        let fee_on_sat = self.fee_calculator.apply_delayed_fee(price_of_one_sat);
+        Ok(u64::try_from(cents.amount() / fee_on_sat.amount()).unwrap())
     }
 
     pub async fn get_sats_from_cents_for_future_sell(
         &self,
-        _sats: impl Into<Sats>,
+        cents: UsdCents,
     ) -> Result<u64, PriceAppError> {
-        let cents = self.price_cache.latest_tick().await?.bid_price_of_one_sat;
-        Ok(u64::try_from(self.fee_calculator.apply_delayed_fee(cents))?)
+        let price_of_one_sat = self.price_cache.latest_tick().await?.bid_price_of_one_sat;
+        let fee_per_sat = self.fee_calculator.apply_delayed_fee(price_of_one_sat);
+        Ok(u64::try_from(cents.amount() / fee_per_sat.amount()).unwrap())
     }
 }

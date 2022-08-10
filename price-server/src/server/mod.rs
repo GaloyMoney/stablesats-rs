@@ -84,7 +84,7 @@ impl Price for PriceService {
         let req = request.into_inner();
         let amount_in_satoshis = self
             .app
-            .get_sats_from_cents_for_immediate_buy(Sats::from_major(req.amount_in_cents))
+            .get_sats_from_cents_for_immediate_buy(UsdCents::from_major(req.amount_in_cents))
             .await?;
         Ok(Response::new(GetSatsFromCentsForImmediateBuyResponse {
             amount_in_satoshis,
@@ -98,7 +98,7 @@ impl Price for PriceService {
         let req = request.into_inner();
         let amount_in_satoshis = self
             .app
-            .get_sats_from_cents_for_immediate_sell(Sats::from_major(req.amount_in_cents))
+            .get_sats_from_cents_for_immediate_sell(UsdCents::from_major(req.amount_in_cents))
             .await?;
         Ok(Response::new(GetSatsFromCentsForImmediateSellResponse {
             amount_in_satoshis,
@@ -112,7 +112,7 @@ impl Price for PriceService {
         let req = request.into_inner();
         let amount_in_satoshis = self
             .app
-            .get_sats_from_cents_for_future_buy(Sats::from_major(req.amount_in_cents))
+            .get_sats_from_cents_for_future_buy(UsdCents::from_major(req.amount_in_cents))
             .await?;
         Ok(Response::new(GetSatsFromCentsForFutureBuyResponse {
             amount_in_satoshis,
@@ -126,7 +126,7 @@ impl Price for PriceService {
         let req = request.into_inner();
         let amount_in_satoshis = self
             .app
-            .get_sats_from_cents_for_future_sell(Sats::from_major(req.amount_in_cents))
+            .get_sats_from_cents_for_future_sell(UsdCents::from_major(req.amount_in_cents))
             .await?;
         Ok(Response::new(GetSatsFromCentsForFutureSellResponse {
             amount_in_satoshis,
