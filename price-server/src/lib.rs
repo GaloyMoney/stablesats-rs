@@ -5,6 +5,8 @@ pub mod app;
 mod exchange_price_cache;
 mod fee_calculator;
 mod server;
+mod sat_cent_converter;
+mod cent_usd_converter;
 
 use shared::pubsub::PubSubConfig;
 

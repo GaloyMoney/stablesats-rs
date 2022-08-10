@@ -9,6 +9,8 @@ use super::exchange_price_cache::ExchangePriceCache;
 
 pub use crate::fee_calculator::*;
 pub use error::*;
+pub use crate::cent_usd_converter::CentUsdConverter;
+pub use crate::sat_cent_converter::SatCentConverter;
 
 pub struct PriceApp {
     price_cache: ExchangePriceCache,
@@ -43,8 +45,10 @@ impl PriceApp {
         sats: impl Into<Sats>,
     ) -> Result<u64, PriceAppError> {
         let price_of_one_sat = self.price_cache.latest_tick().await?.ask_price_of_one_sat;
+        let converter = SatCentConverter { price_of_sat:price_of_one_sat };
+        let cents = converter.convert(sats.into());
         Ok(u64::try_from(self.fee_calculator.apply_immediate_fee(
-            price_of_one_sat * *sats.into().amount(),
+            cents
         ))?)
     }
 
@@ -97,6 +101,19 @@ impl PriceApp {
             self.fee_calculator.apply_immediate_fee(cents),
         )?)
     }
+
+    // pub async fn get_sats_from_cents_for_immediate_sell(
+    //     &self,
+    //     cents: impl Into<UsdCents>,
+    // ) -> Result<u64, PriceAppError> {
+    //     let price_of_one_sat = self.price_cache.latest_tick().await?.bid_price_of_one_sat;
+
+    //     let amount_in_usd = CentUsdConverter { cents: cents.into() };
+
+    //     Ok(u64::try_from(
+    //         self.fee_calculator.apply_immediate_fee(cents),
+    //     )?)
+    // }
 
     pub async fn get_cents_per_sats_exchange_mid_rate(
         &self,
