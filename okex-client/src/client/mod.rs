@@ -18,7 +18,7 @@ pub struct DepositAddress {
 
 pub struct OkexClientConfig {
     pub api_key: String,
-    pub pass_phrase: String,
+    pub passphrase: String,
     pub secret_key: String,
 }
 
@@ -61,7 +61,7 @@ impl OkexClient {
         );
         headers.insert(
             "OK-ACCESS-PASSPHRASE",
-            HeaderValue::from_str(self.config.pass_phrase.as_str())?,
+            HeaderValue::from_str(self.config.passphrase.as_str())?,
         );
 
         let response = self.client.get(url).headers(headers).send().await?;

@@ -16,6 +16,10 @@ services:
     command: ["make","test-in-ci"]
     environment:
     - REDIS_HOST=redis
+    - OKEX_API_KEY=${OKEX_API_KEY}
+    - OKEX_PASSPHRASE=${OKEX_PASSPHRASE}
+    - OKEX_SECRET_KEY=${OKEX_SECRET_KEY}
+    - RUST_BACKTRACE=1
     working_dir: /repo
     volumes:
       - ./:/repo
