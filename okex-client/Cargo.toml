@@ -17,4 +17,4 @@ serde_json = "1.0.83"
 chrono = { version = "0.4", features = ["clock", "serde"], default-features = false }
 serde_yaml = "0.9.4"
 
-anyhow = "1.0.59"
+anyhow = "1.0.61"

@@ -2,13 +2,14 @@ name: "Dependencies integration Tests"
 
 on:
   pull_request_target:
-    types: [labeled]
+    branches: [ main ]
+    # types: [labeled]
 
 jobs:
-  integration:
-    name: Integration Test
+  dependencies-integration:
+    name: Dependencies Integration Test
     runs-on: ubuntu-latest
-    if: contains(github.event.pull_request.labels.*.name, 'dependencies')
+    # if: contains(github.event.pull_request.labels.*.name, 'dependencies')
     steps:
       - uses: actions/checkout@v2
       - name: Run integration tests
