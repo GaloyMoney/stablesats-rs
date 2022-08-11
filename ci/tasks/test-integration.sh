@@ -39,7 +39,7 @@ echo "Done!"
 docker compose down --volumes --remove-orphans --timeout 1
 
 ssh ${ADDITIONAL_SSH_OPTS} ${DOCKER_HOST_USER}@${DOCKER_HOST_IP} \
-  "cd ${REPO_PATH}; export OKEX_API_KEY=${OKEX_API_KEY}; export OKEX_PASSPHRASE=${OKEX_PASSPHRASE}; export OKEX_SECRET_KEY=${OKEX_SECRET_KEY}; docker compose -f docker-compose.yml up integration-tests"
+  "cd ${REPO_PATH}; export OKEX_API_KEY=\"${OKEX_API_KEY}\"; export OKEX_PASSPHRASE=\"${OKEX_PASSPHRASE}\"; export OKEX_SECRET_KEY=\"${OKEX_SECRET_KEY}\"; docker compose -f docker-compose.yml up integration-tests"
 
 container_id=$(docker ps -q -f status=exited -f name="${PWD##*/}-integration-tests-")
 test_status=$(docker inspect $container_id --format='{{.State.ExitCode}}')
