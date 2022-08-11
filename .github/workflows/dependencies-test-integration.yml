@@ -2,7 +2,6 @@ name: "Dependencies integration Tests"
 
 on:
   pull_request_target:
-    branches: [ main ]
     types: [labeled]
 
 jobs:
