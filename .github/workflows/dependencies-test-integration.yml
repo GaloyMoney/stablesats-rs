@@ -1,0 +1,20 @@
+name: "Dependencies integration Tests"
+
+on:
+  pull_request_target:
+    branches: [ main ]
+    types: [labeled]
+
+jobs:
+  integration:
+    name: Integration Test
+    runs-on: ubuntu-latest
+    if: contains(github.event.pull_request.labels.*.name, 'dependencies')
+    steps:
+      - uses: actions/checkout@v2
+      - name: Run integration tests
+        env:
+          OKEX_API_KEY: ${{ secrets.OKEX_API_KEY }}
+          OKEX_PASSPHRASE: ${{ secrets.OKEX_PASSPHRASE }}
+          OKEX_SECRET_KEY: ${{ secrets.OKEX_SECRET_KEY }}
+        run: docker compose -f docker-compose.yml run integration-tests
