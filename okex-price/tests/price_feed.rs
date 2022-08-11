@@ -35,12 +35,10 @@ async fn subscribes_to_okex() -> anyhow::Result<()> {
         }
     );
     assert_eq!(price_tick.data.len(), 1);
-    assert!(
-        TimeStamp::try_from(&price_tick.data[0].ts)
-            .expect("couldn't convert timestamp")
-            .duration_since()
-            < Duration::seconds(5)
-    );
+    let duration_since = TimeStamp::try_from(&price_tick.data[0].ts)
+        .expect("couldn't convert timestamp")
+        .duration_since();
+    assert!(duration_since < Duration::seconds(30));
 
     Ok(())
 }
