@@ -49,10 +49,9 @@ impl OkexClient {
         let url = format!("{}{}", OKEX_API_URL, request_path);
 
         let timestamp = Utc::now().to_rfc3339_opts(SecondsFormat::Millis, true);
-        let pre_hash_str = format!("{}GET{}", timestamp, request_path);
-        let key = hmac::Key::new(hmac::HMAC_SHA256, self.config.secret_key.as_bytes());
-        let signature = hmac::sign(&key, pre_hash_str.as_bytes());
-        let sign_base64 = BASE64.encode(signature.as_ref());
+        let pre_hash = format!("{}GET{}", timestamp, request_path);
+
+        let sign_base64 = self.sign_okex_request(pre_hash);
 
         let mut headers = HeaderMap::new();
         headers.insert(
@@ -112,10 +111,8 @@ impl OkexClient {
         let request_body = serde_json::to_string(&body)?;
 
         let timestamp = Utc::now().to_rfc3339_opts(SecondsFormat::Millis, true);
-        let pre_hash_str = format!("{}POST{}{}", timestamp, request_path, request_body);
-        let key = hmac::Key::new(hmac::HMAC_SHA256, self.config.secret_key.as_bytes());
-        let signature = hmac::sign(&key, pre_hash_str.as_bytes());
-        let sign_base64 = BASE64.encode(signature.as_ref());
+        let pre_hash = format!("{}POST{}{}", timestamp, request_path, request_body);
+        let sign_base64 = self.sign_okex_request(pre_hash);
 
         let mut headers = HeaderMap::new();
         headers.insert(CONTENT_TYPE, HeaderValue::from_str("application/json")?);
@@ -168,5 +165,11 @@ impl OkexClient {
                 code: response.code,
             })
         }
+    }
+
+    fn sign_okex_request(&self, pre_hash: String) -> String {
+        let key = hmac::Key::new(hmac::HMAC_SHA256, self.config.secret_key.as_bytes());
+        let signature = hmac::sign(&key, pre_hash.as_bytes());
+        BASE64.encode(signature.as_ref())
     }
 }
