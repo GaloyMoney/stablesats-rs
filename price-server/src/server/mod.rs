@@ -8,6 +8,7 @@ pub mod proto {
 
 use proto::{price_server::Price, *};
 use tonic::{transport::Server, Request, Response, Status};
+use tracing::instrument;
 
 use crate::app::*;
 use shared::currency::*;
@@ -21,6 +22,7 @@ pub struct PriceService {
 
 #[tonic::async_trait]
 impl Price for PriceService {
+    #[instrument(skip(self))]
     async fn get_cents_from_sats_for_immediate_buy(
         &self,
         request: Request<GetCentsFromSatsForImmediateBuyRequest>,
@@ -35,6 +37,7 @@ impl Price for PriceService {
         }))
     }
 
+    #[instrument(skip(self))]
     async fn get_cents_from_sats_for_immediate_sell(
         &self,
         request: Request<GetCentsFromSatsForImmediateSellRequest>,
@@ -49,6 +52,7 @@ impl Price for PriceService {
         }))
     }
 
+    #[instrument(skip(self))]
     async fn get_cents_from_sats_for_future_buy(
         &self,
         request: Request<GetCentsFromSatsForFutureBuyRequest>,
@@ -63,6 +67,7 @@ impl Price for PriceService {
         }))
     }
 
+    #[instrument(skip(self))]
     async fn get_cents_from_sats_for_future_sell(
         &self,
         request: Request<GetCentsFromSatsForFutureSellRequest>,
@@ -77,6 +82,7 @@ impl Price for PriceService {
         }))
     }
 
+    #[instrument(skip(self))]
     async fn get_sats_from_cents_for_immediate_buy(
         &self,
         request: Request<GetSatsFromCentsForImmediateBuyRequest>,
@@ -91,6 +97,7 @@ impl Price for PriceService {
         }))
     }
 
+    #[instrument(skip(self))]
     async fn get_sats_from_cents_for_immediate_sell(
         &self,
         request: Request<GetSatsFromCentsForImmediateSellRequest>,
@@ -105,6 +112,7 @@ impl Price for PriceService {
         }))
     }
 
+    #[instrument(skip(self))]
     async fn get_sats_from_cents_for_future_buy(
         &self,
         request: Request<GetSatsFromCentsForFutureBuyRequest>,
@@ -119,6 +127,7 @@ impl Price for PriceService {
         }))
     }
 
+    #[instrument(skip(self))]
     async fn get_sats_from_cents_for_future_sell(
         &self,
         request: Request<GetSatsFromCentsForFutureSellRequest>,
@@ -133,6 +142,7 @@ impl Price for PriceService {
         }))
     }
 
+    #[instrument(skip(self))]
     async fn get_cents_per_sats_exchange_mid_rate(
         &self,
         _request: Request<GetCentsPerSatsExchangeMidRateRequest>,

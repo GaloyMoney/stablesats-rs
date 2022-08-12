@@ -21,3 +21,8 @@ futures = "0.3.21"
 tonic = "0.8.0"
 url = { version = "2.2.2", features = ["serde"] }
 rust_decimal = "1.26.1"
+opentelemetry = "0.17.0"
+tracing = "0.1.36"
+opentelemetry-jaeger = { version = "0.16.0", features = ["rt-tokio"] }
+tracing-subscriber = "0.3.15"
+tracing-opentelemetry = "0.17.4"

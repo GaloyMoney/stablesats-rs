@@ -87,6 +87,7 @@ async fn run_cmd(
     }: Config,
 ) -> anyhow::Result<()> {
     println!("Starting server process");
+    crate::tracing::init_tracer(format!("{}:{}", "localhost", 6831), "price-server")?;
     let (send, mut receive) = tokio::sync::mpsc::channel(1);
     let mut handles = Vec::new();
 
