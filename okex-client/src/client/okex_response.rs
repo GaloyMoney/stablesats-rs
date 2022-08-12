@@ -7,12 +7,19 @@ pub enum OkexResponse {
     WithoutData(ResponseWithoutData),
 }
 
+#[derive(Deserialize, Debug)]
+#[serde(untagged)]
+pub enum OkexResponseData {
+    DepositAddress(DepositAddressData),
+    Transfer(TransferData),
+}
+
 /// Response struct from OKEX
 #[derive(Deserialize, Debug)]
 pub struct ResponseWithData {
     pub code: String,
     pub msg: String,
-    pub data: Vec<DepositAddressData>,
+    pub data: Vec<OkexResponseData>,
 }
 
 #[derive(Deserialize, Debug)]
@@ -21,7 +28,7 @@ pub struct ResponseWithoutData {
     pub msg: String,
 }
 
-#[derive(Deserialize, Debug)]
+#[derive(Deserialize, Debug, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct DepositAddressData {
     pub chain: String,
@@ -30,4 +37,15 @@ pub struct DepositAddressData {
     pub to: String,
     pub addr: String,
     pub selected: bool,
+}
+
+#[derive(Deserialize, Debug, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct TransferData {
+    pub trans_id: String,
+    pub ccy: String,
+    pub client_id: String,
+    pub from: String,
+    pub amt: String,
+    pub to: String,
 }
