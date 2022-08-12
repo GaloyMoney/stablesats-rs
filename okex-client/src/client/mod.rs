@@ -89,11 +89,69 @@ impl OkexClient {
         let request_path = "/api/v5/asset/transfer";
         let url = format!("{}{}", OKEX_API_URL, request_path);
 
+        // TODO: Check that amount is less than account balance
+
         let mut body: HashMap<String, String> = HashMap::new();
         body.insert("ccy".to_string(), "BTC".to_string());
         body.insert("amt".to_string(), amt.to_string());
         body.insert("from".to_string(), "6".to_string());
         body.insert("to".to_string(), "18".to_string());
+        let request_body = serde_json::to_string(&body)?;
+
+        let timestamp = Utc::now().to_rfc3339_opts(SecondsFormat::Millis, true);
+        let pre_hash = format!("{}POST{}{}", timestamp, request_path, request_body);
+
+        let headers = self.request_headers(timestamp.as_str(), pre_hash)?;
+
+        let response = self
+            .client
+            .post(url)
+            .headers(headers)
+            .body(request_body)
+            .send()
+            .await?;
+
+        let response_text = response.text().await?;
+
+        let response = match serde_json::from_str::<OkexResponse>(&response_text)? {
+            OkexResponse::WithData(response) => response,
+            OkexResponse::WithoutData(response) => {
+                return Err(OkexClientError::from(response));
+            }
+        };
+
+        if let Some(data) = response.data.first() {
+            match data {
+                OkexResponseData::Transfer(trans_data) => Ok(TransferId {
+                    value: trans_data.trans_id.clone(),
+                }),
+                _ => Err(OkexClientError::UnexpectedResponse {
+                    msg: response.msg,
+                    code: response.code,
+                }),
+            }
+        } else {
+            Err(OkexClientError::UnexpectedResponse {
+                msg: response.msg,
+                code: response.code,
+            })
+        }
+    }
+
+    pub async fn transfer_trading_to_funding(
+        &self,
+        amt: f64,
+    ) -> Result<TransferId, OkexClientError> {
+        let request_path = "/api/v5/asset/transfer";
+        let url = format!("{}{}", OKEX_API_URL, request_path);
+
+        // TODO: Check that amount is less than account balance
+
+        let mut body: HashMap<String, String> = HashMap::new();
+        body.insert("ccy".to_string(), "BTC".to_string());
+        body.insert("amt".to_string(), amt.to_string());
+        body.insert("from".to_string(), "18".to_string());
+        body.insert("to".to_string(), "6".to_string());
         let request_body = serde_json::to_string(&body)?;
 
         let timestamp = Utc::now().to_rfc3339_opts(SecondsFormat::Millis, true);

@@ -38,7 +38,7 @@ async fn client_is_missing_header() -> anyhow::Result<()> {
 }
 
 #[tokio::test]
-async fn transfer() -> anyhow::Result<()> {
+async fn transfer_funding_to_trading() -> anyhow::Result<()> {
     let api_key = env::var("OKEX_API_KEY").expect("OKEX_API_KEY not set");
     let passphrase = env::var("OKEX_PASSPHRASE").expect("OKEX_PASS_PHRASE not set");
     let secret_key = env::var("OKEX_SECRET_KEY").expect("OKEX_SECRET_KEY not set");
@@ -49,6 +49,24 @@ async fn transfer() -> anyhow::Result<()> {
     });
     let amount = 0.00001;
     let transfer_id = client.transfer_funding_to_trading(amount).await?;
+
+    assert!(transfer_id.value.len() == 9);
+
+    Ok(())
+}
+
+#[tokio::test]
+async fn transfer_trading_to_funding() -> anyhow::Result<()> {
+    let api_key = env::var("OKEX_API_KEY").expect("OKEX_API_KEY not set");
+    let passphrase = env::var("OKEX_PASSPHRASE").expect("OKEX_PASS_PHRASE not set");
+    let secret_key = env::var("OKEX_SECRET_KEY").expect("OKEX_SECRET_KEY not set");
+    let client = OkexClient::new(OkexClientConfig {
+        api_key,
+        passphrase,
+        secret_key,
+    });
+    let amount = 0.00001;
+    let transfer_id = client.transfer_trading_to_funding(amount).await?;
 
     assert!(transfer_id.value.len() == 9);
 
