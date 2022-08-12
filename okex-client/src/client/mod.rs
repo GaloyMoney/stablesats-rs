@@ -25,6 +25,11 @@ pub struct TransferId {
     pub value: String,
 }
 
+#[derive(Debug)]
+pub struct AvailableBalance {
+    pub value: String,
+}
+
 pub struct OkexClientConfig {
     pub api_key: String,
     pub passphrase: String,
@@ -180,6 +185,44 @@ impl OkexClient {
             match data {
                 OkexResponseData::Transfer(trans_data) => Ok(TransferId {
                     value: trans_data.trans_id.clone(),
+                }),
+                _ => Err(OkexClientError::UnexpectedResponse {
+                    msg: response.msg,
+                    code: response.code,
+                }),
+            }
+        } else {
+            Err(OkexClientError::UnexpectedResponse {
+                msg: response.msg,
+                code: response.code,
+            })
+        }
+    }
+
+    pub async fn funding_account_balance(&self) -> Result<AvailableBalance, OkexClientError> {
+        let request_path = "/api/v5/asset/balances?ccy=BTC";
+        let url = format!("{}{}", OKEX_API_URL, request_path);
+
+        let timestamp = Utc::now().to_rfc3339_opts(SecondsFormat::Millis, true);
+        let pre_hash = format!("{}GET{}", timestamp, request_path);
+
+        let headers = self.request_headers(timestamp.as_str(), pre_hash)?;
+
+        let response = self.client.get(url).headers(headers).send().await?;
+
+        let response_text = response.text().await?;
+
+        let response = match serde_json::from_str::<OkexResponse>(&response_text)? {
+            OkexResponse::WithData(response) => response,
+            OkexResponse::WithoutData(response) => {
+                return Err(OkexClientError::from(response));
+            }
+        };
+
+        if let Some(data) = response.data.first() {
+            match data {
+                OkexResponseData::Balance(balance_data) => Ok(AvailableBalance {
+                    value: balance_data.avail_bal.clone(),
                 }),
                 _ => Err(OkexClientError::UnexpectedResponse {
                     msg: response.msg,
