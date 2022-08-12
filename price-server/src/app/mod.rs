@@ -2,6 +2,7 @@ mod error;
 
 use chrono::Duration;
 use futures::stream::StreamExt;
+use tracing::instrument;
 
 use shared::{currency::*, payload::OkexBtcUsdSwapPricePayload, pubsub::*};
 
@@ -38,49 +39,58 @@ impl PriceApp {
         Ok(app)
     }
 
+    #[instrument(skip(self))]
     pub async fn get_cents_from_sats_for_immediate_buy(
         &self,
-        sats: impl Into<Sats>,
+        sats: Sats,
     ) -> Result<u64, PriceAppError> {
         let price_of_one_sat = self.price_cache.latest_tick().await?.ask_price_of_one_sat;
-        Ok(u64::try_from(self.fee_calculator.apply_immediate_fee(
-            price_of_one_sat * *sats.into().amount(),
-        ))?)
+        Ok(u64::try_from(
+            self.fee_calculator
+                .apply_immediate_fee(price_of_one_sat * *sats.amount()),
+        )?)
     }
 
+    #[instrument(skip(self))]
     pub async fn get_cents_from_sats_for_immediate_sell(
         &self,
-        sats: impl Into<Sats>,
+        sats: Sats,
     ) -> Result<u64, PriceAppError> {
         let price_of_one_sat = self.price_cache.latest_tick().await?.bid_price_of_one_sat;
-        Ok(u64::try_from(self.fee_calculator.apply_immediate_fee(
-            price_of_one_sat * *sats.into().amount(),
-        ))?)
+        Ok(u64::try_from(
+            self.fee_calculator
+                .apply_immediate_fee(price_of_one_sat * *sats.amount()),
+        )?)
     }
 
+    #[instrument(skip(self))]
     pub async fn get_cents_from_sats_for_future_buy(
         &self,
-        sats: impl Into<Sats>,
+        sats: Sats,
     ) -> Result<u64, PriceAppError> {
         let price_of_one_sat = self.price_cache.latest_tick().await?.ask_price_of_one_sat;
-        Ok(u64::try_from(self.fee_calculator.apply_delayed_fee(
-            price_of_one_sat * *sats.into().amount(),
-        ))?)
+        Ok(u64::try_from(
+            self.fee_calculator
+                .apply_delayed_fee(price_of_one_sat * *sats.amount()),
+        )?)
     }
 
+    #[instrument(skip(self))]
     pub async fn get_cents_from_sats_for_future_sell(
         &self,
-        sats: impl Into<Sats>,
+        sats: Sats,
     ) -> Result<u64, PriceAppError> {
         let price_of_one_sat = self.price_cache.latest_tick().await?.bid_price_of_one_sat;
-        Ok(u64::try_from(self.fee_calculator.apply_delayed_fee(
-            price_of_one_sat * *sats.into().amount(),
-        ))?)
+        Ok(u64::try_from(
+            self.fee_calculator
+                .apply_delayed_fee(price_of_one_sat * *sats.amount()),
+        )?)
     }
 
+    #[instrument(skip(self))]
     pub async fn get_sats_from_cents_for_immediate_buy(
         &self,
-        _sats: impl Into<Sats>,
+        _cents: UsdCents,
     ) -> Result<u64, PriceAppError> {
         let cents = self.price_cache.latest_tick().await?.ask_price_of_one_sat;
         Ok(u64::try_from(
@@ -88,9 +98,10 @@ impl PriceApp {
         )?)
     }
 
+    #[instrument(skip(self))]
     pub async fn get_sats_from_cents_for_immediate_sell(
         &self,
-        _sats: impl Into<Sats>,
+        _cents: UsdCents,
     ) -> Result<u64, PriceAppError> {
         let cents = self.price_cache.latest_tick().await?.bid_price_of_one_sat;
         Ok(u64::try_from(
@@ -98,25 +109,28 @@ impl PriceApp {
         )?)
     }
 
+    #[instrument(skip(self))]
     pub async fn get_cents_per_sats_exchange_mid_rate(
         &self,
-        sats: impl Into<Sats>,
+        sats: Sats,
     ) -> Result<u64, PriceAppError> {
         let cents = self.price_cache.latest_tick().await?.mid_price_of_one_sat();
-        Ok(u64::try_from(cents * *sats.into().amount())?)
+        Ok(u64::try_from(cents * *sats.amount())?)
     }
 
+    #[instrument(skip(self))]
     pub async fn get_sats_from_cents_for_future_buy(
         &self,
-        _sats: impl Into<Sats>,
+        _cents: UsdCents,
     ) -> Result<u64, PriceAppError> {
         let cents = self.price_cache.latest_tick().await?.ask_price_of_one_sat;
         Ok(u64::try_from(self.fee_calculator.apply_delayed_fee(cents))?)
     }
 
+    #[instrument(skip(self))]
     pub async fn get_sats_from_cents_for_future_sell(
         &self,
-        _sats: impl Into<Sats>,
+        _cents: UsdCents,
     ) -> Result<u64, PriceAppError> {
         let cents = self.price_cache.latest_tick().await?.bid_price_of_one_sat;
         Ok(u64::try_from(self.fee_calculator.apply_delayed_fee(cents))?)

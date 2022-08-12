@@ -10,7 +10,7 @@ use super::time::*;
 pub use constants::*;
 pub use primitives::*;
 
-#[derive(Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct PriceMessagePayload {
     pub timestamp: TimeStamp,
@@ -20,7 +20,7 @@ pub struct PriceMessagePayload {
     pub bid_price: PriceRatioRaw,
 }
 
-#[derive(Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(transparent)]
 pub struct OkexBtcUsdSwapPricePayload(pub PriceMessagePayload);
 impl From<OkexBtcUsdSwapPricePayload> for PriceMessagePayload {

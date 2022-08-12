@@ -5,6 +5,7 @@ mod convert;
 mod price_feed;
 
 use futures::StreamExt;
+use tracing::instrument;
 
 use shared::{payload::*, pubsub::*};
 
@@ -18,10 +19,19 @@ pub async fn run(
 
     let mut stream = subscribe_btc_usd_swap(price_feed_config).await?;
     while let Some(tick) = stream.next().await {
-        if let Ok(payload) = OkexBtcUsdSwapPricePayload::try_from(tick) {
-            publisher.publish(payload).await?;
-        }
+        let _ = okex_price_tick_received(&publisher, tick).await;
     }
 
+    Ok(())
+}
+
+#[instrument(skip(publisher), err)]
+async fn okex_price_tick_received(
+    publisher: &Publisher,
+    tick: OkexPriceTick,
+) -> Result<(), PriceFeedError> {
+    if let Ok(payload) = OkexBtcUsdSwapPricePayload::try_from(tick) {
+        publisher.publish(payload).await?
+    }
     Ok(())
 }

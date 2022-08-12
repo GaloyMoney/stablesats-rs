@@ -6,9 +6,14 @@ pub mod proto {
     tonic::include_proto!("services.price.v1");
 }
 
-use proto::{price_server::Price, *};
+use opentelemetry::{
+    propagation::{Extractor, TextMapPropagator},
+    sdk::propagation::TraceContextPropagator,
+};
+use proto::{price_service_server::PriceService, *};
 use tonic::{transport::Server, Request, Response, Status};
 use tracing::instrument;
+use tracing_opentelemetry::OpenTelemetrySpanExt;
 
 use crate::app::*;
 use shared::currency::*;
@@ -16,17 +21,19 @@ use shared::currency::*;
 pub use config::*;
 pub use error::*;
 
-pub struct PriceService {
+pub struct Price {
     app: PriceApp,
 }
 
 #[tonic::async_trait]
-impl Price for PriceService {
-    #[instrument(skip(self))]
+impl PriceService for Price {
+    #[instrument(skip_all, err)]
     async fn get_cents_from_sats_for_immediate_buy(
         &self,
         request: Request<GetCentsFromSatsForImmediateBuyRequest>,
     ) -> Result<Response<GetCentsFromSatsForImmediateBuyResponse>, Status> {
+        extract_tracing(&request);
+
         let req = request.into_inner();
         let amount_in_cents = self
             .app
@@ -37,11 +44,13 @@ impl Price for PriceService {
         }))
     }
 
-    #[instrument(skip(self))]
+    #[instrument(skip_all, err)]
     async fn get_cents_from_sats_for_immediate_sell(
         &self,
         request: Request<GetCentsFromSatsForImmediateSellRequest>,
     ) -> Result<Response<GetCentsFromSatsForImmediateSellResponse>, Status> {
+        extract_tracing(&request);
+
         let req = request.into_inner();
         let amount_in_cents = self
             .app
@@ -52,11 +61,13 @@ impl Price for PriceService {
         }))
     }
 
-    #[instrument(skip(self))]
+    #[instrument(skip_all, err)]
     async fn get_cents_from_sats_for_future_buy(
         &self,
         request: Request<GetCentsFromSatsForFutureBuyRequest>,
     ) -> Result<Response<GetCentsFromSatsForFutureBuyResponse>, Status> {
+        extract_tracing(&request);
+
         let req = request.into_inner();
         let amount_in_cents = self
             .app
@@ -67,11 +78,13 @@ impl Price for PriceService {
         }))
     }
 
-    #[instrument(skip(self))]
+    #[instrument(skip_all, err)]
     async fn get_cents_from_sats_for_future_sell(
         &self,
         request: Request<GetCentsFromSatsForFutureSellRequest>,
     ) -> Result<Response<GetCentsFromSatsForFutureSellResponse>, Status> {
+        extract_tracing(&request);
+
         let req = request.into_inner();
         let amount_in_cents = self
             .app
@@ -82,71 +95,81 @@ impl Price for PriceService {
         }))
     }
 
-    #[instrument(skip(self))]
+    #[instrument(skip_all, err)]
     async fn get_sats_from_cents_for_immediate_buy(
         &self,
         request: Request<GetSatsFromCentsForImmediateBuyRequest>,
     ) -> Result<Response<GetSatsFromCentsForImmediateBuyResponse>, Status> {
+        extract_tracing(&request);
+
         let req = request.into_inner();
         let amount_in_satoshis = self
             .app
-            .get_sats_from_cents_for_immediate_buy(Sats::from_major(req.amount_in_cents))
+            .get_sats_from_cents_for_immediate_buy(UsdCents::from_major(req.amount_in_cents))
             .await?;
         Ok(Response::new(GetSatsFromCentsForImmediateBuyResponse {
             amount_in_satoshis,
         }))
     }
 
-    #[instrument(skip(self))]
+    #[instrument(skip_all, err)]
     async fn get_sats_from_cents_for_immediate_sell(
         &self,
         request: Request<GetSatsFromCentsForImmediateSellRequest>,
     ) -> Result<Response<GetSatsFromCentsForImmediateSellResponse>, Status> {
+        extract_tracing(&request);
+
         let req = request.into_inner();
         let amount_in_satoshis = self
             .app
-            .get_sats_from_cents_for_immediate_sell(Sats::from_major(req.amount_in_cents))
+            .get_sats_from_cents_for_immediate_sell(UsdCents::from_major(req.amount_in_cents))
             .await?;
         Ok(Response::new(GetSatsFromCentsForImmediateSellResponse {
             amount_in_satoshis,
         }))
     }
 
-    #[instrument(skip(self))]
+    #[instrument(skip_all, err)]
     async fn get_sats_from_cents_for_future_buy(
         &self,
         request: Request<GetSatsFromCentsForFutureBuyRequest>,
     ) -> Result<Response<GetSatsFromCentsForFutureBuyResponse>, Status> {
+        extract_tracing(&request);
+
         let req = request.into_inner();
         let amount_in_satoshis = self
             .app
-            .get_sats_from_cents_for_future_buy(Sats::from_major(req.amount_in_cents))
+            .get_sats_from_cents_for_future_buy(UsdCents::from_major(req.amount_in_cents))
             .await?;
         Ok(Response::new(GetSatsFromCentsForFutureBuyResponse {
             amount_in_satoshis,
         }))
     }
 
-    #[instrument(skip(self))]
+    #[instrument(skip_all, err)]
     async fn get_sats_from_cents_for_future_sell(
         &self,
         request: Request<GetSatsFromCentsForFutureSellRequest>,
     ) -> Result<Response<GetSatsFromCentsForFutureSellResponse>, Status> {
+        extract_tracing(&request);
+
         let req = request.into_inner();
         let amount_in_satoshis = self
             .app
-            .get_sats_from_cents_for_future_sell(Sats::from_major(req.amount_in_cents))
+            .get_sats_from_cents_for_future_sell(UsdCents::from_major(req.amount_in_cents))
             .await?;
         Ok(Response::new(GetSatsFromCentsForFutureSellResponse {
             amount_in_satoshis,
         }))
     }
 
-    #[instrument(skip(self))]
+    #[instrument(skip_all, err)]
     async fn get_cents_per_sats_exchange_mid_rate(
         &self,
-        _request: Request<GetCentsPerSatsExchangeMidRateRequest>,
+        request: Request<GetCentsPerSatsExchangeMidRateRequest>,
     ) -> Result<Response<GetCentsPerSatsExchangeMidRateResponse>, Status> {
+        extract_tracing(&request);
+
         let sat_qty = 1;
 
         let mid_amount_in_cents = self
@@ -164,10 +187,40 @@ pub(crate) async fn start(
     server_config: PriceServerConfig,
     app: PriceApp,
 ) -> Result<(), PriceServerError> {
-    let price_service = PriceService { app };
+    let price_service = Price { app };
     Server::builder()
-        .add_service(proto::price_server::PriceServer::new(price_service))
+        .add_service(proto::price_service_server::PriceServiceServer::new(
+            price_service,
+        ))
         .serve(([0, 0, 0, 0], server_config.listen_port).into())
         .await?;
     Ok(())
+}
+
+pub fn extract_tracing<T>(request: &Request<T>) {
+    let propagator = TraceContextPropagator::new();
+    let parent_cx = propagator.extract(&RequestContextExtractor(request));
+    tracing::Span::current().set_parent(parent_cx)
+}
+
+struct RequestContextExtractor<'a, T>(&'a Request<T>);
+
+impl<'a, T> Extractor for RequestContextExtractor<'a, T> {
+    fn get(&self, key: &str) -> Option<&str> {
+        self.0.metadata().get(key).and_then(|s| s.to_str().ok())
+    }
+
+    fn keys(&self) -> Vec<&str> {
+        self.0
+            .metadata()
+            .keys()
+            .filter_map(|k| {
+                if let tonic::metadata::KeyRef::Ascii(ref key) = k {
+                    Some(key.as_str())
+                } else {
+                    None
+                }
+            })
+            .collect()
+    }
 }

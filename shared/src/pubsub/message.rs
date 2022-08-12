@@ -12,7 +12,7 @@ pub struct CorrelationId(Uuid);
 impl CorrelationId {
     pub fn new() -> Self {
         let id = Uuid::new_v4();
-        // tracing::Span::current().record("correlation_id", &tracing::field::display(id));
+        tracing::Span::current().record("correlation_id", &tracing::field::display(id));
         Self(id)
     }
 }
@@ -64,7 +64,7 @@ impl<P: MessagePayload> Envelope<P> {
 }
 
 pub trait MessagePayload:
-    Serialize + DeserializeOwned + Clone + Sized + Sync + Send + Unpin + 'static
+    std::fmt::Debug + Serialize + DeserializeOwned + Clone + Sized + Sync + Send + Unpin + 'static
 {
     fn message_type() -> &'static str;
     fn channel() -> &'static str;

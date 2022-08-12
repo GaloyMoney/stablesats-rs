@@ -5,7 +5,6 @@ receivers:
       thrift_binary: # on port 6832
 
 processors:
-  batch:
   attributes:
     actions:
     - key: graphql.variables.input.code
@@ -40,5 +39,5 @@ service:
   pipelines:
     traces:
       receivers: [jaeger]
-      processors: [attributes, batch]
+      processors: [attributes]
       exporters: [otlp, logging]
