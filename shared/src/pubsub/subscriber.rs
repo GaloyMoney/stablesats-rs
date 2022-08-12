@@ -32,8 +32,10 @@ impl Subscriber {
             |(channel, value)| async move {
                 if channel == <M as MessagePayload>::channel() {
                     if let RedisValue::String(v) = value {
-                        if let Ok(msg) = serde_json::from_str(&v) {
-                            return Some(msg);
+                        if let Ok(msg) = serde_json::from_str::<Envelope<M>>(&v) {
+                            if msg.payload_type == <M as MessagePayload>::message_type() {
+                                return Some(msg);
+                            }
                         }
                     }
                 }

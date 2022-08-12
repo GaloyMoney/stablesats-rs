@@ -3,5 +3,6 @@
 
 pub mod app;
 pub mod config;
+mod tracing;
 
 mod price_client;

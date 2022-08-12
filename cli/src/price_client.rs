@@ -4,7 +4,7 @@ use tonic::transport::channel::Channel;
 use url::Url;
 
 use ::price_server::proto;
-type ProtoClient = proto::price_client::PriceClient<Channel>;
+type ProtoClient = proto::price_service_client::PriceServiceClient<Channel>;
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq, ArgEnum)]
 pub enum Direction {

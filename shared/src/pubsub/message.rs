@@ -1,5 +1,10 @@
+use opentelemetry::{propagation::TextMapPropagator, sdk::propagation::TraceContextPropagator};
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
+use tracing::Span;
+use tracing_opentelemetry::OpenTelemetrySpanExt;
 use uuid::Uuid;
+
+use std::collections::HashMap;
 
 use crate::time::*;
 
@@ -12,7 +17,7 @@ pub struct CorrelationId(Uuid);
 impl CorrelationId {
     pub fn new() -> Self {
         let id = Uuid::new_v4();
-        // tracing::Span::current().record("correlation_id", &tracing::field::display(id));
+        tracing::Span::current().record("correlation_id", &tracing::field::display(id));
         Self(id)
     }
 }
@@ -25,13 +30,21 @@ impl std::fmt::Display for CorrelationId {
 #[derive(Clone, Serialize, Deserialize, Debug)]
 #[serde(rename_all = "camelCase")]
 pub struct MessageMetadata {
+    #[serde(flatten)]
+    pub tracing_data: HashMap<String, String>,
     pub published_at: TimeStamp,
     pub correlation_id: CorrelationId,
 }
 
 impl MessageMetadata {
     pub fn new() -> Self {
+        let mut tracing_data = HashMap::new();
+        let propagator = TraceContextPropagator::new();
+        let context = Span::current().context();
+        propagator.inject_context(&context, &mut tracing_data);
+
         Self {
+            tracing_data,
             correlation_id: CorrelationId::new(),
             published_at: TimeStamp::now(),
         }
@@ -46,7 +59,6 @@ impl Default for MessageMetadata {
 #[derive(Serialize, Deserialize, Debug)]
 #[serde(rename_all = "camelCase")]
 pub struct Envelope<P: MessagePayload> {
-    // pub tracing_data: TracingData,
     pub meta: MessageMetadata,
     pub payload_type: String,
     #[serde(bound = "P: DeserializeOwned")]
@@ -64,7 +76,7 @@ impl<P: MessagePayload> Envelope<P> {
 }
 
 pub trait MessagePayload:
-    Serialize + DeserializeOwned + Clone + Sized + Sync + Send + Unpin + 'static
+    std::fmt::Debug + Serialize + DeserializeOwned + Clone + Sized + Sync + Send + Unpin + 'static
 {
     fn message_type() -> &'static str;
     fn channel() -> &'static str;
