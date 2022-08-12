@@ -82,7 +82,10 @@ impl OkexClient {
         }
     }
 
-    pub async fn transfer(&self, amt: f64) -> Result<TransferId, OkexClientError> {
+    pub async fn transfer_funding_to_trading(
+        &self,
+        amt: f64,
+    ) -> Result<TransferId, OkexClientError> {
         let request_path = "/api/v5/asset/transfer";
         let url = format!("{}{}", OKEX_API_URL, request_path);
 

@@ -48,7 +48,7 @@ async fn transfer() -> anyhow::Result<()> {
         secret_key,
     });
     let amount = 0.00001;
-    let transfer_id = client.transfer(amount).await?;
+    let transfer_id = client.transfer_funding_to_trading(amount).await?;
 
     assert!(transfer_id.value.len() == 9);
 
