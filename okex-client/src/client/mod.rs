@@ -13,6 +13,8 @@ use reqwest::Client as ReqwestClient;
 pub use error::*;
 use okex_response::*;
 
+const OKEX_API_URL: &str = "https://www.okex.com";
+
 #[derive(Debug, PartialEq)]
 pub struct DepositAddress {
     pub value: String,
@@ -44,8 +46,7 @@ impl OkexClient {
 
     pub async fn get_funding_deposit_address(&self) -> Result<DepositAddress, OkexClientError> {
         let request_path = "/api/v5/asset/deposit-address?ccy=BTC";
-        let base_url = "https://www.okx.com";
-        let url = format!("{}{}", base_url, request_path);
+        let url = format!("{}{}", OKEX_API_URL, request_path);
 
         let timestamp = Utc::now().to_rfc3339_opts(SecondsFormat::Millis, true);
         let pre_hash_str = format!("{}GET{}", timestamp, request_path);
@@ -101,8 +102,7 @@ impl OkexClient {
 
     pub async fn transfer(&self, amt: f64) -> Result<TransferId, OkexClientError> {
         let request_path = "/api/v5/asset/transfer";
-        let base_url = "https://www.okx.com";
-        let url = format!("{}{}", base_url, request_path);
+        let url = format!("{}{}", OKEX_API_URL, request_path);
 
         let mut body: HashMap<String, String> = HashMap::new();
         body.insert("ccy".to_string(), "BTC".to_string());
