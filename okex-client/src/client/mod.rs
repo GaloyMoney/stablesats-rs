@@ -55,31 +55,10 @@ impl OkexClient {
 
         let response = self.client.get(url).headers(headers).send().await?;
 
-        let response_text = response.text().await?;
-
-        let response = match serde_json::from_str::<OkexResponse>(&response_text)? {
-            OkexResponse::WithData(response) => response,
-            OkexResponse::WithoutData(response) => {
-                return Err(OkexClientError::from(response));
-            }
-        };
-
-        if let Some(data) = response.data.first() {
-            match data {
-                OkexResponseData::DepositAddress(addr_data) => Ok(DepositAddress {
-                    value: addr_data.addr.clone(),
-                }),
-                _ => Err(OkexClientError::UnexpectedResponse {
-                    msg: response.msg,
-                    code: response.code,
-                }),
-            }
-        } else {
-            Err(OkexClientError::UnexpectedResponse {
-                msg: response.msg,
-                code: response.code,
-            })
-        }
+        let addr_data = Self::extract_response_data::<DepositAddressData>(response).await?;
+        Ok(DepositAddress {
+            value: addr_data.addr,
+        })
     }
 
     pub async fn transfer_funding_to_trading(
@@ -109,31 +88,24 @@ impl OkexClient {
             .send()
             .await?;
 
+        let transfer_data = Self::extract_response_data::<TransferData>(response).await?;
+        Ok(TransferId {
+            value: transfer_data.trans_id,
+        })
+    }
+
+    async fn extract_response_data<T: serde::de::DeserializeOwned>(
+        response: reqwest::Response,
+    ) -> Result<T, OkexClientError> {
         let response_text = response.text().await?;
-
-        let response = match serde_json::from_str::<OkexResponse>(&response_text)? {
-            OkexResponse::WithData(response) => response,
-            OkexResponse::WithoutData(response) => {
-                return Err(OkexClientError::from(response));
+        let OkexResponse { code, msg, data } =
+            serde_json::from_str::<OkexResponse<T>>(&response_text)?;
+        if let Some(data) = data {
+            if let Some(first) = data.into_iter().next() {
+                return Ok(first);
             }
-        };
-
-        if let Some(data) = response.data.first() {
-            match data {
-                OkexResponseData::Transfer(trans_data) => Ok(TransferId {
-                    value: trans_data.trans_id.clone(),
-                }),
-                _ => Err(OkexClientError::UnexpectedResponse {
-                    msg: response.msg,
-                    code: response.code,
-                }),
-            }
-        } else {
-            Err(OkexClientError::UnexpectedResponse {
-                msg: response.msg,
-                code: response.code,
-            })
         }
+        Err(OkexClientError::UnexpectedResponse { msg, code })
     }
 
     fn sign_okex_request(&self, pre_hash: String) -> String {

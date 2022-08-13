@@ -1,31 +1,10 @@
 use serde::Deserialize;
 
 #[derive(Deserialize, Debug)]
-#[serde(untagged)]
-pub enum OkexResponse {
-    WithData(ResponseWithData),
-    WithoutData(ResponseWithoutData),
-}
-
-#[derive(Deserialize, Debug)]
-#[serde(untagged)]
-pub enum OkexResponseData {
-    DepositAddress(DepositAddressData),
-    Transfer(TransferData),
-}
-
-/// Response struct from OKEX
-#[derive(Deserialize, Debug)]
-pub struct ResponseWithData {
+pub struct OkexResponse<T> {
     pub code: String,
     pub msg: String,
-    pub data: Vec<OkexResponseData>,
-}
-
-#[derive(Deserialize, Debug)]
-pub struct ResponseWithoutData {
-    pub code: String,
-    pub msg: String,
+    pub data: Option<Vec<T>>,
 }
 
 #[derive(Deserialize, Debug, Clone)]

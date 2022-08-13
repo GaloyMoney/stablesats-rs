@@ -1,7 +1,5 @@
 use thiserror::Error;
 
-use super::okex_response::ResponseWithoutData;
-
 #[derive(Error, Debug)]
 pub enum OkexClientError {
     #[error("OkexClientError: {0}")]
@@ -12,13 +10,4 @@ pub enum OkexClientError {
     Header(#[from] reqwest::header::InvalidHeaderValue),
     #[error("OkexClientError: {code:?} - {msg:?}")]
     UnexpectedResponse { msg: String, code: String },
-}
-
-impl From<ResponseWithoutData> for OkexClientError {
-    fn from(response: ResponseWithoutData) -> Self {
-        OkexClientError::UnexpectedResponse {
-            msg: response.msg,
-            code: response.code,
-        }
-    }
 }
