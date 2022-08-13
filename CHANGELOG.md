@@ -1,3 +1,32 @@
+# [stablesats release v0.1.8](https://github.com/GaloyMoney/stablesats/releases/tag/v0.1.8)
+
+
+### Bug Fixes
+
+- Price calculation use cases
+- Allow for 30 seconds price latency
+
+### Features
+
+- Tracing for e2e galoy demo
+- Add fund transfer function to OkexClient
+- OkexClient.get_deposit_address
+
+### Miscellaneous Tasks
+
+- Bump anyhow from 1.0.60 to 1.0.61
+- Bump chrono from 0.4.20 to 0.4.21
+- Url arg is not an arg_enum
+
+### Refactor
+
+- Introduce CurrencyConverter
+- Rename transfer => transfer_funder_to_trading
+- Move sign_okex_request into headers hepler
+- Extract common header creation
+- Extract signing function
+- Extract OKEX_API_URL
+
 # [stablesats release v0.1.7](https://github.com/GaloyMoney/stablesats/releases/tag/v0.1.7)
 
 
