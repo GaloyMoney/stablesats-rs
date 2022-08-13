@@ -59,6 +59,14 @@ macro_rules! currency {
             }
         }
 
+        impl std::ops::Div<&Decimal> for $name {
+            type Output = Self;
+
+            fn div(self, rhs: &Decimal) -> Self::Output {
+                $name::from_decimal(self.inner.amount() / rhs)
+            }
+        }
+
         impl std::ops::Div<u32> for $name {
             type Output = Self;
 
@@ -70,6 +78,14 @@ macro_rules! currency {
         }
 
         impl TryFrom<$name> for u64 {
+            type Error = CurrencyError;
+
+            fn try_from(value: $name) -> Result<Self, Self::Error> {
+                Ok((*value.inner.amount()).try_into()?)
+            }
+        }
+
+        impl TryFrom<$name> for f64 {
             type Error = CurrencyError;
 
             fn try_from(value: $name) -> Result<Self, Self::Error> {

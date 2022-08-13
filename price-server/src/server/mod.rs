@@ -198,13 +198,7 @@ impl PriceService for Price {
     ) -> Result<Response<GetCentsPerSatsExchangeMidRateResponse>, Status> {
         extract_tracing(&request);
 
-        let sat_qty = 1;
-
-        let mid_amount_in_cents = self
-            .app
-            .get_cents_per_sats_exchange_mid_rate(Sats::from_major(sat_qty))
-            .await?;
-        let ratio_in_cents_per_satoshis = mid_amount_in_cents as f64;
+        let ratio_in_cents_per_satoshis = self.app.get_cents_per_sat_exchange_mid_rate().await?;
         Ok(Response::new(GetCentsPerSatsExchangeMidRateResponse {
             ratio_in_cents_per_satoshis,
         }))

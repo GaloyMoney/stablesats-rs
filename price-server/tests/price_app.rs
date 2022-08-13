@@ -1,4 +1,5 @@
 use futures::stream::StreamExt;
+use rust_decimal::prelude::*;
 use std::fs;
 
 use price_server::app::*;
@@ -26,7 +27,15 @@ async fn price_app() -> anyhow::Result<()> {
     let subscriber = Subscriber::new(config.clone()).await?;
     let mut stream = subscriber.subscribe::<OkexBtcUsdSwapPricePayload>().await?;
 
-    let app = PriceApp::run(FeeCalculatorConfig::default(), config).await?;
+    let app = PriceApp::run(
+        FeeCalculatorConfig {
+            base_fee_rate: Decimal::from_str("0.001")?,
+            immediate_fee_rate: Decimal::from_str("0.01")?,
+            delayed_fee_rate: Decimal::from_str("0.1")?,
+        },
+        config,
+    )
+    .await?;
 
     let err = app
         .get_cents_from_sats_for_immediate_buy(Sats::from_major(100_000_000))
@@ -59,21 +68,48 @@ async fn price_app() -> anyhow::Result<()> {
     let cents = app
         .get_cents_from_sats_for_immediate_buy(Sats::from_major(100_000_000))
         .await?;
-
-    assert_eq!(cents, u64::try_from(UsdCents::from_major(992999)).unwrap());
+    assert_eq!(cents, u64::try_from(UsdCents::from_major(989000)).unwrap());
 
     let cents = app
         .get_cents_from_sats_for_immediate_sell(Sats::from_major(100_000_000))
         .await?;
-    assert_eq!(cents, u64::try_from(UsdCents::from_major(882665)).unwrap());
+    assert_eq!(cents, u64::try_from(UsdCents::from_major(98900)).unwrap());
 
-    let future_buy = app
+    let cents = app
         .get_cents_from_sats_for_future_buy(Sats::from_major(100_000_000))
         .await?;
+    assert_eq!(cents, u64::try_from(UsdCents::from_major(899000)).unwrap());
 
+    let future_buy = app
+        .get_cents_from_sats_for_future_sell(Sats::from_major(100_000_000))
+        .await?;
     assert_eq!(
         future_buy,
-        u64::try_from(UsdCents::from_major(992499)).unwrap()
+        u64::try_from(UsdCents::from_major(89900)).unwrap()
     );
+
+    let sats = app
+        .get_sats_from_cents_for_immediate_buy(UsdCents::from_major(1000000))
+        .await?;
+    assert_eq!(sats, u64::try_from(Sats::from_major(98900000)).unwrap());
+
+    let sats = app
+        .get_sats_from_cents_for_immediate_sell(UsdCents::from_major(1000000))
+        .await?;
+    assert_eq!(sats, u64::try_from(Sats::from_major(989000000)).unwrap());
+
+    let sats = app
+        .get_sats_from_cents_for_future_buy(UsdCents::from_major(1000000))
+        .await?;
+    assert_eq!(sats, u64::try_from(Sats::from_major(89900000)).unwrap());
+
+    let sats = app
+        .get_sats_from_cents_for_future_sell(UsdCents::from_major(1000000))
+        .await?;
+    assert_eq!(sats, u64::try_from(Sats::from_major(899000000)).unwrap());
+
+    let ratio = app.get_cents_per_sat_exchange_mid_rate().await?;
+    assert_eq!(ratio, 0.0055);
+
     Ok(())
 }
