@@ -84,13 +84,20 @@ async fn run_cmd(
         pubsub,
         price_server,
         okex_price_feed,
+        tracing,
     }: Config,
 ) -> anyhow::Result<()> {
     println!("Starting server process");
+    crate::tracing::init_tracer(tracing)?;
     let (send, mut receive) = tokio::sync::mpsc::channel(1);
     let mut handles = Vec::new();
 
     if price_server.enabled {
+        println!(
+            "Starting price server on port {}",
+            price_server.server.listen_port
+        );
+
         let price_send = send.clone();
         let pubsub = pubsub.clone();
         handles.push(tokio::spawn(async move {
@@ -102,6 +109,8 @@ async fn run_cmd(
         }));
     }
     if okex_price_feed.enabled {
+        println!("Starting Okex price feed");
+
         let okex_send = send.clone();
         handles.push(tokio::spawn(async move {
             let _ = okex_send.try_send(

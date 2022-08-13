@@ -1,7 +1,7 @@
 syntax = "proto3";
 package services.price.v1;
 
-service Price {
+service PriceService {
   rpc GetCentsFromSatsForImmediateBuy(GetCentsFromSatsForImmediateBuyRequest) returns (GetCentsFromSatsForImmediateBuyResponse) {}
   rpc GetCentsFromSatsForImmediateSell(GetCentsFromSatsForImmediateSellRequest) returns (GetCentsFromSatsForImmediateSellResponse) {}
 
