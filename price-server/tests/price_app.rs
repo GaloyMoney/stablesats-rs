@@ -68,45 +68,42 @@ async fn price_app() -> anyhow::Result<()> {
     let cents = app
         .get_cents_from_sats_for_immediate_buy(Sats::from_major(100_000_000))
         .await?;
-    assert_eq!(cents, u64::try_from(UsdCents::from_major(989000)).unwrap());
+    assert_eq!(cents, UsdCents::from_major(989000));
 
     let cents = app
         .get_cents_from_sats_for_immediate_sell(Sats::from_major(100_000_000))
         .await?;
-    assert_eq!(cents, u64::try_from(UsdCents::from_major(98900)).unwrap());
+    assert_eq!(cents, UsdCents::from_major(98900));
 
     let cents = app
         .get_cents_from_sats_for_future_buy(Sats::from_major(100_000_000))
         .await?;
-    assert_eq!(cents, u64::try_from(UsdCents::from_major(899000)).unwrap());
+    assert_eq!(cents, UsdCents::from_major(899000));
 
     let future_buy = app
         .get_cents_from_sats_for_future_sell(Sats::from_major(100_000_000))
         .await?;
-    assert_eq!(
-        future_buy,
-        u64::try_from(UsdCents::from_major(89900)).unwrap()
-    );
+    assert_eq!(future_buy, UsdCents::from_major(89900));
 
     let sats = app
         .get_sats_from_cents_for_immediate_buy(UsdCents::from_major(1000000))
         .await?;
-    assert_eq!(sats, u64::try_from(Sats::from_major(98900000)).unwrap());
+    assert_eq!(sats, Sats::from_major(98900000));
 
     let sats = app
         .get_sats_from_cents_for_immediate_sell(UsdCents::from_major(1000000))
         .await?;
-    assert_eq!(sats, u64::try_from(Sats::from_major(989000000)).unwrap());
+    assert_eq!(sats, Sats::from_major(989000000));
 
     let sats = app
         .get_sats_from_cents_for_future_buy(UsdCents::from_major(1000000))
         .await?;
-    assert_eq!(sats, u64::try_from(Sats::from_major(89900000)).unwrap());
+    assert_eq!(sats, Sats::from_major(89900000));
 
     let sats = app
         .get_sats_from_cents_for_future_sell(UsdCents::from_major(1000000))
         .await?;
-    assert_eq!(sats, u64::try_from(Sats::from_major(899000000)).unwrap());
+    assert_eq!(sats, Sats::from_major(899000000));
 
     let ratio = app.get_cents_per_sat_exchange_mid_rate().await?;
     assert_eq!(ratio, 0.0055);

@@ -59,96 +59,112 @@ impl PriceApp {
     pub async fn get_cents_from_sats_for_immediate_buy(
         &self,
         sats: Sats,
-    ) -> Result<u64, PriceAppError> {
-        let price_of_one_sat = self.price_cache.latest_tick().await?.ask_price_of_one_sat;
-        Ok(u64::try_from(
-            self.fee_calculator
-                .apply_immediate_fee(price_of_one_sat * *sats.amount()),
-        )?)
+    ) -> Result<UsdCents, PriceAppError> {
+        let cents = self
+            .price_cache
+            .latest_tick()
+            .await?
+            .ask_price()
+            .cents_from_sats(sats);
+        Ok(self.fee_calculator.apply_immediate_fee(cents))
     }
 
     #[instrument(skip_all, fields(correlation_id, amount = %sats.amount()), ret, err)]
     pub async fn get_cents_from_sats_for_immediate_sell(
         &self,
         sats: Sats,
-    ) -> Result<u64, PriceAppError> {
-        let price_of_one_sat = self.price_cache.latest_tick().await?.bid_price_of_one_sat;
-        Ok(u64::try_from(
-            self.fee_calculator
-                .apply_immediate_fee(price_of_one_sat * *sats.amount()),
-        )?)
+    ) -> Result<UsdCents, PriceAppError> {
+        let cents = self
+            .price_cache
+            .latest_tick()
+            .await?
+            .bid_price()
+            .cents_from_sats(sats);
+        Ok(self.fee_calculator.apply_immediate_fee(cents))
     }
 
     #[instrument(skip_all, fields(correlation_id, amount = %sats.amount()), ret, err)]
     pub async fn get_cents_from_sats_for_future_buy(
         &self,
         sats: Sats,
-    ) -> Result<u64, PriceAppError> {
-        let price_of_one_sat = self.price_cache.latest_tick().await?.ask_price_of_one_sat;
-        Ok(u64::try_from(
-            self.fee_calculator
-                .apply_delayed_fee(price_of_one_sat * *sats.amount()),
-        )?)
+    ) -> Result<UsdCents, PriceAppError> {
+        let cents = self
+            .price_cache
+            .latest_tick()
+            .await?
+            .ask_price()
+            .cents_from_sats(sats);
+        Ok(self.fee_calculator.apply_delayed_fee(cents))
     }
 
     #[instrument(skip_all, fields(correlation_id, amount = %sats.amount()), ret, err)]
     pub async fn get_cents_from_sats_for_future_sell(
         &self,
         sats: Sats,
-    ) -> Result<u64, PriceAppError> {
-        let price_of_one_sat = self.price_cache.latest_tick().await?.bid_price_of_one_sat;
-        Ok(u64::try_from(
-            self.fee_calculator
-                .apply_delayed_fee(price_of_one_sat * *sats.amount()),
-        )?)
+    ) -> Result<UsdCents, PriceAppError> {
+        let cents = self
+            .price_cache
+            .latest_tick()
+            .await?
+            .bid_price()
+            .cents_from_sats(sats);
+        Ok(self.fee_calculator.apply_delayed_fee(cents))
     }
 
     #[instrument(skip_all, fields(correlation_id, amount = %cents.amount()), ret, err)]
     pub async fn get_sats_from_cents_for_immediate_buy(
         &self,
         cents: UsdCents,
-    ) -> Result<u64, PriceAppError> {
-        let cents_per_sat = self.price_cache.latest_tick().await?.ask_price_of_one_sat;
-        Ok(u64::try_from(
-            self.fee_calculator
-                .apply_immediate_fee(cents / cents_per_sat.amount()),
-        )?)
+    ) -> Result<Sats, PriceAppError> {
+        let sats = self
+            .price_cache
+            .latest_tick()
+            .await?
+            .ask_price()
+            .sats_from_cents(cents);
+        Ok(self.fee_calculator.apply_immediate_fee(sats))
     }
 
     #[instrument(skip_all, fields(correlation_id, amount = %cents.amount()), ret, err)]
     pub async fn get_sats_from_cents_for_immediate_sell(
         &self,
         cents: UsdCents,
-    ) -> Result<u64, PriceAppError> {
-        let cents_per_sat = self.price_cache.latest_tick().await?.bid_price_of_one_sat;
-        Ok(u64::try_from(
-            self.fee_calculator
-                .apply_immediate_fee(cents / cents_per_sat.amount()),
-        )?)
+    ) -> Result<Sats, PriceAppError> {
+        let sats = self
+            .price_cache
+            .latest_tick()
+            .await?
+            .bid_price()
+            .sats_from_cents(cents);
+        Ok(self.fee_calculator.apply_immediate_fee(sats))
     }
 
     #[instrument(skip_all, fields(correlation_id, amount = %cents.amount()), ret, err)]
     pub async fn get_sats_from_cents_for_future_buy(
         &self,
         cents: UsdCents,
-    ) -> Result<u64, PriceAppError> {
-        let cents_per_sat = self.price_cache.latest_tick().await?.ask_price_of_one_sat;
-        Ok(u64::try_from(
-            self.fee_calculator
-                .apply_delayed_fee(cents / cents_per_sat.amount()),
-        )?)
+    ) -> Result<Sats, PriceAppError> {
+        let sats = self
+            .price_cache
+            .latest_tick()
+            .await?
+            .ask_price()
+            .sats_from_cents(cents);
+        Ok(self.fee_calculator.apply_delayed_fee(sats))
     }
 
     #[instrument(skip_all, fields(correlation_id, amount = %cents.amount()), ret, err)]
     pub async fn get_sats_from_cents_for_future_sell(
         &self,
         cents: UsdCents,
-    ) -> Result<u64, PriceAppError> {
-        let cents_per_sat = self.price_cache.latest_tick().await?.bid_price_of_one_sat;
-        Ok(u64::try_from(
-            self.fee_calculator
-                .apply_delayed_fee(cents / cents_per_sat.amount()),
-        )?)
+    ) -> Result<Sats, PriceAppError> {
+        let sats = self
+            .price_cache
+            .latest_tick()
+            .await?
+            .bid_price()
+            .sats_from_cents(cents);
+        Ok(self.fee_calculator.apply_delayed_fee(sats))
     }
 
     #[instrument(skip_all, fields(correlation_id, ret, err))]

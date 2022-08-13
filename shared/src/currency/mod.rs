@@ -97,6 +97,24 @@ macro_rules! currency {
 currency! { UsdCents, USD_CENT }
 currency! { Sats, SATOSHI }
 
+pub struct CurrencyConverter<'a> {
+    price_of_one_sat: &'a UsdCents,
+}
+
+impl<'a> CurrencyConverter<'a> {
+    pub fn new(price_of_one_sat: &'a UsdCents) -> Self {
+        Self { price_of_one_sat }
+    }
+
+    pub fn cents_from_sats(&self, sats: Sats) -> UsdCents {
+        UsdCents::from_decimal(sats.amount() * self.price_of_one_sat.amount())
+    }
+
+    pub fn sats_from_cents(&self, cents: UsdCents) -> Sats {
+        Sats::from_decimal(cents.amount() / self.price_of_one_sat.amount())
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
