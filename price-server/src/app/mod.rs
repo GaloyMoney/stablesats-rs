@@ -108,9 +108,10 @@ impl PriceApp {
         &self,
         cents: UsdCents,
     ) -> Result<u64, PriceAppError> {
-        let cents = self.price_cache.latest_tick().await?.ask_price_of_one_sat;
+        let cents_per_sat = self.price_cache.latest_tick().await?.ask_price_of_one_sat;
         Ok(u64::try_from(
-            self.fee_calculator.apply_immediate_fee(cents),
+            self.fee_calculator
+                .apply_immediate_fee(cents / cents_per_sat.amount()),
         )?)
     }
 
@@ -119,19 +120,11 @@ impl PriceApp {
         &self,
         cents: UsdCents,
     ) -> Result<u64, PriceAppError> {
-        let cents = self.price_cache.latest_tick().await?.bid_price_of_one_sat;
+        let cents_per_sat = self.price_cache.latest_tick().await?.bid_price_of_one_sat;
         Ok(u64::try_from(
-            self.fee_calculator.apply_immediate_fee(cents),
+            self.fee_calculator
+                .apply_immediate_fee(cents / cents_per_sat.amount()),
         )?)
-    }
-
-    #[instrument(skip_all, fields(correlation_id, amount = %sats.amount()), ret, err)]
-    pub async fn get_cents_per_sats_exchange_mid_rate(
-        &self,
-        sats: Sats,
-    ) -> Result<u64, PriceAppError> {
-        let cents = self.price_cache.latest_tick().await?.mid_price_of_one_sat();
-        Ok(u64::try_from(cents * *sats.amount())?)
     }
 
     #[instrument(skip_all, fields(correlation_id, amount = %cents.amount()), ret, err)]
@@ -139,8 +132,11 @@ impl PriceApp {
         &self,
         cents: UsdCents,
     ) -> Result<u64, PriceAppError> {
-        let cents = self.price_cache.latest_tick().await?.ask_price_of_one_sat;
-        Ok(u64::try_from(self.fee_calculator.apply_delayed_fee(cents))?)
+        let cents_per_sat = self.price_cache.latest_tick().await?.ask_price_of_one_sat;
+        Ok(u64::try_from(
+            self.fee_calculator
+                .apply_delayed_fee(cents / cents_per_sat.amount()),
+        )?)
     }
 
     #[instrument(skip_all, fields(correlation_id, amount = %cents.amount()), ret, err)]
@@ -148,7 +144,16 @@ impl PriceApp {
         &self,
         cents: UsdCents,
     ) -> Result<u64, PriceAppError> {
-        let cents = self.price_cache.latest_tick().await?.bid_price_of_one_sat;
-        Ok(u64::try_from(self.fee_calculator.apply_delayed_fee(cents))?)
+        let cents_per_sat = self.price_cache.latest_tick().await?.bid_price_of_one_sat;
+        Ok(u64::try_from(
+            self.fee_calculator
+                .apply_delayed_fee(cents / cents_per_sat.amount()),
+        )?)
+    }
+
+    #[instrument(skip_all, fields(correlation_id, ret, err))]
+    pub async fn get_cents_per_sat_exchange_mid_rate(&self) -> Result<f64, PriceAppError> {
+        let cents_per_sat = self.price_cache.latest_tick().await?.mid_price_of_one_sat();
+        Ok(f64::try_from(cents_per_sat)?)
     }
 }

@@ -8,13 +8,13 @@
         "numeratorUnit": "USD_CENT",
         "denominatorUnit": "BTC_SAT",
         "offset": 12,
-        "base": "8888880000"
+        "base": "1000000000"
       },
       "askPrice": {
         "numeratorUnit": "USD_CENT",
         "denominatorUnit": "BTC_SAT",
         "offset": 12,
-        "base": "9999990000"
+        "base": "10000000000"
       }
     }
   ]
