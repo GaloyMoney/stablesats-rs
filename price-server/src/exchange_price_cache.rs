@@ -54,13 +54,21 @@ pub struct BtcSatTick {
     timestamp: TimeStamp,
     correlation_id: CorrelationId,
     span_context: SpanContext,
-    pub ask_price_of_one_sat: UsdCents,
-    pub bid_price_of_one_sat: UsdCents,
+    ask_price_of_one_sat: UsdCents,
+    bid_price_of_one_sat: UsdCents,
 }
 
 impl BtcSatTick {
     pub fn mid_price_of_one_sat(&self) -> UsdCents {
         (&self.bid_price_of_one_sat + &self.ask_price_of_one_sat) / 2
+    }
+
+    pub fn bid_price(&self) -> CurrencyConverter {
+        CurrencyConverter::new(&self.bid_price_of_one_sat)
+    }
+
+    pub fn ask_price(&self) -> CurrencyConverter {
+        CurrencyConverter::new(&self.ask_price_of_one_sat)
     }
 }
 

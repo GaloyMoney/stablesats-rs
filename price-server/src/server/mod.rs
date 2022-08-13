@@ -43,7 +43,7 @@ impl PriceService for Price {
             .get_cents_from_sats_for_immediate_buy(Sats::from_major(req.amount_in_satoshis))
             .await?;
         Ok(Response::new(GetCentsFromSatsForImmediateBuyResponse {
-            amount_in_cents,
+            amount_in_cents: u64::try_from(amount_in_cents).map_err(PriceAppError::from)?,
         }))
     }
 
@@ -63,7 +63,7 @@ impl PriceService for Price {
             .get_cents_from_sats_for_immediate_sell(Sats::from_major(req.amount_in_satoshis))
             .await?;
         Ok(Response::new(GetCentsFromSatsForImmediateSellResponse {
-            amount_in_cents,
+            amount_in_cents: u64::try_from(amount_in_cents).map_err(PriceAppError::from)?,
         }))
     }
 
@@ -84,7 +84,7 @@ impl PriceService for Price {
             .get_cents_from_sats_for_future_buy(Sats::from_major(req.amount_in_satoshis))
             .await?;
         Ok(Response::new(GetCentsFromSatsForFutureBuyResponse {
-            amount_in_cents,
+            amount_in_cents: u64::try_from(amount_in_cents).map_err(PriceAppError::from)?,
         }))
     }
 
@@ -105,7 +105,7 @@ impl PriceService for Price {
             .get_cents_from_sats_for_future_sell(Sats::from_major(req.amount_in_satoshis))
             .await?;
         Ok(Response::new(GetCentsFromSatsForFutureSellResponse {
-            amount_in_cents,
+            amount_in_cents: u64::try_from(amount_in_cents).map_err(PriceAppError::from)?,
         }))
     }
 
@@ -125,7 +125,7 @@ impl PriceService for Price {
             .get_sats_from_cents_for_immediate_buy(UsdCents::from_major(req.amount_in_cents))
             .await?;
         Ok(Response::new(GetSatsFromCentsForImmediateBuyResponse {
-            amount_in_satoshis,
+            amount_in_satoshis: u64::try_from(amount_in_satoshis).map_err(PriceAppError::from)?,
         }))
     }
 
@@ -145,7 +145,7 @@ impl PriceService for Price {
             .get_sats_from_cents_for_immediate_sell(UsdCents::from_major(req.amount_in_cents))
             .await?;
         Ok(Response::new(GetSatsFromCentsForImmediateSellResponse {
-            amount_in_satoshis,
+            amount_in_satoshis: u64::try_from(amount_in_satoshis).map_err(PriceAppError::from)?,
         }))
     }
 
@@ -166,7 +166,7 @@ impl PriceService for Price {
             .get_sats_from_cents_for_future_buy(UsdCents::from_major(req.amount_in_cents))
             .await?;
         Ok(Response::new(GetSatsFromCentsForFutureBuyResponse {
-            amount_in_satoshis,
+            amount_in_satoshis: u64::try_from(amount_in_satoshis).map_err(PriceAppError::from)?,
         }))
     }
 
@@ -187,7 +187,7 @@ impl PriceService for Price {
             .get_sats_from_cents_for_future_sell(UsdCents::from_major(req.amount_in_cents))
             .await?;
         Ok(Response::new(GetSatsFromCentsForFutureSellResponse {
-            amount_in_satoshis,
+            amount_in_satoshis: u64::try_from(amount_in_satoshis).map_err(PriceAppError::from)?,
         }))
     }
 
