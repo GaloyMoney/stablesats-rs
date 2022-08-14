@@ -11,6 +11,7 @@ pub enum OkexResponse {
 #[serde(untagged)]
 pub enum OkexResponseData {
     DepositAddress(DepositAddressData),
+    TransferState(TransferStateData),
     Transfer(TransferData),
     Balance(BalanceData),
 }
@@ -58,4 +59,17 @@ pub struct BalanceData {
     pub bal: String,
     pub ccy: String,
     pub frozen_bal: String,
+}
+
+#[derive(Deserialize, Debug, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct TransferStateData {
+    pub amt: String,
+    pub ccy: String,
+    pub client_id: String,
+    pub from: String,
+    pub state: String,
+    pub sub_acct: String,
+    pub to: String,
+    pub trans_id: String,
 }

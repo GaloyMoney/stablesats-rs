@@ -30,6 +30,10 @@ pub struct AvailableBalance {
     pub value: String,
 }
 
+pub struct TransferState {
+    pub value: String,
+}
+
 pub struct OkexClientConfig {
     pub api_key: String,
     pub passphrase: String,
@@ -223,6 +227,50 @@ impl OkexClient {
             match data {
                 OkexResponseData::Balance(balance_data) => Ok(AvailableBalance {
                     value: balance_data.avail_bal.clone(),
+                }),
+                _ => Err(OkexClientError::UnexpectedResponse {
+                    msg: response.msg,
+                    code: response.code,
+                }),
+            }
+        } else {
+            Err(OkexClientError::UnexpectedResponse {
+                msg: response.msg,
+                code: response.code,
+            })
+        }
+    }
+
+    pub async fn funding_to_trading_transfer_state(
+        &self,
+        transfer_id: TransferId,
+    ) -> Result<TransferState, OkexClientError> {
+        let request_path = format!(
+            "/api/v5/asset/transfer-state?ccy=BTC&transId={}",
+            transfer_id.value
+        );
+        let url = format!("{}{}", OKEX_API_URL, request_path);
+
+        let timestamp = Utc::now().to_rfc3339_opts(SecondsFormat::Millis, true);
+        let pre_hash = format!("{}GET{}", timestamp, request_path);
+
+        let headers = self.request_headers(timestamp.as_str(), pre_hash)?;
+
+        let response = self.client.get(url).headers(headers).send().await?;
+
+        let response_text = response.text().await?;
+
+        let response = match serde_json::from_str::<OkexResponse>(&response_text)? {
+            OkexResponse::WithData(response) => response,
+            OkexResponse::WithoutData(response) => {
+                return Err(OkexClientError::from(response));
+            }
+        };
+
+        if let Some(data) = response.data.first() {
+            match data {
+                OkexResponseData::TransferState(state_data) => Ok(TransferState {
+                    value: state_data.state.clone(),
                 }),
                 _ => Err(OkexClientError::UnexpectedResponse {
                     msg: response.msg,
