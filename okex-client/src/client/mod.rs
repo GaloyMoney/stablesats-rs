@@ -94,6 +94,39 @@ impl OkexClient {
         })
     }
 
+    pub async fn transfer_trading_to_funding(
+        &self,
+        amt: f64,
+    ) -> Result<TransferId, OkexClientError> {
+        let request_path = "/api/v5/asset/transfer";
+        let url = format!("{}{}", OKEX_API_URL, request_path);
+
+        let mut body: HashMap<String, String> = HashMap::new();
+        body.insert("ccy".to_string(), "BTC".to_string());
+        body.insert("amt".to_string(), amt.to_string());
+        body.insert("from".to_string(), "18".to_string());
+        body.insert("to".to_string(), "6".to_string());
+        let request_body = serde_json::to_string(&body)?;
+
+        let timestamp = Utc::now().to_rfc3339_opts(SecondsFormat::Millis, true);
+        let pre_hash = format!("{}POST{}{}", timestamp, request_path, request_body);
+
+        let headers = self.request_headers(timestamp.as_str(), pre_hash)?;
+
+        let response = self
+            .client
+            .post(url)
+            .headers(headers)
+            .body(request_body)
+            .send()
+            .await?;
+
+        let transfer_data = Self::extract_response_data::<TransferData>(response).await?;
+        Ok(TransferId {
+            value: transfer_data.trans_id,
+        })
+    }
+
     async fn extract_response_data<T: serde::de::DeserializeOwned>(
         response: reqwest::Response,
     ) -> Result<T, OkexClientError> {
