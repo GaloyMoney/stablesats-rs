@@ -144,10 +144,13 @@ async fn withdraw_to_onchain_address() -> anyhow::Result<()> {
     });
 
     let amount = 0.00001;
-    let onchain_address = "".to_string();
-    let withdraw_id = client.withdraw_btc_onchain(amount, onchain_address).await?;
+    let fee = 0.000001;
+    let onchain_address = "bc1qafuzw5ga4perwsugcmaecjc5epydsqaj7cwk7j".to_string();
+    let withdraw_id = client
+        .withdraw_btc_onchain(amount, fee, onchain_address)
+        .await?;
 
-    // assert!(withdraw_id.value.len() == 9);
+    assert!(withdraw_id.value.len() == 9);
 
     Ok(())
 }

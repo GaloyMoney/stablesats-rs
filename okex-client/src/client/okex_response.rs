@@ -15,6 +15,7 @@ pub enum OkexResponseData {
     Transfer(TransferData),
     FundingBalance(FundinBalanceData),
     TradingBalance(TradingBalanceData),
+    WithdrawOnchain(WithdrawData),
 }
 
 /// Response struct from OKEX
@@ -116,4 +117,14 @@ pub struct TradingBalanceDetails {
     pub upl: String,
     pub upl_liab: String,
     pub stgy_eq: String,
+}
+
+#[derive(Deserialize, Debug, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct WithdrawData {
+    pub amt: String,
+    pub wd_id: String,
+    pub ccy: String,
+    pub client_id: String,
+    pub chain: String,
 }
