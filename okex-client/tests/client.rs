@@ -93,6 +93,25 @@ async fn funding_account_balance() -> anyhow::Result<()> {
 }
 
 #[tokio::test]
+async fn trading_account_balance() -> anyhow::Result<()> {
+    let api_key = env::var("OKEX_API_KEY").expect("OKEX_API_KEY not set");
+    let passphrase = env::var("OKEX_PASSPHRASE").expect("OKEX_PASS_PHRASE not set");
+    let secret_key = env::var("OKEX_SECRET_KEY").expect("OKEX_SECRET_KEY not set");
+    let client = OkexClient::new(OkexClientConfig {
+        api_key,
+        passphrase,
+        secret_key,
+    });
+
+    let avail_balance = client.trading_account_balance().await?;
+    let balance = avail_balance.value.parse::<f64>()?;
+
+    assert!(balance >= 0.00);
+
+    Ok(())
+}
+
+#[tokio::test]
 async fn funding_to_trading_transfer_state() -> anyhow::Result<()> {
     let api_key = env::var("OKEX_API_KEY").expect("OKEX_API_KEY not set");
     let passphrase = env::var("OKEX_PASSPHRASE").expect("OKEX_PASS_PHRASE not set");
@@ -110,5 +129,25 @@ async fn funding_to_trading_transfer_state() -> anyhow::Result<()> {
         .await?;
 
     assert_eq!(transfer_state.value, "success".to_string());
+    Ok(())
+}
+
+#[tokio::test]
+async fn withdraw_to_onchain_address() -> anyhow::Result<()> {
+    let api_key = env::var("OKEX_API_KEY").expect("OKEX_API_KEY not set");
+    let passphrase = env::var("OKEX_PASSPHRASE").expect("OKEX_PASS_PHRASE not set");
+    let secret_key = env::var("OKEX_SECRET_KEY").expect("OKEX_SECRET_KEY not set");
+    let client = OkexClient::new(OkexClientConfig {
+        api_key,
+        passphrase,
+        secret_key,
+    });
+
+    let amount = 0.00001;
+    let onchain_address = "".to_string();
+    let withdraw_id = client.withdraw_btc_onchain(amount, onchain_address).await?;
+
+    // assert!(withdraw_id.value.len() == 9);
+
     Ok(())
 }
