@@ -12,15 +12,15 @@ pub struct FeeCalculatorConfig {
 }
 
 fn default_base_fee_rate() -> Decimal {
-    Decimal::new(5, 3)
+    Decimal::new(5, 4)
 }
 
 fn default_immediate_fee_rate() -> Decimal {
-    Decimal::new(2, 3)
+    Decimal::new(3, 4)
 }
 
 fn default_delayed_fee_rate() -> Decimal {
-    Decimal::new(25, 4)
+    Decimal::new(7, 4)
 }
 
 impl Default for FeeCalculatorConfig {
@@ -40,14 +40,17 @@ mod tests {
 
     #[test]
     fn defaults() {
-        assert_eq!(default_base_fee_rate(), Decimal::from_str("0.005").unwrap());
+        assert_eq!(
+            default_base_fee_rate(),
+            Decimal::from_str("0.0005").unwrap()
+        );
         assert_eq!(
             default_immediate_fee_rate(),
-            Decimal::from_str("0.002").unwrap()
+            Decimal::from_str("0.0005").unwrap()
         );
         assert_eq!(
             default_delayed_fee_rate(),
-            Decimal::from_str("0.0025").unwrap()
+            Decimal::from_str("0.0007").unwrap()
         );
     }
 }
