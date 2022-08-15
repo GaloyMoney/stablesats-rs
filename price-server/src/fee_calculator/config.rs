@@ -16,7 +16,7 @@ fn default_base_fee_rate() -> Decimal {
 }
 
 fn default_immediate_fee_rate() -> Decimal {
-    Decimal::new(3, 4)
+    Decimal::new(5, 4)
 }
 
 fn default_delayed_fee_rate() -> Decimal {
