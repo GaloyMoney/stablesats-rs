@@ -32,8 +32,16 @@ impl PriceClient {
     }
 
     async fn connect(&self) -> anyhow::Result<ProtoClient> {
-        let client = ProtoClient::connect(self.config.url.to_string()).await?;
-        Ok(client)
+        match ProtoClient::connect(self.config.url.to_string()).await {
+            Ok(client) => Ok(client),
+            Err(err) => {
+                eprintln!(
+                    "Couldn't connect to price server\nAre you sure its running on {}?\n",
+                    self.config.url
+                );
+                Err(anyhow::anyhow!(err))
+            }
+        }
     }
 
     pub async fn get_price(
