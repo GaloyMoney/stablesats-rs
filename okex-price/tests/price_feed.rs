@@ -40,6 +40,8 @@ async fn subscribes_to_okex() -> anyhow::Result<()> {
         .duration_since();
     assert!(duration_since < Duration::seconds(30));
 
+    let data = &price_tick.data[0];
+    assert!(data.ask_px >= data.bid_px);
     Ok(())
 }
 

@@ -63,12 +63,12 @@ impl BtcSatTick {
         (&self.bid_price_of_one_sat + &self.ask_price_of_one_sat) / 2
     }
 
-    pub fn bid_price(&self) -> CurrencyConverter {
-        CurrencyConverter::new(&self.bid_price_of_one_sat)
+    pub fn sell_usd(&self) -> CurrencyConverter {
+        CurrencyConverter::new(&self.ask_price_of_one_sat)
     }
 
-    pub fn ask_price(&self) -> CurrencyConverter {
-        CurrencyConverter::new(&self.ask_price_of_one_sat)
+    pub fn buy_usd(&self) -> CurrencyConverter {
+        CurrencyConverter::new(&self.bid_price_of_one_sat)
     }
 }
 

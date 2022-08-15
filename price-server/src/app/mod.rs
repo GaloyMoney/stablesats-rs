@@ -64,7 +64,7 @@ impl PriceApp {
             .price_cache
             .latest_tick()
             .await?
-            .ask_price()
+            .buy_usd()
             .cents_from_sats(sats);
         Ok(self.fee_calculator.apply_immediate_fee(cents))
     }
@@ -78,7 +78,7 @@ impl PriceApp {
             .price_cache
             .latest_tick()
             .await?
-            .bid_price()
+            .sell_usd()
             .cents_from_sats(sats);
         Ok(self.fee_calculator.apply_immediate_fee(cents))
     }
@@ -92,7 +92,7 @@ impl PriceApp {
             .price_cache
             .latest_tick()
             .await?
-            .ask_price()
+            .buy_usd()
             .cents_from_sats(sats);
         Ok(self.fee_calculator.apply_delayed_fee(cents))
     }
@@ -106,7 +106,7 @@ impl PriceApp {
             .price_cache
             .latest_tick()
             .await?
-            .bid_price()
+            .sell_usd()
             .cents_from_sats(sats);
         Ok(self.fee_calculator.apply_delayed_fee(cents))
     }
@@ -120,7 +120,7 @@ impl PriceApp {
             .price_cache
             .latest_tick()
             .await?
-            .ask_price()
+            .buy_usd()
             .sats_from_cents(cents);
         Ok(self.fee_calculator.apply_immediate_fee(sats))
     }
@@ -134,7 +134,7 @@ impl PriceApp {
             .price_cache
             .latest_tick()
             .await?
-            .bid_price()
+            .sell_usd()
             .sats_from_cents(cents);
         Ok(self.fee_calculator.apply_immediate_fee(sats))
     }
@@ -148,7 +148,7 @@ impl PriceApp {
             .price_cache
             .latest_tick()
             .await?
-            .ask_price()
+            .buy_usd()
             .sats_from_cents(cents);
         Ok(self.fee_calculator.apply_delayed_fee(sats))
     }
@@ -162,7 +162,7 @@ impl PriceApp {
             .price_cache
             .latest_tick()
             .await?
-            .bid_price()
+            .sell_usd()
             .sats_from_cents(cents);
         Ok(self.fee_calculator.apply_delayed_fee(sats))
     }
