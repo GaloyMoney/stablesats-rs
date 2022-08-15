@@ -15,7 +15,7 @@ okex-price = { path = "../okex-price" }
 anyhow = "1.0.61"
 clap = { version =  "3.2", features = ["derive", "env"] }
 serde = { version = "1.0.143", features = ["derive"] }
-serde_yaml = "0.9.4"
+serde_yaml = "0.9.9"
 tokio = "1.20.1"
 futures = "0.3.21"
 tonic = "0.8.0"
