@@ -149,6 +149,23 @@ impl OkexClient {
         })
     }
 
+    pub async fn trading_account_balance(&self) -> Result<AvailableBalance, OkexClientError> {
+        let request_path = "/api/v5/account/balance?ccy=BTC";
+        let url = format!("{}{}", OKEX_API_URL, request_path);
+
+        let timestamp = Utc::now().to_rfc3339_opts(SecondsFormat::Millis, true);
+        let pre_hash = format!("{}GET{}", timestamp, request_path);
+
+        let headers = self.request_headers(timestamp.as_str(), pre_hash)?;
+
+        let response = self.client.get(url).headers(headers).send().await?;
+
+        let trading_balance = Self::extract_response_data::<TradingBalanceData>(response).await?;
+        Ok(AvailableBalance {
+            value: trading_balance.details[0].avail_bal.clone(),
+        })
+    }
+
     async fn extract_response_data<T: serde::de::DeserializeOwned>(
         response: reqwest::Response,
     ) -> Result<T, OkexClientError> {

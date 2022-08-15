@@ -92,24 +92,24 @@ async fn funding_account_balance() -> anyhow::Result<()> {
     Ok(())
 }
 
-// #[tokio::test]
-// async fn trading_account_balance() -> anyhow::Result<()> {
-//     let api_key = env::var("OKEX_API_KEY").expect("OKEX_API_KEY not set");
-//     let passphrase = env::var("OKEX_PASSPHRASE").expect("OKEX_PASS_PHRASE not set");
-//     let secret_key = env::var("OKEX_SECRET_KEY").expect("OKEX_SECRET_KEY not set");
-//     let client = OkexClient::new(OkexClientConfig {
-//         api_key,
-//         passphrase,
-//         secret_key,
-//     });
+#[tokio::test]
+async fn trading_account_balance() -> anyhow::Result<()> {
+    let api_key = env::var("OKEX_API_KEY").expect("OKEX_API_KEY not set");
+    let passphrase = env::var("OKEX_PASSPHRASE").expect("OKEX_PASS_PHRASE not set");
+    let secret_key = env::var("OKEX_SECRET_KEY").expect("OKEX_SECRET_KEY not set");
+    let client = OkexClient::new(OkexClientConfig {
+        api_key,
+        passphrase,
+        secret_key,
+    });
 
-//     let avail_balance = client.trading_account_balance().await?;
-//     let balance = avail_balance.value.parse::<f64>()?;
+    let avail_balance = client.trading_account_balance().await?;
+    let balance = avail_balance.value.parse::<f64>()?;
 
-//     assert!(balance >= 0.00);
+    assert!(balance >= 0.00);
 
-//     Ok(())
-// }
+    Ok(())
+}
 
 // #[tokio::test]
 // async fn funding_to_trading_transfer_state() -> anyhow::Result<()> {
