@@ -6,10 +6,14 @@ use okex_price::PriceFeedConfig;
 use price_server::{FeeCalculatorConfig, PriceServerConfig};
 use shared::pubsub::PubSubConfig;
 
+use super::tracing::TracingConfig;
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Config {
     #[serde(default)]
     pub pubsub: PubSubConfig,
+    #[serde(default)]
+    pub tracing: TracingConfig,
     #[serde(default)]
     pub price_server: PriceServerWrapper,
     #[serde(default)]

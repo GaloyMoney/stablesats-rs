@@ -1,4 +1,5 @@
 use fred::prelude::*;
+use tracing::instrument;
 
 use super::config::*;
 use super::error::PublisherError;
@@ -19,8 +20,24 @@ impl Publisher {
         Ok(Self { client })
     }
 
+    #[instrument(skip(self), fields(correlation_id, payload_type, payload_json), err)]
     pub async fn publish<P: MessagePayload>(&self, payload: P) -> Result<(), PublisherError> {
-        let payload_str = serde_json::to_string(&Envelope::new(payload))?;
+        let span = tracing::Span::current();
+        span.record(
+            "payload_type",
+            &tracing::field::display(<P as MessagePayload>::message_type()),
+        );
+        span.record(
+            "payload_json",
+            &tracing::field::display(serde_json::to_string(&payload)?),
+        );
+        let msg = Envelope::new(payload);
+        span.record(
+            "published_at",
+            &tracing::field::display(&msg.meta.published_at),
+        );
+
+        let payload_str = serde_json::to_string(&msg)?;
         self.client
             .publish(<P as MessagePayload>::channel(), payload_str)
             .await?;

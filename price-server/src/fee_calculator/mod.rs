@@ -1,15 +1,13 @@
 mod config;
 
 use rust_decimal::prelude::*;
-
-use shared::currency::*;
+use std::ops::Mul;
 
 pub use config::*;
 
 pub struct FeeCalculator {
-    base_fee_rate: Decimal,
-    immediate_fee_rate: Decimal,
-    delayed_fee_rate: Decimal,
+    immediate_multiplier: Decimal,
+    delayed_multiplier: Decimal,
 }
 
 impl FeeCalculator {
@@ -21,24 +19,24 @@ impl FeeCalculator {
         }: FeeCalculatorConfig,
     ) -> Self {
         Self {
-            base_fee_rate,
-            immediate_fee_rate,
-            delayed_fee_rate,
+            immediate_multiplier: (Decimal::from(1) - (base_fee_rate + immediate_fee_rate)),
+            delayed_multiplier: (Decimal::from(1) - (base_fee_rate + delayed_fee_rate)),
         }
     }
 
-    pub fn apply_immediate_fee(&self, cents: UsdCents) -> UsdCents {
-        cents * (Decimal::from(1) - (self.base_fee_rate + self.immediate_fee_rate))
+    pub fn apply_immediate_fee<T: Mul<Decimal>>(&self, currency: T) -> <T as Mul<Decimal>>::Output {
+        currency * self.immediate_multiplier
     }
 
-    pub fn apply_delayed_fee(&self, cents: UsdCents) -> UsdCents {
-        cents * (Decimal::from(1) - (self.base_fee_rate + self.delayed_fee_rate))
+    pub fn apply_delayed_fee<T: Mul<Decimal>>(&self, currency: T) -> <T as Mul<Decimal>>::Output {
+        currency * self.delayed_multiplier
     }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+    use shared::currency::*;
 
     #[test]
     fn fee_calculator() {

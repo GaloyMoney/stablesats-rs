@@ -9,7 +9,7 @@ crate::string_wrapper! { CurrencyRaw }
 
 const PRICE_IN_CENTS_PRECISION: u32 = 12;
 
-#[derive(Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct PriceRatioRaw {
     pub numerator_unit: CurrencyRaw,

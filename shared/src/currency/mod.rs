@@ -59,6 +59,14 @@ macro_rules! currency {
             }
         }
 
+        impl std::ops::Div<&Decimal> for $name {
+            type Output = Self;
+
+            fn div(self, rhs: &Decimal) -> Self::Output {
+                $name::from_decimal(self.inner.amount() / rhs)
+            }
+        }
+
         impl std::ops::Div<u32> for $name {
             type Output = Self;
 
@@ -76,10 +84,36 @@ macro_rules! currency {
                 Ok((*value.inner.amount()).try_into()?)
             }
         }
+
+        impl TryFrom<$name> for f64 {
+            type Error = CurrencyError;
+
+            fn try_from(value: $name) -> Result<Self, Self::Error> {
+                Ok((*value.inner.amount()).try_into()?)
+            }
+        }
     };
 }
 currency! { UsdCents, USD_CENT }
 currency! { Sats, SATOSHI }
+
+pub struct CurrencyConverter<'a> {
+    price_of_one_sat: &'a UsdCents,
+}
+
+impl<'a> CurrencyConverter<'a> {
+    pub fn new(price_of_one_sat: &'a UsdCents) -> Self {
+        Self { price_of_one_sat }
+    }
+
+    pub fn cents_from_sats(&self, sats: Sats) -> UsdCents {
+        UsdCents::from_decimal(sats.amount() * self.price_of_one_sat.amount())
+    }
+
+    pub fn sats_from_cents(&self, cents: UsdCents) -> Sats {
+        Sats::from_decimal(cents.amount() / self.price_of_one_sat.amount())
+    }
+}
 
 #[cfg(test)]
 mod tests {

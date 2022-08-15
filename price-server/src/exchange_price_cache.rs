@@ -1,9 +1,17 @@
 use chrono::Duration;
+use opentelemetry::trace::{SpanContext, TraceContextExt};
 use std::sync::Arc;
 use thiserror::Error;
 use tokio::sync::RwLock;
+use tracing::Span;
+use tracing_opentelemetry::OpenTelemetrySpanExt;
 
-use shared::{currency::*, payload::*, time::*};
+use shared::{
+    currency::*,
+    payload::*,
+    pubsub::{self, CorrelationId},
+    time::*,
+};
 
 #[derive(Error, Debug)]
 pub enum ExchangePriceCacheError {
@@ -25,25 +33,42 @@ impl ExchangePriceCache {
         }
     }
 
-    pub async fn apply_update(&self, payload: OkexBtcUsdSwapPricePayload) {
-        self.inner.write().await.update_price(payload);
+    pub async fn apply_update(&self, message: pubsub::Envelope<OkexBtcUsdSwapPricePayload>) {
+        self.inner.write().await.update_price(message);
     }
 
     pub async fn latest_tick(&self) -> Result<BtcSatTick, ExchangePriceCacheError> {
-        self.inner.read().await.latest_tick()
+        let tick = self.inner.read().await.latest_tick()?;
+        let span = Span::current();
+        span.add_link(tick.span_context.clone());
+        span.record(
+            "correlation_id",
+            &tracing::field::display(tick.correlation_id),
+        );
+        Ok(tick)
     }
 }
 
 #[derive(Clone)]
 pub struct BtcSatTick {
     timestamp: TimeStamp,
-    pub ask_price_of_one_sat: UsdCents,
-    pub bid_price_of_one_sat: UsdCents,
+    correlation_id: CorrelationId,
+    span_context: SpanContext,
+    ask_price_of_one_sat: UsdCents,
+    bid_price_of_one_sat: UsdCents,
 }
 
 impl BtcSatTick {
     pub fn mid_price_of_one_sat(&self) -> UsdCents {
         (&self.bid_price_of_one_sat + &self.ask_price_of_one_sat) / 2
+    }
+
+    pub fn bid_price(&self) -> CurrencyConverter {
+        CurrencyConverter::new(&self.bid_price_of_one_sat)
+    }
+
+    pub fn ask_price(&self) -> CurrencyConverter {
+        CurrencyConverter::new(&self.ask_price_of_one_sat)
     }
 }
 
@@ -60,8 +85,8 @@ impl ExchangePriceCacheInner {
         }
     }
 
-    fn update_price(&mut self, payload: impl Into<PriceMessagePayload>) {
-        let payload = payload.into();
+    fn update_price(&mut self, message: pubsub::Envelope<OkexBtcUsdSwapPricePayload>) {
+        let payload = message.payload.0;
         if let Some(ref tick) = self.tick {
             if tick.timestamp > payload.timestamp {
                 return;
@@ -73,6 +98,8 @@ impl ExchangePriceCacheInner {
         ) {
             self.tick = Some(BtcSatTick {
                 timestamp: payload.timestamp,
+                correlation_id: message.meta.correlation_id,
+                span_context: Span::current().context().span().span_context().clone(),
                 ask_price_of_one_sat,
                 bid_price_of_one_sat,
             });
@@ -95,9 +122,11 @@ mod tests {
 
     use super::*;
     #[test]
-    fn test_price_of_one_sat() {
+    fn test_mid_price_of_one_sat() {
         let tick = BtcSatTick {
             timestamp: TimeStamp::now(),
+            correlation_id: CorrelationId::new(),
+            span_context: SpanContext::empty_context(),
             bid_price_of_one_sat: UsdCents::from_major(5000),
             ask_price_of_one_sat: UsdCents::from_major(10000),
         };

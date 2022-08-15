@@ -1,6 +1,6 @@
 [package]
 name = "price-server"
-version = "0.1.8-dev"
+version = "0.1.9-dev"
 edition = "2021"
 authors = ["Justin Carter <justin@galoy.io>"]
 license = "MIT"
@@ -22,6 +22,9 @@ futures = "0.3.21"
 thiserror = "1.0.31"
 serde = "1.0.143"
 rust_decimal = "1.25.0"
+tracing = "0.1.36"
+opentelemetry = { version = "0.17.0", features = ["trace"] }
+tracing-opentelemetry = "0.17.4"
 
 [build-dependencies]
 protobuf-src = { version = "1.0.5" }
