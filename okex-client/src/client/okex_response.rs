@@ -28,3 +28,12 @@ pub struct TransferData {
     pub amt: String,
     pub to: String,
 }
+
+#[derive(Deserialize, Debug, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct FundingBalanceData {
+    pub avail_bal: String,
+    pub bal: String,
+    pub ccy: String,
+    pub frozen_bal: String,
+}
