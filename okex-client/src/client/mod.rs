@@ -14,6 +14,8 @@ pub use error::*;
 use okex_response::*;
 
 const OKEX_API_URL: &str = "https://www.okex.com";
+pub const OKEX_MINIMUM_WITHDRAWAL_AMOUNT: f64 = 0.001;
+pub const OKEX_MINIMUM_WITHDRAWAL_FEE: f64 = 0.0002;
 
 #[derive(Debug, PartialEq)]
 pub struct DepositAddress {
@@ -32,6 +34,11 @@ pub struct AvailableBalance {
 
 #[derive(Debug)]
 pub struct TransferState {
+    pub value: String,
+}
+
+#[derive(Debug)]
+pub struct WithdrawId {
     pub value: String,
 }
 
@@ -192,6 +199,43 @@ impl OkexClient {
 
         Ok(TransferState {
             value: state_data.state,
+        })
+    }
+
+    pub async fn withdraw_btc_onchain(
+        &self,
+        amt: f64,
+        fee: f64,
+        btc_address: String,
+    ) -> Result<WithdrawId, OkexClientError> {
+        let request_path = "/api/v5/asset/withdrawal?ccy";
+        let url = format!("{}{}", OKEX_API_URL, request_path);
+
+        let mut body: HashMap<String, String> = HashMap::new();
+        body.insert("ccy".to_string(), "BTC".to_string());
+        body.insert("amt".to_string(), amt.to_string());
+        body.insert("dest".to_string(), "4".to_string());
+        body.insert("fee".to_string(), fee.to_string());
+        body.insert("chain".to_string(), "BTC-Bitcoin".to_string());
+        body.insert("toAddr".to_string(), btc_address);
+        let request_body = serde_json::to_string(&body)?;
+
+        let timestamp = Utc::now().to_rfc3339_opts(SecondsFormat::Millis, true);
+        let pre_hash = format!("{}POST{}{}", timestamp, request_path, request_body);
+        let headers = self.request_headers(timestamp.as_str(), pre_hash)?;
+
+        let response = self
+            .client
+            .post(url)
+            .headers(headers)
+            .body(request_body)
+            .send()
+            .await?;
+
+        let withdraw_data = Self::extract_response_data::<WithdrawData>(response).await?;
+
+        Ok(WithdrawId {
+            value: withdraw_data.wd_id,
         })
     }
 

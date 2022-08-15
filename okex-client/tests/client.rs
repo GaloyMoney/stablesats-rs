@@ -1,6 +1,9 @@
 use std::env;
 
-use okex_client::{OkexClient, OkexClientConfig, OkexClientError};
+use okex_client::{
+    OkexClient, OkexClientConfig, OkexClientError, OKEX_MINIMUM_WITHDRAWAL_AMOUNT,
+    OKEX_MINIMUM_WITHDRAWAL_FEE,
+};
 
 #[tokio::test]
 async fn get_deposit_address_data() -> anyhow::Result<()> {
@@ -131,25 +134,25 @@ async fn transfer_state() -> anyhow::Result<()> {
     Ok(())
 }
 
-// #[tokio::test]
-// async fn withdraw_to_onchain_address() -> anyhow::Result<()> {
-//     let api_key = env::var("OKEX_API_KEY").expect("OKEX_API_KEY not set");
-//     let passphrase = env::var("OKEX_PASSPHRASE").expect("OKEX_PASS_PHRASE not set");
-//     let secret_key = env::var("OKEX_SECRET_KEY").expect("OKEX_SECRET_KEY not set");
-//     let client = OkexClient::new(OkexClientConfig {
-//         api_key,
-//         passphrase,
-//         secret_key,
-//     });
+#[tokio::test]
+async fn withdraw_to_onchain_address() -> anyhow::Result<()> {
+    let api_key = env::var("OKEX_API_KEY").expect("OKEX_API_KEY not set");
+    let passphrase = env::var("OKEX_PASSPHRASE").expect("OKEX_PASS_PHRASE not set");
+    let secret_key = env::var("OKEX_SECRET_KEY").expect("OKEX_SECRET_KEY not set");
+    let client = OkexClient::new(OkexClientConfig {
+        api_key,
+        passphrase,
+        secret_key,
+    });
 
-//     let amount = 0.00001;
-//     let fee = 0.000001;
-//     let onchain_address = "bc1qafuzw5ga4perwsugcmaecjc5epydsqaj7cwk7j".to_string();
-//     let withdraw_id = client
-//         .withdraw_btc_onchain(amount, fee, onchain_address)
-//         .await?;
+    let amount = OKEX_MINIMUM_WITHDRAWAL_AMOUNT;
+    let fee = OKEX_MINIMUM_WITHDRAWAL_FEE;
+    let onchain_address = "bc1qafuzw5ga4perwsugcmaecjc5epydsqaj7cwk7j".to_string();
+    let withdraw_id = client
+        .withdraw_btc_onchain(amount, fee, onchain_address)
+        .await?;
 
-//     assert!(withdraw_id.value.len() == 9);
+    assert!(withdraw_id.value.len() == 8);
 
-//     Ok(())
-// }
+    Ok(())
+}

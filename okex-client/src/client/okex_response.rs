@@ -7,7 +7,7 @@ pub struct OkexResponse<T> {
     pub data: Option<Vec<T>>,
 }
 
-#[derive(Deserialize, Debug, Clone)]
+#[derive(Deserialize, Debug)]
 #[serde(rename_all = "camelCase")]
 pub struct DepositAddressData {
     pub chain: String,
@@ -18,7 +18,7 @@ pub struct DepositAddressData {
     pub selected: bool,
 }
 
-#[derive(Deserialize, Debug, Clone)]
+#[derive(Deserialize, Debug)]
 #[serde(rename_all = "camelCase")]
 pub struct TransferStateData {
     pub amt: String,
@@ -31,7 +31,7 @@ pub struct TransferStateData {
     pub trans_id: String,
 }
 
-#[derive(Deserialize, Debug, Clone)]
+#[derive(Deserialize, Debug)]
 #[serde(rename_all = "camelCase")]
 pub struct TransferData {
     pub trans_id: String,
@@ -42,7 +42,7 @@ pub struct TransferData {
     pub to: String,
 }
 
-#[derive(Deserialize, Debug, Clone)]
+#[derive(Deserialize, Debug)]
 #[serde(rename_all = "camelCase")]
 pub struct FundingBalanceData {
     pub avail_bal: String,
@@ -92,4 +92,14 @@ pub struct TradingBalanceDetails {
     pub upl: String,
     pub upl_liab: String,
     pub stgy_eq: String,
+}
+
+#[derive(Deserialize, Debug)]
+#[serde(rename_all = "camelCase")]
+pub struct WithdrawData {
+    pub amt: String,
+    pub wd_id: String,
+    pub ccy: String,
+    pub client_id: String,
+    pub chain: String,
 }
