@@ -1,3 +1,28 @@
+# [stablesats release v0.1.9](https://github.com/GaloyMoney/stablesats/releases/tag/v0.1.9)
+
+
+### Bug Fixes
+
+- Fees config test
+- Fee defaults
+- Buy/sell naming has BTC as base currency
+
+### Documentation
+
+- Stablesats.yml contains tracing key
+
+### Miscellaneous Tasks
+
+- Bump clap from 3.2.16 to 3.2.17
+- Bump futures from 0.3.21 to 0.3.23
+- Bump serde_yaml from 0.9.4 to 0.9.9
+- Bump chrono from 0.4.21 to 0.4.22
+- Output when cli cannot connect to price server
+
+### Refactor
+
+- Add extract_response_data fn - simplify types
+
 # [stablesats release v0.1.8](https://github.com/GaloyMoney/stablesats/releases/tag/v0.1.8)
 
 
