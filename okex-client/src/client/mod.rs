@@ -30,6 +30,11 @@ pub struct AvailableBalance {
     pub value: String,
 }
 
+#[derive(Debug)]
+pub struct TransferState {
+    pub value: String,
+}
+
 pub struct OkexClientConfig {
     pub api_key: String,
     pub passphrase: String,
@@ -163,6 +168,30 @@ impl OkexClient {
         let trading_balance = Self::extract_response_data::<TradingBalanceData>(response).await?;
         Ok(AvailableBalance {
             value: trading_balance.details[0].avail_bal.clone(),
+        })
+    }
+
+    pub async fn transfer_state(
+        &self,
+        transfer_id: TransferId,
+    ) -> Result<TransferState, OkexClientError> {
+        let request_path = format!(
+            "/api/v5/asset/transfer-state?ccy=BTC&transId={}",
+            transfer_id.value
+        );
+        let url = format!("{}{}", OKEX_API_URL, request_path);
+
+        let timestamp = Utc::now().to_rfc3339_opts(SecondsFormat::Millis, true);
+        let pre_hash = format!("{}GET{}", timestamp, request_path);
+
+        let headers = self.request_headers(timestamp.as_str(), pre_hash)?;
+
+        let response = self.client.get(url).headers(headers).send().await?;
+
+        let state_data = Self::extract_response_data::<TransferStateData>(response).await?;
+
+        Ok(TransferState {
+            value: state_data.state,
         })
     }
 
