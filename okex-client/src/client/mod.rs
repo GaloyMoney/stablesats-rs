@@ -14,6 +14,8 @@ pub use error::*;
 use okex_response::*;
 
 const OKEX_API_URL: &str = "https://www.okex.com";
+pub const OKEX_MINIMUM_WITHDRAWAL_AMOUNT: f64 = 0.001;
+pub const OKEX_MINIMUM_WITHDRAWAL_FEE: f64 = 0.0002;
 
 #[derive(Debug, PartialEq)]
 pub struct DepositAddress {
@@ -22,6 +24,21 @@ pub struct DepositAddress {
 
 #[derive(Debug)]
 pub struct TransferId {
+    pub value: String,
+}
+
+#[derive(Debug)]
+pub struct AvailableBalance {
+    pub value: String,
+}
+
+#[derive(Debug)]
+pub struct TransferState {
+    pub value: String,
+}
+
+#[derive(Debug)]
+pub struct WithdrawId {
     pub value: String,
 }
 
@@ -46,14 +63,15 @@ impl OkexClient {
 
     pub async fn get_funding_deposit_address(&self) -> Result<DepositAddress, OkexClientError> {
         let request_path = "/api/v5/asset/deposit-address?ccy=BTC";
-        let url = format!("{}{}", OKEX_API_URL, request_path);
 
-        let timestamp = Utc::now().to_rfc3339_opts(SecondsFormat::Millis, true);
-        let pre_hash = format!("{}GET{}", timestamp, request_path);
+        let headers = self.get_request_headers(request_path)?;
 
-        let headers = self.request_headers(timestamp.as_str(), pre_hash)?;
-
-        let response = self.client.get(url).headers(headers).send().await?;
+        let response = self
+            .client
+            .get(Self::url_for_path(request_path))
+            .headers(headers)
+            .send()
+            .await?;
 
         let addr_data = Self::extract_response_data::<DepositAddressData>(response).await?;
         Ok(DepositAddress {
@@ -65,9 +83,6 @@ impl OkexClient {
         &self,
         amt: f64,
     ) -> Result<TransferId, OkexClientError> {
-        let request_path = "/api/v5/asset/transfer";
-        let url = format!("{}{}", OKEX_API_URL, request_path);
-
         let mut body: HashMap<String, String> = HashMap::new();
         body.insert("ccy".to_string(), "BTC".to_string());
         body.insert("amt".to_string(), amt.to_string());
@@ -75,14 +90,12 @@ impl OkexClient {
         body.insert("to".to_string(), "18".to_string());
         let request_body = serde_json::to_string(&body)?;
 
-        let timestamp = Utc::now().to_rfc3339_opts(SecondsFormat::Millis, true);
-        let pre_hash = format!("{}POST{}{}", timestamp, request_path, request_body);
-
-        let headers = self.request_headers(timestamp.as_str(), pre_hash)?;
+        let request_path = "/api/v5/asset/transfer";
+        let headers = self.post_request_headers(request_path, request_body.as_str())?;
 
         let response = self
             .client
-            .post(url)
+            .post(Self::url_for_path(request_path))
             .headers(headers)
             .body(request_body)
             .send()
@@ -91,6 +104,128 @@ impl OkexClient {
         let transfer_data = Self::extract_response_data::<TransferData>(response).await?;
         Ok(TransferId {
             value: transfer_data.trans_id,
+        })
+    }
+
+    pub async fn transfer_trading_to_funding(
+        &self,
+        amt: f64,
+    ) -> Result<TransferId, OkexClientError> {
+        let mut body: HashMap<String, String> = HashMap::new();
+        body.insert("ccy".to_string(), "BTC".to_string());
+        body.insert("amt".to_string(), amt.to_string());
+        body.insert("from".to_string(), "18".to_string());
+        body.insert("to".to_string(), "6".to_string());
+        let request_body = serde_json::to_string(&body)?;
+
+        let request_path = "/api/v5/asset/transfer";
+        let headers = self.post_request_headers(request_path, request_body.as_str())?;
+
+        let response = self
+            .client
+            .post(Self::url_for_path(request_path))
+            .headers(headers)
+            .body(request_body)
+            .send()
+            .await?;
+
+        let transfer_data = Self::extract_response_data::<TransferData>(response).await?;
+        Ok(TransferId {
+            value: transfer_data.trans_id,
+        })
+    }
+
+    pub async fn funding_account_balance(&self) -> Result<AvailableBalance, OkexClientError> {
+        let request_path = "/api/v5/asset/balances?ccy=BTC";
+
+        let headers = self.get_request_headers(request_path)?;
+
+        let response = self
+            .client
+            .get(Self::url_for_path(request_path))
+            .headers(headers)
+            .send()
+            .await?;
+
+        let funding_balance = Self::extract_response_data::<FundingBalanceData>(response).await?;
+        Ok(AvailableBalance {
+            value: funding_balance.avail_bal,
+        })
+    }
+
+    pub async fn trading_account_balance(&self) -> Result<AvailableBalance, OkexClientError> {
+        let request_path = "/api/v5/account/balance?ccy=BTC";
+
+        let headers = self.get_request_headers(request_path)?;
+
+        let response = self
+            .client
+            .get(Self::url_for_path(request_path))
+            .headers(headers)
+            .send()
+            .await?;
+
+        let trading_balance = Self::extract_response_data::<TradingBalanceData>(response).await?;
+        Ok(AvailableBalance {
+            value: trading_balance.details[0].avail_bal.clone(),
+        })
+    }
+
+    pub async fn transfer_state(
+        &self,
+        transfer_id: TransferId,
+    ) -> Result<TransferState, OkexClientError> {
+        let request_path = format!(
+            "/api/v5/asset/transfer-state?ccy=BTC&transId={}",
+            transfer_id.value
+        );
+
+        let headers = self.get_request_headers(&request_path)?;
+
+        let response = self
+            .client
+            .get(Self::url_for_path(&request_path))
+            .headers(headers)
+            .send()
+            .await?;
+
+        let state_data = Self::extract_response_data::<TransferStateData>(response).await?;
+
+        Ok(TransferState {
+            value: state_data.state,
+        })
+    }
+
+    pub async fn withdraw_btc_onchain(
+        &self,
+        amt: f64,
+        fee: f64,
+        btc_address: String,
+    ) -> Result<WithdrawId, OkexClientError> {
+        let mut body: HashMap<String, String> = HashMap::new();
+        body.insert("ccy".to_string(), "BTC".to_string());
+        body.insert("amt".to_string(), amt.to_string());
+        body.insert("dest".to_string(), "4".to_string());
+        body.insert("fee".to_string(), fee.to_string());
+        body.insert("chain".to_string(), "BTC-Bitcoin".to_string());
+        body.insert("toAddr".to_string(), btc_address);
+        let request_body = serde_json::to_string(&body)?;
+
+        let request_path = "/api/v5/asset/withdrawal?ccy";
+        let headers = self.post_request_headers(request_path, request_body.as_str())?;
+
+        let response = self
+            .client
+            .post(Self::url_for_path(request_path))
+            .headers(headers)
+            .body(request_body)
+            .send()
+            .await?;
+
+        let withdraw_data = Self::extract_response_data::<WithdrawData>(response).await?;
+
+        Ok(WithdrawId {
+            value: withdraw_data.wd_id,
         })
     }
 
@@ -114,9 +249,29 @@ impl OkexClient {
         BASE64.encode(signature.as_ref())
     }
 
+    fn url_for_path(path: &str) -> String {
+        format!("{}{}", OKEX_API_URL, path)
+    }
+
+    fn post_request_headers(
+        &self,
+        request_path: &str,
+        request_body: &str,
+    ) -> Result<HeaderMap, OkexClientError> {
+        let timestamp = Utc::now().to_rfc3339_opts(SecondsFormat::Millis, true);
+        let pre_hash = format!("{}POST{}{}", timestamp, request_path, request_body);
+        self.request_headers(timestamp, pre_hash)
+    }
+
+    fn get_request_headers(&self, request_path: &str) -> Result<HeaderMap, OkexClientError> {
+        let timestamp = Utc::now().to_rfc3339_opts(SecondsFormat::Millis, true);
+        let pre_hash = format!("{}GET{}", timestamp, request_path);
+        self.request_headers(timestamp, pre_hash)
+    }
+
     fn request_headers(
         &self,
-        formatted_timestamp: &str,
+        formatted_timestamp: String,
         pre_hash: String,
     ) -> Result<HeaderMap, OkexClientError> {
         let sign_base64 = self.sign_okex_request(pre_hash);
@@ -133,7 +288,7 @@ impl OkexClient {
         );
         headers.insert(
             "OK-ACCESS-TIMESTAMP",
-            HeaderValue::from_str(formatted_timestamp)?,
+            HeaderValue::from_str(formatted_timestamp.as_str())?,
         );
         headers.insert(
             "OK-ACCESS-PASSPHRASE",
