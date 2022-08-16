@@ -135,6 +135,7 @@ async fn transfer_state() -> anyhow::Result<()> {
 }
 
 #[tokio::test]
+#[ignore]
 async fn withdraw_to_onchain_address() -> anyhow::Result<()> {
     let api_key = env::var("OKEX_API_KEY").expect("OKEX_API_KEY not set");
     let passphrase = env::var("OKEX_PASSPHRASE").expect("OKEX_PASS_PHRASE not set");
