@@ -103,16 +103,22 @@ async fn transfer_state() -> anyhow::Result<()> {
 }
 
 #[tokio::test]
-#[ignore]
+#[ignore = "cost fees to withdraw to onchain address"]
 async fn withdraw_to_onchain_address() -> anyhow::Result<()> {
     let amount = OKEX_MINIMUM_WITHDRAWAL_AMOUNT;
     let fee = OKEX_MINIMUM_WITHDRAWAL_FEE;
-    let onchain_address = "bc1qafuzw5ga4perwsugcmaecjc5epydsqaj7cwk7j".to_string();
+    let onchain_address =
+        env::var("ONCHAIN_BTC_WITHDRAWAL_ADDRESS").expect("ONCHAIN_BTC_WITHDRAWAL_ADDRESS not set");
     let withdraw_id = configured_okex_client()
         .withdraw_btc_onchain(amount, fee, onchain_address)
         .await?;
 
     assert!(withdraw_id.value.len() == 8);
 
+    Ok(())
+}
+
+#[tokio::test]
+async fn deposit_status() -> anyhow::Result<()> {
     Ok(())
 }
