@@ -42,6 +42,11 @@ pub struct WithdrawId {
     pub value: String,
 }
 
+#[derive(Debug)]
+pub struct OrderId {
+    pub value: String,
+}
+
 pub struct OkexClientConfig {
     pub api_key: String,
     pub passphrase: String,
@@ -208,7 +213,7 @@ impl OkexClient {
         fee: f64,
         btc_address: String,
     ) -> Result<WithdrawId, OkexClientError> {
-        let request_path = "/api/v5/asset/withdrawal?ccy";
+        let request_path = "/api/v5/asset/withdrawal?ccy=BTC";
         let url = format!("{}{}", OKEX_API_URL, request_path);
 
         let mut body: HashMap<String, String> = HashMap::new();
@@ -239,10 +244,69 @@ impl OkexClient {
         })
     }
 
+    pub async fn place_order(
+        &self,
+        inst_id: String,
+        trade_mode: String,
+        side: String,
+        pos_side: String,
+        order_type: String,
+        size: u64,
+    ) -> Result<OrderId, OkexClientError> {
+        let request_path = "/api/v5/trade/order";
+        let url = format!("{}{}", OKEX_API_URL, request_path);
+
+        let mut body: HashMap<String, String> = HashMap::new();
+        body.insert("ccy".to_string(), "BTC".to_string());
+        body.insert("instId".to_string(), inst_id);
+        body.insert("tdMode".to_string(), trade_mode);
+        body.insert("side".to_string(), side);
+        body.insert("ordType".to_string(), order_type);
+        body.insert("posSide".to_string(), pos_side);
+        body.insert("sz".to_string(), size.to_string());
+        let request_body = serde_json::to_string(&body)?;
+
+        let timestamp = Utc::now().to_rfc3339_opts(SecondsFormat::Millis, true);
+        let pre_hash = format!("{}POST{}{}", timestamp, request_path, request_body);
+        let headers = self.request_headers(timestamp.as_str(), pre_hash)?;
+
+        let response = self
+            .client
+            .post(url)
+            .headers(headers)
+            .body(request_body)
+            .send()
+            .await?;
+
+        let order_data = Self::extract_response_data::<OrderData>(response).await?;
+        Ok(OrderId {
+            value: order_data.ord_id,
+        })
+    }
+
+    pub async fn position(&self) -> Result<String, OkexClientError> {
+        let request_path = "/api/v5/account/positions?instId=BTC-USD-SWAP";
+        let url = format!("{}{}", OKEX_API_URL, request_path);
+
+        let timestamp = Utc::now().to_rfc3339_opts(SecondsFormat::Millis, true);
+        let pre_hash = format!("{}GET{}", timestamp, request_path);
+
+        let headers = self.request_headers(timestamp.as_str(), pre_hash)?;
+
+        let response = self.client.get(url).headers(headers).send().await?;
+
+        let positions_data = Self::extract_response_data::<PositionData>(response).await?;
+
+        Ok("position".to_string())
+    }
+
     async fn extract_response_data<T: serde::de::DeserializeOwned>(
         response: reqwest::Response,
     ) -> Result<T, OkexClientError> {
         let response_text = response.text().await?;
+
+        println!("{:#?}", response_text);
+
         let OkexResponse { code, msg, data } =
             serde_json::from_str::<OkexResponse<T>>(&response_text)?;
         if let Some(data) = data {

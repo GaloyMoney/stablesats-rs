@@ -156,3 +156,48 @@ async fn withdraw_to_onchain_address() -> anyhow::Result<()> {
 
     Ok(())
 }
+
+#[tokio::test]
+async fn place_order() -> anyhow::Result<()> {
+    let api_key = env::var("OKEX_DEMO_API_KEY").expect("OKEX_API_KEY not set");
+    let passphrase = env::var("OKEX_DEMO_PASSPHRASE").expect("OKEX_PASS_PHRASE not set");
+    let secret_key = env::var("OKEX_DEMO_SECRET_KEY").expect("OKEX_SECRET_KEY not set");
+    let client = OkexClient::new(OkexClientConfig {
+        api_key,
+        passphrase,
+        secret_key,
+    });
+
+    let order_id = client
+        .place_order(
+            "BTC-USD-SWAP".to_string(),
+            "cross".to_string(),
+            "buy".to_string(),
+            "long".to_string(),
+            "market".to_string(),
+            1,
+        )
+        .await?;
+
+    assert!(order_id.value.len() == 8);
+
+    Ok(())
+}
+
+#[tokio::test]
+async fn get_positions() -> anyhow::Result<()> {
+    let api_key = env::var("OKEX_DEMO_API_KEY").expect("OKEX_API_KEY not set");
+    let passphrase = env::var("OKEX_DEMO_PASSPHRASE").expect("OKEX_PASS_PHRASE not set");
+    let secret_key = env::var("OKEX_DEMO_SECRET_KEY").expect("OKEX_SECRET_KEY not set");
+    let client = OkexClient::new(OkexClientConfig {
+        api_key,
+        passphrase,
+        secret_key,
+    });
+
+    let position = client.position().await?;
+
+    assert_eq!(position, "position");
+
+    Ok(())
+}
