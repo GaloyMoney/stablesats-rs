@@ -2,6 +2,7 @@ mod config;
 mod convert;
 mod error;
 
+#[allow(clippy::all)]
 pub mod proto {
     tonic::include_proto!("services.price.v1");
 }
