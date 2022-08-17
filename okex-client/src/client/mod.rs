@@ -269,7 +269,8 @@ impl OkexClient {
         let request_path = "/api/v5/asset/deposit-history";
         let headers = self.get_request_headers(request_path)?;
         let response = self
-            .client
+            .rate_limit_client(request_path)
+            .await
             .get(Self::url_for_path(request_path))
             .headers(headers)
             .send()
