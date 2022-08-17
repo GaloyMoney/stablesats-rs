@@ -48,32 +48,6 @@ async fn client_is_missing_header() -> anyhow::Result<()> {
 }
 
 #[tokio::test]
-#[ignore]
-async fn transfer_funding_to_trading() -> anyhow::Result<()> {
-    let amount = Decimal::new(1, 5);
-    let transfer_id = configured_okex_client()
-        .transfer_funding_to_trading(amount)
-        .await?;
-
-    assert!(transfer_id.value.len() == 9);
-
-    Ok(())
-}
-
-#[tokio::test]
-#[ignore]
-async fn transfer_trading_to_funding() -> anyhow::Result<()> {
-    let amount = 0.00001;
-    let transfer_id = configured_okex_client()
-        .transfer_trading_to_funding(amount)
-        .await?;
-
-    assert!(transfer_id.value.len() == 9);
-
-    Ok(())
-}
-
-#[tokio::test]
 async fn funding_account_balance() -> anyhow::Result<()> {
     let avail_balance = configured_okex_client().funding_account_balance().await?;
     let balance = avail_balance.amt_in_btc;
@@ -93,6 +67,64 @@ async fn trading_account_balance() -> anyhow::Result<()> {
 }
 
 #[tokio::test]
+async fn deposit_status() -> anyhow::Result<()> {
+    if let (Ok(deposit_addr), Ok(deposit_amount)) = (
+        env::var("OKEX_DEPOSIT_ADDRESS"),
+        env::var("OKEX_DEPOSIT_AMOUNT"),
+    ) {
+        let amt = Decimal::from_str_exact(&deposit_amount)?;
+
+        let deposit = configured_okex_client()
+            .fetch_deposit(deposit_addr, amt)
+            .await?;
+
+        assert_eq!(deposit.status, "2".to_string());
+    }
+    Ok(())
+}
+
+#[tokio::test]
+async fn withdraw_to_onchain_address() -> anyhow::Result<()> {
+    let amount = Decimal::from_str_exact(OKEX_MINIMUM_WITHDRAWAL_AMOUNT)?;
+    let fee = Decimal::from_str_exact(OKEX_MINIMUM_WITHDRAWAL_FEE)?;
+    if let Ok(onchain_address) = env::var("ONCHAIN_BTC_WITHDRAWAL_ADDRESS") {
+        let withdraw_id = configured_okex_client()
+            .withdraw_btc_onchain(amount, fee, onchain_address)
+            .await?;
+
+        assert!(withdraw_id.value.len() == 8);
+    }
+    Ok(())
+}
+
+#[tokio::test]
+#[ignore = "transfer call is rate limited"]
+async fn transfer_trading_to_funding() -> anyhow::Result<()> {
+    let amount = Decimal::new(1, 5);
+    let transfer_id = configured_okex_client()
+        .transfer_trading_to_funding(amount)
+        .await?;
+
+    assert!(transfer_id.value.len() == 9);
+
+    Ok(())
+}
+
+#[tokio::test]
+#[ignore = "transfer call is rate limited"]
+async fn transfer_funding_to_trading() -> anyhow::Result<()> {
+    let amount = Decimal::new(1, 5);
+    let transfer_id = configured_okex_client()
+        .transfer_funding_to_trading(amount)
+        .await?;
+
+    assert!(transfer_id.value.len() == 9);
+
+    Ok(())
+}
+
+#[tokio::test]
+#[ignore = "transfer call is rate limited"]
 async fn transfer_state() -> anyhow::Result<()> {
     let client = configured_okex_client();
     let amount = Decimal::new(1, 5);
@@ -101,49 +133,6 @@ async fn transfer_state() -> anyhow::Result<()> {
     let transfer_state = client.transfer_state(transfer_id).await?;
 
     assert_eq!(transfer_state.value, "success".to_string());
-
-    Ok(())
-}
-
-#[tokio::test]
-#[ignore = "cost fees to withdraw to onchain address"]
-async fn withdraw_to_onchain_address() -> anyhow::Result<()> {
-    let amount = Decimal::from_str_exact(OKEX_MINIMUM_WITHDRAWAL_AMOUNT)?;
-    let fee = Decimal::from_str_exact(OKEX_MINIMUM_WITHDRAWAL_FEE)?;
-    let onchain_address =
-        env::var("ONCHAIN_BTC_WITHDRAWAL_ADDRESS").expect("ONCHAIN_BTC_WITHDRAWAL_ADDRESS not set");
-    let withdraw_id = configured_okex_client()
-        .withdraw_btc_onchain(amount, fee, onchain_address)
-        .await?;
-
-    assert!(withdraw_id.value.len() == 8);
-
-    Ok(())
-}
-
-#[tokio::test]
-async fn deposit_status() -> anyhow::Result<()> {
-    let deposit_addr = env::var("OKEX_DEPOSIT_ADDRESS").expect("OKEX_DEPOSIT_ADDRESS not set");
-    let deposit_amount = env::var("OKEX_DEPOSIT_AMOUNT").expect("OKEX_DEPOSIT_AMOUNT not set");
-    let amt = Decimal::from_str_exact(&deposit_amount)?;
-
-    let deposit = configured_okex_client()
-        .fetch_deposit(deposit_addr, amt)
-        .await?;
-
-    assert_eq!(deposit.status, "2".to_string());
-
-    Ok(())
-}
-
-#[tokio::test]
-async fn transfer_trading_to_funding() -> anyhow::Result<()> {
-    let amount = Decimal::new(1, 5);
-    let transfer_id = configured_okex_client()
-        .transfer_trading_to_funding(amount)
-        .await?;
-
-    assert!(transfer_id.value.len() == 9);
 
     Ok(())
 }

@@ -1,3 +1,4 @@
+use rust_decimal::Decimal;
 use serde::Deserialize;
 
 #[derive(Deserialize, Debug)]
@@ -69,9 +70,9 @@ pub struct TradingBalanceData {
 #[derive(Deserialize, Debug, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct TradingBalanceDetails {
-    pub avail_bal: String,
+    pub avail_bal: Decimal,
     pub avail_eq: String,
-    pub cash_bal: String,
+    pub cash_bal: Decimal,
     pub ccy: String,
     pub cross_liab: String,
     pub dis_eq: String,
