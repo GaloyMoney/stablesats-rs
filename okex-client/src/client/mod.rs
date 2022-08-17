@@ -6,6 +6,7 @@ use std::collections::HashMap;
 use chrono::{SecondsFormat, Utc};
 use data_encoding::BASE64;
 use ring::hmac;
+use rust_decimal::Decimal;
 
 use reqwest::header::{HeaderMap, HeaderValue, CONTENT_TYPE};
 use reqwest::Client as ReqwestClient;
@@ -14,10 +15,10 @@ pub use error::*;
 use okex_response::*;
 
 const OKEX_API_URL: &str = "https://www.okex.com";
-pub const OKEX_MINIMUM_WITHDRAWAL_AMOUNT: f64 = 0.001;
-pub const OKEX_MINIMUM_WITHDRAWAL_FEE: f64 = 0.0002;
+pub const OKEX_MINIMUM_WITHDRAWAL_AMOUNT: &str = "0.001";
+pub const OKEX_MINIMUM_WITHDRAWAL_FEE: &str = "0.0002";
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Eq)]
 pub struct DepositAddress {
     pub value: String,
 }
@@ -29,7 +30,7 @@ pub struct TransferId {
 
 #[derive(Debug)]
 pub struct AvailableBalance {
-    pub value: String,
+    pub amt_in_btc: Decimal,
 }
 
 #[derive(Debug)]
@@ -40,6 +41,11 @@ pub struct TransferState {
 #[derive(Debug)]
 pub struct WithdrawId {
     pub value: String,
+}
+
+#[derive(Debug)]
+pub struct DepositStatus {
+    pub status: String,
 }
 
 pub struct OkexClientConfig {
@@ -81,7 +87,7 @@ impl OkexClient {
 
     pub async fn transfer_funding_to_trading(
         &self,
-        amt: f64,
+        amt: Decimal,
     ) -> Result<TransferId, OkexClientError> {
         let mut body: HashMap<String, String> = HashMap::new();
         body.insert("ccy".to_string(), "BTC".to_string());
@@ -109,7 +115,7 @@ impl OkexClient {
 
     pub async fn transfer_trading_to_funding(
         &self,
-        amt: f64,
+        amt: Decimal,
     ) -> Result<TransferId, OkexClientError> {
         let mut body: HashMap<String, String> = HashMap::new();
         body.insert("ccy".to_string(), "BTC".to_string());
@@ -148,8 +154,10 @@ impl OkexClient {
             .await?;
 
         let funding_balance = Self::extract_response_data::<FundingBalanceData>(response).await?;
+        let balance = Decimal::from_str_exact(&funding_balance.avail_bal)?;
+
         Ok(AvailableBalance {
-            value: funding_balance.avail_bal,
+            amt_in_btc: balance,
         })
     }
 
@@ -166,8 +174,10 @@ impl OkexClient {
             .await?;
 
         let trading_balance = Self::extract_response_data::<TradingBalanceData>(response).await?;
+        let balance = Decimal::from_str_exact(&trading_balance.details[0].avail_eq.clone())?;
+
         Ok(AvailableBalance {
-            value: trading_balance.details[0].avail_bal.clone(),
+            amt_in_btc: balance,
         })
     }
 
@@ -198,8 +208,8 @@ impl OkexClient {
 
     pub async fn withdraw_btc_onchain(
         &self,
-        amt: f64,
-        fee: f64,
+        amt: Decimal,
+        fee: Decimal,
         btc_address: String,
     ) -> Result<WithdrawId, OkexClientError> {
         let mut body: HashMap<String, String> = HashMap::new();
@@ -211,7 +221,7 @@ impl OkexClient {
         body.insert("toAddr".to_string(), btc_address);
         let request_body = serde_json::to_string(&body)?;
 
-        let request_path = "/api/v5/asset/withdrawal?ccy";
+        let request_path = "/api/v5/asset/withdrawal";
         let headers = self.post_request_headers(request_path, request_body.as_str())?;
 
         let response = self
@@ -229,6 +239,41 @@ impl OkexClient {
         })
     }
 
+    pub async fn fetch_deposit(
+        &self,
+        depo_addr: String,
+        amt_in_btc: Decimal,
+    ) -> Result<DepositStatus, OkexClientError> {
+        // 1. Get all deposit history
+        let request_path = "/api/v5/asset/deposit-history";
+        let headers = self.get_request_headers(request_path)?;
+        let response = self
+            .client
+            .get(Self::url_for_path(request_path))
+            .headers(headers)
+            .send()
+            .await?;
+
+        let history = Self::extract_response_data_array::<DepositHistoryData>(response).await?;
+
+        // 2. Filter through results from above and find any entry that matches addr and amt_in_btc
+        let deposit = history.into_iter().find(|deposit_entry| {
+            deposit_entry.to == depo_addr && deposit_entry.amt == amt_in_btc.to_string()
+        });
+
+        if let Some(deposit_data) = deposit {
+            Ok(DepositStatus {
+                status: deposit_data.state,
+            })
+        } else {
+            Err(OkexClientError::UnexpectedResponse {
+                msg: format!("No deposit of {} made to {}", amt_in_btc, depo_addr),
+                code: "0".to_string(),
+            })
+        }
+    }
+
+    /// Extracts the first entry in the response data
     async fn extract_response_data<T: serde::de::DeserializeOwned>(
         response: reqwest::Response,
     ) -> Result<T, OkexClientError> {
@@ -239,6 +284,20 @@ impl OkexClient {
             if let Some(first) = data.into_iter().next() {
                 return Ok(first);
             }
+        }
+        Err(OkexClientError::UnexpectedResponse { msg, code })
+    }
+
+    /// Extracts the array of entries in the response data
+    async fn extract_response_data_array<T: serde::de::DeserializeOwned>(
+        response: reqwest::Response,
+    ) -> Result<Vec<T>, OkexClientError> {
+        let response_text = response.text().await?;
+        let OkexResponse { code, msg, data } =
+            serde_json::from_str::<OkexResponse<T>>(&response_text)?;
+
+        if let Some(data) = data {
+            return Ok(data);
         }
         Err(OkexClientError::UnexpectedResponse { msg, code })
     }

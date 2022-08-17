@@ -962,6 +962,7 @@ dependencies = [
  "data-encoding",
  "reqwest",
  "ring",
+ "rust_decimal",
  "serde",
  "serde_json",
  "serde_yaml",

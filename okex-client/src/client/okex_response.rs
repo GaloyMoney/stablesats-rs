@@ -103,3 +103,18 @@ pub struct WithdrawData {
     pub client_id: String,
     pub chain: String,
 }
+
+#[derive(Deserialize, Debug)]
+#[serde(rename_all = "camelCase")]
+pub struct DepositHistoryData {
+    pub actual_dep_blk_confirm: String,
+    pub amt: String,
+    pub ccy: String,
+    pub chain: String,
+    pub dep_id: String,
+    pub from: String,
+    pub state: String,
+    pub to: String,
+    pub ts: String,
+    pub tx_id: String,
+}
