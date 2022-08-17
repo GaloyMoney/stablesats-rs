@@ -195,10 +195,9 @@ impl OkexClient {
             .await?;
 
         let trading_balance = Self::extract_response_data::<TradingBalanceData>(response).await?;
-        let balance = Decimal::from_str_exact(&trading_balance.details[0].avail_eq.clone())?;
 
         Ok(AvailableBalance {
-            amt_in_btc: balance,
+            amt_in_btc: trading_balance.details[0].cash_bal,
         })
     }
 
