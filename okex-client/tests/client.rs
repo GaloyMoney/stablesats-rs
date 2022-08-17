@@ -48,10 +48,24 @@ async fn client_is_missing_header() -> anyhow::Result<()> {
 }
 
 #[tokio::test]
+#[ignore]
 async fn transfer_funding_to_trading() -> anyhow::Result<()> {
     let amount = Decimal::new(1, 5);
     let transfer_id = configured_okex_client()
         .transfer_funding_to_trading(amount)
+        .await?;
+
+    assert!(transfer_id.value.len() == 9);
+
+    Ok(())
+}
+
+#[tokio::test]
+#[ignore]
+async fn transfer_trading_to_funding() -> anyhow::Result<()> {
+    let amount = 0.00001;
+    let transfer_id = configured_okex_client()
+        .transfer_trading_to_funding(amount)
         .await?;
 
     assert!(transfer_id.value.len() == 9);

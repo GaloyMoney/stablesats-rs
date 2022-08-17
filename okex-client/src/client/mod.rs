@@ -1,7 +1,7 @@
 mod error;
 mod okex_response;
 
-use std::collections::HashMap;
+use std::{collections::HashMap, time::Duration};
 
 use chrono::{SecondsFormat, Utc};
 use data_encoding::BASE64;
@@ -13,6 +13,15 @@ use reqwest::Client as ReqwestClient;
 
 pub use error::*;
 use okex_response::*;
+
+use governor::{
+    clock::DefaultClock, state::keyed::DefaultKeyedStateStore, Jitter, Quota, RateLimiter,
+};
+use std::num::NonZeroU32;
+
+lazy_static::lazy_static! {
+    static ref LIMITER: RateLimiter<&'static str, DefaultKeyedStateStore<&'static str>, DefaultClock>  = RateLimiter::keyed(Quota::per_second(NonZeroU32::new(1).unwrap()));
+}
 
 const OKEX_API_URL: &str = "https://www.okex.com";
 pub const OKEX_MINIMUM_WITHDRAWAL_AMOUNT: &str = "0.001";
@@ -67,13 +76,20 @@ impl OkexClient {
         }
     }
 
+    pub async fn rate_limit_client(&self, key: &'static str) -> &ReqwestClient {
+        let jitter = Jitter::new(Duration::from_secs(1), Duration::from_secs(1));
+        LIMITER.until_key_ready_with_jitter(&key, jitter).await;
+        &self.client
+    }
+
     pub async fn get_funding_deposit_address(&self) -> Result<DepositAddress, OkexClientError> {
         let request_path = "/api/v5/asset/deposit-address?ccy=BTC";
 
         let headers = self.get_request_headers(request_path)?;
 
         let response = self
-            .client
+            .rate_limit_client(request_path)
+            .await
             .get(Self::url_for_path(request_path))
             .headers(headers)
             .send()
@@ -100,7 +116,8 @@ impl OkexClient {
         let headers = self.post_request_headers(request_path, request_body.as_str())?;
 
         let response = self
-            .client
+            .rate_limit_client(request_path)
+            .await
             .post(Self::url_for_path(request_path))
             .headers(headers)
             .body(request_body)
@@ -125,10 +142,12 @@ impl OkexClient {
         let request_body = serde_json::to_string(&body)?;
 
         let request_path = "/api/v5/asset/transfer";
+        LIMITER.until_key_ready(&request_path).await;
         let headers = self.post_request_headers(request_path, request_body.as_str())?;
 
         let response = self
-            .client
+            .rate_limit_client(request_path)
+            .await
             .post(Self::url_for_path(request_path))
             .headers(headers)
             .body(request_body)
@@ -147,7 +166,8 @@ impl OkexClient {
         let headers = self.get_request_headers(request_path)?;
 
         let response = self
-            .client
+            .rate_limit_client(request_path)
+            .await
             .get(Self::url_for_path(request_path))
             .headers(headers)
             .send()
@@ -167,7 +187,8 @@ impl OkexClient {
         let headers = self.get_request_headers(request_path)?;
 
         let response = self
-            .client
+            .rate_limit_client(request_path)
+            .await
             .get(Self::url_for_path(request_path))
             .headers(headers)
             .send()
@@ -185,15 +206,14 @@ impl OkexClient {
         &self,
         transfer_id: TransferId,
     ) -> Result<TransferState, OkexClientError> {
-        let request_path = format!(
-            "/api/v5/asset/transfer-state?ccy=BTC&transId={}",
-            transfer_id.value
-        );
+        let static_request_path = "/api/v5/asset/transfer-state?ccy=BTC&transId=";
+        let request_path = format!("{}{}", static_request_path, transfer_id.value);
 
         let headers = self.get_request_headers(&request_path)?;
 
         let response = self
-            .client
+            .rate_limit_client(static_request_path)
+            .await
             .get(Self::url_for_path(&request_path))
             .headers(headers)
             .send()
@@ -225,7 +245,8 @@ impl OkexClient {
         let headers = self.post_request_headers(request_path, request_body.as_str())?;
 
         let response = self
-            .client
+            .rate_limit_client(request_path)
+            .await
             .post(Self::url_for_path(request_path))
             .headers(headers)
             .body(request_body)

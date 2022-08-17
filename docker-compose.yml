@@ -4,6 +4,7 @@ services:
     image: busybox
     depends_on:
     - redis
+    - otel-agent
   redis:
     image: bitnami/redis:6.2
     environment:
