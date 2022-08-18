@@ -159,8 +159,8 @@ async fn place_order() -> anyhow::Result<()> {
     std::env::set_var("OKEX_SIMULATED_TRADING", "1");
 
     let client = demo_okex_client();
-    let instrument = OkexInstrumentId::swap();
-    let margin = OkexMarginMode::cross();
+    let instrument = OkexInstrumentId::BtcUsdSwap;
+    let margin = OkexMarginMode::Cross;
     let position_side = OkexPositionSide::long();
     let order_side = OkexOrderSide::Buy;
 
@@ -197,8 +197,8 @@ async fn close_positions() -> anyhow::Result<()> {
     std::env::set_var("OKEX_SIMULATED_TRADING", "1");
 
     let client = demo_okex_client();
-    let instrument = OkexInstrumentId::swap();
-    let margin = OkexMarginMode::cross();
+    let instrument = OkexInstrumentId::BtcUsdSwap;
+    let margin = OkexMarginMode::Cross;
     let position_side = OkexPositionSide::long();
     let order_side = OkexOrderSide::Buy;
 

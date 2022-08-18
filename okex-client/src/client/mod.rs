@@ -69,34 +69,14 @@ pub struct PositionId {
 
 #[derive(Debug, Clone)]
 pub enum OkexInstrumentId {
-    BtcUsdSwap(String),
-    BtcUsd(String),
-}
-
-impl OkexInstrumentId {
-    pub fn swap() -> Self {
-        Self::BtcUsdSwap("BTC-USD-SWAP".to_string())
-    }
-
-    pub fn spot() -> Self {
-        Self::BtcUsd("BTC-USD".to_string())
-    }
+    BtcUsdSwap,
+    BtcUsd,
 }
 
 #[derive(Debug, Clone)]
 pub enum OkexMarginMode {
-    Cross(String),
-    Isolated(String),
-}
-
-impl OkexMarginMode {
-    pub fn cross() -> Self {
-        Self::Cross("cross".to_string())
-    }
-
-    pub fn isolated() -> Self {
-        Self::Isolated("isolated".to_string())
-    }
+    Cross,
+    Isolated,
 }
 
 #[derive(Debug, Clone)]
@@ -378,12 +358,12 @@ impl OkexClient {
         size: u64,
     ) -> Result<OrderId, OkexClientError> {
         let instrument = match inst_id {
-            OkexInstrumentId::BtcUsdSwap(inst) => inst,
-            OkexInstrumentId::BtcUsd(inst) => inst,
+            OkexInstrumentId::BtcUsdSwap => "BTC-USD-SWAP".to_string(),
+            OkexInstrumentId::BtcUsd => "BTC-USD".to_string(),
         };
         let margin = match margin_mode {
-            OkexMarginMode::Cross(margin) => margin,
-            OkexMarginMode::Isolated(margin) => margin,
+            OkexMarginMode::Cross => "cross".to_string(),
+            OkexMarginMode::Isolated => "isolated".to_string(),
         };
         let pos_side = match pos_side {
             OkexPositionSide::LongShort(pos_side) => pos_side,
@@ -450,12 +430,12 @@ impl OkexClient {
         auto_cxl: bool,
     ) -> Result<ClosePositionData, OkexClientError> {
         let instrument = match inst_id {
-            OkexInstrumentId::BtcUsdSwap(inst) => inst,
-            OkexInstrumentId::BtcUsd(inst) => inst,
+            OkexInstrumentId::BtcUsdSwap => "BTC-USD-SWAP".to_string(),
+            OkexInstrumentId::BtcUsd => "BTC-USD".to_string(),
         };
         let margin = match margin_mode {
-            OkexMarginMode::Cross(margin) => margin,
-            OkexMarginMode::Isolated(margin) => margin,
+            OkexMarginMode::Cross => "cross".to_string(),
+            OkexMarginMode::Isolated => "isolated".to_string(),
         };
         let pos_side = match pos_side {
             OkexPositionSide::LongShort(pos_side) => pos_side,
