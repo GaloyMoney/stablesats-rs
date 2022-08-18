@@ -1,7 +1,7 @@
 use chrono::{prelude::*, Duration};
 use serde::{Deserialize, Serialize};
 
-#[derive(Clone, PartialEq, Debug, Serialize, Deserialize)]
+#[derive(Clone, PartialEq, Eq, Debug, Serialize, Deserialize)]
 #[serde(transparent)]
 pub struct TimeStamp(#[serde(with = "chrono::serde::ts_seconds")] DateTime<Utc>);
 impl TimeStamp {
@@ -36,7 +36,7 @@ impl std::ops::Sub for TimeStamp {
     }
 }
 
-#[derive(Clone, PartialEq, Debug, Serialize, Deserialize)]
+#[derive(Clone, PartialEq, Eq, Debug, Serialize, Deserialize)]
 #[serde(transparent)]
 pub struct TimeStampMilliStr(String);
 impl TryFrom<&TimeStampMilliStr> for TimeStamp {

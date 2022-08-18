@@ -1,6 +1,6 @@
 [package]
 name = "okex-client"
-version = "0.1.9-dev"
+version = "0.1.10-dev"
 edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
@@ -15,7 +15,11 @@ data-encoding = "2.3.2"
 serde = {version = "1.0.142", features = ["derive"]}
 serde_json = "1.0.83"
 chrono = { version = "0.4", features = ["clock", "serde"], default-features = false }
-serde_yaml = "0.9.4"
+serde_yaml = "0.9.9"
+rust_decimal = "1.26.1"
+governor = "0.4.2"
+lazy_static = "1.4.0"
+rust_decimal_macros = "1.26.1"
 
 [dev-dependencies]
-anyhow = "1.0.59"
+anyhow = "1.0.62"

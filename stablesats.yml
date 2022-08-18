@@ -8,11 +8,16 @@
   # server:
   #   listen_port: 3325
   # fees:
-  #   base_fee_rate: 0.005
-  #   immediate_fee_rate: 0.002
-  #   delayed_fee_rate: 0.0025
+  #   base_fee_rate: 0.0005
+  #   immediate_fee_rate: 0.0005
+  #   delayed_fee_rate: 0.0007
 
 # okex_price_feed:
   # enabled: true
   # config:
   #   url: "wss://ws.okx.com:8443/ws/v5/public"
+
+# tracing:
+#   host: "localhost"
+#   port: 6831
+#   service_name: "stablesats-dev"

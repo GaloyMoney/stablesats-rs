@@ -10,4 +10,6 @@ pub enum OkexClientError {
     Header(#[from] reqwest::header::InvalidHeaderValue),
     #[error("OkexClientError: {code:?} - {msg:?}")]
     UnexpectedResponse { msg: String, code: String },
+    #[error("OkexClientError: {0}")]
+    DecimalConversion(#[from] rust_decimal::Error),
 }
