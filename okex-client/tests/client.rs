@@ -4,32 +4,33 @@ use rust_decimal::Decimal;
 use rust_decimal_macros::dec;
 
 use okex_client::{
-    OkexClient, OkexClientConfig, OkexClientError, OKEX_MINIMUM_WITHDRAWAL_AMOUNT,
-    OKEX_MINIMUM_WITHDRAWAL_FEE,
+    OkexClient, OkexClientConfig, OkexClientError, OkexInstrumentId,
+    OKEX_MINIMUM_WITHDRAWAL_AMOUNT, OKEX_MINIMUM_WITHDRAWAL_FEE,
 };
 
 fn configured_okex_client() -> OkexClient {
     let api_key = env::var("OKEX_API_KEY").expect("OKEX_API_KEY not set");
     let passphrase = env::var("OKEX_PASSPHRASE").expect("OKEX_PASS_PHRASE not set");
     let secret_key = env::var("OKEX_SECRET_KEY").expect("OKEX_SECRET_KEY not set");
+    let simulated = env::var("OKEX_SIMULATED_TRADING").expect("OKEX_SIMULATED_TRADING not set");
     OkexClient::new(OkexClientConfig {
         api_key,
         passphrase,
         secret_key,
+        simulated,
     })
 }
 
 fn demo_okex_client() -> OkexClient {
-    // Set environment variable for "x-simulated-trading"
-    env::set_var("OKEX_SIMULATED_TRADING", "1");
-
     let api_key = env::var("OKEX_DEMO_API_KEY").expect("OKEX_DEMO_API_KEY not set");
     let passphrase = env::var("OKEX_DEMO_PASSPHRASE").expect("OKEX_DEMO_PASSPHRASE not set");
     let secret_key = env::var("OKEX_DEMO_SECRET_KEY").expect("OKEX_DEMO_SECRET_KEY not set");
+    let simulated = env::var("OKEX_SIMULATED_TRADING").expect("OKEX_SIMULATED_TRADING not set");
     OkexClient::new(OkexClientConfig {
         api_key,
         passphrase,
         secret_key,
+        simulated,
     })
 }
 
@@ -49,6 +50,7 @@ async fn client_is_missing_header() -> anyhow::Result<()> {
         api_key: "".to_string(),
         passphrase: "".to_string(),
         secret_key: "".to_string(),
+        simulated: "".to_string(),
     });
 
     let address = client.get_funding_deposit_address().await;
@@ -66,7 +68,7 @@ async fn client_is_missing_header() -> anyhow::Result<()> {
 async fn funding_account_balance() -> anyhow::Result<()> {
     let avail_balance = configured_okex_client().funding_account_balance().await?;
     let balance = avail_balance.amt_in_btc;
-    let minimum_balance = dec!(0.00);
+    let minimum_balance = dec!(0);
     assert!(balance >= minimum_balance);
 
     Ok(())
@@ -75,7 +77,7 @@ async fn funding_account_balance() -> anyhow::Result<()> {
 #[tokio::test]
 async fn trading_account_balance() -> anyhow::Result<()> {
     let avail_balance = configured_okex_client().trading_account_balance().await?;
-    let minimum_balance = dec!(0.00);
+    let minimum_balance = dec!(0);
     assert!(avail_balance.amt_in_btc >= minimum_balance);
 
     Ok(())
@@ -154,80 +156,70 @@ async fn transfer_state() -> anyhow::Result<()> {
 
 #[tokio::test]
 async fn place_order() -> anyhow::Result<()> {
-    if let (Ok(_), Ok(_), Ok(_)) = (
-        env::var("OKEX_DEMO_API_KEY"),
-        env::var("OKEX_DEMO_SECRET_KEY"),
-        env::var("OKEX_PASSPHRASE"),
-    ) {
-        let client = demo_okex_client();
+    std::env::set_var("OKEX_SIMULATED_TRADING", "1");
 
-        let order_id = client
-            .place_order(
-                "BTC-USD-SWAP".to_string(),
-                "cross".to_string(),
-                "buy".to_string(),
-                "long".to_string(),
-                "market".to_string(),
-                1,
-            )
-            .await?;
+    let client = demo_okex_client();
+    let instrument = OkexInstrumentId::swap();
 
-        assert!(order_id.value.len() == 18);
-    }
+    let order_id = client
+        .place_order(
+            instrument,
+            "cross".to_string(),
+            "buy".to_string(),
+            "long".to_string(),
+            "market".to_string(),
+            1,
+        )
+        .await?;
+
+    assert!(order_id.value.len() == 18);
 
     Ok(())
 }
 
 #[tokio::test]
 async fn get_positions() -> anyhow::Result<()> {
-    if let (Ok(_), Ok(_), Ok(_)) = (
-        env::var("OKEX_DEMO_API_KEY"),
-        env::var("OKEX_DEMO_SECRET_KEY"),
-        env::var("OKEX_PASSPHRASE"),
-    ) {
-        let client = demo_okex_client();
+    std::env::set_var("OKEX_SIMULATED_TRADING", "1");
 
-        let position = client.get_position().await?;
+    let client = demo_okex_client();
+    let position = client.get_position().await?;
 
-        assert_eq!(position.value.len(), 18);
-    }
+    assert_eq!(position.value.len(), 18);
 
     Ok(())
 }
 
 #[tokio::test]
 async fn close_positions() -> anyhow::Result<()> {
-    if let (Ok(_), Ok(_), Ok(_)) = (
-        env::var("OKEX_DEMO_API_KEY"),
-        env::var("OKEX_DEMO_SECRET_KEY"),
-        env::var("OKEX_PASSPHRASE"),
-    ) {
-        let client = demo_okex_client();
-        // 1. Open position
-        client
-            .place_order(
-                "BTC-USD-SWAP".to_string(),
-                "cross".to_string(),
-                "buy".to_string(),
-                "long".to_string(),
-                "market".to_string(),
-                1,
-            )
-            .await?;
-        // 2. Close position(s)
-        let position = client
-            .close_positions(
-                "BTC-USD-SWAP".to_string(),
-                "long".to_string(),
-                "cross".to_string(),
-                "BTC".to_string(),
-                false,
-            )
-            .await?;
+    std::env::set_var("OKEX_SIMULATED_TRADING", "1");
 
-        assert_eq!(position.inst_id, "BTC-USD-SWAP".to_string());
-        assert_eq!(position.pos_side, "long".to_string());
-    }
+    let client = demo_okex_client();
+    let instrument = OkexInstrumentId::swap();
+
+    // 1. Open position
+    client
+        .place_order(
+            instrument.clone(),
+            "cross".to_string(),
+            "buy".to_string(),
+            "long".to_string(),
+            "market".to_string(),
+            1,
+        )
+        .await?;
+    // 2. Close position(s)
+    let position = client
+        .close_positions(
+            instrument,
+            "long".to_string(),
+            "cross".to_string(),
+            "BTC".to_string(),
+            false,
+        )
+        .await?;
+
+    assert_eq!(position.inst_id, "BTC-USD-SWAP".to_string());
+    assert_eq!(position.pos_side, "long".to_string());
 
     Ok(())
 }

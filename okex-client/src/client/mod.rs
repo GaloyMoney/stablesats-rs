@@ -67,10 +67,27 @@ pub struct PositionId {
     pub value: String,
 }
 
+#[derive(Debug, Clone)]
+pub enum OkexInstrumentId {
+    BtcUsdSwap(String),
+    BtcUsd(String),
+}
+
+impl OkexInstrumentId {
+    pub fn swap() -> Self {
+        Self::BtcUsdSwap("BTC-USD-SWAP".to_string())
+    }
+
+    pub fn spot() -> Self {
+        Self::BtcUsd("BTC-USD".to_string())
+    }
+}
+
 pub struct OkexClientConfig {
     pub api_key: String,
     pub passphrase: String,
     pub secret_key: String,
+    pub simulated: String,
 }
 
 pub struct OkexClient {
@@ -308,23 +325,28 @@ impl OkexClient {
     ///
     /// Parameters:
     ///     inst_id(String): instrument ID e.g. "BTC-USD-SWAP" or "BTC-USD"
-    ///     trade_mode(String): "cross"
+    ///     margin_mode(String): e.g. "cross" or "isolated"
     ///     side(String): "buy" or "sell"
     ///     pos_side(String): "long" or "short"
     ///     order_type(String): "market"
     ///     size(u64): e.g. 20
     pub async fn place_order(
         &self,
-        inst_id: String,
+        inst_id: OkexInstrumentId,
         margin_mode: String,
         side: String,
         pos_side: String,
         order_type: String,
         size: u64,
     ) -> Result<OrderId, OkexClientError> {
+        let instrument = match inst_id {
+            OkexInstrumentId::BtcUsdSwap(inst) => inst,
+            OkexInstrumentId::BtcUsd(inst) => inst,
+        };
+
         let mut body: HashMap<String, String> = HashMap::new();
         body.insert("ccy".to_string(), "BTC".to_string());
-        body.insert("instId".to_string(), inst_id);
+        body.insert("instId".to_string(), instrument);
         body.insert("tdMode".to_string(), margin_mode);
         body.insert("side".to_string(), side);
         body.insert("ordType".to_string(), order_type);
@@ -336,7 +358,8 @@ impl OkexClient {
         let headers = self.post_request_headers(request_path, &request_body)?;
 
         let response = self
-            .client
+            .rate_limit_client(request_path)
+            .await
             .post(Self::url_for_path(request_path))
             .headers(headers)
             .body(request_body)
@@ -354,29 +377,35 @@ impl OkexClient {
         let headers = self.get_request_headers(request_path)?;
 
         let response = self
-            .client
+            .rate_limit_client(request_path)
+            .await
             .get(Self::url_for_path(request_path))
             .headers(headers)
             .send()
             .await?;
 
-        let positions_data = Self::extract_response_data::<PositionData>(response).await?;
+        let position_data = Self::extract_response_data::<PositionData>(response).await?;
 
         Ok(PositionId {
-            value: positions_data.pos_id,
+            value: position_data.pos_id,
         })
     }
 
     pub async fn close_positions(
         &self,
-        inst_id: String,
+        inst_id: OkexInstrumentId,
         pos_side: String,
         margin_mode: String,
         ccy: String,
         auto_cxl: bool,
     ) -> Result<ClosePositionData, OkexClientError> {
+        let instrument = match inst_id {
+            OkexInstrumentId::BtcUsdSwap(inst) => inst,
+            OkexInstrumentId::BtcUsd(inst) => inst,
+        };
+
         let mut body: HashMap<String, String> = HashMap::new();
-        body.insert("instId".to_string(), inst_id);
+        body.insert("instId".to_string(), instrument);
         body.insert("mgnMode".to_string(), margin_mode);
         body.insert("posSide".to_string(), pos_side);
         body.insert("ccy".to_string(), ccy);
@@ -387,7 +416,8 @@ impl OkexClient {
         let headers = self.post_request_headers(request_path, &request_body)?;
 
         let response = self
-            .client
+            .rate_limit_client(request_path)
+            .await
             .post(Self::url_for_path(request_path))
             .headers(headers)
             .body(request_body)
@@ -480,12 +510,10 @@ impl OkexClient {
             "OK-ACCESS-PASSPHRASE",
             HeaderValue::from_str(self.config.passphrase.as_str())?,
         );
-
-        // Add 'simulated-trading' header flag if environment variable exist
-        let demo_trading_flag = std::env::var("OKEX_SIMULATED_TRADING");
-        if let Ok(simulate) = demo_trading_flag {
-            headers.insert("x-simulated-trading", HeaderValue::from_str(&simulate)?);
-        }
+        headers.insert(
+            "x-simulated-trading",
+            HeaderValue::from_str(self.config.simulated.as_str())?,
+        );
 
         Ok(headers)
     }
