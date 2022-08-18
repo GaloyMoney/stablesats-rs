@@ -154,13 +154,14 @@ mod inner {
     #[cfg(test)]
     mod tests {
         use super::*;
-        use rust_decimal::prelude::*;
+        use rust_decimal_macros::dec;
+
         use rusty_money::Money;
 
         #[test]
         fn stablesat_money() {
             let money = Money::from_major(1, stablesats::USD_CENT);
-            assert_eq!(money.amount(), &Decimal::new(1, 0));
+            assert_eq!(money.amount(), &dec!(1));
         }
     }
 }

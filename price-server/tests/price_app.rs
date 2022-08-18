@@ -1,5 +1,5 @@
 use futures::stream::StreamExt;
-use rust_decimal::prelude::*;
+use rust_decimal_macros::dec;
 use std::fs;
 
 use price_server::app::*;
@@ -29,9 +29,9 @@ async fn price_app() -> anyhow::Result<()> {
 
     let app = PriceApp::run(
         FeeCalculatorConfig {
-            base_fee_rate: Decimal::from_str("0.001")?,
-            immediate_fee_rate: Decimal::from_str("0.01")?,
-            delayed_fee_rate: Decimal::from_str("0.1")?,
+            base_fee_rate: dec!(0.001),
+            immediate_fee_rate: dec!(0.01),
+            delayed_fee_rate: dec!(0.1),
         },
         config,
     )

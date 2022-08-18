@@ -1,6 +1,7 @@
 use std::env;
 
 use rust_decimal::Decimal;
+use rust_decimal_macros::dec;
 
 use okex_client::{
     OkexClient, OkexClientConfig, OkexClientError, OKEX_MINIMUM_WITHDRAWAL_AMOUNT,
@@ -65,7 +66,7 @@ async fn client_is_missing_header() -> anyhow::Result<()> {
 async fn funding_account_balance() -> anyhow::Result<()> {
     let avail_balance = configured_okex_client().funding_account_balance().await?;
     let balance = avail_balance.amt_in_btc;
-    let minimum_balance = Decimal::new(0, 2);
+    let minimum_balance = dec!(0.00);
     assert!(balance >= minimum_balance);
 
     Ok(())
@@ -74,7 +75,7 @@ async fn funding_account_balance() -> anyhow::Result<()> {
 #[tokio::test]
 async fn trading_account_balance() -> anyhow::Result<()> {
     let avail_balance = configured_okex_client().trading_account_balance().await?;
-    let minimum_balance = Decimal::new(0, 2);
+    let minimum_balance = dec!(0.00);
     assert!(avail_balance.amt_in_btc >= minimum_balance);
 
     Ok(())
@@ -114,7 +115,7 @@ async fn withdraw_to_onchain_address() -> anyhow::Result<()> {
 #[tokio::test]
 #[ignore = "transfer call is rate limited"]
 async fn transfer_trading_to_funding() -> anyhow::Result<()> {
-    let amount = Decimal::new(1, 5);
+    let amount = dec!(0.00001);
     let transfer_id = configured_okex_client()
         .transfer_trading_to_funding(amount)
         .await?;
@@ -127,7 +128,7 @@ async fn transfer_trading_to_funding() -> anyhow::Result<()> {
 #[tokio::test]
 #[ignore = "transfer call is rate limited"]
 async fn transfer_funding_to_trading() -> anyhow::Result<()> {
-    let amount = Decimal::new(1, 5);
+    let amount = dec!(0.00001);
     let transfer_id = configured_okex_client()
         .transfer_funding_to_trading(amount)
         .await?;
@@ -141,7 +142,7 @@ async fn transfer_funding_to_trading() -> anyhow::Result<()> {
 #[ignore = "transfer call is rate limited"]
 async fn transfer_state() -> anyhow::Result<()> {
     let client = configured_okex_client();
-    let amount = Decimal::new(1, 5);
+    let amount = dec!(0.00001);
     let transfer_id = client.transfer_funding_to_trading(amount).await?;
 
     let transfer_state = client.transfer_state(transfer_id).await?;
