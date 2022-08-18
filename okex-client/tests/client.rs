@@ -4,7 +4,7 @@ use rust_decimal::Decimal;
 use rust_decimal_macros::dec;
 
 use okex_client::{
-    OkexClient, OkexClientConfig, OkexClientError, OkexInstrumentId,
+    OkexClient, OkexClientConfig, OkexClientError, OkexInstrumentId, OkexMarginMode,
     OKEX_MINIMUM_WITHDRAWAL_AMOUNT, OKEX_MINIMUM_WITHDRAWAL_FEE,
 };
 
@@ -160,11 +160,12 @@ async fn place_order() -> anyhow::Result<()> {
 
     let client = demo_okex_client();
     let instrument = OkexInstrumentId::swap();
+    let margin = OkexMarginMode::cross();
 
     let order_id = client
         .place_order(
             instrument,
-            "cross".to_string(),
+            margin,
             "buy".to_string(),
             "long".to_string(),
             "market".to_string(),
@@ -195,24 +196,26 @@ async fn close_positions() -> anyhow::Result<()> {
 
     let client = demo_okex_client();
     let instrument = OkexInstrumentId::swap();
+    let margin = OkexMarginMode::cross();
 
     // 1. Open position
     client
         .place_order(
             instrument.clone(),
-            "cross".to_string(),
+            margin.clone(),
             "buy".to_string(),
             "long".to_string(),
             "market".to_string(),
             1,
         )
         .await?;
+
     // 2. Close position(s)
     let position = client
         .close_positions(
             instrument,
             "long".to_string(),
-            "cross".to_string(),
+            margin,
             "BTC".to_string(),
             false,
         )

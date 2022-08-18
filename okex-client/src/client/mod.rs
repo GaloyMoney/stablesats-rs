@@ -83,6 +83,22 @@ impl OkexInstrumentId {
     }
 }
 
+#[derive(Debug, Clone)]
+pub enum OkexMarginMode {
+    Cross(String),
+    Isolated(String),
+}
+
+impl OkexMarginMode {
+    pub fn cross() -> Self {
+        Self::Cross("cross".to_string())
+    }
+
+    pub fn isolated() -> Self {
+        Self::Isolated("isolated".to_string())
+    }
+}
+
 pub struct OkexClientConfig {
     pub api_key: String,
     pub passphrase: String,
@@ -324,8 +340,6 @@ impl OkexClient {
     /// Open a hedging position on an instrument
     ///
     /// Parameters:
-    ///     inst_id(String): instrument ID e.g. "BTC-USD-SWAP" or "BTC-USD"
-    ///     margin_mode(String): e.g. "cross" or "isolated"
     ///     side(String): "buy" or "sell"
     ///     pos_side(String): "long" or "short"
     ///     order_type(String): "market"
@@ -333,7 +347,7 @@ impl OkexClient {
     pub async fn place_order(
         &self,
         inst_id: OkexInstrumentId,
-        margin_mode: String,
+        margin_mode: OkexMarginMode,
         side: String,
         pos_side: String,
         order_type: String,
@@ -344,10 +358,15 @@ impl OkexClient {
             OkexInstrumentId::BtcUsd(inst) => inst,
         };
 
+        let margin = match margin_mode {
+            OkexMarginMode::Cross(margin) => margin,
+            OkexMarginMode::Isolated(margin) => margin,
+        };
+
         let mut body: HashMap<String, String> = HashMap::new();
         body.insert("ccy".to_string(), "BTC".to_string());
         body.insert("instId".to_string(), instrument);
-        body.insert("tdMode".to_string(), margin_mode);
+        body.insert("tdMode".to_string(), margin);
         body.insert("side".to_string(), side);
         body.insert("ordType".to_string(), order_type);
         body.insert("posSide".to_string(), pos_side);
@@ -395,7 +414,7 @@ impl OkexClient {
         &self,
         inst_id: OkexInstrumentId,
         pos_side: String,
-        margin_mode: String,
+        margin_mode: OkexMarginMode,
         ccy: String,
         auto_cxl: bool,
     ) -> Result<ClosePositionData, OkexClientError> {
@@ -403,10 +422,14 @@ impl OkexClient {
             OkexInstrumentId::BtcUsdSwap(inst) => inst,
             OkexInstrumentId::BtcUsd(inst) => inst,
         };
+        let margin = match margin_mode {
+            OkexMarginMode::Cross(margin) => margin,
+            OkexMarginMode::Isolated(margin) => margin,
+        };
 
         let mut body: HashMap<String, String> = HashMap::new();
         body.insert("instId".to_string(), instrument);
-        body.insert("mgnMode".to_string(), margin_mode);
+        body.insert("mgnMode".to_string(), margin);
         body.insert("posSide".to_string(), pos_side);
         body.insert("ccy".to_string(), ccy);
         body.insert("autoCxl".to_string(), auto_cxl.to_string());

@@ -36,23 +36,21 @@ impl Default for FeeCalculatorConfig {
 
 #[cfg(test)]
 mod tests {
-    use std::str::FromStr;
-
     use super::*;
 
     #[test]
     fn defaults() {
         assert_eq!(
             default_base_fee_rate(),
-            Decimal::from_str("0.0005").unwrap()
+            Decimal::from_str_exact("0.0005").unwrap()
         );
         assert_eq!(
             default_immediate_fee_rate(),
-            Decimal::from_str("0.0005").unwrap()
+            Decimal::from_str_exact("0.0005").unwrap()
         );
         assert_eq!(
             default_delayed_fee_rate(),
-            Decimal::from_str("0.0005").unwrap()
+            Decimal::from_str_exact("0.0005").unwrap()
         );
     }
 }
