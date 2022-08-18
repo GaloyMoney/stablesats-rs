@@ -1,6 +1,7 @@
 mod error;
 mod okex_response;
 
+use std::fmt::Display;
 use std::{collections::HashMap, time::Duration};
 
 use chrono::{SecondsFormat, Utc};
@@ -73,29 +74,49 @@ pub enum OkexInstrumentId {
     BtcUsd,
 }
 
+impl Display for OkexInstrumentId {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match *self {
+            OkexInstrumentId::BtcUsd => write!(f, "BTC-USD"),
+            OkexInstrumentId::BtcUsdSwap => write!(f, "BTC-USD-SWAP"),
+        }
+    }
+}
+
 #[derive(Debug, Clone)]
 pub enum OkexMarginMode {
     Cross,
     Isolated,
 }
 
-#[derive(Debug, Clone)]
-pub enum OkexPositionSide {
-    LongShort(String),
-    Net(String),
+impl Display for OkexMarginMode {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match *self {
+            OkexMarginMode::Cross => write!(f, "cross"),
+            OkexMarginMode::Isolated => write!(f, "isolated"),
+        }
+    }
 }
 
-impl OkexPositionSide {
-    pub fn long() -> Self {
-        Self::LongShort("long".to_string())
-    }
+#[derive(Debug, Clone)]
+pub enum OkexPosition {
+    Long,
+    Short,
+}
 
-    pub fn short() -> Self {
-        Self::LongShort("short".to_string())
-    }
+#[derive(Debug, Clone)]
+pub enum OkexPositionSide {
+    LongShort(OkexPosition),
+    Net,
+}
 
-    pub fn net() -> Self {
-        Self::Net("net".to_string())
+impl Display for OkexPositionSide {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match *self {
+            OkexPositionSide::Net => write!(f, "net"),
+            OkexPositionSide::LongShort(OkexPosition::Long) => write!(f, "long"),
+            OkexPositionSide::LongShort(OkexPosition::Short) => write!(f, "short"),
+        }
     }
 }
 
@@ -103,6 +124,37 @@ impl OkexPositionSide {
 pub enum OkexOrderSide {
     Buy,
     Sell,
+}
+
+impl Display for OkexOrderSide {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match *self {
+            OkexOrderSide::Buy => write!(f, "buy"),
+            OkexOrderSide::Sell => write!(f, "sell"),
+        }
+    }
+}
+
+pub enum OkexOrderType {
+    Market,
+    Limit,
+    PostOnly,
+    Fok,
+    Ioc,
+    OptimalLimitIoc,
+}
+
+impl Display for OkexOrderType {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match *self {
+            OkexOrderType::Market => write!(f, "market"),
+            OkexOrderType::Limit => write!(f, "limit"),
+            OkexOrderType::PostOnly => write!(f, "post_only"),
+            OkexOrderType::Fok => write!(f, "fok"),
+            OkexOrderType::Ioc => write!(f, "ioc"),
+            OkexOrderType::OptimalLimitIoc => write!(f, "optimal_limit_ioc"),
+        }
+    }
 }
 
 pub struct OkexClientConfig {
@@ -343,44 +395,22 @@ impl OkexClient {
         }
     }
 
-    /// Open a hedging position on an instrument
-    ///
-    /// Parameters:
-    ///     order_type(String): "market"
-    ///     size(u64): e.g. 20
     pub async fn place_order(
         &self,
         inst_id: OkexInstrumentId,
         margin_mode: OkexMarginMode,
         side: OkexOrderSide,
         pos_side: OkexPositionSide,
-        order_type: String,
+        order_type: OkexOrderType,
         size: u64,
     ) -> Result<OrderId, OkexClientError> {
-        let instrument = match inst_id {
-            OkexInstrumentId::BtcUsdSwap => "BTC-USD-SWAP".to_string(),
-            OkexInstrumentId::BtcUsd => "BTC-USD".to_string(),
-        };
-        let margin = match margin_mode {
-            OkexMarginMode::Cross => "cross".to_string(),
-            OkexMarginMode::Isolated => "isolated".to_string(),
-        };
-        let pos_side = match pos_side {
-            OkexPositionSide::LongShort(pos_side) => pos_side,
-            OkexPositionSide::Net(pos_side) => pos_side,
-        };
-        let order_side = match side {
-            OkexOrderSide::Buy => "buy".to_string(),
-            OkexOrderSide::Sell => "sell".to_string(),
-        };
-
         let mut body: HashMap<String, String> = HashMap::new();
         body.insert("ccy".to_string(), "BTC".to_string());
-        body.insert("instId".to_string(), instrument);
-        body.insert("tdMode".to_string(), margin);
-        body.insert("side".to_string(), order_side);
-        body.insert("ordType".to_string(), order_type);
-        body.insert("posSide".to_string(), pos_side);
+        body.insert("instId".to_string(), inst_id.to_string());
+        body.insert("tdMode".to_string(), margin_mode.to_string());
+        body.insert("side".to_string(), side.to_string());
+        body.insert("ordType".to_string(), order_type.to_string());
+        body.insert("posSide".to_string(), pos_side.to_string());
         body.insert("sz".to_string(), size.to_string());
         let request_body = serde_json::to_string(&body)?;
 
@@ -429,23 +459,10 @@ impl OkexClient {
         ccy: String,
         auto_cxl: bool,
     ) -> Result<ClosePositionData, OkexClientError> {
-        let instrument = match inst_id {
-            OkexInstrumentId::BtcUsdSwap => "BTC-USD-SWAP".to_string(),
-            OkexInstrumentId::BtcUsd => "BTC-USD".to_string(),
-        };
-        let margin = match margin_mode {
-            OkexMarginMode::Cross => "cross".to_string(),
-            OkexMarginMode::Isolated => "isolated".to_string(),
-        };
-        let pos_side = match pos_side {
-            OkexPositionSide::LongShort(pos_side) => pos_side,
-            OkexPositionSide::Net(pos_side) => pos_side,
-        };
-
         let mut body: HashMap<String, String> = HashMap::new();
-        body.insert("instId".to_string(), instrument);
-        body.insert("mgnMode".to_string(), margin);
-        body.insert("posSide".to_string(), pos_side);
+        body.insert("instId".to_string(), inst_id.to_string());
+        body.insert("mgnMode".to_string(), margin_mode.to_string());
+        body.insert("posSide".to_string(), pos_side.to_string());
         body.insert("ccy".to_string(), ccy);
         body.insert("autoCxl".to_string(), auto_cxl.to_string());
         let request_body = serde_json::to_string(&body)?;
@@ -522,7 +539,6 @@ impl OkexClient {
         self.request_headers(timestamp, pre_hash)
     }
 
-    #[allow(clippy::or_fun_call)]
     fn request_headers(
         &self,
         formatted_timestamp: String,
