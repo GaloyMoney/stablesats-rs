@@ -50,7 +50,7 @@ mod tests {
         );
         assert_eq!(
             default_delayed_fee_rate(),
-            Decimal::from_str_exact("0.0005").unwrap()
+            Decimal::from_str_exact("0.0007").unwrap()
         );
     }
 }

@@ -99,6 +99,26 @@ impl OkexMarginMode {
     }
 }
 
+#[derive(Debug, Clone)]
+pub enum OkexPositionSide {
+    LongShort(String),
+    Net(String),
+}
+
+impl OkexPositionSide {
+    pub fn long() -> Self {
+        Self::LongShort("long".to_string())
+    }
+
+    pub fn short() -> Self {
+        Self::LongShort("short".to_string())
+    }
+
+    pub fn net() -> Self {
+        Self::Net("net".to_string())
+    }
+}
+
 pub struct OkexClientConfig {
     pub api_key: String,
     pub passphrase: String,
@@ -349,7 +369,7 @@ impl OkexClient {
         inst_id: OkexInstrumentId,
         margin_mode: OkexMarginMode,
         side: String,
-        pos_side: String,
+        pos_side: OkexPositionSide,
         order_type: String,
         size: u64,
     ) -> Result<OrderId, OkexClientError> {
@@ -361,6 +381,11 @@ impl OkexClient {
         let margin = match margin_mode {
             OkexMarginMode::Cross(margin) => margin,
             OkexMarginMode::Isolated(margin) => margin,
+        };
+
+        let pos_side = match pos_side {
+            OkexPositionSide::LongShort(pos_side) => pos_side,
+            OkexPositionSide::Net(pos_side) => pos_side,
         };
 
         let mut body: HashMap<String, String> = HashMap::new();
