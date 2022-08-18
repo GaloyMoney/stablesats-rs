@@ -18,6 +18,17 @@ fn configured_okex_client() -> OkexClient {
     })
 }
 
+fn demo_okex_client() -> OkexClient {
+    let api_key = env::var("OKEX_DEMO_API_KEY").expect("OKEX_DEMO_API_KEY not set");
+    let passphrase = env::var("OKEX_DEMO_PASSPHRASE").expect("OKEX_DEMO_PASSPHRASE not set");
+    let secret_key = env::var("OKEX_DEMO_SECRET_KEY").expect("OKEX_DEMO_SECRET_KEY not set");
+    OkexClient::new(OkexClientConfig {
+        api_key,
+        passphrase,
+        secret_key,
+    })
+}
+
 #[tokio::test]
 async fn get_deposit_address_data() -> anyhow::Result<()> {
     let address = configured_okex_client()
@@ -139,14 +150,7 @@ async fn transfer_state() -> anyhow::Result<()> {
 
 #[tokio::test]
 async fn place_order() -> anyhow::Result<()> {
-    let api_key = env::var("OKEX_DEMO_API_KEY").expect("OKEX_API_KEY not set");
-    let passphrase = env::var("OKEX_DEMO_PASSPHRASE").expect("OKEX_PASS_PHRASE not set");
-    let secret_key = env::var("OKEX_DEMO_SECRET_KEY").expect("OKEX_SECRET_KEY not set");
-    let client = OkexClient::new(OkexClientConfig {
-        api_key,
-        passphrase,
-        secret_key,
-    });
+    let client = demo_okex_client();
 
     let order_id = client
         .place_order(
@@ -159,25 +163,18 @@ async fn place_order() -> anyhow::Result<()> {
         )
         .await?;
 
-    assert!(order_id.value.len() == 8);
+    assert!(order_id.value.len() == 18);
 
     Ok(())
 }
 
 #[tokio::test]
 async fn get_positions() -> anyhow::Result<()> {
-    let api_key = env::var("OKEX_DEMO_API_KEY").expect("OKEX_API_KEY not set");
-    let passphrase = env::var("OKEX_DEMO_PASSPHRASE").expect("OKEX_PASS_PHRASE not set");
-    let secret_key = env::var("OKEX_DEMO_SECRET_KEY").expect("OKEX_SECRET_KEY not set");
-    let client = OkexClient::new(OkexClientConfig {
-        api_key,
-        passphrase,
-        secret_key,
-    });
+    let client = demo_okex_client();
 
     let position = client.position().await?;
 
-    assert_eq!(position, "position");
+    assert_eq!(position.value.len(), 18);
 
     Ok(())
 }

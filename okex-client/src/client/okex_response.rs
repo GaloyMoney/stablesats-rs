@@ -159,7 +159,7 @@ pub struct PositionData {
     pub mmr: String,
     pub notional_usd: String,
     pub opt_val: String,
-    pub p_time: String,
+    // pub p_time: String,
     pub pos: String,
     pub pos_ccy: String,
     pub pos_id: String,

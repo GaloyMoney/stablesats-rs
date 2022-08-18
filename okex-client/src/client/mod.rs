@@ -7,7 +7,6 @@ use chrono::{SecondsFormat, Utc};
 use data_encoding::BASE64;
 use ring::hmac;
 use rust_decimal::Decimal;
-use rust_decimal_macros::dec;
 
 use reqwest::header::{HeaderMap, HeaderValue, CONTENT_TYPE};
 use reqwest::Client as ReqwestClient;
@@ -60,6 +59,11 @@ pub struct DepositStatus {
 
 #[derive(Debug)]
 pub struct OrderId {
+    pub value: String,
+}
+
+#[derive(Debug)]
+pub struct PositionId {
     pub value: String,
 }
 
@@ -300,6 +304,15 @@ impl OkexClient {
         }
     }
 
+    /// Open a hedging position on an instrument
+    ///
+    /// Parameters:
+    ///     inst_id(String): instrument ID e.g. "BTC-USD-SWAP" or "BTC-USD"
+    ///     trade_mode(String): "cross"
+    ///     side(String): "buy" or "sell"
+    ///     pos_side(String): "long" or "short"
+    ///     order_type(String): "market"
+    ///     size(u64): e.g. 20
     pub async fn place_order(
         &self,
         inst_id: String,
@@ -336,7 +349,7 @@ impl OkexClient {
         })
     }
 
-    pub async fn position(&self) -> Result<String, OkexClientError> {
+    pub async fn position(&self) -> Result<PositionId, OkexClientError> {
         let request_path = "/api/v5/account/positions?instId=BTC-USD-SWAP";
         let headers = self.get_request_headers(request_path)?;
 
@@ -349,7 +362,9 @@ impl OkexClient {
 
         let positions_data = Self::extract_response_data::<PositionData>(response).await?;
 
-        Ok("position".to_string())
+        Ok(PositionId {
+            value: positions_data.pos_id,
+        })
     }
 
     /// Extracts the first entry in the response data
@@ -407,6 +422,7 @@ impl OkexClient {
         self.request_headers(timestamp, pre_hash)
     }
 
+    #[allow(clippy::or_fun_call)]
     fn request_headers(
         &self,
         formatted_timestamp: String,
@@ -432,6 +448,12 @@ impl OkexClient {
             "OK-ACCESS-PASSPHRASE",
             HeaderValue::from_str(self.config.passphrase.as_str())?,
         );
+
+        let demo_trading_flag = std::env::var("OKEX_X_SIMULATED_TRADING");
+        if demo_trading_flag.is_ok() {
+            headers.insert("x-simulated-trading", HeaderValue::from_str("1")?);
+        }
+
         Ok(headers)
     }
 }
