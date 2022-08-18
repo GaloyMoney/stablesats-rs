@@ -186,6 +186,18 @@ async fn get_positions() -> anyhow::Result<()> {
 #[tokio::test]
 async fn close_positions() -> anyhow::Result<()> {
     let client = demo_okex_client();
+    // 1. Open position
+    client
+        .place_order(
+            "BTC-USD-SWAP".to_string(),
+            "cross".to_string(),
+            "buy".to_string(),
+            "long".to_string(),
+            "market".to_string(),
+            1,
+        )
+        .await?;
+    // 2. Close position(s)
     let position = client
         .close_positions(
             "BTC-USD-SWAP".to_string(),

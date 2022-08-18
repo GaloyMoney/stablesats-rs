@@ -316,7 +316,7 @@ impl OkexClient {
     pub async fn place_order(
         &self,
         inst_id: String,
-        trade_mode: String,
+        margin_mode: String,
         side: String,
         pos_side: String,
         order_type: String,
@@ -325,7 +325,7 @@ impl OkexClient {
         let mut body: HashMap<String, String> = HashMap::new();
         body.insert("ccy".to_string(), "BTC".to_string());
         body.insert("instId".to_string(), inst_id);
-        body.insert("tdMode".to_string(), trade_mode);
+        body.insert("tdMode".to_string(), margin_mode);
         body.insert("side".to_string(), side);
         body.insert("ordType".to_string(), order_type);
         body.insert("posSide".to_string(), pos_side);
