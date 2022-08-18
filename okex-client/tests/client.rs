@@ -4,7 +4,7 @@ use rust_decimal::Decimal;
 use rust_decimal_macros::dec;
 
 use okex_client::{
-    OkexClient, OkexClientConfig, OkexClientError, OkexInstrumentId, OkexMarginMode,
+    OkexClient, OkexClientConfig, OkexClientError, OkexInstrumentId, OkexMarginMode, OkexOrderSide,
     OkexPositionSide, OKEX_MINIMUM_WITHDRAWAL_AMOUNT, OKEX_MINIMUM_WITHDRAWAL_FEE,
 };
 
@@ -162,12 +162,13 @@ async fn place_order() -> anyhow::Result<()> {
     let instrument = OkexInstrumentId::swap();
     let margin = OkexMarginMode::cross();
     let position_side = OkexPositionSide::long();
+    let order_side = OkexOrderSide::Buy;
 
     let order_id = client
         .place_order(
             instrument,
             margin,
-            "buy".to_string(),
+            order_side,
             position_side,
             "market".to_string(),
             1,
@@ -199,14 +200,15 @@ async fn close_positions() -> anyhow::Result<()> {
     let instrument = OkexInstrumentId::swap();
     let margin = OkexMarginMode::cross();
     let position_side = OkexPositionSide::long();
+    let order_side = OkexOrderSide::Buy;
 
     // 1. Open position
     client
         .place_order(
             instrument.clone(),
             margin.clone(),
-            "buy".to_string(),
-            position_side,
+            order_side,
+            position_side.clone(),
             "market".to_string(),
             1,
         )
@@ -214,13 +216,7 @@ async fn close_positions() -> anyhow::Result<()> {
 
     // 2. Close position(s)
     let position = client
-        .close_positions(
-            instrument,
-            "long".to_string(),
-            margin,
-            "BTC".to_string(),
-            false,
-        )
+        .close_positions(instrument, position_side, margin, "BTC".to_string(), false)
         .await?;
 
     assert_eq!(position.inst_id, "BTC-USD-SWAP".to_string());

@@ -119,6 +119,12 @@ impl OkexPositionSide {
     }
 }
 
+#[derive(Debug, Clone)]
+pub enum OkexOrderSide {
+    Buy,
+    Sell,
+}
+
 pub struct OkexClientConfig {
     pub api_key: String,
     pub passphrase: String,
@@ -360,15 +366,13 @@ impl OkexClient {
     /// Open a hedging position on an instrument
     ///
     /// Parameters:
-    ///     side(String): "buy" or "sell"
-    ///     pos_side(String): "long" or "short"
     ///     order_type(String): "market"
     ///     size(u64): e.g. 20
     pub async fn place_order(
         &self,
         inst_id: OkexInstrumentId,
         margin_mode: OkexMarginMode,
-        side: String,
+        side: OkexOrderSide,
         pos_side: OkexPositionSide,
         order_type: String,
         size: u64,
@@ -377,22 +381,24 @@ impl OkexClient {
             OkexInstrumentId::BtcUsdSwap(inst) => inst,
             OkexInstrumentId::BtcUsd(inst) => inst,
         };
-
         let margin = match margin_mode {
             OkexMarginMode::Cross(margin) => margin,
             OkexMarginMode::Isolated(margin) => margin,
         };
-
         let pos_side = match pos_side {
             OkexPositionSide::LongShort(pos_side) => pos_side,
             OkexPositionSide::Net(pos_side) => pos_side,
+        };
+        let order_side = match side {
+            OkexOrderSide::Buy => "buy".to_string(),
+            OkexOrderSide::Sell => "sell".to_string(),
         };
 
         let mut body: HashMap<String, String> = HashMap::new();
         body.insert("ccy".to_string(), "BTC".to_string());
         body.insert("instId".to_string(), instrument);
         body.insert("tdMode".to_string(), margin);
-        body.insert("side".to_string(), side);
+        body.insert("side".to_string(), order_side);
         body.insert("ordType".to_string(), order_type);
         body.insert("posSide".to_string(), pos_side);
         body.insert("sz".to_string(), size.to_string());
@@ -438,7 +444,7 @@ impl OkexClient {
     pub async fn close_positions(
         &self,
         inst_id: OkexInstrumentId,
-        pos_side: String,
+        pos_side: OkexPositionSide,
         margin_mode: OkexMarginMode,
         ccy: String,
         auto_cxl: bool,
@@ -450,6 +456,10 @@ impl OkexClient {
         let margin = match margin_mode {
             OkexMarginMode::Cross(margin) => margin,
             OkexMarginMode::Isolated(margin) => margin,
+        };
+        let pos_side = match pos_side {
+            OkexPositionSide::LongShort(pos_side) => pos_side,
+            OkexPositionSide::Net(pos_side) => pos_side,
         };
 
         let mut body: HashMap<String, String> = HashMap::new();
