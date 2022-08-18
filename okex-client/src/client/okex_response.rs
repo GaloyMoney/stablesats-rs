@@ -70,7 +70,7 @@ pub struct TradingBalanceData {
 #[derive(Deserialize, Debug, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct TradingBalanceDetails {
-    pub avail_bal: Decimal,
+    pub avail_bal: String,
     pub avail_eq: String,
     pub cash_bal: Decimal,
     pub ccy: String,
@@ -172,4 +172,11 @@ pub struct PositionData {
     pub upl_ratio: String,
     pub vega_b_s: String,
     pub vega_p_a: String,
+}
+
+#[derive(Deserialize, Debug)]
+#[serde(rename_all = "camelCase")]
+pub struct ClosePositionData {
+    pub inst_id: String,
+    pub pos_side: String,
 }

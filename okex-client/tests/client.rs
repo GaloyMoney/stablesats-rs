@@ -19,6 +19,9 @@ fn configured_okex_client() -> OkexClient {
 }
 
 fn demo_okex_client() -> OkexClient {
+    // Set environment variable for "x-simulated-trading"
+    env::set_var("OKEX_SIMULATED_TRADING", "1");
+
     let api_key = env::var("OKEX_DEMO_API_KEY").expect("OKEX_DEMO_API_KEY not set");
     let passphrase = env::var("OKEX_DEMO_PASSPHRASE").expect("OKEX_DEMO_PASSPHRASE not set");
     let secret_key = env::var("OKEX_DEMO_SECRET_KEY").expect("OKEX_DEMO_SECRET_KEY not set");
@@ -172,9 +175,28 @@ async fn place_order() -> anyhow::Result<()> {
 async fn get_positions() -> anyhow::Result<()> {
     let client = demo_okex_client();
 
-    let position = client.position().await?;
+    let position = client.get_position().await?;
 
     assert_eq!(position.value.len(), 18);
+
+    Ok(())
+}
+
+#[tokio::test]
+async fn close_positions() -> anyhow::Result<()> {
+    let client = demo_okex_client();
+    let position = client
+        .close_positions(
+            "BTC-USD-SWAP".to_string(),
+            "long".to_string(),
+            "cross".to_string(),
+            "BTC".to_string(),
+            false,
+        )
+        .await?;
+
+    assert_eq!(position.inst_id, "BTC-USD-SWAP".to_string());
+    assert_eq!(position.pos_side, "long".to_string());
 
     Ok(())
 }

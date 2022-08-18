@@ -349,7 +349,7 @@ impl OkexClient {
         })
     }
 
-    pub async fn position(&self) -> Result<PositionId, OkexClientError> {
+    pub async fn get_position(&self) -> Result<PositionId, OkexClientError> {
         let request_path = "/api/v5/account/positions?instId=BTC-USD-SWAP";
         let headers = self.get_request_headers(request_path)?;
 
@@ -365,6 +365,38 @@ impl OkexClient {
         Ok(PositionId {
             value: positions_data.pos_id,
         })
+    }
+
+    pub async fn close_positions(
+        &self,
+        inst_id: String,
+        pos_side: String,
+        margin_mode: String,
+        ccy: String,
+        auto_cxl: bool,
+    ) -> Result<ClosePositionData, OkexClientError> {
+        let mut body: HashMap<String, String> = HashMap::new();
+        body.insert("instId".to_string(), inst_id);
+        body.insert("mgnMode".to_string(), margin_mode);
+        body.insert("posSide".to_string(), pos_side);
+        body.insert("ccy".to_string(), ccy);
+        body.insert("autoCxl".to_string(), auto_cxl.to_string());
+        let request_body = serde_json::to_string(&body)?;
+
+        let request_path = "/api/v5/trade/close-position";
+        let headers = self.post_request_headers(request_path, &request_body)?;
+
+        let response = self
+            .client
+            .post(Self::url_for_path(request_path))
+            .headers(headers)
+            .body(request_body)
+            .send()
+            .await?;
+
+        let close_position = Self::extract_response_data::<ClosePositionData>(response).await?;
+
+        Ok(close_position)
     }
 
     /// Extracts the first entry in the response data
@@ -449,9 +481,10 @@ impl OkexClient {
             HeaderValue::from_str(self.config.passphrase.as_str())?,
         );
 
-        let demo_trading_flag = std::env::var("OKEX_X_SIMULATED_TRADING");
-        if demo_trading_flag.is_ok() {
-            headers.insert("x-simulated-trading", HeaderValue::from_str("1")?);
+        // Add 'simulated-trading' header flag if environment variable exist
+        let demo_trading_flag = std::env::var("OKEX_SIMULATED_TRADING");
+        if let Ok(simulate) = demo_trading_flag {
+            headers.insert("x-simulated-trading", HeaderValue::from_str(&simulate)?);
         }
 
         Ok(headers)
