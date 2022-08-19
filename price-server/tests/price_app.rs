@@ -73,7 +73,7 @@ async fn price_app() -> anyhow::Result<()> {
     let cents = app
         .get_cents_from_sats_for_immediate_sell(Sats::from_major(100_000_000))
         .await?;
-    assert_eq!(cents, UsdCents::from_major(989000));
+    assert_eq!(cents, UsdCents::from_major(1011000));
 
     let cents = app
         .get_cents_from_sats_for_future_buy(Sats::from_major(100_000_000))
@@ -83,7 +83,7 @@ async fn price_app() -> anyhow::Result<()> {
     let future_buy = app
         .get_cents_from_sats_for_future_sell(Sats::from_major(100_000_000))
         .await?;
-    assert_eq!(future_buy, UsdCents::from_major(899000));
+    assert_eq!(future_buy, UsdCents::from_major(1101000));
 
     let sats = app
         .get_sats_from_cents_for_immediate_buy(UsdCents::from_major(1000000))
@@ -93,7 +93,7 @@ async fn price_app() -> anyhow::Result<()> {
     let sats = app
         .get_sats_from_cents_for_immediate_sell(UsdCents::from_major(1000000))
         .await?;
-    assert_eq!(sats, Sats::from_major(98900000));
+    assert_eq!(sats, Sats::from_major(101100000));
 
     let sats = app
         .get_sats_from_cents_for_future_buy(UsdCents::from_major(1000000))
@@ -103,7 +103,7 @@ async fn price_app() -> anyhow::Result<()> {
     let sats = app
         .get_sats_from_cents_for_future_sell(UsdCents::from_major(1000000))
         .await?;
-    assert_eq!(sats, Sats::from_major(89900000));
+    assert_eq!(sats, Sats::from_major(110100000));
 
     let ratio = app.get_cents_per_sat_exchange_mid_rate().await?;
     assert_eq!(ratio, 0.0055);
