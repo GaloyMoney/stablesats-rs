@@ -5,6 +5,13 @@ services:
     depends_on:
     - redis
     - otel-agent
+    - broker-db
+  broker-db:
+    image: postgres:14.1
+    environment:
+      - POSTGRES_USER=stablesats
+      - POSTGRES_PASSWORD=stablesats
+      - POSTGRES_DB=stablesats-broker
   redis:
     image: bitnami/redis:6.2
     environment:
