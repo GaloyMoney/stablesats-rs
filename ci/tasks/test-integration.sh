@@ -44,6 +44,7 @@ ssh ${ADDITIONAL_SSH_OPTS} ${DOCKER_HOST_USER}@${DOCKER_HOST_IP} \
 container_id=$(docker ps -q -f status=exited -f name="${PWD##*/}-integration-tests-")
 test_status=$(docker inspect $container_id --format='{{.State.ExitCode}}')
 
+set +e
 docker compose down --volumes --remove-orphans --timeout 1
 
 exit $test_status
