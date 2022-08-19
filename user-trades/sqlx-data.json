@@ -1,0 +1,235 @@
+{
+  "db": "PostgreSQL",
+  "1ad73939ae263b971748edb83a977e8abe1f1f93336fb4398759bfa2478705d3": {
+    "describe": {
+      "columns": [
+        {
+          "name": "idx",
+          "ordinal": 0,
+          "type_info": "Int4"
+        }
+      ],
+      "nullable": [
+        false
+      ],
+      "parameters": {
+        "Left": [
+          "Uuid",
+          {
+            "Custom": {
+              "kind": {
+                "Enum": [
+                  "sats",
+                  "synth_cents"
+                ]
+              },
+              "name": "user_trade_unit"
+            }
+          },
+          "Numeric",
+          {
+            "Custom": {
+              "kind": {
+                "Enum": [
+                  "sats",
+                  "synth_cents"
+                ]
+              },
+              "name": "user_trade_unit"
+            }
+          },
+          "Numeric"
+        ]
+      }
+    },
+    "query": "INSERT INTO user_trades (uuid, buy_unit, buy_amount, sell_unit, sell_amount) VALUES ($1, $2, $3, $4, $5) RETURNING idx"
+  },
+  "27702793a9046cc0abd9157698cb260292eabe86d667d703af5cf52439a21ca9": {
+    "describe": {
+      "columns": [
+        {
+          "name": "unit: _",
+          "ordinal": 0,
+          "type_info": {
+            "Custom": {
+              "kind": {
+                "Enum": [
+                  "sats",
+                  "synth_cents"
+                ]
+              },
+              "name": "user_trade_unit"
+            }
+          }
+        },
+        {
+          "name": "current_balance",
+          "ordinal": 1,
+          "type_info": "Numeric"
+        },
+        {
+          "name": "last_trade_idx",
+          "ordinal": 2,
+          "type_info": "Int4"
+        }
+      ],
+      "nullable": [
+        false,
+        false,
+        true
+      ],
+      "parameters": {
+        "Left": []
+      }
+    },
+    "query": "SELECT unit as \"unit: _\", current_balance, last_trade_idx FROM user_trade_balances FOR UPDATE"
+  },
+  "2fe2d3b6d0a02794059cb16d14bf411a5a836d1c0179e869fce61066d497859d": {
+    "describe": {
+      "columns": [
+        {
+          "name": "max",
+          "ordinal": 0,
+          "type_info": "Int4"
+        },
+        {
+          "name": "unit: _",
+          "ordinal": 1,
+          "type_info": {
+            "Custom": {
+              "kind": {
+                "Enum": [
+                  "sats",
+                  "synth_cents"
+                ]
+              },
+              "name": "user_trade_unit"
+            }
+          }
+        },
+        {
+          "name": "sum",
+          "ordinal": 2,
+          "type_info": "Numeric"
+        }
+      ],
+      "nullable": [
+        null,
+        false,
+        null
+      ],
+      "parameters": {
+        "Left": [
+          "Int4"
+        ]
+      }
+    },
+    "query": "SELECT MAX(idx), sell_unit as \"unit: _\", SUM(sell_amount) FROM user_trades WHERE idx > $1 GROUP BY sell_unit"
+  },
+  "31b5f2ea7ffd150454c028ddf66e47cfe64141d127b770de709ae76099a529b1": {
+    "describe": {
+      "columns": [
+        {
+          "name": "max",
+          "ordinal": 0,
+          "type_info": "Int4"
+        },
+        {
+          "name": "unit: _",
+          "ordinal": 1,
+          "type_info": {
+            "Custom": {
+              "kind": {
+                "Enum": [
+                  "sats",
+                  "synth_cents"
+                ]
+              },
+              "name": "user_trade_unit"
+            }
+          }
+        },
+        {
+          "name": "sum",
+          "ordinal": 2,
+          "type_info": "Numeric"
+        }
+      ],
+      "nullable": [
+        null,
+        false,
+        null
+      ],
+      "parameters": {
+        "Left": [
+          "Int4"
+        ]
+      }
+    },
+    "query": "SELECT MAX(idx), buy_unit as \"unit: _\", SUM(buy_amount) FROM user_trades WHERE idx > $1 GROUP BY buy_unit"
+  },
+  "4c55cf33910332998f88deed9a08f8a1bfe8d371e45a5894e18e5c1893789ec4": {
+    "describe": {
+      "columns": [],
+      "nullable": [],
+      "parameters": {
+        "Left": [
+          "Numeric",
+          "Int4",
+          {
+            "Custom": {
+              "kind": {
+                "Enum": [
+                  "sats",
+                  "synth_cents"
+                ]
+              },
+              "name": "user_trade_unit"
+            }
+          }
+        ]
+      }
+    },
+    "query": "UPDATE user_trade_balances SET current_balance = $1, last_trade_idx = $2, updated_at = now() WHERE unit = $3"
+  },
+  "524229cdd43023e06f7848e92b9937b5ec2ecaa99a1ca77082ac0f38b379c985": {
+    "describe": {
+      "columns": [
+        {
+          "name": "unit: _",
+          "ordinal": 0,
+          "type_info": {
+            "Custom": {
+              "kind": {
+                "Enum": [
+                  "sats",
+                  "synth_cents"
+                ]
+              },
+              "name": "user_trade_unit"
+            }
+          }
+        },
+        {
+          "name": "current_balance",
+          "ordinal": 1,
+          "type_info": "Numeric"
+        },
+        {
+          "name": "last_trade_idx",
+          "ordinal": 2,
+          "type_info": "Int4"
+        }
+      ],
+      "nullable": [
+        false,
+        false,
+        true
+      ],
+      "parameters": {
+        "Left": []
+      }
+    },
+    "query": "SELECT unit as \"unit: _\", current_balance, last_trade_idx FROM user_trade_balances"
+  }
+}
