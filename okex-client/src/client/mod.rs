@@ -161,7 +161,7 @@ pub struct OkexClientConfig {
     pub api_key: String,
     pub passphrase: String,
     pub secret_key: String,
-    pub simulated: String,
+    pub simulated: bool,
 }
 
 pub struct OkexClient {
@@ -545,6 +545,7 @@ impl OkexClient {
         pre_hash: String,
     ) -> Result<HeaderMap, OkexClientError> {
         let sign_base64 = self.sign_okex_request(pre_hash);
+        let simulation_flag = self.config.simulated as i32;
 
         let mut headers = HeaderMap::new();
         headers.insert(CONTENT_TYPE, HeaderValue::from_str("application/json")?);
@@ -566,7 +567,7 @@ impl OkexClient {
         );
         headers.insert(
             "x-simulated-trading",
-            HeaderValue::from_str(self.config.simulated.as_str())?,
+            HeaderValue::from_str(simulation_flag.to_string().as_str())?,
         );
 
         Ok(headers)
