@@ -136,4 +136,3 @@ pub struct OkexClientConfig {
     pub secret_key: String,
     pub simulated: bool,
 }
-

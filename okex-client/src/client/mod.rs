@@ -13,8 +13,8 @@ use reqwest::header::{HeaderMap, HeaderValue, CONTENT_TYPE};
 use reqwest::Client as ReqwestClient;
 
 pub use error::*;
-pub use primitives::*;
 use okex_response::*;
+pub use primitives::*;
 
 use governor::{
     clock::DefaultClock, state::keyed::DefaultKeyedStateStore, Jitter, Quota, RateLimiter,
