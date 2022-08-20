@@ -268,6 +268,13 @@ impl OkexClient {
         order_type: OkexOrderType,
         size: u64,
     ) -> Result<OrderId, OkexClientError> {
+        if pos_side != self.config.position_side {
+            return Err(OkexClientError::PositionSide {
+                msg: format!("Expected `net` position side, got `{}`", pos_side),
+                code: "0".to_string(),
+            });
+        }
+
         let mut body: HashMap<String, String> = HashMap::new();
         body.insert("ccy".to_string(), "BTC".to_string());
         body.insert("instId".to_string(), inst_id.to_string());
@@ -323,6 +330,13 @@ impl OkexClient {
         ccy: String,
         auto_cxl: bool,
     ) -> Result<ClosePositionData, OkexClientError> {
+        if pos_side != self.config.position_side {
+            return Err(OkexClientError::PositionSide {
+                msg: format!("Expected `net` position side, got `{}`", pos_side),
+                code: "0".to_string(),
+            });
+        }
+
         let mut body: HashMap<String, String> = HashMap::new();
         body.insert("instId".to_string(), inst_id.to_string());
         body.insert("mgnMode".to_string(), margin_mode.to_string());
@@ -409,7 +423,7 @@ impl OkexClient {
         pre_hash: String,
     ) -> Result<HeaderMap, OkexClientError> {
         let sign_base64 = self.sign_okex_request(pre_hash);
-        let simulation_flag = self.config.simulated as i32;
+        let simulation_flag = i32::from(self.config.simulated);
 
         let mut headers = HeaderMap::new();
         headers.insert(CONTENT_TYPE, HeaderValue::from_str("application/json")?);
