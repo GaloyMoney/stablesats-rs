@@ -10,11 +10,14 @@ shared = { path = "../shared", package = "stablesats-shared" }
 
 thiserror = "1.0.32"
 tokio = "1.20.1"
-sqlx = { version = "0.6", features = [ "runtime-tokio-rustls", "postgres", "decimal", "uuid" ] }
+sqlx = { version = "0.6", features = [ "offline", "runtime-tokio-rustls", "postgres", "decimal", "uuid" ] }
 uuid = "1.1.2"
 tracing = "0.1.36"
 serde = "1.0.143"
 anyhow = "1.0.62"
+rust_decimal = "1.26.1"
+rust_decimal_macros = "1.26.1"
 
 [dev-dependencies]
 anyhow = "1.0.62"
+lazy_static = "1.4.0"

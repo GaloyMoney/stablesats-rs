@@ -1,3 +1,3 @@
 pub struct BrokerConfig {
-    pg_con: String
+    pg_con: String,
 }

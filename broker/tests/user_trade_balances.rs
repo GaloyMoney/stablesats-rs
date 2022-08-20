@@ -1,4 +1,4 @@
-use broker::user_trade::*;
+use broker::{user_trade::*, user_trade_balances::*};
 use rust_decimal_macros::dec;
 use sqlx::PgPool;
 
@@ -8,7 +8,8 @@ lazy_static::lazy_static! {
 }
 
 #[tokio::test]
-async fn create_user_trade() -> anyhow::Result<()> {
+async fn user_trade_balances() -> anyhow::Result<()> {
+    let balances = UserTradeBalances::new(POOL.clone()).await?;
     let trades = UserTrades::new(POOL.clone());
     let trade = trades
         .persist_new(NewUserTrade::new(
@@ -18,6 +19,7 @@ async fn create_user_trade() -> anyhow::Result<()> {
             dec!(10),
         ))
         .await?;
-    assert!(trade.idx > 0);
+    tokio::time::sleep(std::time::Duration::from_secs(1)).await;
+    assert!(trade.idx == 0);
     Ok(())
 }

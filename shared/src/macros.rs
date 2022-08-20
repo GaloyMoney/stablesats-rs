@@ -81,4 +81,3 @@ macro_rules! entity_id {
         }
     };
 }
-

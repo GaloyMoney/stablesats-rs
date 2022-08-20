@@ -209,6 +209,9 @@ name = "broker"
 version = "0.1.0"
 dependencies = [
  "anyhow",
+ "lazy_static",
+ "rust_decimal",
+ "rust_decimal_macros",
  "serde",
  "sqlx",
  "stablesats-shared",
@@ -474,6 +477,9 @@ name = "either"
 version = "1.7.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "3f107b87b6afc2a64fd13cac55fe06d6c8859f12d4b14cbcdd2c67d0976781be"
+dependencies = [
+ "serde",
+]
 
 [[package]]
 name = "encoding_rs"
@@ -2113,9 +2119,12 @@ dependencies = [
  "dotenvy",
  "either",
  "heck",
+ "hex",
  "once_cell",
  "proc-macro2",
  "quote",
+ "serde",
+ "serde_json",
  "sha2",
  "sqlx-core",
  "sqlx-rt",

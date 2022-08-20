@@ -23,3 +23,14 @@ build-x86_64-unknown-linux-musl-release:
 
 build-x86_64-apple-darwin-release:
 	bin/osxcross-compile.sh
+
+clean-deps:
+	docker compose down
+
+start-deps:
+	docker compose up -d integration-deps
+
+reset-deps: clean-deps start-deps setup-db
+
+setup-db:
+	cd broker && cargo sqlx migrate run
