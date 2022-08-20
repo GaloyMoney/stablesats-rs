@@ -1,5 +1,6 @@
 mod error;
 mod okex_response;
+mod primitives;
 
 use std::{collections::HashMap, time::Duration};
 
@@ -12,6 +13,7 @@ use reqwest::header::{HeaderMap, HeaderValue, CONTENT_TYPE};
 use reqwest::Client as ReqwestClient;
 
 pub use error::*;
+pub use primitives::*;
 use okex_response::*;
 
 use governor::{
@@ -26,43 +28,6 @@ lazy_static::lazy_static! {
 const OKEX_API_URL: &str = "https://www.okex.com";
 pub const OKEX_MINIMUM_WITHDRAWAL_AMOUNT: &str = "0.001";
 pub const OKEX_MINIMUM_WITHDRAWAL_FEE: &str = "0.0002";
-
-#[derive(Debug, PartialEq, Eq)]
-pub struct DepositAddress {
-    pub value: String,
-}
-
-#[derive(Debug)]
-pub struct TransferId {
-    pub value: String,
-}
-
-#[derive(Debug)]
-pub struct AvailableBalance {
-    pub amt_in_btc: Decimal,
-}
-
-#[derive(Debug)]
-pub struct TransferState {
-    pub value: String,
-}
-
-#[derive(Debug)]
-pub struct WithdrawId {
-    pub value: String,
-}
-
-#[derive(Debug)]
-pub struct DepositStatus {
-    pub status: String,
-}
-
-pub struct OkexClientConfig {
-    pub api_key: String,
-    pub passphrase: String,
-    pub secret_key: String,
-}
-
 pub struct OkexClient {
     client: ReqwestClient,
     config: OkexClientConfig,
@@ -294,6 +259,95 @@ impl OkexClient {
         }
     }
 
+    pub async fn place_order(
+        &self,
+        inst_id: OkexInstrumentId,
+        margin_mode: OkexMarginMode,
+        side: OkexOrderSide,
+        pos_side: OkexPositionSide,
+        order_type: OkexOrderType,
+        size: u64,
+    ) -> Result<OrderId, OkexClientError> {
+        let mut body: HashMap<String, String> = HashMap::new();
+        body.insert("ccy".to_string(), "BTC".to_string());
+        body.insert("instId".to_string(), inst_id.to_string());
+        body.insert("tdMode".to_string(), margin_mode.to_string());
+        body.insert("side".to_string(), side.to_string());
+        body.insert("ordType".to_string(), order_type.to_string());
+        body.insert("posSide".to_string(), pos_side.to_string());
+        body.insert("sz".to_string(), size.to_string());
+        let request_body = serde_json::to_string(&body)?;
+
+        let request_path = "/api/v5/trade/order";
+        let headers = self.post_request_headers(request_path, &request_body)?;
+
+        let response = self
+            .rate_limit_client(request_path)
+            .await
+            .post(Self::url_for_path(request_path))
+            .headers(headers)
+            .body(request_body)
+            .send()
+            .await?;
+
+        let order_data = Self::extract_response_data::<OrderData>(response).await?;
+        Ok(OrderId {
+            value: order_data.ord_id,
+        })
+    }
+
+    pub async fn get_position(&self) -> Result<PositionId, OkexClientError> {
+        let request_path = "/api/v5/account/positions?instId=BTC-USD-SWAP";
+        let headers = self.get_request_headers(request_path)?;
+
+        let response = self
+            .rate_limit_client(request_path)
+            .await
+            .get(Self::url_for_path(request_path))
+            .headers(headers)
+            .send()
+            .await?;
+
+        let position_data = Self::extract_response_data::<PositionData>(response).await?;
+
+        Ok(PositionId {
+            value: position_data.pos_id,
+        })
+    }
+
+    pub async fn close_positions(
+        &self,
+        inst_id: OkexInstrumentId,
+        pos_side: OkexPositionSide,
+        margin_mode: OkexMarginMode,
+        ccy: String,
+        auto_cxl: bool,
+    ) -> Result<ClosePositionData, OkexClientError> {
+        let mut body: HashMap<String, String> = HashMap::new();
+        body.insert("instId".to_string(), inst_id.to_string());
+        body.insert("mgnMode".to_string(), margin_mode.to_string());
+        body.insert("posSide".to_string(), pos_side.to_string());
+        body.insert("ccy".to_string(), ccy);
+        body.insert("autoCxl".to_string(), auto_cxl.to_string());
+        let request_body = serde_json::to_string(&body)?;
+
+        let request_path = "/api/v5/trade/close-position";
+        let headers = self.post_request_headers(request_path, &request_body)?;
+
+        let response = self
+            .rate_limit_client(request_path)
+            .await
+            .post(Self::url_for_path(request_path))
+            .headers(headers)
+            .body(request_body)
+            .send()
+            .await?;
+
+        let close_position = Self::extract_response_data::<ClosePositionData>(response).await?;
+
+        Ok(close_position)
+    }
+
     /// Extracts the first entry in the response data
     async fn extract_response_data<T: serde::de::DeserializeOwned>(
         response: reqwest::Response,
@@ -355,6 +409,7 @@ impl OkexClient {
         pre_hash: String,
     ) -> Result<HeaderMap, OkexClientError> {
         let sign_base64 = self.sign_okex_request(pre_hash);
+        let simulation_flag = self.config.simulated as i32;
 
         let mut headers = HeaderMap::new();
         headers.insert(CONTENT_TYPE, HeaderValue::from_str("application/json")?);
@@ -374,6 +429,11 @@ impl OkexClient {
             "OK-ACCESS-PASSPHRASE",
             HeaderValue::from_str(self.config.passphrase.as_str())?,
         );
+        headers.insert(
+            "x-simulated-trading",
+            HeaderValue::from_str(simulation_flag.to_string().as_str())?,
+        );
+
         Ok(headers)
     }
 }

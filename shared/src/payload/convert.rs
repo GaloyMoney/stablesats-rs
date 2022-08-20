@@ -18,7 +18,7 @@ impl TryFrom<PriceRatioRaw> for UsdCents {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use rust_decimal::prelude::*;
+    use rust_decimal_macros::dec;
 
     #[test]
     fn convert_to_usd_cents() {
@@ -26,7 +26,7 @@ mod tests {
             numerator_unit: CurrencyRaw::from(UsdCents::code()),
             denominator_unit: CurrencyRaw::from(Sats::code()),
             offset: 12,
-            base: Decimal::new(9_999_990_000, 0),
+            base: dec!(9_999_990_000),
         };
         let price_of_one_sat = UsdCents::try_from(ratio).unwrap();
         assert_eq!(

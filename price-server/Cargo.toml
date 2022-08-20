@@ -25,6 +25,7 @@ rust_decimal = "1.25.0"
 tracing = "0.1.36"
 opentelemetry = { version = "0.17.0", features = ["trace"] }
 tracing-opentelemetry = "0.17.4"
+rust_decimal_macros = "1.26.1"
 
 [build-dependencies]
 protobuf-src = { version = "1.0.5" }

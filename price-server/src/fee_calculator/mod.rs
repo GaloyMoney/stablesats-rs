@@ -1,6 +1,7 @@
 mod config;
 
 use rust_decimal::prelude::*;
+use rust_decimal_macros::dec;
 use std::ops::Mul;
 
 pub use config::*;
@@ -21,10 +22,10 @@ impl FeeCalculator {
         }: FeeCalculatorConfig,
     ) -> Self {
         Self {
-            immediate_buy_multiplier: (Decimal::from(1) - (base_fee_rate + immediate_fee_rate)),
-            delayed_buy_multiplier: (Decimal::from(1) - (base_fee_rate + delayed_fee_rate)),
-            immediate_sell_multiplier: Decimal::from(1) + base_fee_rate + immediate_fee_rate,
-            delayed_sell_multiplier: Decimal::from(1) + base_fee_rate + delayed_fee_rate,
+            immediate_buy_multiplier: (dec!(1) - (base_fee_rate + immediate_fee_rate)),
+            delayed_buy_multiplier: (dec!(1) - (base_fee_rate + delayed_fee_rate)),
+            immediate_sell_multiplier: dec!(1) + base_fee_rate + immediate_fee_rate,
+            delayed_sell_multiplier: dec!(1) + base_fee_rate + delayed_fee_rate,
         }
     }
 
@@ -65,9 +66,9 @@ mod tests {
     #[test]
     fn fee_calculator() {
         let fees = FeeCalculator::new(FeeCalculatorConfig {
-            base_fee_rate: "0.001".to_string().parse::<Decimal>().unwrap(),
-            immediate_fee_rate: "0.01".to_string().parse::<Decimal>().unwrap(),
-            delayed_fee_rate: "0.1".to_string().parse::<Decimal>().unwrap(),
+            base_fee_rate: dec!(0.001),
+            immediate_fee_rate: dec!(0.01),
+            delayed_fee_rate: dec!(0.1),
         });
 
         let usd_in = UsdCents::from_major(10_000);

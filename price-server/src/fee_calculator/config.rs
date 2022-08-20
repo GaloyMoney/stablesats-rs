@@ -1,4 +1,5 @@
 use rust_decimal::Decimal;
+use rust_decimal_macros::dec;
 use serde::{Deserialize, Serialize};
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
@@ -12,15 +13,15 @@ pub struct FeeCalculatorConfig {
 }
 
 fn default_base_fee_rate() -> Decimal {
-    Decimal::new(5, 4)
+    dec!(0.0005)
 }
 
 fn default_immediate_fee_rate() -> Decimal {
-    Decimal::new(5, 4)
+    dec!(0.0005)
 }
 
 fn default_delayed_fee_rate() -> Decimal {
-    Decimal::new(7, 4)
+    dec!(0.0007)
 }
 
 impl Default for FeeCalculatorConfig {
@@ -36,21 +37,20 @@ impl Default for FeeCalculatorConfig {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use rust_decimal::prelude::*;
 
     #[test]
     fn defaults() {
         assert_eq!(
             default_base_fee_rate(),
-            Decimal::from_str("0.0005").unwrap()
+            Decimal::from_str_exact("0.0005").unwrap()
         );
         assert_eq!(
             default_immediate_fee_rate(),
-            Decimal::from_str("0.0005").unwrap()
+            Decimal::from_str_exact("0.0005").unwrap()
         );
         assert_eq!(
             default_delayed_fee_rate(),
-            Decimal::from_str("0.0007").unwrap()
+            Decimal::from_str_exact("0.0007").unwrap()
         );
     }
 }
