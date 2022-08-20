@@ -38,6 +38,14 @@ macro_rules! currency {
             pub fn amount(&self) -> &Decimal {
                 self.inner.amount()
             }
+
+            pub fn floor(&self) -> Self {
+                Self ::from_decimal(self.inner.amount().floor())
+            }
+
+            pub fn ceil(&self) -> Self {
+                Self ::from_decimal(self.inner.amount().ceil())
+            }
         }
 
         impl std::ops::Mul<Decimal> for $name {
