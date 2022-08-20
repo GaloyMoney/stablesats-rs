@@ -423,7 +423,7 @@ impl OkexClient {
         pre_hash: String,
     ) -> Result<HeaderMap, OkexClientError> {
         let sign_base64 = self.sign_okex_request(pre_hash);
-        let simulation_flag = self.config.simulated as i32;
+        let simulation_flag = i32::from(self.config.simulated);
 
         let mut headers = HeaderMap::new();
         headers.insert(CONTENT_TYPE, HeaderValue::from_str("application/json")?);
