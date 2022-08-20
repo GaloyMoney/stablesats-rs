@@ -66,7 +66,7 @@ impl PriceApp {
             .await?
             .buy_usd()
             .cents_from_sats(sats);
-        Ok(self.fee_calculator.apply_immediate_buy_fee(cents))
+        Ok(self.fee_calculator.decrease_by_immediate_fee(cents))
     }
 
     #[instrument(skip_all, fields(correlation_id, amount = %sats.amount()), ret, err)]
@@ -80,7 +80,7 @@ impl PriceApp {
             .await?
             .sell_usd()
             .cents_from_sats(sats);
-        Ok(self.fee_calculator.apply_immediate_sell_fee(cents))
+        Ok(self.fee_calculator.increase_by_immediate_fee(cents))
     }
 
     #[instrument(skip_all, fields(correlation_id, amount = %sats.amount()), ret, err)]
@@ -94,7 +94,7 @@ impl PriceApp {
             .await?
             .buy_usd()
             .cents_from_sats(sats);
-        Ok(self.fee_calculator.apply_delayed_buy_fee(cents))
+        Ok(self.fee_calculator.decrease_by_delayed_fee(cents))
     }
 
     #[instrument(skip_all, fields(correlation_id, amount = %sats.amount()), ret, err)]
@@ -108,7 +108,7 @@ impl PriceApp {
             .await?
             .sell_usd()
             .cents_from_sats(sats);
-        Ok(self.fee_calculator.apply_delayed_sell_fee(cents))
+        Ok(self.fee_calculator.increase_by_immediate_fee(cents))
     }
 
     #[instrument(skip_all, fields(correlation_id, amount = %cents.amount()), ret, err)]
@@ -122,7 +122,7 @@ impl PriceApp {
             .await?
             .buy_usd()
             .sats_from_cents(cents);
-        Ok(self.fee_calculator.apply_immediate_buy_fee(sats))
+        Ok(self.fee_calculator.increase_by_immediate_fee(sats))
     }
 
     #[instrument(skip_all, fields(correlation_id, amount = %cents.amount()), ret, err)]
@@ -136,7 +136,7 @@ impl PriceApp {
             .await?
             .sell_usd()
             .sats_from_cents(cents);
-        Ok(self.fee_calculator.apply_immediate_sell_fee(sats))
+        Ok(self.fee_calculator.decrease_by_immediate_fee(sats))
     }
 
     #[instrument(skip_all, fields(correlation_id, amount = %cents.amount()), ret, err)]
@@ -150,7 +150,7 @@ impl PriceApp {
             .await?
             .buy_usd()
             .sats_from_cents(cents);
-        Ok(self.fee_calculator.apply_delayed_buy_fee(sats))
+        Ok(self.fee_calculator.increase_by_delayed_fee(sats))
     }
 
     #[instrument(skip_all, fields(correlation_id, amount = %cents.amount()), ret, err)]
@@ -164,7 +164,7 @@ impl PriceApp {
             .await?
             .sell_usd()
             .sats_from_cents(cents);
-        Ok(self.fee_calculator.apply_delayed_sell_fee(sats))
+        Ok(self.fee_calculator.decrease_by_delayed_fee(sats))
     }
 
     #[instrument(skip_all, fields(correlation_id, ret, err))]
