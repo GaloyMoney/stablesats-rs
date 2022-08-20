@@ -3,9 +3,8 @@ use serde::Deserialize;
 
 use shared::time::*;
 
-#[derive(Clone, Deserialize, Debug, PartialEq)]
+#[derive(Clone, Deserialize, Debug, PartialEq, Eq)]
 #[serde(rename_all = "camelCase")]
-#[allow(clippy::derive_partial_eq_without_eq)]
 pub struct ChannelArgs {
     pub channel: String,
     pub inst_id: String,
