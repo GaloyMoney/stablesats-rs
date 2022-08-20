@@ -7,11 +7,12 @@ use tracing::Span;
 use tracing_opentelemetry::OpenTelemetrySpanExt;
 
 use shared::{
-    currency::*,
     payload::*,
     pubsub::{self, CorrelationId},
     time::*,
 };
+
+use crate::currency::*;
 
 #[derive(Error, Debug)]
 pub enum ExchangePriceCacheError {
@@ -119,8 +120,8 @@ impl ExchangePriceCacheInner {
 
 #[cfg(test)]
 mod tests {
-
     use super::*;
+
     #[test]
     fn test_mid_price_of_one_sat() {
         let tick = BtcSatTick {

@@ -2,11 +2,12 @@ use rust_decimal::prelude::*;
 use rust_decimal_macros::dec;
 use serde::{Deserialize, Serialize};
 
-use crate::currency::*;
-
 crate::string_wrapper! { ExchangeIdRaw }
 crate::string_wrapper! { InstrumentIdRaw }
 crate::string_wrapper! { CurrencyRaw }
+
+pub const USD_CENT_UNIT_NAME: &str = "USD_CENT";
+pub const SATOSHI_UNIT_NAME: &str = "SATOSHI";
 
 const PRICE_IN_CENTS_PRECISION: u32 = 12;
 
@@ -25,8 +26,8 @@ impl PriceRatioRaw {
             price_in_cents * Decimal::from(10_u64.pow(PRICE_IN_CENTS_PRECISION));
         let base = price_with_precision / dec!(100_000_000);
         Self {
-            numerator_unit: CurrencyRaw::from(UsdCents::code()),
-            denominator_unit: CurrencyRaw::from(Sats::code()),
+            numerator_unit: CurrencyRaw::from(USD_CENT_UNIT_NAME),
+            denominator_unit: CurrencyRaw::from(SATOSHI_UNIT_NAME),
             offset: PRICE_IN_CENTS_PRECISION,
             base: base.trunc(),
         }

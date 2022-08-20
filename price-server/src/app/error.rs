@@ -1,7 +1,7 @@
 use thiserror::Error;
 
-use crate::exchange_price_cache::ExchangePriceCacheError;
-use shared::{currency::CurrencyError, pubsub::SubscriberError};
+use crate::{currency::CurrencyError, exchange_price_cache::ExchangePriceCacheError};
+use shared::pubsub::SubscriberError;
 
 #[allow(clippy::large_enum_variant)]
 #[derive(Error, Debug)]
