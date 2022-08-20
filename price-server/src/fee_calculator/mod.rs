@@ -69,12 +69,20 @@ mod tests {
 
         let usd_in = UsdCents::from_major(10_000);
         assert_eq!(
-            fees.increase_by_immediate_fee(usd_in.clone()),
+            fees.decrease_by_immediate_fee(usd_in.clone()),
             UsdCents::from_major(10_000 - 110)
         );
         assert_eq!(
-            fees.increase_by_delayed_fee(usd_in),
+            fees.decrease_by_delayed_fee(usd_in.clone()),
             UsdCents::from_major(10_000 - 1010)
+        );
+        assert_eq!(
+            fees.increase_by_immediate_fee(usd_in.clone()),
+            UsdCents::from_major(10_000 + 110)
+        );
+        assert_eq!(
+            fees.increase_by_delayed_fee(usd_in),
+            UsdCents::from_major(10_000 + 1010)
         );
     }
 }
