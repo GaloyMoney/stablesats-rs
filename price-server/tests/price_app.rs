@@ -3,7 +3,7 @@ use rust_decimal_macros::dec;
 use std::fs;
 
 use price_server::app::*;
-use shared::{currency::*, payload::*, pubsub::*, time::*};
+use shared::{payload::*, pubsub::*, time::*};
 
 #[derive(serde::Deserialize)]
 struct Fixture {

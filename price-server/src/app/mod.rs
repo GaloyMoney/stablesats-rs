@@ -6,11 +6,11 @@ use opentelemetry::{propagation::TextMapPropagator, sdk::propagation::TraceConte
 use tracing::{info_span, instrument, Instrument};
 use tracing_opentelemetry::OpenTelemetrySpanExt;
 
-use shared::{currency::*, payload::OkexBtcUsdSwapPricePayload, pubsub::*};
+use shared::{payload::OkexBtcUsdSwapPricePayload, pubsub::*};
 
 use super::exchange_price_cache::ExchangePriceCache;
 
-pub use crate::fee_calculator::*;
+pub use crate::{currency::*, fee_calculator::*};
 pub use error::*;
 
 pub struct PriceApp {

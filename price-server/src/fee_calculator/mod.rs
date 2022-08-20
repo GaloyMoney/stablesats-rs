@@ -57,7 +57,7 @@ impl FeeCalculator {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use shared::currency::*;
+    use crate::currency::*;
 
     #[test]
     fn fee_calculator() {

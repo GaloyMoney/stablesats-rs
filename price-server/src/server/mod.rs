@@ -17,7 +17,6 @@ use tracing::instrument;
 use tracing_opentelemetry::OpenTelemetrySpanExt;
 
 use crate::app::*;
-use shared::currency::*;
 
 pub use config::*;
 pub use error::*;
