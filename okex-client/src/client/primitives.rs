@@ -72,14 +72,24 @@ impl Display for OkexMarginMode {
 }
 
 #[derive(Debug, Clone)]
-pub enum OkexPosition {
-    Long,
-    Short,
+pub enum OkexPositionMode {
+    LongShort,
+    Net,
 }
 
-#[derive(Debug, Clone)]
+impl Display for OkexPositionMode {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match *self {
+            OkexPositionMode::LongShort => write!(f, "long_short_mode"),
+            OkexPositionMode::Net => write!(f, "net_mode"),
+        }
+    }
+}
+
+#[derive(Debug, Clone, PartialEq)]
 pub enum OkexPositionSide {
-    LongShort(OkexPosition),
+    Long,
+    Short,
     Net,
 }
 
@@ -87,8 +97,8 @@ impl Display for OkexPositionSide {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match *self {
             OkexPositionSide::Net => write!(f, "net"),
-            OkexPositionSide::LongShort(OkexPosition::Long) => write!(f, "long"),
-            OkexPositionSide::LongShort(OkexPosition::Short) => write!(f, "short"),
+            OkexPositionSide::Long => write!(f, "long"),
+            OkexPositionSide::Short => write!(f, "short"),
         }
     }
 }
@@ -135,4 +145,6 @@ pub struct OkexClientConfig {
     pub passphrase: String,
     pub secret_key: String,
     pub simulated: bool,
+    pub position_mode: OkexPositionMode,
+    pub position_side: OkexPositionSide,
 }

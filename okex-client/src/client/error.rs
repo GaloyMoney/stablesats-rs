@@ -12,4 +12,6 @@ pub enum OkexClientError {
     UnexpectedResponse { msg: String, code: String },
     #[error("OkexClientError: {0}")]
     DecimalConversion(#[from] rust_decimal::Error),
+    #[error("OkexClientError: {code:?} - {msg:?}")]
+    PositionSide { msg: String, code: String },
 }
