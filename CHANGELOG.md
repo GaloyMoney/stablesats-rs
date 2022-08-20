@@ -1,3 +1,62 @@
+# [stablesats release v0.1.10](https://github.com/GaloyMoney/stablesats/releases/tag/v0.1.10)
+
+
+### Bug Fixes
+
+- Fee-calculator test
+- Fmt
+- When to increase / decrease price calc
+- Fee-calculation is direction dependent
+- Run position tests if environment variables are loaded
+- Open a position to close
+- Allow clippy issues in generated proto code
+- Remove accidentally committed notes
+- Use Decimal in deserialization and optionally run tests
+- Use cach_bal in available_balance
+- Fix flagged typo on 'controling'
+- Fetch onchain btc address from environment variables
+- Clippy update
+
+### Features
+
+- Close all positions of an instrument
+- Open and get position on "btc-usd-swap" instrument
+- Deposit status, floating point, & btc address
+- Place order and get positions
+- Withdraw to onchain BTC address
+- Fetch available trading account balance
+- State of transfer from funding to trading account
+- Fetch available balance of funding account
+- Transfer from trading to funding account
+
+### Miscellaneous Tasks
+
+- Create Decimal values with dec!()
+- Use rate-limit in deposit-history
+- Add rate-limit to okex-client
+- Bump anyhow from 1.0.61 to 1.0.62
+- Merge branch 'main' into feat-okex-client-library
+
+### Refactor
+
+- Extract client/primitives
+- Hardcode demo client api keys
+- Change config simulated property to bool
+- Implement Display for enums
+- Remove superfluous enum implementations
+- Enumerate order side
+- Enumerate position side
+- Enumerate margin mode
+- Enumerate instrument id and rate limit api calls
+- Deduplicate client test
+- Extract get/post header creation
+- Extract 'withdraw to btc onchain address' response data
+- Extract 'transfer state' response data
+- Extract 'trading account balance' response data
+- Extract 'funding account balance' response data
+- Extract 'trading-to-funding' response data
+- Use generics
+
 # [stablesats release v0.1.9](https://github.com/GaloyMoney/stablesats/releases/tag/v0.1.9)
 
 
