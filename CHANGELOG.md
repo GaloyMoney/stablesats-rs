@@ -1,3 +1,26 @@
+# [stablesats release v0.1.11](https://github.com/GaloyMoney/stablesats/releases/tag/v0.1.11)
+
+
+### Bug Fixes
+
+- Configure position mode and side in client constructor
+
+### Miscellaneous Tasks
+
+- Move shared/currency to price-server
+- Remove more unused
+- More unused
+- Remove unused
+- Derive Eq alongside PartialEq
+
+### Refactor
+
+- Replace type casting with explicit type conversion
+
+### Testing
+
+- Verify rounding of tiny amounts
+
 # [stablesats release v0.1.10](https://github.com/GaloyMoney/stablesats/releases/tag/v0.1.10)
 
 
