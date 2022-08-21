@@ -13,5 +13,5 @@ pub enum OkexClientError {
     #[error("OkexClientError: {0}")]
     DecimalConversion(#[from] rust_decimal::Error),
     #[error("OkexClientError: {code:?} - {msg:?}")]
-    PositionSide { msg: String, code: String },
+    PositionMode { msg: String, code: String },
 }

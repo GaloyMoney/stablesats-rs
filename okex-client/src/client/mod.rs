@@ -34,11 +34,38 @@ pub struct OkexClient {
 }
 
 impl OkexClient {
-    pub fn new(config: OkexClientConfig) -> Self {
+    fn new(config: OkexClientConfig) -> Self {
         Self {
             client: ReqwestClient::new(),
             config,
         }
+    }
+
+    pub async fn create(config: OkexClientConfig) -> Result<Self, OkexClientError> {
+        // 1. Get account configuration
+        let client = Self::new(config);
+        let path = "/api/v5/account/config";
+        let config_url = Self::url_for_path(path);
+        let headers = client.get_request_headers(path)?;
+
+        let response = client
+            .rate_limit_client(path)
+            .await
+            .get(config_url)
+            .headers(headers)
+            .send()
+            .await?;
+        let config_data =
+            Self::extract_response_data::<OkexAccountConfigurationData>(response).await?;
+
+        // 2. Check postion_mode, i.e. order placement mode
+        if config_data.pos_mode == *"net_mode" {
+            return Ok(client);
+        }
+        Err(OkexClientError::PositionMode {
+            msg: format!("Expected `net_mode`, got {}", config_data.pos_mode),
+            code: "0".to_string(),
+        })
     }
 
     pub async fn rate_limit_client(&self, key: &'static str) -> &ReqwestClient {
@@ -262,26 +289,16 @@ impl OkexClient {
     pub async fn place_order(
         &self,
         inst_id: OkexInstrumentId,
-        margin_mode: OkexMarginMode,
         side: OkexOrderSide,
-        pos_side: OkexPositionSide,
-        order_type: OkexOrderType,
         size: u64,
     ) -> Result<OrderId, OkexClientError> {
-        if pos_side != self.config.position_side {
-            return Err(OkexClientError::PositionSide {
-                msg: format!("Expected `net` position side, got `{}`", pos_side),
-                code: "0".to_string(),
-            });
-        }
-
         let mut body: HashMap<String, String> = HashMap::new();
         body.insert("ccy".to_string(), "BTC".to_string());
         body.insert("instId".to_string(), inst_id.to_string());
-        body.insert("tdMode".to_string(), margin_mode.to_string());
+        body.insert("tdMode".to_string(), OkexMarginMode::Cross.to_string());
         body.insert("side".to_string(), side.to_string());
-        body.insert("ordType".to_string(), order_type.to_string());
-        body.insert("posSide".to_string(), pos_side.to_string());
+        body.insert("ordType".to_string(), OkexOrderType::Market.to_string());
+        body.insert("posSide".to_string(), OkexPositionSide::Net.to_string());
         body.insert("sz".to_string(), size.to_string());
         let request_body = serde_json::to_string(&body)?;
 
@@ -325,22 +342,13 @@ impl OkexClient {
     pub async fn close_positions(
         &self,
         inst_id: OkexInstrumentId,
-        pos_side: OkexPositionSide,
-        margin_mode: OkexMarginMode,
         ccy: String,
         auto_cxl: bool,
     ) -> Result<ClosePositionData, OkexClientError> {
-        if pos_side != self.config.position_side {
-            return Err(OkexClientError::PositionSide {
-                msg: format!("Expected `net` position side, got `{}`", pos_side),
-                code: "0".to_string(),
-            });
-        }
-
         let mut body: HashMap<String, String> = HashMap::new();
         body.insert("instId".to_string(), inst_id.to_string());
-        body.insert("mgnMode".to_string(), margin_mode.to_string());
-        body.insert("posSide".to_string(), pos_side.to_string());
+        body.insert("mgnMode".to_string(), OkexMarginMode::Cross.to_string());
+        body.insert("posSide".to_string(), OkexPositionSide::Net.to_string());
         body.insert("ccy".to_string(), ccy);
         body.insert("autoCxl".to_string(), auto_cxl.to_string());
         let request_body = serde_json::to_string(&body)?;

@@ -180,3 +180,17 @@ pub struct ClosePositionData {
     pub inst_id: String,
     pub pos_side: String,
 }
+
+#[derive(Deserialize, Debug)]
+#[serde(rename_all = "camelCase")]
+pub struct OkexAccountConfigurationData {
+    pub acct_lv: String,
+    pub auto_loan: bool,
+    pub ct_iso_mode: String,
+    pub greeks_type: String,
+    pub level: String,
+    pub level_tmp: String,
+    pub mgn_iso_mode: String,
+    pub pos_mode: String,
+    pub uid: String,
+}
