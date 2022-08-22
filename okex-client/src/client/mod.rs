@@ -58,12 +58,12 @@ impl OkexClient {
         let config_data =
             Self::extract_response_data::<OkexAccountConfigurationData>(response).await?;
 
-        // 2. Check postion_mode, i.e. order placement mode
+        // 2. Check position_mode, i.e. order placement mode
         if config_data.pos_mode == *"net_mode" {
             return Ok(client);
         }
         Err(OkexClientError::PositionMode {
-            msg: format!("Expected `net_mode`, got {}", config_data.pos_mode),
+            msg: format!("Expected `net_mode`, got `{}`", config_data.pos_mode),
             code: "0".to_string(),
         })
     }

@@ -61,7 +61,7 @@ async fn demo_okex_client() -> anyhow::Result<Option<OkexClient>> {
 
 #[tokio::test]
 async fn create_okex_client() -> anyhow::Result<()> {
-    let client = configured_okex_client().await;
+    let client = demo_okex_client().await;
 
     assert!(client.is_ok());
 
@@ -70,10 +70,8 @@ async fn create_okex_client() -> anyhow::Result<()> {
 
 #[tokio::test]
 async fn get_deposit_address_data() -> anyhow::Result<()> {
-    let address = configured_okex_client()
-        .await?
-        .get_funding_deposit_address()
-        .await?;
+    let client = configured_okex_client().await?;
+    let address = client.get_funding_deposit_address().await?;
     assert!(address.value.len() > 10);
 
     Ok(())
@@ -134,11 +132,9 @@ async fn deposit_status() -> anyhow::Result<()> {
         env::var("OKEX_DEPOSIT_AMOUNT"),
     ) {
         let amt = Decimal::from_str_exact(&deposit_amount)?;
+        let client = configured_okex_client().await?;
 
-        let deposit = configured_okex_client()
-            .await?
-            .fetch_deposit(deposit_addr, amt)
-            .await?;
+        let deposit = client.fetch_deposit(deposit_addr, amt).await?;
 
         assert_eq!(deposit.status, "2".to_string());
     }
