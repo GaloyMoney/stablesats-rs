@@ -11,19 +11,13 @@ async fn configured_okex_client() -> anyhow::Result<OkexClient> {
     let secret_key = env::var("OKEX_SECRET_KEY").expect("OKEX_SECRET_KEY not set");
     let simulated = false;
     let position_mode = OkexPositionMode::Net;
-    let position_side = OkexPositionSide::Net;
-    let order_type = OkexOrderType::Market;
-    let margin_mode = OkexMarginMode::Cross;
 
-    let client = OkexClient::create(OkexClientConfig {
+    let client = OkexClient::new(OkexClientConfig {
         api_key,
         passphrase,
         secret_key,
         simulated,
         position_mode,
-        position_side,
-        order_type,
-        margin_mode,
     })
     .await?;
 
@@ -36,20 +30,14 @@ async fn demo_okex_client() -> anyhow::Result<Option<OkexClient>> {
     let secret_key = env::var("OKEX_DEMO_SECRET_KEY");
     let simulated = true;
     let position_mode = OkexPositionMode::Net;
-    let position_side = OkexPositionSide::Net;
-    let order_type = OkexOrderType::Market;
-    let margin_mode = OkexMarginMode::Cross;
 
     if let (Ok(api_key), Ok(passphrase), Ok(secret_key)) = (api_key, passphrase, secret_key) {
-        let client = OkexClient::create(OkexClientConfig {
+        let client = OkexClient::new(OkexClientConfig {
             api_key,
             passphrase,
             secret_key,
             simulated,
             position_mode,
-            position_side,
-            order_type,
-            margin_mode,
         })
         .await?;
 
@@ -79,15 +67,12 @@ async fn get_deposit_address_data() -> anyhow::Result<()> {
 
 #[tokio::test]
 async fn client_is_missing_header() -> anyhow::Result<()> {
-    let client = OkexClient::create(OkexClientConfig {
+    let client = OkexClient::new(OkexClientConfig {
         api_key: "".to_string(),
         passphrase: "".to_string(),
         secret_key: "".to_string(),
         simulated: true,
         position_mode: OkexPositionMode::Net,
-        position_side: OkexPositionSide::Net,
-        order_type: OkexOrderType::Market,
-        margin_mode: OkexMarginMode::Cross,
     })
     .await;
 
@@ -228,7 +213,6 @@ async fn close_positions() -> anyhow::Result<()> {
     if let Some(client) = demo_okex_client().await? {
         let instrument = OkexInstrumentId::BtcUsdSwap;
         let order_side = OkexOrderSide::Buy;
-        let currency = "BTC".to_string();
 
         // 1. Open position
         client
@@ -236,7 +220,7 @@ async fn close_positions() -> anyhow::Result<()> {
             .await?;
 
         // 2. Close position(s)
-        let position = client.close_positions(instrument, currency, false).await?;
+        let position = client.close_positions(instrument, false).await?;
 
         assert_eq!(position.inst_id, "BTC-USD-SWAP".to_string());
         assert_eq!(position.pos_side, "net".to_string());

@@ -34,16 +34,12 @@ pub struct OkexClient {
 }
 
 impl OkexClient {
-    fn new(config: OkexClientConfig) -> Self {
-        Self {
+    pub async fn new(config: OkexClientConfig) -> Result<Self, OkexClientError> {
+        // 1. Get account configuration
+        let client = Self {
             client: ReqwestClient::new(),
             config,
-        }
-    }
-
-    pub async fn create(config: OkexClientConfig) -> Result<Self, OkexClientError> {
-        // 1. Get account configuration
-        let client = Self::new(config);
+        };
         let path = "/api/v5/account/config";
         let config_url = Self::url_for_path(path);
         let headers = client.get_request_headers(path)?;
@@ -62,10 +58,10 @@ impl OkexClient {
         if config_data.pos_mode == *"net_mode" {
             return Ok(client);
         }
-        Err(OkexClientError::PositionMode {
-            msg: format!("Expected `net_mode`, got `{}`", config_data.pos_mode),
-            code: "0".to_string(),
-        })
+        Err(OkexClientError::MisconfiguredAccount(format!(
+            "Expected `net_mode`, got `{}`",
+            config_data.pos_mode
+        )))
     }
 
     pub async fn rate_limit_client(&self, key: &'static str) -> &ReqwestClient {
@@ -98,7 +94,7 @@ impl OkexClient {
         amt: Decimal,
     ) -> Result<TransferId, OkexClientError> {
         let mut body: HashMap<String, String> = HashMap::new();
-        body.insert("ccy".to_string(), "BTC".to_string());
+        body.insert("ccy".to_string(), TradeCurrency::BTC.to_string());
         body.insert("amt".to_string(), amt.to_string());
         body.insert("from".to_string(), "6".to_string());
         body.insert("to".to_string(), "18".to_string());
@@ -127,7 +123,7 @@ impl OkexClient {
         amt: Decimal,
     ) -> Result<TransferId, OkexClientError> {
         let mut body: HashMap<String, String> = HashMap::new();
-        body.insert("ccy".to_string(), "BTC".to_string());
+        body.insert("ccy".to_string(), TradeCurrency::BTC.to_string());
         body.insert("amt".to_string(), amt.to_string());
         body.insert("from".to_string(), "18".to_string());
         body.insert("to".to_string(), "6".to_string());
@@ -224,7 +220,7 @@ impl OkexClient {
         btc_address: String,
     ) -> Result<WithdrawId, OkexClientError> {
         let mut body: HashMap<String, String> = HashMap::new();
-        body.insert("ccy".to_string(), "BTC".to_string());
+        body.insert("ccy".to_string(), TradeCurrency::BTC.to_string());
         body.insert("amt".to_string(), amt.to_string());
         body.insert("dest".to_string(), "4".to_string());
         body.insert("fee".to_string(), fee.to_string());
@@ -293,12 +289,12 @@ impl OkexClient {
         size: u64,
     ) -> Result<OrderId, OkexClientError> {
         let mut body: HashMap<String, String> = HashMap::new();
-        body.insert("ccy".to_string(), "BTC".to_string());
+        body.insert("ccy".to_string(), TradeCurrency::BTC.to_string());
         body.insert("instId".to_string(), inst_id.to_string());
-        body.insert("tdMode".to_string(), self.config.margin_mode.to_string());
+        body.insert("tdMode".to_string(), OkexMarginMode::Cross.to_string());
         body.insert("side".to_string(), side.to_string());
-        body.insert("ordType".to_string(), self.config.order_type.to_string());
-        body.insert("posSide".to_string(), self.config.position_side.to_string());
+        body.insert("ordType".to_string(), OkexOrderType::Market.to_string());
+        body.insert("posSide".to_string(), OkexPositionSide::Net.to_string());
         body.insert("sz".to_string(), size.to_string());
         let request_body = serde_json::to_string(&body)?;
 
@@ -342,14 +338,13 @@ impl OkexClient {
     pub async fn close_positions(
         &self,
         inst_id: OkexInstrumentId,
-        ccy: String,
         auto_cxl: bool,
     ) -> Result<ClosePositionData, OkexClientError> {
         let mut body: HashMap<String, String> = HashMap::new();
         body.insert("instId".to_string(), inst_id.to_string());
-        body.insert("mgnMode".to_string(), self.config.margin_mode.to_string());
-        body.insert("posSide".to_string(), self.config.position_side.to_string());
-        body.insert("ccy".to_string(), ccy);
+        body.insert("mgnMode".to_string(), OkexMarginMode::Cross.to_string());
+        body.insert("posSide".to_string(), OkexPositionSide::Net.to_string());
+        body.insert("ccy".to_string(), TradeCurrency::BTC.to_string());
         body.insert("autoCxl".to_string(), auto_cxl.to_string());
         let request_body = serde_json::to_string(&body)?;
 
