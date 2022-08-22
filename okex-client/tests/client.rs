@@ -213,7 +213,6 @@ async fn close_positions() -> anyhow::Result<()> {
     if let Some(client) = demo_okex_client().await? {
         let instrument = OkexInstrumentId::BtcUsdSwap;
         let order_side = OkexOrderSide::Buy;
-        let currency = "BTC".to_string();
 
         // 1. Open position
         client
@@ -221,7 +220,7 @@ async fn close_positions() -> anyhow::Result<()> {
             .await?;
 
         // 2. Close position(s)
-        let position = client.close_positions(instrument, currency, false).await?;
+        let position = client.close_positions(instrument, false).await?;
 
         assert_eq!(position.inst_id, "BTC-USD-SWAP".to_string());
         assert_eq!(position.pos_side, "net".to_string());
