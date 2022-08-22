@@ -11,9 +11,6 @@ async fn configured_okex_client() -> anyhow::Result<OkexClient> {
     let secret_key = env::var("OKEX_SECRET_KEY").expect("OKEX_SECRET_KEY not set");
     let simulated = false;
     let position_mode = OkexPositionMode::Net;
-    let position_side = OkexPositionSide::Net;
-    let order_type = OkexOrderType::Market;
-    let margin_mode = OkexMarginMode::Cross;
 
     let client = OkexClient::new(OkexClientConfig {
         api_key,
@@ -21,9 +18,6 @@ async fn configured_okex_client() -> anyhow::Result<OkexClient> {
         secret_key,
         simulated,
         position_mode,
-        position_side,
-        order_type,
-        margin_mode,
     })
     .await?;
 
@@ -36,9 +30,6 @@ async fn demo_okex_client() -> anyhow::Result<Option<OkexClient>> {
     let secret_key = env::var("OKEX_DEMO_SECRET_KEY");
     let simulated = true;
     let position_mode = OkexPositionMode::Net;
-    let position_side = OkexPositionSide::Net;
-    let order_type = OkexOrderType::Market;
-    let margin_mode = OkexMarginMode::Cross;
 
     if let (Ok(api_key), Ok(passphrase), Ok(secret_key)) = (api_key, passphrase, secret_key) {
         let client = OkexClient::new(OkexClientConfig {
@@ -47,9 +38,6 @@ async fn demo_okex_client() -> anyhow::Result<Option<OkexClient>> {
             secret_key,
             simulated,
             position_mode,
-            position_side,
-            order_type,
-            margin_mode,
         })
         .await?;
 
@@ -85,9 +73,6 @@ async fn client_is_missing_header() -> anyhow::Result<()> {
         secret_key: "".to_string(),
         simulated: true,
         position_mode: OkexPositionMode::Net,
-        position_side: OkexPositionSide::Net,
-        order_type: OkexOrderType::Market,
-        margin_mode: OkexMarginMode::Cross,
     })
     .await;
 

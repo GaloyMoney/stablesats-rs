@@ -291,10 +291,10 @@ impl OkexClient {
         let mut body: HashMap<String, String> = HashMap::new();
         body.insert("ccy".to_string(), "BTC".to_string());
         body.insert("instId".to_string(), inst_id.to_string());
-        body.insert("tdMode".to_string(), self.config.margin_mode.to_string());
+        body.insert("tdMode".to_string(), OkexMarginMode::Cross.to_string());
         body.insert("side".to_string(), side.to_string());
-        body.insert("ordType".to_string(), self.config.order_type.to_string());
-        body.insert("posSide".to_string(), self.config.position_side.to_string());
+        body.insert("ordType".to_string(), OkexOrderType::Market.to_string());
+        body.insert("posSide".to_string(), OkexPositionSide::Net.to_string());
         body.insert("sz".to_string(), size.to_string());
         let request_body = serde_json::to_string(&body)?;
 
@@ -343,8 +343,8 @@ impl OkexClient {
     ) -> Result<ClosePositionData, OkexClientError> {
         let mut body: HashMap<String, String> = HashMap::new();
         body.insert("instId".to_string(), inst_id.to_string());
-        body.insert("mgnMode".to_string(), self.config.margin_mode.to_string());
-        body.insert("posSide".to_string(), self.config.position_side.to_string());
+        body.insert("mgnMode".to_string(), OkexMarginMode::Cross.to_string());
+        body.insert("posSide".to_string(), OkexPositionSide::Net.to_string());
         body.insert("ccy".to_string(), ccy);
         body.insert("autoCxl".to_string(), auto_cxl.to_string());
         let request_body = serde_json::to_string(&body)?;

@@ -146,7 +146,4 @@ pub struct OkexClientConfig {
     pub secret_key: String,
     pub simulated: bool,
     pub position_mode: OkexPositionMode,
-    pub position_side: OkexPositionSide,
-    pub order_type: OkexOrderType,
-    pub margin_mode: OkexMarginMode,
 }
