@@ -12,6 +12,8 @@ async fn configured_okex_client() -> anyhow::Result<OkexClient> {
     let simulated = false;
     let position_mode = OkexPositionMode::Net;
     let position_side = OkexPositionSide::Net;
+    let order_type = OkexOrderType::Market;
+    let margin_mode = OkexMarginMode::Cross;
 
     let client = OkexClient::create(OkexClientConfig {
         api_key,
@@ -20,6 +22,8 @@ async fn configured_okex_client() -> anyhow::Result<OkexClient> {
         simulated,
         position_mode,
         position_side,
+        order_type,
+        margin_mode,
     })
     .await?;
 
@@ -33,6 +37,8 @@ async fn demo_okex_client() -> anyhow::Result<Option<OkexClient>> {
     let simulated = true;
     let position_mode = OkexPositionMode::Net;
     let position_side = OkexPositionSide::Net;
+    let order_type = OkexOrderType::Market;
+    let margin_mode = OkexMarginMode::Cross;
 
     if let (Ok(api_key), Ok(passphrase), Ok(secret_key)) = (api_key, passphrase, secret_key) {
         let client = OkexClient::create(OkexClientConfig {
@@ -42,6 +48,8 @@ async fn demo_okex_client() -> anyhow::Result<Option<OkexClient>> {
             simulated,
             position_mode,
             position_side,
+            order_type,
+            margin_mode,
         })
         .await?;
 
@@ -80,6 +88,8 @@ async fn client_is_missing_header() -> anyhow::Result<()> {
         simulated: true,
         position_mode: OkexPositionMode::Net,
         position_side: OkexPositionSide::Net,
+        order_type: OkexOrderType::Market,
+        margin_mode: OkexMarginMode::Cross,
     })
     .await;
 
