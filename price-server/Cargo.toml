@@ -20,7 +20,7 @@ tonic = "0.8"
 tokio = "1.20.1"
 futures = "0.3.23"
 thiserror = "1.0.31"
-serde = "1.0.143"
+serde = "1.0.144"
 rust_decimal = "1.25.0"
 tracing = "0.1.36"
 opentelemetry = { version = "0.17.0", features = ["trace"] }
@@ -34,5 +34,5 @@ tonic-build = { version = "0.8", features = ["prost"] }
 
 [dev-dependencies]
 anyhow = "1.0.62"
-serde = "1.0.143"
+serde = "1.0.144"
 serde_json = "1.0.82"
