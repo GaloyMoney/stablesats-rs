@@ -147,4 +147,6 @@ pub struct OkexClientConfig {
     pub simulated: bool,
     pub position_mode: OkexPositionMode,
     pub position_side: OkexPositionSide,
+    pub order_type: OkexOrderType,
+    pub margin_mode: OkexMarginMode,
 }
