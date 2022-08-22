@@ -12,6 +12,6 @@ pub enum OkexClientError {
     UnexpectedResponse { msg: String, code: String },
     #[error("OkexClientError: {0}")]
     DecimalConversion(#[from] rust_decimal::Error),
-    #[error("OkexClientError: {code:?} - {msg:?}")]
-    PositionMode { msg: String, code: String },
+    #[error("OkexClientError: {0}")]
+    MisconfiguredAccount(String),
 }

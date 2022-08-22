@@ -15,7 +15,7 @@ async fn configured_okex_client() -> anyhow::Result<OkexClient> {
     let order_type = OkexOrderType::Market;
     let margin_mode = OkexMarginMode::Cross;
 
-    let client = OkexClient::create(OkexClientConfig {
+    let client = OkexClient::new(OkexClientConfig {
         api_key,
         passphrase,
         secret_key,
@@ -41,7 +41,7 @@ async fn demo_okex_client() -> anyhow::Result<Option<OkexClient>> {
     let margin_mode = OkexMarginMode::Cross;
 
     if let (Ok(api_key), Ok(passphrase), Ok(secret_key)) = (api_key, passphrase, secret_key) {
-        let client = OkexClient::create(OkexClientConfig {
+        let client = OkexClient::new(OkexClientConfig {
             api_key,
             passphrase,
             secret_key,
@@ -79,7 +79,7 @@ async fn get_deposit_address_data() -> anyhow::Result<()> {
 
 #[tokio::test]
 async fn client_is_missing_header() -> anyhow::Result<()> {
-    let client = OkexClient::create(OkexClientConfig {
+    let client = OkexClient::new(OkexClientConfig {
         api_key: "".to_string(),
         passphrase: "".to_string(),
         secret_key: "".to_string(),

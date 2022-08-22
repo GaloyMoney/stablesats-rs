@@ -34,16 +34,12 @@ pub struct OkexClient {
 }
 
 impl OkexClient {
-    fn new(config: OkexClientConfig) -> Self {
-        Self {
+    pub async fn new(config: OkexClientConfig) -> Result<Self, OkexClientError> {
+        // 1. Get account configuration
+        let client = Self {
             client: ReqwestClient::new(),
             config,
-        }
-    }
-
-    pub async fn create(config: OkexClientConfig) -> Result<Self, OkexClientError> {
-        // 1. Get account configuration
-        let client = Self::new(config);
+        };
         let path = "/api/v5/account/config";
         let config_url = Self::url_for_path(path);
         let headers = client.get_request_headers(path)?;
@@ -62,10 +58,10 @@ impl OkexClient {
         if config_data.pos_mode == *"net_mode" {
             return Ok(client);
         }
-        Err(OkexClientError::PositionMode {
-            msg: format!("Expected `net_mode`, got `{}`", config_data.pos_mode),
-            code: "0".to_string(),
-        })
+        Err(OkexClientError::MisconfiguredAccount(format!(
+            "Expected `net_mode`, got `{}`",
+            config_data.pos_mode
+        )))
     }
 
     pub async fn rate_limit_client(&self, key: &'static str) -> &ReqwestClient {
