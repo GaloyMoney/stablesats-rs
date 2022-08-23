@@ -51,6 +51,8 @@ async fn price_app() -> anyhow::Result<()> {
         .publish(OkexBtcUsdSwapPricePayload(payload.clone()))
         .await?;
     stream.next().await;
+    tokio::time::sleep(std::time::Duration::from_millis(100)).await;
+
     let err = app
         .get_cents_from_sats_for_immediate_buy(Sats::from_major(100_000_000))
         .await;
@@ -64,6 +66,7 @@ async fn price_app() -> anyhow::Result<()> {
         .publish(OkexBtcUsdSwapPricePayload(payload))
         .await?;
     stream.next().await;
+    tokio::time::sleep(std::time::Duration::from_millis(100)).await;
 
     let cents = app
         .get_cents_from_sats_for_immediate_buy(Sats::from_major(100_000_000))
