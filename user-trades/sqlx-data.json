@@ -44,130 +44,6 @@
     },
     "query": "INSERT INTO user_trades (uuid, buy_unit, buy_amount, sell_unit, sell_amount) VALUES ($1, $2, $3, $4, $5) RETURNING idx"
   },
-  "27702793a9046cc0abd9157698cb260292eabe86d667d703af5cf52439a21ca9": {
-    "describe": {
-      "columns": [
-        {
-          "name": "unit: _",
-          "ordinal": 0,
-          "type_info": {
-            "Custom": {
-              "kind": {
-                "Enum": [
-                  "sats",
-                  "synth_cents"
-                ]
-              },
-              "name": "user_trade_unit"
-            }
-          }
-        },
-        {
-          "name": "current_balance",
-          "ordinal": 1,
-          "type_info": "Numeric"
-        },
-        {
-          "name": "last_trade_idx",
-          "ordinal": 2,
-          "type_info": "Int4"
-        }
-      ],
-      "nullable": [
-        false,
-        false,
-        true
-      ],
-      "parameters": {
-        "Left": []
-      }
-    },
-    "query": "SELECT unit as \"unit: _\", current_balance, last_trade_idx FROM user_trade_balances FOR UPDATE"
-  },
-  "2fe2d3b6d0a02794059cb16d14bf411a5a836d1c0179e869fce61066d497859d": {
-    "describe": {
-      "columns": [
-        {
-          "name": "max",
-          "ordinal": 0,
-          "type_info": "Int4"
-        },
-        {
-          "name": "unit: _",
-          "ordinal": 1,
-          "type_info": {
-            "Custom": {
-              "kind": {
-                "Enum": [
-                  "sats",
-                  "synth_cents"
-                ]
-              },
-              "name": "user_trade_unit"
-            }
-          }
-        },
-        {
-          "name": "sum",
-          "ordinal": 2,
-          "type_info": "Numeric"
-        }
-      ],
-      "nullable": [
-        null,
-        false,
-        null
-      ],
-      "parameters": {
-        "Left": [
-          "Int4"
-        ]
-      }
-    },
-    "query": "SELECT MAX(idx), sell_unit as \"unit: _\", SUM(sell_amount) FROM user_trades WHERE idx > $1 GROUP BY sell_unit"
-  },
-  "31b5f2ea7ffd150454c028ddf66e47cfe64141d127b770de709ae76099a529b1": {
-    "describe": {
-      "columns": [
-        {
-          "name": "max",
-          "ordinal": 0,
-          "type_info": "Int4"
-        },
-        {
-          "name": "unit: _",
-          "ordinal": 1,
-          "type_info": {
-            "Custom": {
-              "kind": {
-                "Enum": [
-                  "sats",
-                  "synth_cents"
-                ]
-              },
-              "name": "user_trade_unit"
-            }
-          }
-        },
-        {
-          "name": "sum",
-          "ordinal": 2,
-          "type_info": "Numeric"
-        }
-      ],
-      "nullable": [
-        null,
-        false,
-        null
-      ],
-      "parameters": {
-        "Left": [
-          "Int4"
-        ]
-      }
-    },
-    "query": "SELECT MAX(idx), buy_unit as \"unit: _\", SUM(buy_amount) FROM user_trades WHERE idx > $1 GROUP BY buy_unit"
-  },
   "4c55cf33910332998f88deed9a08f8a1bfe8d371e45a5894e18e5c1893789ec4": {
     "describe": {
       "columns": [],
@@ -231,5 +107,65 @@
       }
     },
     "query": "SELECT unit as \"unit: _\", current_balance, last_trade_idx FROM user_trade_balances"
+  },
+  "c198a77cbfdbd8c53702b6e24850a657cca2fd92170f5d650c6e585e412e5b3a": {
+    "describe": {
+      "columns": [
+        {
+          "name": "last_trade_idx",
+          "ordinal": 0,
+          "type_info": "Int4"
+        }
+      ],
+      "nullable": [
+        true
+      ],
+      "parameters": {
+        "Left": []
+      }
+    },
+    "query": "SELECT last_trade_idx FROM user_trade_balances FOR UPDATE"
+  },
+  "d53779f1c1f6b66bfdc428b04a70201f344ab402278a2e017c931eb55e8a7d7f": {
+    "describe": {
+      "columns": [
+        {
+          "name": "unit: _",
+          "ordinal": 0,
+          "type_info": {
+            "Custom": {
+              "kind": {
+                "Enum": [
+                  "sats",
+                  "synth_cents"
+                ]
+              },
+              "name": "user_trade_unit"
+            }
+          }
+        },
+        {
+          "name": "new_balance",
+          "ordinal": 1,
+          "type_info": "Numeric"
+        },
+        {
+          "name": "new_latest_idx",
+          "ordinal": 2,
+          "type_info": "Int4"
+        }
+      ],
+      "nullable": [
+        false,
+        null,
+        null
+      ],
+      "parameters": {
+        "Left": [
+          "Int4"
+        ]
+      }
+    },
+    "query": " WITH buy_amounts AS (\n   SELECT MAX(idx) as max_buy, buy_unit, SUM(buy_amount) AS to_sub FROM user_trades WHERE idx > $1 GROUP BY buy_unit\n ),\n sell_amounts AS (\n   SELECT MAX(idx) as max_sell, sell_unit, SUM(sell_amount) AS to_add FROM user_trades WHERE idx > $1 GROUP BY sell_unit\n )\nSELECT\n  unit AS \"unit: _\",\n  current_balance + COALESCE(to_add, 0) - COALESCE(to_sub, 0) AS new_balance,\n  MAX(GREATEST(max_buy, max_sell)) OVER () AS new_latest_idx\nFROM user_trade_balances\nLEFT JOIN buy_amounts ON unit=buy_unit\nLEFT JOIN sell_amounts ON unit=sell_unit;\n"
   }
 }
