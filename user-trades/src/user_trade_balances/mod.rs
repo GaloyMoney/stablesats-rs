@@ -18,10 +18,10 @@ pub struct UserTradeBalanceSummary {
     pub last_trade_idx: Option<i32>,
 }
 
-pub struct UserTradeSum {
-    max: Option<i32>,
+pub struct NewBalanceResult {
     unit: UserTradeUnit,
-    sum: Option<Decimal>,
+    new_balance: Option<Decimal>,
+    new_latest_idx: Option<i32>,
 }
 
 #[derive(Clone)]
@@ -48,57 +48,32 @@ impl UserTradeBalances {
         let mut tx = self.pool.begin().await?;
         tx.execute("SET TRANSACTION ISOLATION LEVEL SERIALIZABLE;")
             .await?;
-        let balance_result = sqlx::query_as!(UserTradeBalanceSummary, r#"SELECT unit as "unit: _", current_balance, last_trade_idx FROM user_trade_balances FOR UPDATE"#).fetch_all(&mut tx).await?;
-        let mut last_tx_idx = 0;
-        let mut balances: HashMap<UserTradeUnit, Decimal> = balance_result
-            .into_iter()
-            .map(|balance| {
-                if let Some(last_idx) = balance.last_trade_idx {
-                    last_tx_idx = last_idx
-                }
-                (balance.unit, balance.current_balance)
-            })
-            .collect();
+        let balance_result =
+            sqlx::query!(r#"SELECT last_trade_idx FROM user_trade_balances FOR UPDATE"#)
+                .fetch_all(&mut tx)
+                .await?;
 
-        let buy_sum = sqlx::query_as!(UserTradeSum, r#"SELECT MAX(idx), buy_unit as "unit: _", SUM(buy_amount) FROM user_trades WHERE idx > $1 GROUP BY buy_unit"#, last_tx_idx)
-            .fetch_all(&mut tx)
-            .await?;
-        let mut latest_tx_idx = last_tx_idx;
-        buy_sum
+        let last_tx_idx = balance_result
             .into_iter()
-            .for_each(|UserTradeSum { max, unit, sum }| {
-                if let (Some(mut balance), Some(max), Some(sum)) =
-                    (balances.get_mut(&unit), max, sum)
-                {
-                    balance -= sum;
-                    if max > latest_tx_idx {
-                        latest_tx_idx = max;
-                    }
-                }
-            });
-        let sell_sum = sqlx::query_as!(UserTradeSum, r#"SELECT MAX(idx), sell_unit as "unit: _", SUM(sell_amount) FROM user_trades WHERE idx > $1 GROUP BY sell_unit"#, last_tx_idx)
-            .fetch_all(&mut tx)
-            .await?;
-        sell_sum
-            .into_iter()
-            .for_each(|UserTradeSum { max, unit, sum }| {
-                if let (Some(mut balance), Some(max), Some(sum)) =
-                    (balances.get_mut(&unit), max, sum)
-                {
-                    balance += sum;
-                    if max > latest_tx_idx {
-                        latest_tx_idx = max;
-                    }
-                }
-            });
+            .map(|res| res.last_trade_idx.unwrap_or(0))
+            .fold(0, |a, b| a.max(b));
 
-        if latest_tx_idx == last_tx_idx {
-            tx.rollback().await?;
-            return Ok(());
-        }
+        let new_balance_result = sqlx::query_file_as!(
+            NewBalanceResult,
+            "src/user_trade_balances/sql/new-balance.sql",
+            last_tx_idx
+        )
+        .fetch_all(&mut tx)
+        .await?;
 
-        for (unit, balance) in balances {
-            sqlx::query!("UPDATE user_trade_balances SET current_balance = $1, last_trade_idx = $2, updated_at = now() WHERE unit = $3", balance, latest_tx_idx, unit as UserTradeUnit)
+        for NewBalanceResult {
+            unit,
+            new_balance,
+            new_latest_idx,
+        } in new_balance_result
+        {
+            sqlx::query!("UPDATE user_trade_balances SET current_balance = $1, last_trade_idx = $2, updated_at = now() WHERE unit = $3",
+                         new_balance, new_latest_idx, unit as UserTradeUnit)
                 .execute(&mut tx)
                 .await?;
         }

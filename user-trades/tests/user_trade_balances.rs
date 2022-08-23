@@ -19,12 +19,16 @@ async fn user_trade_balances() -> anyhow::Result<()> {
     let original_balances = balances.fetch_all().await?;
 
     let trades = UserTrades::new(POOL.clone());
+
+    let sat_amount = dec!(1000);
+    let cent_amount = dec!(10);
+
     let trade = trades
         .persist_new(NewUserTrade::new(
             UserTradeUnit::SynthCents,
-            dec!(10),
+            cent_amount,
             UserTradeUnit::Sats,
-            dec!(1000),
+            sat_amount,
         ))
         .await?;
 
@@ -40,7 +44,7 @@ async fn user_trade_balances() -> anyhow::Result<()> {
 
     assert_eq!(new_sat_summary.last_trade_idx, Some(trade.idx));
     assert_eq!(
-        old_sat_summary.current_balance + dec!(1000),
+        old_sat_summary.current_balance + sat_amount,
         new_sat_summary.current_balance
     );
 
@@ -53,7 +57,7 @@ async fn user_trade_balances() -> anyhow::Result<()> {
 
     assert_eq!(new_cent_summary.last_trade_idx, Some(trade.idx));
     assert_eq!(
-        old_cent_summary.current_balance - dec!(10),
+        old_cent_summary.current_balance - cent_amount,
         new_cent_summary.current_balance
     );
 
