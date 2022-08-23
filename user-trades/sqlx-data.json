@@ -44,6 +44,48 @@
     },
     "query": "INSERT INTO user_trades (uuid, buy_unit, buy_amount, sell_unit, sell_amount) VALUES ($1, $2, $3, $4, $5) RETURNING idx"
   },
+  "1e0bc186412911fa6ab3b3de1bf9fb797215d2cec6ef024c0018562b0ac0c235": {
+    "describe": {
+      "columns": [
+        {
+          "name": "unit: _",
+          "ordinal": 0,
+          "type_info": {
+            "Custom": {
+              "kind": {
+                "Enum": [
+                  "sats",
+                  "synth_cents"
+                ]
+              },
+              "name": "user_trade_unit"
+            }
+          }
+        },
+        {
+          "name": "new_balance",
+          "ordinal": 1,
+          "type_info": "Numeric"
+        },
+        {
+          "name": "new_latest_idx",
+          "ordinal": 2,
+          "type_info": "Int4"
+        }
+      ],
+      "nullable": [
+        false,
+        null,
+        null
+      ],
+      "parameters": {
+        "Left": [
+          "Int4"
+        ]
+      }
+    },
+    "query": " WITH amounts AS (\n   SELECT MAX(idx) as latest_idx, buy_unit, SUM(buy_amount) AS to_sub, sell_unit, SUM(sell_amount) AS to_add \n   FROM user_trades\n   WHERE idx > $1\n   GROUP BY GROUPING SETS ((buy_unit), (sell_unit))\n )\nSELECT\n  unit AS \"unit: _\",\n  current_balance + COALESCE(sell_amounts.to_add, 0) - COALESCE(buy_amounts.to_sub, 0) AS new_balance,\n  MAX(GREATEST(sell_amounts.latest_idx, buy_amounts.latest_idx)) OVER () AS new_latest_idx\nFROM user_trade_balances\nLEFT JOIN amounts buy_amounts ON unit=buy_amounts.buy_unit\nLEFT JOIN amounts sell_amounts ON unit=sell_amounts.sell_unit;\n"
+  },
   "4c55cf33910332998f88deed9a08f8a1bfe8d371e45a5894e18e5c1893789ec4": {
     "describe": {
       "columns": [],
@@ -125,47 +167,5 @@
       }
     },
     "query": "SELECT last_trade_idx FROM user_trade_balances FOR UPDATE"
-  },
-  "d53779f1c1f6b66bfdc428b04a70201f344ab402278a2e017c931eb55e8a7d7f": {
-    "describe": {
-      "columns": [
-        {
-          "name": "unit: _",
-          "ordinal": 0,
-          "type_info": {
-            "Custom": {
-              "kind": {
-                "Enum": [
-                  "sats",
-                  "synth_cents"
-                ]
-              },
-              "name": "user_trade_unit"
-            }
-          }
-        },
-        {
-          "name": "new_balance",
-          "ordinal": 1,
-          "type_info": "Numeric"
-        },
-        {
-          "name": "new_latest_idx",
-          "ordinal": 2,
-          "type_info": "Int4"
-        }
-      ],
-      "nullable": [
-        false,
-        null,
-        null
-      ],
-      "parameters": {
-        "Left": [
-          "Int4"
-        ]
-      }
-    },
-    "query": " WITH buy_amounts AS (\n   SELECT MAX(idx) as max_buy, buy_unit, SUM(buy_amount) AS to_sub FROM user_trades WHERE idx > $1 GROUP BY buy_unit\n ),\n sell_amounts AS (\n   SELECT MAX(idx) as max_sell, sell_unit, SUM(sell_amount) AS to_add FROM user_trades WHERE idx > $1 GROUP BY sell_unit\n )\nSELECT\n  unit AS \"unit: _\",\n  current_balance + COALESCE(to_add, 0) - COALESCE(to_sub, 0) AS new_balance,\n  MAX(GREATEST(max_buy, max_sell)) OVER () AS new_latest_idx\nFROM user_trade_balances\nLEFT JOIN buy_amounts ON unit=buy_unit\nLEFT JOIN sell_amounts ON unit=sell_unit;\n"
   }
 }
