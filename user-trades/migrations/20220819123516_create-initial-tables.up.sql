@@ -1,12 +1,18 @@
-CREATE TYPE user_trade_unit AS ENUM ('sats', 'synth_cents');
+CREATE TABLE user_trade_units (
+    id SERIAL PRIMARY KEY,
+    name VARCHAR(20) UNIQUE NOT NULL,
+    created_at TIMESTAMP NOT NULL DEFAULT NOW()
+);
+
+INSERT INTO user_trade_units (name) VALUES ('satoshi'), ('synthetic_cent');
 
 CREATE TABLE user_trades (
   idx SERIAL PRIMARY KEY,
   uuid UUID UNIQUE NOT NULL,
   buy_amount NUMERIC NOT NULL,
-  buy_unit user_trade_unit NOT NULL,
+  buy_unit_id INTEGER NOT NULL REFERENCES user_trade_units(id),
   sell_amount NUMERIC NOT NULL,
-  sell_unit user_trade_unit NOT NULL,
+  sell_unit_id INTEGER NOT NULL REFERENCES user_trade_units(id),
   created_at TIMESTAMP WITH time zone NOT NULL DEFAULT now()
 );
 
@@ -21,11 +27,11 @@ CREATE TRIGGER user_trades AFTER INSERT ON user_trades
   FOR EACH STATEMENT EXECUTE FUNCTION notify_user_trades();
 
 CREATE TABLE user_trade_balances (
-  unit user_trade_unit PRIMARY KEY,
+  unit_id INTEGER PRIMARY KEY REFERENCES user_trade_units(id),
   current_balance NUMERIC NOT NULL,
   last_trade_idx INTEGER REFERENCES user_trades (idx),
   updated_at TIMESTAMP WITH time zone NOT NULL DEFAULT now()
 );
 
-INSERT INTO user_trade_balances VALUES ('sats', 0, NULL, now());
-INSERT INTO user_trade_balances VALUES ('synth_cents', 0, NULL, now());
+INSERT INTO user_trade_balances (unit_id, current_balance, last_trade_idx)
+  SELECT id, 0, NULL FROM user_trade_units;

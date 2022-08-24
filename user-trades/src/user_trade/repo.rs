@@ -1,15 +1,16 @@
 use sqlx::PgPool;
 
 use super::entity::*;
-use super::error::UserTradesError;
+use crate::{error::UserTradesError, user_trade_unit::*};
 
 pub struct UserTrades {
     pool: PgPool,
+    units: UserTradeUnits,
 }
 
 impl UserTrades {
-    pub fn new(pool: PgPool) -> Self {
-        Self { pool }
+    pub fn new(pool: PgPool, units: UserTradeUnits) -> Self {
+        Self { pool, units }
     }
 
     pub async fn persist_new(
@@ -23,11 +24,11 @@ impl UserTrades {
         }: NewUserTrade,
     ) -> Result<UserTrade, UserTradesError> {
         let res = sqlx::query!(
-            "INSERT INTO user_trades (uuid, buy_unit, buy_amount, sell_unit, sell_amount) VALUES ($1, $2, $3, $4, $5) RETURNING idx",
+            "INSERT INTO user_trades (uuid, buy_unit_id, buy_amount, sell_unit_id, sell_amount) VALUES ($1, $2, $3, $4, $5) RETURNING idx",
             uuid::Uuid::from(id),
-            buy_unit as UserTradeUnit,
+            self.units.get_id(buy_unit),
             &buy_amount,
-            sell_unit as UserTradeUnit,
+            self.units.get_id(sell_unit),
             &sell_amount,
         )
         .fetch_one(&self.pool)

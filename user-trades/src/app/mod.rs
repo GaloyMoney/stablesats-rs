@@ -1,12 +1,10 @@
 mod config;
-mod error;
 
 use rust_decimal_macros::dec;
 use std::time::Duration;
 
-use super::{user_trade::*, user_trade_balances::*};
+use crate::{error::*, user_trade::*, user_trade_balances::*, user_trade_unit::*};
 pub use config::*;
-pub use error::UserTradesAppError;
 use shared::{payload::SynthUsdExposurePayload, pubsub::*};
 
 pub struct UserTradesApp {
@@ -21,15 +19,16 @@ impl UserTradesApp {
             publish_frequency,
         }: UserTradesAppConfig,
         pubsub_cfg: PubSubConfig,
-    ) -> Result<Self, UserTradesAppError> {
+    ) -> Result<Self, UserTradesError> {
         let pool = sqlx::PgPool::connect(&pg_con).await?;
         if migrate_on_start {
             sqlx::migrate!().run(&pool).await?;
         }
-        let user_trade_balances = UserTradeBalances::new(pool.clone()).await?;
+        let units = UserTradeUnits::load(&pool).await?;
+        let user_trade_balances = UserTradeBalances::new(pool.clone(), units.clone()).await?;
         Self::publish_exposure(user_trade_balances, pubsub_cfg, publish_frequency).await?;
         Ok(Self {
-            _user_trades: UserTrades::new(pool),
+            _user_trades: UserTrades::new(pool, units),
         })
     }
 
@@ -37,7 +36,7 @@ impl UserTradesApp {
         user_trade_balances: UserTradeBalances,
         pubsub_cfg: PubSubConfig,
         publish_frequency: Duration,
-    ) -> Result<(), UserTradesAppError> {
+    ) -> Result<(), UserTradesError> {
         let pubsub = Publisher::new(pubsub_cfg).await?;
         tokio::spawn(async move {
             loop {
@@ -45,7 +44,7 @@ impl UserTradesApp {
                     let _ = pubsub
                         .publish(SynthUsdExposurePayload {
                             exposure: balances
-                                .get(&UserTradeUnit::SynthCents)
+                                .get(&UserTradeUnit::SynthCent)
                                 .expect("SynthCents should always be present")
                                 .current_balance
                                 * dec!(-1),

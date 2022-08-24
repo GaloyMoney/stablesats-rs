@@ -1,13 +1,8 @@
 use rust_decimal::Decimal;
 
-shared::entity_id! { user_trade_id: UserTradeId }
+use crate::user_trade_unit::UserTradeUnit;
 
-#[derive(Clone, PartialEq, Eq, Hash, Copy, sqlx::Type)]
-#[sqlx(type_name = "user_trade_unit", rename_all = "snake_case")]
-pub enum UserTradeUnit {
-    Sats,
-    SynthCents,
-}
+shared::entity_id! { user_trade_id: UserTradeId }
 
 pub struct NewUserTrade {
     pub(super) id: UserTradeId,
