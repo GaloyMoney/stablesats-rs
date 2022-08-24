@@ -1,0 +1,16 @@
+[package]
+name = "galoy-wallet"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+graphql_client = {version = "0.11.0", features = ["reqwest"]}
+reqwest = {version = "0.11.11", features = ["json"]}
+serde = "1.0.144"
+thiserror = "1.0.32"
+tokio = {version = "1.20.1", features = ["full"]}
+
+[dev-dependencies]
+anyhow = "1.0.62"

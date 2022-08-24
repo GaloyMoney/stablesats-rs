@@ -1,0 +1,23 @@
+type Query {
+  btcPrice: Price
+}
+
+"""
+Non-fractional signed whole numeric value between -(2^53) + 1 and 2^53 - 1
+"""
+scalar SafeInt
+
+"""
+Price amount expressed in base/offset. To calculate, use: `base / 10^offset`
+"""
+type Price {
+  base: SafeInt!
+  currencyUnit: ExchangeCurrencyUnit!
+  formattedAmount: String!
+  offset: Int!
+}
+
+enum ExchangeCurrencyUnit {
+  BTCSAT
+  USDCENT
+}
