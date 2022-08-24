@@ -7,6 +7,11 @@ Non-fractional signed whole numeric value between -(2^53) + 1 and 2^53 - 1
 """
 scalar SafeInt
 
+enum ExchangeCurrencyUnit {
+  BTCSAT
+  USDCENT
+}
+
 """
 Price amount expressed in base/offset. To calculate, use: `base / 10^offset`
 """
@@ -17,7 +22,25 @@ type Price {
   offset: Int!
 }
 
-enum ExchangeCurrencyUnit {
-  BTCSAT
-  USDCENT
+"""
+Phone number which includes country code
+"""
+scalar Phone
+
+type Mutation {
+  userRequestAuthCode(input: UserRequestAuthCodeInput!): SuccessPayload!
+}
+
+input UserRequestAuthCodeInput {
+  phone: Phone!
+}
+
+interface Error {
+  message: String!
+  path: [String]
+}
+
+type SuccessPayload {
+  errors: [Error!]!
+  success: Boolean
 }
