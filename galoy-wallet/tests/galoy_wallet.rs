@@ -8,8 +8,8 @@ async fn get_btc_price() -> anyhow::Result<()> {
     let phone_number = env::var("WALLET_PHONE_NUMBER").expect("WALLET_PHONE_NUMBER not set");
     let config = GaloyClientConfig { api, phone_number };
 
-    let wallet = GaloyClient::new(config);
-    let price = wallet.btc_price().await?;
+    let wallet_client = GaloyClient::new(config);
+    let price = wallet_client.btc_price().await?;
 
     println!("{:#?}", price);
 
@@ -22,15 +22,15 @@ async fn get_btc_price() -> anyhow::Result<()> {
     Ok(())
 }
 
-/// Get an authentication code from the Galoy Graphql API
+/// Test getting an authentication code from the Galoy Graphql API
 #[tokio::test]
 async fn authentication_code() -> anyhow::Result<()> {
     let api = env::var("GALOY_GRAPH_URI").expect("GALOY_GRAPH_URI not set");
     let phone_number = env::var("WALLET_PHONE_NUMBER").expect("WALLET_PHONE_NUMBER not set");
     let config = GaloyClientConfig { api, phone_number };
 
-    let wallet = GaloyClient::new(config);
-    let auth_code_response = wallet.authentication_code().await?;
+    let wallet_client = GaloyClient::new(config);
+    let auth_code_response = wallet_client.authentication_code().await?;
 
     assert_eq!(
         auth_code_response,
@@ -41,6 +41,39 @@ async fn authentication_code() -> anyhow::Result<()> {
             }]
         }
     );
+
+    Ok(())
+}
+
+/// Test login to account
+#[tokio::test]
+async fn login() -> anyhow::Result<()> {
+    let api = env::var("GALOY_GRAPH_URI").expect("GALOY_GRAPH_URI not set");
+    let phone_number = env::var("WALLET_PHONE_NUMBER").expect("WALLET_PHONE_NUMBER not set");
+    let config = GaloyClientConfig { api, phone_number };
+
+    let wallet_client = GaloyClient::new(config);
+
+    let auth_code = "123456".to_string();
+    let login_response = wallet_client.login(auth_code).await?;
+
+    let auth_token = login_response.auth_token.expect("Empty auth token");
+
+    assert_eq!(auth_token.len(), 50);
+
+    Ok(())
+}
+
+/// Test getting the public wallet account
+#[tokio::test]
+async fn public_wallet() -> anyhow::Result<()> {
+    let api = env::var("GALOY_GRAPH_URI").expect("GALOY_GRAPH_URI not set");
+    let phone_number = env::var("WALLET_PHONE_NUMBER").expect("WALLET_PHONE_NUMBER not set");
+    let config = GaloyClientConfig { api, phone_number };
+
+    let wallet_client = GaloyClient::new(config);
+    let test_username = "test".to_string();
+    let _public_wallet = wallet_client.public_wallet(test_username).await?;
 
     Ok(())
 }

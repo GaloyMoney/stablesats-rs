@@ -1,5 +1,14 @@
 type Query {
   btcPrice: Price
+  accountDefaultWallet(
+    username: Username!
+    walletCurrency: WalletCurrency
+  ): PublicWallet!
+}
+
+type Mutation {
+  userRequestAuthCode(input: UserRequestAuthCodeInput!): SuccessPayload!
+  userLogin(input: UserLoginInput!): AuthTokenPayload!
 }
 
 """
@@ -27,10 +36,6 @@ Phone number which includes country code
 """
 scalar Phone
 
-type Mutation {
-  userRequestAuthCode(input: UserRequestAuthCodeInput!): SuccessPayload!
-}
-
 input UserRequestAuthCodeInput {
   phone: Phone!
 }
@@ -43,4 +48,42 @@ interface Error {
 type SuccessPayload {
   errors: [Error!]!
   success: Boolean
+}
+
+"""
+Unique identifier of a user
+"""
+scalar Username
+
+enum WalletCurrency {
+  BTC
+  USD
+}
+
+"""
+A public view of a generic wallet which stores value in one of our supported currencies.
+"""
+type PublicWallet {
+  id: ID!
+  walletCurrency: WalletCurrency!
+}
+
+"""
+An authentication code valid for a single use
+"""
+scalar OneTimeAuthCode
+
+input UserLoginInput {
+  code: OneTimeAuthCode!
+  phone: Phone!
+}
+
+"""
+An JWT-formatted authentication token
+"""
+scalar AuthToken
+
+type AuthTokenPayload {
+  authToken: AuthToken
+  errors: [Error!]!
 }
