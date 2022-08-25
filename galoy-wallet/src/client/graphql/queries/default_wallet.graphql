@@ -1,6 +1,0 @@
-query DefaultWallet($username: Username!, $walletCurrency: WalletCurrency) {
-  accountDefaultWallet(username: $username, walletCurrency: $walletCurrency) {
-    id
-    walletCurrency
-  }
-}

@@ -1,15 +1,18 @@
 mod error;
 mod queries;
 
-use graphql_client::reqwest::post_graphql;
-use reqwest::Client as ReqwestClient;
+use graphql_client::{reqwest::post_graphql, GraphQLQuery, Response};
+use reqwest::{
+    header::{HeaderMap, HeaderValue, AUTHORIZATION},
+    Client as ReqwestClient,
+};
 
 use error::*;
 pub use queries::*;
 
 use auth_code::*;
 use btc_price::*;
-use default_wallet::*;
+use transactions_list::*;
 use user_login::*;
 
 #[derive(Debug, Clone)]
@@ -21,7 +24,9 @@ pub struct GaloyClient {
 #[derive(Debug, Clone)]
 pub struct GaloyClientConfig {
     pub api: String,
+    pub code: String,
     pub phone_number: String,
+    pub jwt: String,
 }
 
 impl GaloyClient {
@@ -59,9 +64,7 @@ impl GaloyClient {
         };
         let response =
             post_graphql::<AuthCode, _>(&self.client, &self.config.api, phone_number).await?;
-        println!("{:?}", response);
         let response_data = response.data;
-        println!("{:?}", response_data);
 
         if let Some(response_data) = response_data {
             let result = response_data.user_request_auth_code;
@@ -73,10 +76,10 @@ impl GaloyClient {
         ))
     }
 
-    pub async fn login(&self, auth_code: String) -> Result<UserLoginUserLogin, GaloyWalletError> {
+    pub async fn login(&mut self) -> Result<UserLoginUserLogin, GaloyWalletError> {
         let variables = user_login::Variables {
             input: user_login::UserLoginInput {
-                code: auth_code,
+                code: self.config.code.clone(),
                 phone: self.config.phone_number.clone(),
             },
         };
@@ -84,11 +87,16 @@ impl GaloyClient {
         let response =
             post_graphql::<UserLogin, _>(&self.client, &self.config.api, variables).await?;
 
-        println!("{:#?}", response);
         let response_data = response.data;
 
         if let Some(response_data) = response_data {
             let result = response_data.user_login;
+
+            // Update config JWT
+            self.config.jwt = match result.clone().auth_token {
+                Some(jwt) => jwt,
+                None => "".to_string(),
+            };
 
             return Ok(result);
         }
@@ -97,28 +105,85 @@ impl GaloyClient {
         ))
     }
 
-    pub async fn public_wallet(
-        &self,
-        username: String,
-    ) -> Result<DefaultWalletAccountDefaultWallet, GaloyWalletError> {
-        let input_variables = default_wallet::Variables {
-            username,
-            wallet_currency: Some(WalletCurrency::BTC),
+    pub async fn transactions_list(
+        &mut self,
+        last_transaction_cursor: Option<String>,
+    ) -> Result<Option<Vec<TransactionsListMeDefaultAccountTransactionsEdges>>, GaloyWalletError>
+    {
+        let header_value = format!("Bearer {}", self.config.jwt);
+        let mut header = HeaderMap::new();
+        header.insert(AUTHORIZATION, HeaderValue::from_str(header_value.as_str())?);
+
+        let variables = transactions_list::Variables {
+            last: None,
+            first: None,
+            before: None,
+            after: last_transaction_cursor,
         };
-        let response =
-            post_graphql::<DefaultWallet, _>(&self.client, &self.config.api, input_variables)
-                .await?;
 
-        println!("{:#?}", response);
-        let response_data = response.data;
+        let request_body = TransactionsList::build_query(variables);
+        let response = self
+            .client
+            .post(&self.config.api)
+            .headers(header)
+            .json(&request_body)
+            .send()
+            .await?;
 
-        if let Some(resp_data) = response_data {
-            let result = resp_data.account_default_wallet;
+        let response_body: Response<transactions_list::ResponseData> = response.json().await?;
+        let response_data = response_body.data;
 
-            return Ok(result);
-        }
-        Err(GaloyWalletError::UnknownResponse(
-            "Failed to parse response data".to_string(),
-        ))
+        let result = match response_data {
+            Some(data) => data,
+            None => return Ok(None),
+        };
+
+        let user = result.me;
+
+        let default_account = match user {
+            Some(data) => data.default_account,
+            None => return Ok(None),
+        };
+
+        let transactions = default_account.transactions;
+        let transactions_edges = match transactions {
+            Some(data) => data.edges,
+            None => return Ok(None),
+        };
+
+        Ok(transactions_edges)
+    }
+
+    pub async fn btc_transactions_list(
+        &self,
+        last_transaction_cursor: Option<String>,
+    ) -> Result<(), GaloyWalletError> {
+        // 1. Get BTC wallet id
+        // 2. Use retrieved wallet id to retrieve transactions
+        let header_value = format!("Bearer {}", self.config.jwt);
+        let mut header = HeaderMap::new();
+        header.insert(AUTHORIZATION, HeaderValue::from_str(header_value.as_str())?);
+
+        let variables = transactions_list::Variables {
+            last: None,
+            first: None,
+            before: None,
+            after: last_transaction_cursor,
+        };
+
+        let request_body = TransactionsList::build_query(variables);
+        let response = self
+            .client
+            .post(&self.config.api)
+            .headers(header)
+            .json(&request_body)
+            .send()
+            .await?;
+
+        let response_body: Response<transactions_list::ResponseData> = response.json().await?;
+        let response_data = response_body.data;
+        println!("{:#?}", response_data);
+
+        Ok(())
     }
 }

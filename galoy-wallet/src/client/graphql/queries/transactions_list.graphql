@@ -1,0 +1,53 @@
+query TransactionsList(
+  $first: Int
+  $last: Int
+  $before: String
+  $after: String
+) {
+  me {
+    defaultAccount {
+      __typename
+      defaultWalletId
+      csvTransactions(walletIds: defaultWalletId)
+      transactions(first: $first, last: $last, before: $before, after: $after) {
+        edges {
+          cursor
+          node {
+            createdAt
+            direction
+            id
+            initiationVia {
+              __typename
+            }
+            memo
+            settlementAmount
+            settlementCurrency
+            settlementFee
+            settlementPrice {
+              base
+              currencyUnit
+              formattedAmount
+              offset
+            }
+            settlementVia {
+              __typename
+            }
+            status
+          }
+        }
+        pageInfo {
+          endCursor
+          hasNextPage
+          hasPreviousPage
+          startCursor
+        }
+      }
+      wallets {
+        __typename
+        id
+        balance
+        walletCurrency
+      }
+    }
+  }
+}

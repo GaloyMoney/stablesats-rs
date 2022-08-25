@@ -1,10 +1,34 @@
 use galoy_wallet::*;
 use std::env;
 
-fn wallet_configuration() -> GaloyClientConfig {
-    let api = env::var("GALOY_GRAPHQL_URI").expect("GALOY_GRAPHQL_URI not set");
-    let phone_number = env::var("WALLET_PHONE_NUMBER").expect("WALLET_PHONE_NUMBER not set");
-    let config = GaloyClientConfig { api, phone_number };
+fn staging_wallet_configuration() -> GaloyClientConfig {
+    let api = env::var("GALOY_STAGING_GRAPHQL_URI").expect("GALOY_STAGING_GRAPHQL_URI not set");
+    let phone_number = env::var("STAGING_PHONE_NUMBER").expect("STAGING_PHONE_NUMBER not set");
+    let code = env::var("GALOY_STAGING_AUTH_CODE").expect("GALOY_STAGING_AUTH_CODE not set");
+    let jwt = "".to_string();
+
+    let config = GaloyClientConfig {
+        api,
+        phone_number,
+        code,
+        jwt,
+    };
+
+    config
+}
+
+fn dev_wallet_configuration() -> GaloyClientConfig {
+    let api = env::var("GALOY_DEV_GRAPHQL_URI").expect("GALOY_DEV_GRAPHQL_URI not set");
+    let phone_number = env::var("DEV_PHONE_NUMBER").expect("DEV_PHONE_NUMBER not set");
+    let code = env::var("GALOY_DEV_AUTH_CODE").expect("GALOY_DEV_AUTH_CODE not set");
+    let jwt = "".to_string();
+
+    let config = GaloyClientConfig {
+        api,
+        phone_number,
+        code,
+        jwt,
+    };
 
     config
 }
@@ -12,12 +36,10 @@ fn wallet_configuration() -> GaloyClientConfig {
 /// Test send an non-authenticated query to the Galoy Graphql API
 #[tokio::test]
 async fn get_btc_price() -> anyhow::Result<()> {
-    let config = wallet_configuration();
+    let config = dev_wallet_configuration();
 
     let wallet_client = GaloyClient::new(config);
     let price = wallet_client.btc_price().await?;
-
-    println!("{:#?}", price);
 
     assert_eq!(price.offset, 12);
     assert_eq!(
@@ -30,8 +52,9 @@ async fn get_btc_price() -> anyhow::Result<()> {
 
 /// Test getting an authentication code from the Galoy Graphql API
 #[tokio::test]
+#[ignore = "Need region-enabled/known phone service provider"]
 async fn authentication_code() -> anyhow::Result<()> {
-    let config = wallet_configuration();
+    let config = dev_wallet_configuration();
 
     let wallet_client = GaloyClient::new(config);
     let auth_code_response = wallet_client.authentication_code().await?;
@@ -40,9 +63,7 @@ async fn authentication_code() -> anyhow::Result<()> {
         auth_code_response,
         auth_code::AuthCodeUserRequestAuthCode {
             success: Some(true),
-            errors: vec![auth_code::AuthCodeUserRequestAuthCodeErrors {
-                message: "".to_string()
-            }]
+            errors: vec![]
         }
     );
 
@@ -52,28 +73,44 @@ async fn authentication_code() -> anyhow::Result<()> {
 /// Test login to account
 #[tokio::test]
 async fn login() -> anyhow::Result<()> {
-    let config = wallet_configuration();
+    let config = dev_wallet_configuration();
+    let mut wallet_client = GaloyClient::new(config);
 
-    let wallet_client = GaloyClient::new(config);
-
-    let auth_code = "123456".to_string();
-    let login_response = wallet_client.login(auth_code).await?;
-
+    let login_response = wallet_client.login().await?;
     let auth_token = login_response.auth_token.expect("Empty auth token");
 
-    assert_eq!(auth_token.len(), 50);
+    assert_eq!(auth_token.len(), 176);
 
     Ok(())
 }
 
-/// Test getting the public wallet account
+/// Test to get the transactions list of the default wallet
 #[tokio::test]
-async fn public_wallet() -> anyhow::Result<()> {
-    let config = wallet_configuration();
+async fn transactions_list() -> anyhow::Result<()> {
+    let config = staging_wallet_configuration();
+    let mut wallet_client = GaloyClient::new(config);
+    let _auth_token = wallet_client.login().await?;
 
-    let wallet_client = GaloyClient::new(config);
-    let test_username = "test".to_string();
-    let _public_wallet = wallet_client.public_wallet(test_username).await?;
+    let last_transaction_cursor = Some("YXJyYXljb25uZWN0aW9uOjQwNg==".to_string());
+    let transactions = wallet_client
+        .transactions_list(last_transaction_cursor)
+        .await?;
 
+    println!("{:#?}", transactions);
+    // assert_eq!(edges.len(), 10);
+    Ok(())
+}
+
+/// Test to get the btc transactions list of the  wallet
+#[tokio::test]
+async fn btc_transactions_list() -> anyhow::Result<()> {
+    let config = staging_wallet_configuration();
+    let mut wallet_client = GaloyClient::new(config);
+    let _auth_token = wallet_client.login().await?;
+
+    let btc_transactions = wallet_client.btc_transactions_list(None).await?;
+
+    println!("{:#?}", btc_transactions);
+    // assert_eq!(edges.len(), 10);
     Ok(())
 }
