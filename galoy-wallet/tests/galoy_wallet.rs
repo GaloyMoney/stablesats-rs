@@ -84,12 +84,35 @@ async fn login() -> anyhow::Result<()> {
     Ok(())
 }
 
+/// Test to retrieve the wallet IDs of the default wallets
+#[tokio::test]
+async fn wallets_ids() -> anyhow::Result<()> {
+    let config = staging_wallet_configuration();
+    let mut wallet_client = GaloyClient::new(config);
+    let _ = wallet_client.login().await?;
+
+    let wallets = wallet_client
+        .wallets()
+        .await?
+        .expect("Expected BTC/USD wallets, found none");
+
+    let (btc_wallet_id, usd_wallet_id) = (
+        wallets.btc_wallet.expect("No BTC wallet").id,
+        wallets.usd_wallet.expect("No USD wallet").id,
+    );
+
+    assert_eq!(btc_wallet_id.len(), 36);
+    assert_eq!(usd_wallet_id.len(), 36);
+
+    Ok(())
+}
+
 /// Test to get the transactions list of the default wallet
 #[tokio::test]
 async fn transactions_list() -> anyhow::Result<()> {
     let config = staging_wallet_configuration();
     let mut wallet_client = GaloyClient::new(config);
-    let _auth_token = wallet_client.login().await?;
+    let _ = wallet_client.login().await?;
 
     let last_transaction_cursor = Some("YXJyYXljb25uZWN0aW9uOjQwNg==".to_string());
     let transactions = wallet_client

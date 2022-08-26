@@ -39,3 +39,11 @@ type WalletId = String;
 type Timestamp = u64;
 type Memo = String;
 type SignedAmount = f64;
+
+#[derive(GraphQLQuery)]
+#[graphql(
+    schema_path = "src/client/graphql/schema.graphql",
+    query_path = "src/client/graphql/queries/wallets.graphql",
+    response_derives = "Debug, PartialEq, Clone"
+)]
+pub struct Wallets;

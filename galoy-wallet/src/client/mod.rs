@@ -15,6 +15,11 @@ use btc_price::*;
 use transactions_list::*;
 use user_login::*;
 
+pub struct GaloyDefaultWallets {
+    pub btc_wallet: Option<wallets::WalletsMeDefaultAccountWallets>,
+    pub usd_wallet: Option<wallets::WalletsMeDefaultAccountWallets>,
+}
+
 #[derive(Debug, Clone)]
 pub struct GaloyClient {
     client: ReqwestClient,
@@ -103,6 +108,51 @@ impl GaloyClient {
         Err(GaloyWalletError::UnknownResponse(
             "Failed to parse response data".to_string(),
         ))
+    }
+
+    pub async fn wallets(&self) -> Result<Option<GaloyDefaultWallets>, GaloyWalletError> {
+        let header_value = format!("Bearer {}", self.config.jwt);
+        let mut header = HeaderMap::new();
+        header.insert(AUTHORIZATION, HeaderValue::from_str(header_value.as_str())?);
+
+        let variables = wallets::Variables;
+        let request_body = Wallets::build_query(variables);
+        let response = self
+            .client
+            .post(&self.config.api)
+            .headers(header)
+            .json(&request_body)
+            .send()
+            .await?;
+
+        let response_body: Response<wallets::ResponseData> = response.json().await?;
+        let response_data = response_body.data;
+
+        let me = match response_data {
+            Some(data) => data.me,
+            None => return Ok(None),
+        };
+
+        let default_wallet = match me {
+            Some(me) => me.default_account,
+            None => return Ok(None),
+        };
+
+        let wallets = default_wallet.wallets;
+
+        let btc_wallet = wallets
+            .clone()
+            .into_iter()
+            .find(|wallet| wallet.wallet_currency == wallets::WalletCurrency::BTC);
+
+        let usd_wallet = wallets
+            .into_iter()
+            .find(|wallet| wallet.wallet_currency == wallets::WalletCurrency::USD);
+
+        Ok(Some(GaloyDefaultWallets {
+            btc_wallet,
+            usd_wallet,
+        }))
     }
 
     pub async fn transactions_list(
