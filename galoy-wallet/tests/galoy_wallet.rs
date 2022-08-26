@@ -1,4 +1,4 @@
-use galoy_wallet::*;
+use galoy_wallet::{transactions_list::TxStatus, *};
 use std::env;
 
 fn staging_wallet_configuration() -> GaloyClientConfig {
@@ -109,31 +109,57 @@ async fn wallets_ids() -> anyhow::Result<()> {
 
 /// Test to get the transactions list of the default wallet
 #[tokio::test]
-async fn transactions_list() -> anyhow::Result<()> {
+async fn btc_transactions_list() -> anyhow::Result<()> {
     let config = staging_wallet_configuration();
     let mut wallet_client = GaloyClient::new(config);
     let _ = wallet_client.login().await?;
 
-    let last_transaction_cursor = Some("YXJyYXljb25uZWN0aW9uOjQwNg==".to_string());
-    let transactions = wallet_client
-        .transactions_list(last_transaction_cursor)
+    let last_transaction_cursor = "5f88cbf56d87e9001ca7dab4".to_string();
+    let wallet_currency = transactions_list::WalletCurrency::BTC;
+
+    let btc_transactions = wallet_client
+        .transactions_list(last_transaction_cursor, wallet_currency)
         .await?;
 
-    println!("{:#?}", transactions);
-    // assert_eq!(edges.len(), 10);
+    let btc_transaction = &btc_transactions
+        .expect("Expected transactions, found none")
+        .edges
+        .expect("Expected edges, found none")[0];
+
+    assert_eq!(btc_transaction.node.status, TxStatus::SUCCESS);
+    assert_eq!(btc_transaction.node.settlement_amount, 17385.0);
+    assert_eq!(
+        btc_transaction.node.memo,
+        Some("memo Invoice GQL".to_string())
+    );
+    assert_eq!(btc_transaction.node.created_at, 1602800356);
+
     Ok(())
 }
 
-/// Test to get the btc transactions list of the  wallet
+/// Test to get the USD transactions list of the  wallet
 #[tokio::test]
-async fn btc_transactions_list() -> anyhow::Result<()> {
+async fn usd_transactions_list() -> anyhow::Result<()> {
     let config = staging_wallet_configuration();
     let mut wallet_client = GaloyClient::new(config);
     let _auth_token = wallet_client.login().await?;
 
-    let btc_transactions = wallet_client.btc_transactions_list(None).await?;
+    let last_transaction_cursor = "6213a94e13a69ff20c4941bd".to_string();
+    let wallet_currency = transactions_list::WalletCurrency::USD;
 
-    println!("{:#?}", btc_transactions);
-    // assert_eq!(edges.len(), 10);
+    let usd_transactions = wallet_client
+        .transactions_list(last_transaction_cursor, wallet_currency)
+        .await?;
+
+    let usd_transaction = &usd_transactions
+        .expect("Expected transactions, found none")
+        .edges
+        .expect("Expected edges, found none")[0];
+
+    assert_eq!(usd_transaction.node.status, TxStatus::SUCCESS);
+    assert_eq!(usd_transaction.node.settlement_amount, 775.0);
+    assert_eq!(usd_transaction.node.memo, None);
+    assert_eq!(usd_transaction.node.created_at, 1645455527);
+
     Ok(())
 }

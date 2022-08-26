@@ -7,7 +7,7 @@ use graphql_client::GraphQLQuery;
     response_derives = "Debug, PartialEq"
 )]
 pub struct BtcPrice;
-type SafeInt = i64;
+pub type SafeInt = i64;
 
 #[derive(GraphQLQuery)]
 #[graphql(
@@ -16,7 +16,7 @@ type SafeInt = i64;
     response_derives = "Debug, PartialEq"
 )]
 pub struct AuthCode;
-type Phone = String;
+pub type Phone = String;
 
 #[derive(GraphQLQuery)]
 #[graphql(
@@ -25,20 +25,20 @@ type Phone = String;
     response_derives = "Debug, PartialEq, Clone"
 )]
 pub struct UserLogin;
-type AuthToken = String;
-type OneTimeAuthCode = String;
+pub type AuthToken = String;
+pub type OneTimeAuthCode = String;
 
 #[derive(GraphQLQuery)]
 #[graphql(
     schema_path = "src/client/graphql/schema.graphql",
     query_path = "src/client/graphql/queries/transactions_list.graphql",
-    response_derives = "Debug, PartialEq"
+    response_derives = "Debug, PartialEq, Clone"
 )]
 pub struct TransactionsList;
-type WalletId = String;
-type Timestamp = u64;
-type Memo = String;
-type SignedAmount = f64;
+pub type WalletId = String;
+pub type Timestamp = u64;
+pub type Memo = String;
+pub type SignedAmount = f64;
 
 #[derive(GraphQLQuery)]
 #[graphql(

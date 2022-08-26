@@ -20,6 +20,14 @@ pub struct GaloyDefaultWallets {
     pub usd_wallet: Option<wallets::WalletsMeDefaultAccountWallets>,
 }
 
+#[derive(Debug)]
+pub struct StablesatsWalletTransactions {
+    pub btc_transactions:
+        Option<transactions_list::TransactionsListMeDefaultAccountWalletsTransactions>,
+    pub usd_transactions:
+        Option<transactions_list::TransactionsListMeDefaultAccountWalletsTransactions>,
+}
+
 #[derive(Debug, Clone)]
 pub struct GaloyClient {
     client: ReqwestClient,
@@ -157,9 +165,9 @@ impl GaloyClient {
 
     pub async fn transactions_list(
         &mut self,
-        last_transaction_cursor: Option<String>,
-    ) -> Result<Option<Vec<TransactionsListMeDefaultAccountTransactionsEdges>>, GaloyWalletError>
-    {
+        last_transaction_cursor: String,
+        wallet_currency: transactions_list::WalletCurrency,
+    ) -> Result<Option<TransactionsListMeDefaultAccountWalletsTransactions>, GaloyWalletError> {
         let header_value = format!("Bearer {}", self.config.jwt);
         let mut header = HeaderMap::new();
         header.insert(AUTHORIZATION, HeaderValue::from_str(header_value.as_str())?);
@@ -168,7 +176,7 @@ impl GaloyClient {
             last: None,
             first: None,
             before: None,
-            after: last_transaction_cursor,
+            after: Some(last_transaction_cursor),
         };
 
         let request_body = TransactionsList::build_query(variables);
@@ -185,55 +193,36 @@ impl GaloyClient {
 
         let result = match response_data {
             Some(data) => data,
-            None => return Ok(None),
+            None => {
+                return Err(GaloyWalletError::UnknownResponse(
+                    "Empty`data` response data".to_string(),
+                ))
+            }
         };
 
         let user = result.me;
 
         let default_account = match user {
             Some(data) => data.default_account,
-            None => return Ok(None),
+            None => {
+                return Err(GaloyWalletError::UnknownResponse(
+                    "Empty `me` response data".to_string(),
+                ))
+            }
         };
 
-        let transactions = default_account.transactions;
-        let transactions_edges = match transactions {
-            Some(data) => data.edges,
-            None => return Ok(None),
-        };
+        let wallet = default_account
+            .wallets
+            .into_iter()
+            .find(|wallet| wallet.wallet_currency == wallet_currency);
 
-        Ok(transactions_edges)
-    }
+        if let Some(wallet) = wallet {
+            let transactions = wallet.transactions;
 
-    pub async fn btc_transactions_list(
-        &self,
-        last_transaction_cursor: Option<String>,
-    ) -> Result<(), GaloyWalletError> {
-        // 1. Get BTC wallet id
-        // 2. Use retrieved wallet id to retrieve transactions
-        let header_value = format!("Bearer {}", self.config.jwt);
-        let mut header = HeaderMap::new();
-        header.insert(AUTHORIZATION, HeaderValue::from_str(header_value.as_str())?);
-
-        let variables = transactions_list::Variables {
-            last: None,
-            first: None,
-            before: None,
-            after: last_transaction_cursor,
-        };
-
-        let request_body = TransactionsList::build_query(variables);
-        let response = self
-            .client
-            .post(&self.config.api)
-            .headers(header)
-            .json(&request_body)
-            .send()
-            .await?;
-
-        let response_body: Response<transactions_list::ResponseData> = response.json().await?;
-        let response_data = response_body.data;
-        println!("{:#?}", response_data);
-
-        Ok(())
+            return Ok(transactions);
+        }
+        Err(GaloyWalletError::UnknownResponse(
+            "Failed to parse response data".to_string(),
+        ))
     }
 }
