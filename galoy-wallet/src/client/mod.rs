@@ -1,6 +1,10 @@
 mod error;
 mod queries;
 
+use futures::{
+    stream::{self},
+    Stream,
+};
 use graphql_client::{reqwest::post_graphql, GraphQLQuery, Response};
 use reqwest::{
     header::{HeaderMap, HeaderValue, AUTHORIZATION},
@@ -167,7 +171,12 @@ impl GaloyClient {
         &mut self,
         last_transaction_cursor: String,
         wallet_currency: transactions_list::WalletCurrency,
-    ) -> Result<Option<TransactionsListMeDefaultAccountWalletsTransactions>, GaloyWalletError> {
+    ) -> Result<
+        std::pin::Pin<
+            Box<impl Stream<Item = TransactionsListMeDefaultAccountWalletsTransactionsEdges>>,
+        >,
+        GaloyWalletError,
+    > {
         let header_value = format!("Bearer {}", self.config.jwt);
         let mut header = HeaderMap::new();
         header.insert(AUTHORIZATION, HeaderValue::from_str(header_value.as_str())?);
@@ -217,9 +226,25 @@ impl GaloyClient {
             .find(|wallet| wallet.wallet_currency == wallet_currency);
 
         if let Some(wallet) = wallet {
-            let transactions = wallet.transactions;
+            let transaction_edges = match wallet.transactions {
+                Some(tx) => tx.edges,
+                None => {
+                    return Err(GaloyWalletError::UnknownResponse(
+                        "Empty `transactions` response data".to_string(),
+                    ))
+                }
+            };
 
-            return Ok(transactions);
+            let transactions = match transaction_edges {
+                Some(txs) => txs,
+                None => {
+                    return Err(GaloyWalletError::UnknownResponse(
+                        "Empty `edges` response data".to_string(),
+                    ))
+                }
+            };
+
+            return Ok(Box::pin(stream::iter(transactions)));
         }
         Err(GaloyWalletError::UnknownResponse(
             "Failed to parse response data".to_string(),

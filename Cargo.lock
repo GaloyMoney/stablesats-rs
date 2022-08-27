@@ -723,6 +723,7 @@ name = "galoy-wallet"
 version = "0.1.0"
 dependencies = [
  "anyhow",
+ "futures",
  "graphql_client",
  "reqwest",
  "serde",
