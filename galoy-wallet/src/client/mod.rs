@@ -26,16 +26,19 @@ pub struct StablesatsWalletsBalances {
 
 #[derive(Debug)]
 pub struct StablesatsWalletTransactions {
-    pub btc_transactions:
-        Option<stablesats_transactions_list::StablesatsTransactionsListMeDefaultAccountWalletsTransactions>,
-    pub usd_transactions:
-        Option<stablesats_transactions_list::StablesatsTransactionsListMeDefaultAccountWalletsTransactions>,
+    pub btc_transactions: Option<
+        stablesats_transactions_list::StablesatsTransactionsListMeDefaultAccountWalletsTransactions,
+    >,
+    pub usd_transactions: Option<
+        stablesats_transactions_list::StablesatsTransactionsListMeDefaultAccountWalletsTransactions,
+    >,
 }
 
 #[derive(Debug, Clone)]
 pub struct GaloyClient {
     client: ReqwestClient,
     config: GaloyClientConfig,
+    jwt: String,
 }
 
 #[derive(Debug, Clone)]
@@ -43,27 +46,42 @@ pub struct GaloyClientConfig {
     pub api: String,
     pub code: String,
     pub phone_number: String,
-    pub jwt: String,
+}
+
+pub(crate) struct GaloyAuthToken {
+    pub inner: Option<String>,
 }
 
 impl GaloyClient {
-    pub fn new(config: GaloyClientConfig) -> Self {
-        Self {
+    pub async fn connect(config: GaloyClientConfig) -> Result<Self, GaloyClientError> {
+        let jwt = Self::login_jwt(config.clone()).await?;
+        let jwt = match jwt.inner {
+            Some(jwt) => jwt,
+            None => {
+                return Err(GaloyClientError::AuthenticationToken(
+                    "Empty authentication token".to_string(),
+                ))
+            }
+        };
+
+        Ok(Self {
             client: ReqwestClient::new(),
             config,
-        }
+            jwt,
+        })
     }
 
     pub async fn authentication_code(
         &self,
-    ) -> Result<StablesatsAuthCodeUserRequestAuthCode, GaloyWalletError> {
+    ) -> Result<StablesatsAuthCodeUserRequestAuthCode, GaloyClientError> {
         let phone_number = stablesats_auth_code::Variables {
             input: stablesats_auth_code::UserRequestAuthCodeInput {
                 phone: self.config.phone_number.clone(),
             },
         };
         let response =
-            post_graphql::<StablesatsAuthCode, _>(&self.client, &self.config.api, phone_number).await?;
+            post_graphql::<StablesatsAuthCode, _>(&self.client, &self.config.api, phone_number)
+                .await?;
         let response_data = response.data;
 
         if let Some(response_data) = response_data {
@@ -71,36 +89,44 @@ impl GaloyClient {
 
             return Ok(result);
         }
-        Err(GaloyWalletError::UnknownResponse(
+        Err(GaloyClientError::UnknownResponse(
             "Failed to parse response data".to_string(),
         ))
     }
 
-    pub async fn login(&mut self) -> Result<StablesatsUserLoginUserLogin, GaloyWalletError> {
+    async fn login_jwt(config: GaloyClientConfig) -> Result<GaloyAuthToken, GaloyClientError> {
         let variables = stablesats_user_login::Variables {
             input: stablesats_user_login::UserLoginInput {
-                code: self.config.code.clone(),
-                phone: self.config.phone_number.clone(),
+                code: config.code.clone(),
+                phone: config.phone_number.clone(),
             },
         };
 
+        let client = ReqwestClient::new();
+
         let response =
-            post_graphql::<StablesatsUserLogin, _>(&self.client, &self.config.api, variables).await?;
+            post_graphql::<StablesatsUserLogin, _>(&client, config.api, variables).await?;
+        if response.errors.is_some() {
+            if let Some(error) = response.errors {
+                return Err(GaloyClientError::GrapqQlApi(error[0].clone().message));
+            }
+        }
 
         let response_data = response.data;
+        if response_data.is_none() {
+            return Err(GaloyClientError::UnknownResponse(format!(
+                "Expected some response data, found {:?}",
+                response_data
+            )));
+        }
 
         if let Some(response_data) = response_data {
-            let result = response_data.user_login;
+            let user_login = response_data.user_login;
+            let login_jwt = user_login.auth_token;
 
-            // Update config JWT
-            self.config.jwt = match result.clone().auth_token {
-                Some(jwt) => jwt,
-                None => "".to_string(),
-            };
-
-            return Ok(result);
+            return Ok(GaloyAuthToken { inner: login_jwt });
         }
-        Err(GaloyWalletError::UnknownResponse(
+        Err(GaloyClientError::UnknownResponse(
             "Failed to parse response data".to_string(),
         ))
     }
@@ -111,11 +137,13 @@ impl GaloyClient {
         wallet_currency: stablesats_transactions_list::WalletCurrency,
     ) -> Result<
         std::pin::Pin<
-            Box<impl Stream<Item = StablesatsTransactionsListMeDefaultAccountWalletsTransactionsEdges>>,
+            Box<
+                impl Stream<Item = StablesatsTransactionsListMeDefaultAccountWalletsTransactionsEdges>,
+            >,
         >,
-        GaloyWalletError,
+        GaloyClientError,
     > {
-        let header_value = format!("Bearer {}", self.config.jwt);
+        let header_value = format!("Bearer {}", self.jwt);
         let mut header = HeaderMap::new();
         header.insert(AUTHORIZATION, HeaderValue::from_str(header_value.as_str())?);
 
@@ -135,13 +163,14 @@ impl GaloyClient {
             .send()
             .await?;
 
-        let response_body: Response<stablesats_transactions_list::ResponseData> = response.json().await?;
+        let response_body: Response<stablesats_transactions_list::ResponseData> =
+            response.json().await?;
         let response_data = response_body.data;
 
         let result = match response_data {
             Some(data) => data,
             None => {
-                return Err(GaloyWalletError::UnknownResponse(
+                return Err(GaloyClientError::UnknownResponse(
                     "Empty`data` response data".to_string(),
                 ))
             }
@@ -152,7 +181,7 @@ impl GaloyClient {
         let default_account = match user {
             Some(data) => data.default_account,
             None => {
-                return Err(GaloyWalletError::UnknownResponse(
+                return Err(GaloyClientError::UnknownResponse(
                     "Empty `me` response data".to_string(),
                 ))
             }
@@ -167,7 +196,7 @@ impl GaloyClient {
             let transaction_edges = match wallet.transactions {
                 Some(tx) => tx.edges,
                 None => {
-                    return Err(GaloyWalletError::UnknownResponse(
+                    return Err(GaloyClientError::UnknownResponse(
                         "Empty `transactions` response data".to_string(),
                     ))
                 }
@@ -176,7 +205,7 @@ impl GaloyClient {
             let transactions = match transaction_edges {
                 Some(txs) => txs,
                 None => {
-                    return Err(GaloyWalletError::UnknownResponse(
+                    return Err(GaloyClientError::UnknownResponse(
                         "Empty `edges` response data".to_string(),
                     ))
                 }
@@ -184,13 +213,13 @@ impl GaloyClient {
 
             return Ok(Box::pin(stream::iter(transactions)));
         }
-        Err(GaloyWalletError::UnknownResponse(
+        Err(GaloyClientError::UnknownResponse(
             "Failed to parse response data".to_string(),
         ))
     }
 
-    pub async fn wallets_balances(&self) -> Result<StablesatsWalletsBalances, GaloyWalletError> {
-        let header_value = format!("Bearer {}", self.config.jwt);
+    pub async fn wallets_balances(&self) -> Result<StablesatsWalletsBalances, GaloyClientError> {
+        let header_value = format!("Bearer {}", self.jwt);
         let mut header = HeaderMap::new();
         header.insert(AUTHORIZATION, HeaderValue::from_str(header_value.as_str())?);
 
@@ -207,13 +236,13 @@ impl GaloyClient {
         let response_body: Response<stablesats_wallets::ResponseData> = response.json().await?;
         if response_body.errors.is_some() {
             if let Some(error) = response_body.errors {
-                return Err(GaloyWalletError::GrapqQlApi(error[0].clone().message));
+                return Err(GaloyClientError::GrapqQlApi(error[0].clone().message));
             }
         }
 
         let response_data = response_body.data;
         if response_data.is_none() {
-            return Err(GaloyWalletError::UnknownResponse(
+            return Err(GaloyClientError::UnknownResponse(
                 "Empty `data` in response data".to_string(),
             ));
         }
@@ -221,7 +250,7 @@ impl GaloyClient {
         let me = match response_data {
             Some(data) => data.me,
             None => {
-                return Err(GaloyWalletError::UnknownResponse(
+                return Err(GaloyClientError::UnknownResponse(
                     "Empty `data` in response data".to_string(),
                 ))
             }
@@ -230,7 +259,7 @@ impl GaloyClient {
         let default_account = match me {
             Some(me) => me.default_account,
             None => {
-                return Err(GaloyWalletError::UnknownResponse(
+                return Err(GaloyClientError::UnknownResponse(
                     "Empty `me` in response data".to_string(),
                 ))
             }

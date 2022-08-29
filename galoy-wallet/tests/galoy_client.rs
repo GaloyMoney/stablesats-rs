@@ -6,13 +6,11 @@ fn staging_wallet_configuration() -> GaloyClientConfig {
     let api = env::var("GALOY_STAGING_GRAPHQL_URI").expect("GALOY_STAGING_GRAPHQL_URI not set");
     let phone_number = env::var("STAGING_PHONE_NUMBER").expect("STAGING_PHONE_NUMBER not set");
     let code = env::var("GALOY_STAGING_AUTH_CODE").expect("GALOY_STAGING_AUTH_CODE not set");
-    let jwt = "".to_string();
 
     let config = GaloyClientConfig {
         api,
         phone_number,
         code,
-        jwt,
     };
 
     config
@@ -22,8 +20,7 @@ fn staging_wallet_configuration() -> GaloyClientConfig {
 #[tokio::test]
 async fn btc_transactions_list() -> anyhow::Result<()> {
     let config = staging_wallet_configuration();
-    let mut wallet_client = GaloyClient::new(config);
-    let _ = wallet_client.login().await?;
+    let mut wallet_client = GaloyClient::connect(config).await?;
 
     let last_transaction_cursor = "5f88cbf56d87e9001ca7dab4".to_string();
     let wallet_currency = stablesats_transactions_list::WalletCurrency::BTC;
@@ -50,8 +47,7 @@ async fn btc_transactions_list() -> anyhow::Result<()> {
 #[tokio::test]
 async fn usd_transactions_list() -> anyhow::Result<()> {
     let config = staging_wallet_configuration();
-    let mut wallet_client = GaloyClient::new(config);
-    let _ = wallet_client.login().await?;
+    let mut wallet_client = GaloyClient::connect(config).await?;
 
     let last_transaction_cursor = "6213a94e13a69ff20c4941bd".to_string();
     let wallet_currency = stablesats_transactions_list::WalletCurrency::USD;
@@ -78,8 +74,7 @@ async fn usd_transactions_list() -> anyhow::Result<()> {
 #[tokio::test]
 async fn wallet_balance() -> anyhow::Result<()> {
     let config = staging_wallet_configuration();
-    let mut wallet_client = GaloyClient::new(config);
-    let _ = wallet_client.login().await?;
+    let wallet_client = GaloyClient::connect(config).await?;
 
     let balances = wallet_client.wallets_balances().await?;
 
