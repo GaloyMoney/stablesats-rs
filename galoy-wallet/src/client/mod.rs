@@ -19,9 +19,10 @@ use btc_price::*;
 use transactions_list::*;
 use user_login::*;
 
-pub struct GaloyDefaultWallets {
-    pub btc_wallet: Option<wallets::WalletsMeDefaultAccountWallets>,
-    pub usd_wallet: Option<wallets::WalletsMeDefaultAccountWallets>,
+#[derive(Debug)]
+pub struct StablesatsWalletsBalances {
+    pub btc_wallet_balance: Option<queries::SignedAmount>,
+    pub usd_wallet_balance: Option<queries::SignedAmount>,
 }
 
 #[derive(Debug)]
@@ -122,51 +123,6 @@ impl GaloyClient {
         ))
     }
 
-    pub async fn wallets(&self) -> Result<Option<GaloyDefaultWallets>, GaloyWalletError> {
-        let header_value = format!("Bearer {}", self.config.jwt);
-        let mut header = HeaderMap::new();
-        header.insert(AUTHORIZATION, HeaderValue::from_str(header_value.as_str())?);
-
-        let variables = wallets::Variables;
-        let request_body = Wallets::build_query(variables);
-        let response = self
-            .client
-            .post(&self.config.api)
-            .headers(header)
-            .json(&request_body)
-            .send()
-            .await?;
-
-        let response_body: Response<wallets::ResponseData> = response.json().await?;
-        let response_data = response_body.data;
-
-        let me = match response_data {
-            Some(data) => data.me,
-            None => return Ok(None),
-        };
-
-        let default_wallet = match me {
-            Some(me) => me.default_account,
-            None => return Ok(None),
-        };
-
-        let wallets = default_wallet.wallets;
-
-        let btc_wallet = wallets
-            .clone()
-            .into_iter()
-            .find(|wallet| wallet.wallet_currency == wallets::WalletCurrency::BTC);
-
-        let usd_wallet = wallets
-            .into_iter()
-            .find(|wallet| wallet.wallet_currency == wallets::WalletCurrency::USD);
-
-        Ok(Some(GaloyDefaultWallets {
-            btc_wallet,
-            usd_wallet,
-        }))
-    }
-
     pub async fn transactions_list(
         &mut self,
         last_transaction_cursor: String,
@@ -249,5 +205,79 @@ impl GaloyClient {
         Err(GaloyWalletError::UnknownResponse(
             "Failed to parse response data".to_string(),
         ))
+    }
+
+    pub async fn wallets_balances(&self) -> Result<StablesatsWalletsBalances, GaloyWalletError> {
+        let header_value = format!("Bearer {}", self.config.jwt);
+        let mut header = HeaderMap::new();
+        header.insert(AUTHORIZATION, HeaderValue::from_str(header_value.as_str())?);
+
+        let variables = wallets::Variables;
+        let request_body = Wallets::build_query(variables);
+        let response = self
+            .client
+            .post(&self.config.api)
+            .headers(header)
+            .json(&request_body)
+            .send()
+            .await?;
+
+        let response_body: Response<wallets::ResponseData> = response.json().await?;
+        if response_body.errors.is_some() {
+            if let Some(error) = response_body.errors {
+                return Err(GaloyWalletError::GrapqQlApi(error[0].clone().message));
+            }
+        }
+
+        let response_data = response_body.data;
+        if response_data.is_none() {
+            return Err(GaloyWalletError::UnknownResponse(
+                "Empty `data` in response data".to_string(),
+            ));
+        }
+
+        let me = match response_data {
+            Some(data) => data.me,
+            None => {
+                return Err(GaloyWalletError::UnknownResponse(
+                    "Empty `data` in response data".to_string(),
+                ))
+            }
+        };
+
+        let default_account = match me {
+            Some(me) => me.default_account,
+            None => {
+                return Err(GaloyWalletError::UnknownResponse(
+                    "Empty `me` in response data".to_string(),
+                ))
+            }
+        };
+
+        let wallets = default_account.wallets;
+
+        let btc_wallet = wallets
+            .clone()
+            .into_iter()
+            .find(|wallet| wallet.wallet_currency == wallets::WalletCurrency::BTC);
+
+        let usd_wallet = wallets
+            .into_iter()
+            .find(|wallet| wallet.wallet_currency == wallets::WalletCurrency::USD);
+
+        let btc_wallet_balance: Option<SignedAmount> = match btc_wallet {
+            Some(wallet) => Some(wallet.balance),
+            None => None,
+        };
+
+        let usd_wallet_balance: Option<SignedAmount> = match usd_wallet {
+            Some(wallet) => Some(wallet.balance),
+            None => None,
+        };
+
+        Ok(StablesatsWalletsBalances {
+            usd_wallet_balance,
+            btc_wallet_balance,
+        })
     }
 }

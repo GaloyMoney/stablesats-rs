@@ -8,4 +8,6 @@ pub enum GaloyWalletError {
     UnknownResponse(String),
     #[error("GaloyWalletError: {0}")]
     Header(#[from] reqwest::header::InvalidHeaderValue),
+    #[error("GaloyWalletError: {0}")]
+    GrapqQlApi(String),
 }

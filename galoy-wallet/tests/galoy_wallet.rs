@@ -85,30 +85,7 @@ async fn login() -> anyhow::Result<()> {
     Ok(())
 }
 
-/// Test to retrieve the wallet IDs of the default wallets
-#[tokio::test]
-async fn wallets_ids() -> anyhow::Result<()> {
-    let config = staging_wallet_configuration();
-    let mut wallet_client = GaloyClient::new(config);
-    let _ = wallet_client.login().await?;
-
-    let wallets = wallet_client
-        .wallets()
-        .await?
-        .expect("Expected BTC/USD wallets, found none");
-
-    let (btc_wallet_id, usd_wallet_id) = (
-        wallets.btc_wallet.expect("No BTC wallet").id,
-        wallets.usd_wallet.expect("No USD wallet").id,
-    );
-
-    assert_eq!(btc_wallet_id.len(), 36);
-    assert_eq!(usd_wallet_id.len(), 36);
-
-    Ok(())
-}
-
-/// Test to get the transactions list of the default wallet
+/// Test to get btc transactions list of the default wallet
 #[tokio::test]
 async fn btc_transactions_list() -> anyhow::Result<()> {
     let config = staging_wallet_configuration();
@@ -136,12 +113,12 @@ async fn btc_transactions_list() -> anyhow::Result<()> {
     Ok(())
 }
 
-/// Test to get the USD transactions list of the  wallet
+/// Test to get the USD transactions list of the default wallet
 #[tokio::test]
 async fn usd_transactions_list() -> anyhow::Result<()> {
     let config = staging_wallet_configuration();
     let mut wallet_client = GaloyClient::new(config);
-    let _auth_token = wallet_client.login().await?;
+    let _ = wallet_client.login().await?;
 
     let last_transaction_cursor = "6213a94e13a69ff20c4941bd".to_string();
     let wallet_currency = transactions_list::WalletCurrency::USD;
@@ -160,6 +137,21 @@ async fn usd_transactions_list() -> anyhow::Result<()> {
     assert_eq!(tx_1.node.settlement_amount, 775.0);
     assert_eq!(tx_1.node.memo, None);
     assert_eq!(tx_1.node.created_at, 1645455527);
+
+    Ok(())
+}
+
+/// Test to get wallet balances
+#[tokio::test]
+async fn wallet_balance() -> anyhow::Result<()> {
+    let config = staging_wallet_configuration();
+    let mut wallet_client = GaloyClient::new(config);
+    let _ = wallet_client.login().await?;
+
+    let balances = wallet_client.wallets_balances().await?;
+
+    assert!(balances.btc_wallet_balance.is_some());
+    assert!(balances.usd_wallet_balance.is_some());
 
     Ok(())
 }

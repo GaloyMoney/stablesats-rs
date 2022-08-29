@@ -38,7 +38,7 @@ pub struct TransactionsList;
 pub type WalletId = String;
 pub type Timestamp = u64;
 pub type Memo = String;
-pub type SignedAmount = f64;
+pub(crate) type SignedAmount = f64;
 
 #[derive(GraphQLQuery)]
 #[graphql(
