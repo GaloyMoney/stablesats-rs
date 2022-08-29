@@ -1,4 +1,4 @@
-mutation UserLogin($input: UserLoginInput!) {
+mutation StablesatsUserLogin($input: UserLoginInput!) {
   userLogin(input: $input) {
     authToken
     errors {

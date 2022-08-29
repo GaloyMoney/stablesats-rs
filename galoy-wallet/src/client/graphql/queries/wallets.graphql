@@ -1,4 +1,4 @@
-query Wallets {
+query StablesatsWallets {
   me {
     defaultAccount {
       __typename

@@ -8,7 +8,7 @@ pub type SafeInt = i64;
     query_path = "src/client/graphql/mutations/user_request_auth_code.graphql",
     response_derives = "Debug, PartialEq"
 )]
-pub struct AuthCode;
+pub struct StablesatsAuthCode;
 pub type Phone = String;
 
 #[derive(GraphQLQuery)]
@@ -17,7 +17,7 @@ pub type Phone = String;
     query_path = "src/client/graphql/mutations/user_login.graphql",
     response_derives = "Debug, PartialEq, Clone"
 )]
-pub struct UserLogin;
+pub struct StablesatsUserLogin;
 pub type AuthToken = String;
 pub type OneTimeAuthCode = String;
 
@@ -27,7 +27,7 @@ pub type OneTimeAuthCode = String;
     query_path = "src/client/graphql/queries/transactions_list.graphql",
     response_derives = "Debug, PartialEq, Clone"
 )]
-pub struct TransactionsList;
+pub struct StablesatsTransactionsList;
 pub type WalletId = String;
 pub type Timestamp = u64;
 pub type Memo = String;
@@ -39,4 +39,4 @@ pub(crate) type SignedAmount = f64;
     query_path = "src/client/graphql/queries/wallets.graphql",
     response_derives = "Debug, PartialEq, Clone"
 )]
-pub struct Wallets;
+pub struct StablesatsWallets;

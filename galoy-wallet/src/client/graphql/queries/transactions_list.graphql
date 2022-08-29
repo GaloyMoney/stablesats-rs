@@ -1,4 +1,4 @@
-query TransactionsList(
+query StablesatsTransactionsList(
   $first: Int
   $last: Int
   $before: String

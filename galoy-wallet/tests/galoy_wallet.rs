@@ -1,5 +1,5 @@
 use futures::StreamExt;
-use galoy_wallet::{transactions_list::TxStatus, *};
+use galoy_wallet::{stablesats_transactions_list::TxStatus, *};
 use std::env;
 
 fn staging_wallet_configuration() -> GaloyClientConfig {
@@ -26,7 +26,7 @@ async fn btc_transactions_list() -> anyhow::Result<()> {
     let _ = wallet_client.login().await?;
 
     let last_transaction_cursor = "5f88cbf56d87e9001ca7dab4".to_string();
-    let wallet_currency = transactions_list::WalletCurrency::BTC;
+    let wallet_currency = stablesats_transactions_list::WalletCurrency::BTC;
 
     let mut btc_transactions = wallet_client
         .transactions_list(last_transaction_cursor, wallet_currency)
@@ -54,7 +54,7 @@ async fn usd_transactions_list() -> anyhow::Result<()> {
     let _ = wallet_client.login().await?;
 
     let last_transaction_cursor = "6213a94e13a69ff20c4941bd".to_string();
-    let wallet_currency = transactions_list::WalletCurrency::USD;
+    let wallet_currency = stablesats_transactions_list::WalletCurrency::USD;
 
     let mut usd_transactions = wallet_client
         .transactions_list(last_transaction_cursor, wallet_currency)

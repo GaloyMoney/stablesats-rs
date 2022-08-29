@@ -1,4 +1,4 @@
-mutation AuthCode($input: UserRequestAuthCodeInput!) {
+mutation StablesatsAuthCode($input: UserRequestAuthCodeInput!) {
   userRequestAuthCode(input: $input) {
     success
     errors {

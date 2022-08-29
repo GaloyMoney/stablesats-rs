@@ -14,9 +14,9 @@ use reqwest::{
 use error::*;
 pub use queries::*;
 
-use auth_code::*;
-use transactions_list::*;
-use user_login::*;
+use stablesats_auth_code::*;
+use stablesats_transactions_list::*;
+use stablesats_user_login::*;
 
 #[derive(Debug)]
 pub struct StablesatsWalletsBalances {
@@ -27,9 +27,9 @@ pub struct StablesatsWalletsBalances {
 #[derive(Debug)]
 pub struct StablesatsWalletTransactions {
     pub btc_transactions:
-        Option<transactions_list::TransactionsListMeDefaultAccountWalletsTransactions>,
+        Option<stablesats_transactions_list::StablesatsTransactionsListMeDefaultAccountWalletsTransactions>,
     pub usd_transactions:
-        Option<transactions_list::TransactionsListMeDefaultAccountWalletsTransactions>,
+        Option<stablesats_transactions_list::StablesatsTransactionsListMeDefaultAccountWalletsTransactions>,
 }
 
 #[derive(Debug, Clone)]
@@ -56,14 +56,14 @@ impl GaloyClient {
 
     pub async fn authentication_code(
         &self,
-    ) -> Result<AuthCodeUserRequestAuthCode, GaloyWalletError> {
-        let phone_number = auth_code::Variables {
-            input: auth_code::UserRequestAuthCodeInput {
+    ) -> Result<StablesatsAuthCodeUserRequestAuthCode, GaloyWalletError> {
+        let phone_number = stablesats_auth_code::Variables {
+            input: stablesats_auth_code::UserRequestAuthCodeInput {
                 phone: self.config.phone_number.clone(),
             },
         };
         let response =
-            post_graphql::<AuthCode, _>(&self.client, &self.config.api, phone_number).await?;
+            post_graphql::<StablesatsAuthCode, _>(&self.client, &self.config.api, phone_number).await?;
         let response_data = response.data;
 
         if let Some(response_data) = response_data {
@@ -76,16 +76,16 @@ impl GaloyClient {
         ))
     }
 
-    pub async fn login(&mut self) -> Result<UserLoginUserLogin, GaloyWalletError> {
-        let variables = user_login::Variables {
-            input: user_login::UserLoginInput {
+    pub async fn login(&mut self) -> Result<StablesatsUserLoginUserLogin, GaloyWalletError> {
+        let variables = stablesats_user_login::Variables {
+            input: stablesats_user_login::UserLoginInput {
                 code: self.config.code.clone(),
                 phone: self.config.phone_number.clone(),
             },
         };
 
         let response =
-            post_graphql::<UserLogin, _>(&self.client, &self.config.api, variables).await?;
+            post_graphql::<StablesatsUserLogin, _>(&self.client, &self.config.api, variables).await?;
 
         let response_data = response.data;
 
@@ -108,10 +108,10 @@ impl GaloyClient {
     pub async fn transactions_list(
         &mut self,
         last_transaction_cursor: String,
-        wallet_currency: transactions_list::WalletCurrency,
+        wallet_currency: stablesats_transactions_list::WalletCurrency,
     ) -> Result<
         std::pin::Pin<
-            Box<impl Stream<Item = TransactionsListMeDefaultAccountWalletsTransactionsEdges>>,
+            Box<impl Stream<Item = StablesatsTransactionsListMeDefaultAccountWalletsTransactionsEdges>>,
         >,
         GaloyWalletError,
     > {
@@ -119,14 +119,14 @@ impl GaloyClient {
         let mut header = HeaderMap::new();
         header.insert(AUTHORIZATION, HeaderValue::from_str(header_value.as_str())?);
 
-        let variables = transactions_list::Variables {
+        let variables = stablesats_transactions_list::Variables {
             last: None,
             first: None,
             before: None,
             after: Some(last_transaction_cursor),
         };
 
-        let request_body = TransactionsList::build_query(variables);
+        let request_body = StablesatsTransactionsList::build_query(variables);
         let response = self
             .client
             .post(&self.config.api)
@@ -135,7 +135,7 @@ impl GaloyClient {
             .send()
             .await?;
 
-        let response_body: Response<transactions_list::ResponseData> = response.json().await?;
+        let response_body: Response<stablesats_transactions_list::ResponseData> = response.json().await?;
         let response_data = response_body.data;
 
         let result = match response_data {
@@ -194,8 +194,8 @@ impl GaloyClient {
         let mut header = HeaderMap::new();
         header.insert(AUTHORIZATION, HeaderValue::from_str(header_value.as_str())?);
 
-        let variables = wallets::Variables;
-        let request_body = Wallets::build_query(variables);
+        let variables = stablesats_wallets::Variables;
+        let request_body = StablesatsWallets::build_query(variables);
         let response = self
             .client
             .post(&self.config.api)
@@ -204,7 +204,7 @@ impl GaloyClient {
             .send()
             .await?;
 
-        let response_body: Response<wallets::ResponseData> = response.json().await?;
+        let response_body: Response<stablesats_wallets::ResponseData> = response.json().await?;
         if response_body.errors.is_some() {
             if let Some(error) = response_body.errors {
                 return Err(GaloyWalletError::GrapqQlApi(error[0].clone().message));
@@ -241,11 +241,11 @@ impl GaloyClient {
         let btc_wallet = wallets
             .clone()
             .into_iter()
-            .find(|wallet| wallet.wallet_currency == wallets::WalletCurrency::BTC);
+            .find(|wallet| wallet.wallet_currency == stablesats_wallets::WalletCurrency::BTC);
 
         let usd_wallet = wallets
             .into_iter()
-            .find(|wallet| wallet.wallet_currency == wallets::WalletCurrency::USD);
+            .find(|wallet| wallet.wallet_currency == stablesats_wallets::WalletCurrency::USD);
 
         let btc_wallet_balance: Option<SignedAmount> = match btc_wallet {
             Some(wallet) => Some(wallet.balance),
