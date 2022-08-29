@@ -1,12 +1,5 @@
 use graphql_client::GraphQLQuery;
 
-#[derive(GraphQLQuery)]
-#[graphql(
-    schema_path = "src/client/graphql/schema.graphql",
-    query_path = "src/client/graphql/queries/btc_price.graphql",
-    response_derives = "Debug, PartialEq"
-)]
-pub struct BtcPrice;
 pub type SafeInt = i64;
 
 #[derive(GraphQLQuery)]

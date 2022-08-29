@@ -15,7 +15,6 @@ use error::*;
 pub use queries::*;
 
 use auth_code::*;
-use btc_price::*;
 use transactions_list::*;
 use user_login::*;
 
@@ -53,23 +52,6 @@ impl GaloyClient {
             client: ReqwestClient::new(),
             config,
         }
-    }
-
-    pub async fn btc_price(&self) -> Result<BtcPriceBtcPrice, GaloyWalletError> {
-        let variables = btc_price::Variables;
-        let response =
-            post_graphql::<BtcPrice, _>(&self.client, &self.config.api, variables).await?;
-        let response_data = response.data;
-
-        if let Some(response_data) = response_data {
-            let result = response_data.btc_price;
-            if let Some(result) = result {
-                return Ok(result);
-            }
-        }
-        Err(GaloyWalletError::UnknownResponse(
-            "Failed to parse response data".to_string(),
-        ))
     }
 
     pub async fn authentication_code(

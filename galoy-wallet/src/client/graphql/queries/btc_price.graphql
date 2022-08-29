@@ -1,8 +1,0 @@
-query BtcPrice {
-  btcPrice {
-    base
-    currencyUnit
-    formattedAmount
-    offset
-  }
-}
