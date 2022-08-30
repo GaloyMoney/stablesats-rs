@@ -18,6 +18,12 @@ use stablesats_auth_code::*;
 use stablesats_transactions_list::*;
 use stablesats_user_login::*;
 
+// Type aliases
+type StablesatsTransactions = StablesatsTransactionsListMeDefaultAccountWalletsTransactions;
+type StablesatsTransactionsEdges =
+    StablesatsTransactionsListMeDefaultAccountWalletsTransactionsEdges;
+type StablesatsAuthenticationCode = StablesatsAuthCodeUserRequestAuthCode;
+
 #[derive(Debug)]
 pub struct StablesatsWalletsBalances {
     pub btc_wallet_balance: Option<queries::SignedAmount>,
@@ -26,12 +32,8 @@ pub struct StablesatsWalletsBalances {
 
 #[derive(Debug)]
 pub struct StablesatsWalletTransactions {
-    pub btc_transactions: Option<
-        stablesats_transactions_list::StablesatsTransactionsListMeDefaultAccountWalletsTransactions,
-    >,
-    pub usd_transactions: Option<
-        stablesats_transactions_list::StablesatsTransactionsListMeDefaultAccountWalletsTransactions,
-    >,
+    pub btc_transactions: Option<StablesatsTransactions>,
+    pub usd_transactions: Option<StablesatsTransactions>,
 }
 
 #[derive(Debug, Clone)]
@@ -73,7 +75,7 @@ impl GaloyClient {
 
     pub async fn authentication_code(
         &self,
-    ) -> Result<StablesatsAuthCodeUserRequestAuthCode, GaloyClientError> {
+    ) -> Result<StablesatsAuthenticationCode, GaloyClientError> {
         let phone_number = stablesats_auth_code::Variables {
             input: stablesats_auth_code::UserRequestAuthCodeInput {
                 phone: self.config.phone_number.clone(),
@@ -135,14 +137,8 @@ impl GaloyClient {
         &mut self,
         last_transaction_cursor: String,
         wallet_currency: stablesats_transactions_list::WalletCurrency,
-    ) -> Result<
-        std::pin::Pin<
-            Box<
-                impl Stream<Item = StablesatsTransactionsListMeDefaultAccountWalletsTransactionsEdges>,
-            >,
-        >,
-        GaloyClientError,
-    > {
+    ) -> Result<std::pin::Pin<Box<impl Stream<Item = StablesatsTransactionsEdges>>>, GaloyClientError>
+    {
         let header_value = format!("Bearer {}", self.jwt);
         let mut header = HeaderMap::new();
         header.insert(AUTHORIZATION, HeaderValue::from_str(header_value.as_str())?);
