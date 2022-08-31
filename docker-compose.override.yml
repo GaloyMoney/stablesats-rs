@@ -10,3 +10,6 @@ services:
   user-trades-db:
     ports:
     - "5432:5432"
+  hedging-db:
+    ports:
+    - "5433:5432"

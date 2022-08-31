@@ -13,7 +13,7 @@ CREATE TABLE user_trades (
   buy_unit_id INTEGER NOT NULL REFERENCES user_trade_units(id),
   sell_amount NUMERIC NOT NULL,
   sell_unit_id INTEGER NOT NULL REFERENCES user_trade_units(id),
-  created_at TIMESTAMP WITH time zone NOT NULL DEFAULT now()
+  created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()
 );
 
 CREATE FUNCTION notify_user_trades() RETURNS TRIGGER AS $$

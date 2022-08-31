@@ -21,6 +21,11 @@ impl CorrelationId {
         Self(id)
     }
 }
+impl From<CorrelationId> for Uuid {
+    fn from(id: CorrelationId) -> Self {
+        id.0
+    }
+}
 impl std::fmt::Display for CorrelationId {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         write!(f, "{}", self.0)
