@@ -768,6 +768,22 @@ dependencies = [
 ]
 
 [[package]]
+name = "hedging"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "futures",
+ "opentelemetry",
+ "serde",
+ "serde_json",
+ "stablesats-shared",
+ "thiserror",
+ "tokio",
+ "tracing",
+ "tracing-opentelemetry",
+]
+
+[[package]]
 name = "hermit-abi"
 version = "0.1.19"
 source = "registry+https://github.com/rust-lang/crates.io-index"
