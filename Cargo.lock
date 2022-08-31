@@ -719,7 +719,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "galoy-wallet"
+name = "galoy-client"
 version = "0.1.0"
 dependencies = [
  "anyhow",

@@ -1,14 +1,14 @@
 use futures::StreamExt;
-use galoy_wallet::{
+use galoy_client::{
     stablesats_transactions_list::{TxStatus, WalletCurrency},
     *,
 };
 use std::env;
 
 fn staging_wallet_configuration() -> GaloyClientConfig {
-    let api = env::var("GALOY_STAGING_GRAPHQL_URI").expect("GALOY_STAGING_GRAPHQL_URI not set");
-    let phone_number = env::var("STAGING_PHONE_NUMBER").expect("STAGING_PHONE_NUMBER not set");
-    let code = env::var("GALOY_STAGING_AUTH_CODE").expect("GALOY_STAGING_AUTH_CODE not set");
+    let api = env::var("STAGING_GRAPHQL_URI").expect("STAGING_GRAPHQL_URI not set");
+    let phone_number = env::var("STAGING_PHONE_NUMBER").expect("PHONE_NUMBER not set");
+    let code = env::var("STAGING_AUTH_CODE").expect("STAGING_AUTH_CODE not set");
 
     let config = GaloyClientConfig {
         api,
