@@ -1,39 +1,33 @@
 mod error;
 mod queries;
 
-use futures::{
-    stream::{self},
-    Stream,
-};
-use graphql_client::{reqwest::post_graphql, GraphQLQuery, Response};
+use futures::stream::{self, Stream};
+use graphql_client::reqwest::post_graphql;
 use reqwest::{
-    header::{HeaderMap, HeaderValue, AUTHORIZATION},
+    header::{HeaderValue, AUTHORIZATION},
     Client as ReqwestClient,
 };
 
-use error::*;
+pub use error::*;
 pub use queries::*;
 
-use stablesats_auth_code::*;
-use stablesats_transactions_list::*;
-use stablesats_user_login::*;
+pub struct LastTransactionCursor(String);
+impl From<String> for LastTransactionCursor {
+    fn from(string: String) -> Self {
+        Self(string)
+    }
+}
 
-// Type aliases
-type StablesatsTransactions = StablesatsTransactionsListMeDefaultAccountWalletsTransactions;
-type StablesatsTransactionsEdges =
-    StablesatsTransactionsListMeDefaultAccountWalletsTransactionsEdges;
-type StablesatsAuthenticationCode = StablesatsAuthCodeUserRequestAuthCode;
+impl LastTransactionCursor {
+    fn inner(self) -> String {
+        self.0
+    }
+}
 
 #[derive(Debug)]
 pub struct StablesatsWalletsBalances {
     pub btc_wallet_balance: Option<queries::SignedAmount>,
     pub usd_wallet_balance: Option<queries::SignedAmount>,
-}
-
-#[derive(Debug)]
-pub struct StablesatsWalletTransactions {
-    pub btc_transactions: Option<StablesatsTransactions>,
-    pub usd_transactions: Option<StablesatsTransactions>,
 }
 
 #[derive(Debug, Clone)]
@@ -60,14 +54,23 @@ impl GaloyClient {
         let jwt = match jwt.inner {
             Some(jwt) => jwt,
             None => {
-                return Err(GaloyClientError::AuthenticationToken(
+                return Err(GaloyClientError::Authentication(
                     "Empty authentication token".to_string(),
                 ))
             }
         };
+        let client = ReqwestClient::builder()
+            .default_headers(
+                std::iter::once((
+                    AUTHORIZATION,
+                    HeaderValue::from_str(&format!("Bearer {}", jwt)).unwrap(),
+                ))
+                .collect(),
+            )
+            .build()?;
 
         Ok(Self {
-            client: ReqwestClient::new(),
+            client,
             config,
             jwt,
         })
@@ -87,9 +90,7 @@ impl GaloyClient {
         let response_data = response.data;
 
         if let Some(response_data) = response_data {
-            let result = response_data.user_request_auth_code;
-
-            return Ok(result);
+            StablesatsAuthenticationCode::try_from(response_data)?;
         }
         Err(GaloyClientError::UnknownResponse(
             "Failed to parse response data".to_string(),
@@ -135,148 +136,90 @@ impl GaloyClient {
 
     pub async fn transactions_list(
         &mut self,
-        last_transaction_cursor: String,
+        last_transaction_cursor: LastTransactionCursor,
         wallet_currency: stablesats_transactions_list::WalletCurrency,
-    ) -> Result<std::pin::Pin<Box<impl Stream<Item = StablesatsTransactionsEdges>>>, GaloyClientError>
-    {
-        let header_value = format!("Bearer {}", self.jwt);
-        let mut header = HeaderMap::new();
-        header.insert(AUTHORIZATION, HeaderValue::from_str(header_value.as_str())?);
-
+    ) -> Result<
+        std::pin::Pin<
+            Box<impl Stream<Item = stablesats_transactions_list::StablesatsTransactionsListMeDefaultAccountTransactionsEdges>>,
+        >,
+        GaloyClientError,
+    >{
         let variables = stablesats_transactions_list::Variables {
             last: None,
             first: None,
             before: None,
-            after: Some(last_transaction_cursor),
+            after: Some(last_transaction_cursor.inner()),
         };
-
-        let request_body = StablesatsTransactionsList::build_query(variables);
-        let response = self
-            .client
-            .post(&self.config.api)
-            .headers(header)
-            .json(&request_body)
-            .send()
-            .await?;
-
-        let response_body: Response<stablesats_transactions_list::ResponseData> =
-            response.json().await?;
-        let response_data = response_body.data;
-
-        let result = match response_data {
-            Some(data) => data,
-            None => {
-                return Err(GaloyClientError::UnknownResponse(
-                    "Empty`data` response data".to_string(),
-                ))
-            }
-        };
-
-        let user = result.me;
-
-        let default_account = match user {
-            Some(data) => data.default_account,
-            None => {
-                return Err(GaloyClientError::UnknownResponse(
-                    "Empty `me` response data".to_string(),
-                ))
-            }
-        };
-
-        let wallet = default_account
-            .wallets
-            .into_iter()
-            .find(|wallet| wallet.wallet_currency == wallet_currency);
-
-        if let Some(wallet) = wallet {
-            let transaction_edges = match wallet.transactions {
-                Some(tx) => tx.edges,
-                None => {
-                    return Err(GaloyClientError::UnknownResponse(
-                        "Empty `transactions` response data".to_string(),
-                    ))
-                }
-            };
-
-            let transactions = match transaction_edges {
-                Some(txs) => txs,
-                None => {
-                    return Err(GaloyClientError::UnknownResponse(
-                        "Empty `edges` response data".to_string(),
-                    ))
-                }
-            };
-
-            return Ok(Box::pin(stream::iter(transactions)));
-        }
-        Err(GaloyClientError::UnknownResponse(
-            "Failed to parse response data".to_string(),
-        ))
-    }
-
-    pub async fn wallets_balances(&self) -> Result<StablesatsWalletsBalances, GaloyClientError> {
-        let header_value = format!("Bearer {}", self.jwt);
-        let mut header = HeaderMap::new();
-        header.insert(AUTHORIZATION, HeaderValue::from_str(header_value.as_str())?);
-
-        let variables = stablesats_wallets::Variables;
-        let request_body = StablesatsWallets::build_query(variables);
-        let response = self
-            .client
-            .post(&self.config.api)
-            .headers(header)
-            .json(&request_body)
-            .send()
-            .await?;
-
-        let response_body: Response<stablesats_wallets::ResponseData> = response.json().await?;
-        if response_body.errors.is_some() {
-            if let Some(error) = response_body.errors {
+        let response = post_graphql::<StablesatsTransactionsList, _>(
+            &self.client,
+            &self.config.api,
+            variables,
+        )
+        .await?;
+        if response.errors.is_some() {
+            if let Some(error) = response.errors {
                 return Err(GaloyClientError::GrapqQlApi(error[0].clone().message));
             }
         }
 
-        let response_data = response_body.data;
-        if response_data.is_none() {
-            return Err(GaloyClientError::UnknownResponse(
-                "Empty `data` in response data".to_string(),
-            ));
-        }
-
-        let me = match response_data {
-            Some(data) => data.me,
+        let response_data = response.data;
+        let result = match response_data {
+            Some(result) => result,
             None => {
-                return Err(GaloyClientError::UnknownResponse(
-                    "Empty `data` in response data".to_string(),
+                return Err(GaloyClientError::GrapqQlApi(
+                    "Empty `me` in response data".to_string(),
+                ))
+            }
+        };
+        let post_cursor_transactions = StablesatsTransactions::try_from(result)?;
+
+        let tx_edges = post_cursor_transactions.edges;
+
+        let tx = match tx_edges {
+            Some(tx) => tx,
+            None => {
+                return Err(GaloyClientError::GrapqQlApi(
+                    "Empty `transactions edges` in response data".to_string(),
                 ))
             }
         };
 
-        let default_account = match me {
-            Some(me) => me.default_account,
+        let ccy_tx: Vec<stablesats_transactions_list::StablesatsTransactionsListMeDefaultAccountTransactionsEdges> = tx
+            .into_iter()
+            .filter(move |transaction| transaction.node.settlement_currency == wallet_currency)
+            .collect();
+
+        Ok(Box::pin(stream::iter(ccy_tx)))
+    }
+
+    pub async fn wallets_balances(&self) -> Result<StablesatsWalletsBalances, GaloyClientError> {
+        let variables = stablesats_wallets::Variables;
+        let response =
+            post_graphql::<StablesatsWallets, _>(&self.client, &self.config.api, variables).await?;
+        if response.errors.is_some() {
+            if let Some(error) = response.errors {
+                return Err(GaloyClientError::GrapqQlApi(error[0].clone().message));
+            }
+        }
+
+        let response_data = response.data;
+        let result = match response_data {
+            Some(result) => result,
             None => {
-                return Err(GaloyClientError::UnknownResponse(
+                return Err(GaloyClientError::GrapqQlApi(
                     "Empty `me` in response data".to_string(),
                 ))
             }
         };
 
-        let wallets = default_account.wallets;
-
-        let btc_wallet = wallets
-            .clone()
-            .into_iter()
-            .find(|wallet| wallet.wallet_currency == stablesats_wallets::WalletCurrency::BTC);
-
-        let usd_wallet = wallets
-            .into_iter()
-            .find(|wallet| wallet.wallet_currency == stablesats_wallets::WalletCurrency::USD);
+        let wallets = StablesatsWalletsWrapper::try_from(result)?;
+        let btc_wallet = wallets.btc_wallet;
+        let usd_wallet = wallets.usd_wallet;
 
         let btc_wallet_balance: Option<SignedAmount> = match btc_wallet {
             Some(wallet) => Some(wallet.balance),
             None => None,
         };
-
         let usd_wallet_balance: Option<SignedAmount> = match usd_wallet {
             Some(wallet) => Some(wallet.balance),
             None => None,

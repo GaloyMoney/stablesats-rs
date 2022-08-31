@@ -11,5 +11,5 @@ pub enum GaloyClientError {
     #[error("GaloyWalletError: {0}")]
     GrapqQlApi(String),
     #[error("GaloyWalletError: {0}")]
-    AuthenticationToken(String),
+    Authentication(String),
 }

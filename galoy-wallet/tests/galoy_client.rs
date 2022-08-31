@@ -1,5 +1,8 @@
 use futures::StreamExt;
-use galoy_wallet::{stablesats_transactions_list::TxStatus, *};
+use galoy_wallet::{
+    stablesats_transactions_list::{TxStatus, WalletCurrency},
+    *,
+};
 use std::env;
 
 fn staging_wallet_configuration() -> GaloyClientConfig {
@@ -22,7 +25,8 @@ async fn btc_transactions_list() -> anyhow::Result<()> {
     let config = staging_wallet_configuration();
     let mut wallet_client = GaloyClient::connect(config).await?;
 
-    let last_transaction_cursor = "5f88cbf56d87e9001ca7dab4".to_string();
+    let last_transaction_cursor =
+        LastTransactionCursor::from("YXJyYXljb25uZWN0aW9uOjQxMQ==".to_string());
     let wallet_currency = stablesats_transactions_list::WalletCurrency::BTC;
 
     let mut btc_transactions = wallet_client
@@ -38,7 +42,7 @@ async fn btc_transactions_list() -> anyhow::Result<()> {
     assert_eq!(tx_1.node.settlement_amount, 17385.0);
     assert_eq!(tx_1.node.memo, Some("memo Invoice GQL".to_string()));
     assert_eq!(tx_1.node.created_at, 1602800356);
-    assert_eq!(tx_1.cursor, "5f88cae4633400001c0ea321");
+    assert_eq!(tx_1.cursor, "YXJyYXljb25uZWN0aW9uOjQxMg==");
 
     Ok(())
 }
@@ -49,7 +53,8 @@ async fn usd_transactions_list() -> anyhow::Result<()> {
     let config = staging_wallet_configuration();
     let mut wallet_client = GaloyClient::connect(config).await?;
 
-    let last_transaction_cursor = "6213a94e13a69ff20c4941bd".to_string();
+    let last_transaction_cursor =
+        LastTransactionCursor::from("YXJyYXljb25uZWN0aW9uOjQwOA==".to_string());
     let wallet_currency = stablesats_transactions_list::WalletCurrency::USD;
 
     let mut usd_transactions = wallet_client
@@ -61,11 +66,12 @@ async fn usd_transactions_list() -> anyhow::Result<()> {
         .await
         .expect("Expected transaction, found None");
 
-    assert_eq!(tx_1.cursor, "6213a8a76208f84146869625");
+    assert_eq!(tx_1.cursor, "YXJyYXljb25uZWN0aW9uOjQxMA==");
     assert_eq!(tx_1.node.status, TxStatus::SUCCESS);
-    assert_eq!(tx_1.node.settlement_amount, 775.0);
+    assert_eq!(tx_1.node.settlement_amount, 0.00011503663416);
+    assert_eq!(tx_1.node.settlement_currency, WalletCurrency::USD);
     assert_eq!(tx_1.node.memo, None);
-    assert_eq!(tx_1.node.created_at, 1645455527);
+    assert_eq!(tx_1.node.created_at, 1602800629);
 
     Ok(())
 }
