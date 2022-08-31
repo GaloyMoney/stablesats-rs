@@ -8,7 +8,7 @@ edition = "2021"
 [dependencies]
 shared = { path = "../shared", package = "stablesats-shared" }
 
-thiserror = "1.0.32"
+thiserror = "1.0.33"
 tokio = "1.20.1"
 sqlx = { version = "0.6", features = [ "offline", "runtime-tokio-rustls", "postgres", "decimal", "uuid", "chrono" ] }
 uuid = "1.1.2"
