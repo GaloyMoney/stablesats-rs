@@ -1,5 +1,5 @@
-mutation StablesatsDepositAddress($input: OnChainAddressCreateInput!) {
-  onChainAddressCreate(input: $input) {
+mutation StablesatsDepositAddress($input: OnChainAddressCurrentInput!) {
+  onChainAddressCurrent(input: $input) {
     address
     errors {
       __typename

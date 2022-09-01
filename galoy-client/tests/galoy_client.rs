@@ -96,10 +96,41 @@ async fn onchain_deposit_address() -> anyhow::Result<()> {
     let wallet_id: WalletId = "e705aa02-052b-4c3e-be2b-523c98a1aec4".to_string();
 
     let onchain_address = wallet_client.onchain_address(wallet_id).await?;
+    println!("{:?}", onchain_address);
     assert!(onchain_address.address.len() == 42);
     Ok(())
 }
 
+/// Test making an onchain payment
+#[tokio::test]
+async fn onchain_payment() -> anyhow::Result<()> {
+    let config = staging_wallet_configuration();
+    let wallet_client = GaloyClient::connect(config).await?;
+
+    let btc_wallet_id: WalletId = "e705aa02-052b-4c3e-be2b-523c98a1aec4".to_string();
+    let onchain_address: OnChainAddress = "tb1qy4vzwfnfdsxmkjw8wh4mhw3h6gy7g2gw48zzkr".to_string();
+    let memo = "".to_string();
+    let amount = 1001;
+    let target_conf = 2;
+
+    let payment_result = wallet_client
+        .send_onchain_payment(
+            onchain_address,
+            amount,
+            Some(memo),
+            target_conf,
+            btc_wallet_id,
+        )
+        .await?;
+    println!("{:?}", payment_result);
+
+    assert_eq!(
+        payment_result,
+        stablesats_on_chain_payment::PaymentSendResult::SUCCESS
+    );
+
+    Ok(())
+}
 // /// Test to get onchain transaction fee
 // #[tokio::test]
 // async fn onchain_tx_fee() -> anyhow::Result<()> {

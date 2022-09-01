@@ -11,6 +11,8 @@ use reqwest::{
 pub use error::*;
 pub use queries::*;
 
+use self::stablesats_on_chain_payment::PaymentSendResult;
+
 pub struct LastTransactionCursor(pub String);
 
 #[derive(Debug)]
@@ -230,7 +232,7 @@ impl GaloyClient {
         wallet_id: WalletId,
     ) -> Result<OnchainAddress, GaloyClientError> {
         let variables = stablesats_deposit_address::Variables {
-            input: stablesats_deposit_address::OnChainAddressCreateInput { wallet_id },
+            input: stablesats_deposit_address::OnChainAddressCurrentInput { wallet_id },
         };
         let response =
             post_graphql::<StablesatsDepositAddress, _>(&self.client, &self.config.api, variables)
@@ -262,5 +264,61 @@ impl GaloyClient {
         };
 
         Ok(OnchainAddress { address })
+    }
+
+    pub async fn send_onchain_payment(
+        &self,
+        address: OnChainAddress,
+        amount: SatAmount,
+        memo: Option<Memo>,
+        target_conf: TargetConfirmations,
+        wallet_id: WalletId,
+    ) -> Result<PaymentSendResult, GaloyClientError> {
+        let variables = stablesats_on_chain_payment::Variables {
+            input: stablesats_on_chain_payment::OnChainPaymentSendInput {
+                address,
+                amount,
+                memo: memo,
+                target_confirmations: Some(target_conf),
+                wallet_id,
+            },
+        };
+        let response =
+            post_graphql::<StablesatsOnChainPayment, _>(&self.client, &self.config.api, variables)
+                .await?;
+        if response.errors.is_some() {
+            if let Some(error) = response.errors {
+                return Err(GaloyClientError::GrapqQlApi(error[0].clone().message));
+            }
+        }
+
+        let response_data = response.data;
+        let result = match response_data {
+            Some(data) => data,
+            None => {
+                return Err(GaloyClientError::GrapqQlApi(
+                    "Empty `onChainPaymentSend` in response data".to_string(),
+                ))
+            }
+        };
+
+        let onchain_payment_send = StablesatsPaymentSend::try_from(result)?;
+        if !onchain_payment_send.errors.is_empty() {
+            return Err(GaloyClientError::GrapqQlApi(
+                onchain_payment_send.errors[0].clone().message,
+            ));
+        };
+
+        let payment_status = onchain_payment_send.status;
+        let status = match payment_status {
+            Some(status) => status,
+            None => {
+                return Err(GaloyClientError::GrapqQlApi(
+                    "Empty `status` in response data".to_string(),
+                ))
+            }
+        };
+
+        Ok(status)
     }
 }

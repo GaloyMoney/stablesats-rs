@@ -164,12 +164,30 @@ pub type OnChainAddress = String;
 )]
 pub struct StablesatsDepositAddress;
 pub type StablesatsOnchainAddress =
-    stablesats_deposit_address::StablesatsDepositAddressOnChainAddressCreate;
+    stablesats_deposit_address::StablesatsDepositAddressOnChainAddressCurrent;
 impl TryFrom<stablesats_deposit_address::ResponseData> for StablesatsOnchainAddress {
     type Error = GaloyClientError;
 
     fn try_from(response: stablesats_deposit_address::ResponseData) -> Result<Self, Self::Error> {
-        let create_address = response.on_chain_address_create;
+        let create_address = response.on_chain_address_current;
         Ok(create_address)
+    }
+}
+
+#[derive(GraphQLQuery)]
+#[graphql(
+    schema_path = "src/client/graphql/schema.graphql",
+    query_path = "src/client/graphql/mutations/onchain_payment.graphql",
+    response_derives = "Debug, Clone, PartialEq"
+)]
+pub struct StablesatsOnChainPayment;
+pub type StablesatsPaymentSend =
+    stablesats_on_chain_payment::StablesatsOnChainPaymentOnChainPaymentSend;
+impl TryFrom<stablesats_on_chain_payment::ResponseData> for StablesatsPaymentSend {
+    type Error = GaloyClientError;
+
+    fn try_from(response: stablesats_on_chain_payment::ResponseData) -> Result<Self, Self::Error> {
+        let onchain_payment_send = response.on_chain_payment_send;
+        Ok(onchain_payment_send)
     }
 }
