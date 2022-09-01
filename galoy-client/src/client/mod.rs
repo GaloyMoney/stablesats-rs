@@ -321,4 +321,41 @@ impl GaloyClient {
 
         Ok(status)
     }
+
+    pub async fn onchain_tx_fee(
+        &self,
+        address: OnChainAddress,
+        amount: SatAmount,
+        target_conf: TargetConfirmations,
+        wallet_id: WalletId,
+    ) -> Result<StablesatsTxFee, GaloyClientError> {
+        let variables = stablesats_on_chain_tx_fee::Variables {
+            address,
+            amount,
+            target_confirmations: Some(target_conf),
+            wallet_id,
+        };
+        let response =
+            post_graphql::<StablesatsOnChainTxFee, _>(&self.client, &self.config.api, variables)
+                .await?;
+        if response.errors.is_some() {
+            if let Some(error) = response.errors {
+                return Err(GaloyClientError::GrapqQlApi(error[0].clone().message));
+            }
+        }
+
+        let response_data = response.data;
+        let result = match response_data {
+            Some(data) => data,
+            None => {
+                return Err(GaloyClientError::GrapqQlApi(
+                    "Empty `onChainTxFee` in response data".to_string(),
+                ))
+            }
+        };
+
+        let onchain_tx_fee = StablesatsTxFee::try_from(result)?;
+
+        Ok(onchain_tx_fee)
+    }
 }

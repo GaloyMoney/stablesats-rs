@@ -1,4 +1,4 @@
-query StablesatsOnchainTxFee(
+query StablesatsOnChainTxFee(
   $address: OnChainAddress!
   $amount: SatAmount!
   $targetConfirmations: TargetConfirmations

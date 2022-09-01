@@ -66,6 +66,7 @@ pub type WalletId = String;
 pub type Timestamp = u64;
 pub type Memo = String;
 pub(crate) type SignedAmount = f64;
+
 pub(crate) type StablesatsTransactions =
     stablesats_transactions_list::StablesatsTransactionsListMeDefaultAccountTransactions;
 
@@ -151,10 +152,21 @@ impl TryFrom<stablesats_wallets::ResponseData> for StablesatsWalletsWrapper {
     query_path = "src/client/graphql/queries/onchain_tx_fee.graphql",
     response_derives = "Debug"
 )]
-pub struct StablesatsOnchainTxFee;
+pub struct StablesatsOnChainTxFee;
 pub type TargetConfirmations = u32;
 pub type SatAmount = u128;
 pub type OnChainAddress = String;
+
+pub type StablesatsTxFee = stablesats_on_chain_tx_fee::StablesatsOnChainTxFeeOnChainTxFee;
+
+impl TryFrom<stablesats_on_chain_tx_fee::ResponseData> for StablesatsTxFee {
+    type Error = GaloyClientError;
+
+    fn try_from(response: stablesats_on_chain_tx_fee::ResponseData) -> Result<Self, Self::Error> {
+        let onchain_tx_fee = response.on_chain_tx_fee;
+        Ok(onchain_tx_fee)
+    }
+}
 
 #[derive(GraphQLQuery)]
 #[graphql(
@@ -163,8 +175,10 @@ pub type OnChainAddress = String;
     response_derives = "Debug"
 )]
 pub struct StablesatsDepositAddress;
+
 pub type StablesatsOnchainAddress =
     stablesats_deposit_address::StablesatsDepositAddressOnChainAddressCurrent;
+
 impl TryFrom<stablesats_deposit_address::ResponseData> for StablesatsOnchainAddress {
     type Error = GaloyClientError;
 
@@ -181,8 +195,10 @@ impl TryFrom<stablesats_deposit_address::ResponseData> for StablesatsOnchainAddr
     response_derives = "Debug, Clone, PartialEq"
 )]
 pub struct StablesatsOnChainPayment;
+
 pub type StablesatsPaymentSend =
     stablesats_on_chain_payment::StablesatsOnChainPaymentOnChainPaymentSend;
+
 impl TryFrom<stablesats_on_chain_payment::ResponseData> for StablesatsPaymentSend {
     type Error = GaloyClientError;
 
