@@ -1,7 +1,10 @@
+mod config;
+
+use futures::stream::StreamExt;
 use opentelemetry::{propagation::TextMapPropagator, sdk::propagation::TraceContextPropagator};
+use sqlxmq::OwnedHandle;
 use tracing::{info_span, instrument, Instrument};
 use tracing_opentelemetry::OpenTelemetrySpanExt;
-use futures::stream::StreamExt;
 
 use shared::{
     payload::SynthUsdExposurePayload,
@@ -10,13 +13,25 @@ use shared::{
 
 use crate::error::*;
 
-pub struct HedgingApp {}
+pub use config::*;
+
+pub struct HedgingApp {
+    _runner: OwnedHandle,
+}
 
 impl HedgingApp {
-    pub async fn run(config: PubSubConfig) -> Result<Self, HedgingError> {
+    pub async fn run(
+        HedgingAppConfig {
+            pg_con,
+            migrate_on_start: _,
+        }: HedgingAppConfig,
+        config: PubSubConfig,
+    ) -> Result<Self, HedgingError> {
+        let pool = sqlx::PgPool::connect(&pg_con).await?;
         let subscriber = Subscriber::new(config).await?;
         let mut stream = subscriber.subscribe::<SynthUsdExposurePayload>().await?;
-        let app = HedgingApp {};
+        let job_runner = crate::job::start_job_runner(pool.clone()).await?;
+        let app = HedgingApp { _runner: job_runner };
         // balance updator {
         //   tokio::spawn(async move {
         //     poll or listen  to WS the exchange and write the current exposure
@@ -24,6 +39,15 @@ impl HedgingApp {
         // }
         // msg receiver
         let _ = tokio::spawn(async move {
+            match crate::job::adjust_hedge.builder()
+                .set_channel_name("adjust_hedge")
+                .set_json("John").expect("set_json issue")
+                .spawn(&pool)
+                .await {
+                    Ok(_) => println!("Job created"),
+                    Err(e) => println!("job error: {}", e),
+                }
+
             let propagator = TraceContextPropagator::new();
 
             while let Some(msg) = stream.next().await {

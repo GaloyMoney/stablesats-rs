@@ -20,6 +20,8 @@ thiserror = "1.0.33"
 opentelemetry = { version = "0.17.0", features = ["trace"] }
 tracing-opentelemetry = "0.17.4"
 tracing = "0.1.36"
+sqlx = { version = "0.6", features = [ "offline", "runtime-tokio-rustls", "postgres", "decimal", "uuid", "chrono" ] }
+sqlxmq = { version = "0.4.1", default-features = false, features = [ "runtime-tokio-rustls" ] }
 
 [dev-dependencies]
 anyhow = "1.0.63"

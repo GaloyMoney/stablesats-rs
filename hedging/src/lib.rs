@@ -3,6 +3,7 @@
 
 mod app;
 mod error;
+mod job;
 
-pub use app::HedgingApp;
+pub use app::*;
 pub use error::*;
