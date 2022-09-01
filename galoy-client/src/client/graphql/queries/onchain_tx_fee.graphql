@@ -1,0 +1,16 @@
+query StablesatsOnchainTxFee(
+  $address: OnChainAddress!
+  $amount: SatAmount!
+  $targetConfirmations: TargetConfirmations
+  $walletId: WalletId!
+) {
+  onChainTxFee(
+    address: $address
+    amount: $amount
+    targetConfirmations: $targetConfirmations
+    walletId: $walletId
+  ) {
+    amount
+    targetConfirmations
+  }
+}

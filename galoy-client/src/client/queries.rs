@@ -45,6 +45,15 @@ impl TryFrom<stablesats_auth_code::ResponseData> for StablesatsAuthenticationCod
 pub struct StablesatsUserLogin;
 pub type AuthToken = String;
 pub type OneTimeAuthCode = String;
+pub type StablesatsLogin = stablesats_user_login::StablesatsUserLoginUserLogin;
+impl TryFrom<stablesats_user_login::ResponseData> for StablesatsLogin {
+    type Error = GaloyClientError;
+
+    fn try_from(response: stablesats_user_login::ResponseData) -> Result<Self, Self::Error> {
+        let user_login = response.user_login;
+        Ok(user_login)
+    }
+}
 
 #[derive(GraphQLQuery)]
 #[graphql(
@@ -133,5 +142,34 @@ impl TryFrom<stablesats_wallets::ResponseData> for StablesatsWalletsWrapper {
             btc_wallet,
             usd_wallet,
         })
+    }
+}
+
+#[derive(GraphQLQuery)]
+#[graphql(
+    schema_path = "src/client/graphql/schema.graphql",
+    query_path = "src/client/graphql/queries/onchain_tx_fee.graphql",
+    response_derives = "Debug"
+)]
+pub struct StablesatsOnchainTxFee;
+pub type TargetConfirmations = u32;
+pub type SatAmount = u128;
+pub type OnChainAddress = String;
+
+#[derive(GraphQLQuery)]
+#[graphql(
+    schema_path = "src/client/graphql/schema.graphql",
+    query_path = "src/client/graphql/mutations/deposit_address.graphql",
+    response_derives = "Debug"
+)]
+pub struct StablesatsDepositAddress;
+pub type StablesatsOnchainAddress =
+    stablesats_deposit_address::StablesatsDepositAddressOnChainAddressCreate;
+impl TryFrom<stablesats_deposit_address::ResponseData> for StablesatsOnchainAddress {
+    type Error = GaloyClientError;
+
+    fn try_from(response: stablesats_deposit_address::ResponseData) -> Result<Self, Self::Error> {
+        let create_address = response.on_chain_address_create;
+        Ok(create_address)
     }
 }

@@ -1,0 +1,10 @@
+mutation StablesatsDepositAddress($input: OnChainAddressCreateInput!) {
+  onChainAddressCreate(input: $input) {
+    address
+    errors {
+      __typename
+      message
+      path
+    }
+  }
+}

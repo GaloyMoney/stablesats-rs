@@ -11,18 +11,7 @@ use reqwest::{
 pub use error::*;
 pub use queries::*;
 
-pub struct LastTransactionCursor(String);
-impl From<String> for LastTransactionCursor {
-    fn from(string: String) -> Self {
-        Self(string)
-    }
-}
-
-impl LastTransactionCursor {
-    fn inner(self) -> String {
-        self.0
-    }
-}
+pub struct LastTransactionCursor(pub String);
 
 #[derive(Debug)]
 pub struct StablesatsWalletsBalances {
@@ -44,8 +33,13 @@ pub struct GaloyClientConfig {
     pub phone_number: String,
 }
 
-pub(crate) struct GaloyAuthToken {
+pub(crate) struct StablesatsAuthToken {
     pub inner: Option<String>,
+}
+
+#[derive(Debug)]
+pub struct OnchainAddress {
+    pub address: String,
 }
 
 impl GaloyClient {
@@ -97,7 +91,7 @@ impl GaloyClient {
         ))
     }
 
-    async fn login_jwt(config: GaloyClientConfig) -> Result<GaloyAuthToken, GaloyClientError> {
+    async fn login_jwt(config: GaloyClientConfig) -> Result<StablesatsAuthToken, GaloyClientError> {
         let variables = stablesats_user_login::Variables {
             input: stablesats_user_login::UserLoginInput {
                 code: config.code.clone(),
@@ -117,21 +111,21 @@ impl GaloyClient {
 
         let response_data = response.data;
         if response_data.is_none() {
-            return Err(GaloyClientError::UnknownResponse(format!(
-                "Expected some response data, found {:?}",
-                response_data
-            )));
+            return Err(GaloyClientError::UnknownResponse(
+                "Empty `data` in response".to_string(),
+            ));
         }
 
-        if let Some(response_data) = response_data {
-            let user_login = response_data.user_login;
-            let login_jwt = user_login.auth_token;
-
-            return Ok(GaloyAuthToken { inner: login_jwt });
-        }
-        Err(GaloyClientError::UnknownResponse(
-            "Failed to parse response data".to_string(),
-        ))
+        let auth_token = match response_data {
+            Some(login_data) => StablesatsLogin::try_from(login_data)?.auth_token,
+            None => {
+                return Err(GaloyClientError::UnknownResponse(format!(
+                    "Expected some response data, found {:?}",
+                    response_data
+                )))
+            }
+        };
+        Ok(StablesatsAuthToken { inner: auth_token })
     }
 
     pub async fn transactions_list(
@@ -148,7 +142,7 @@ impl GaloyClient {
             last: None,
             first: None,
             before: None,
-            after: Some(last_transaction_cursor.inner()),
+            after: Some(last_transaction_cursor.0),
         };
         let response = post_graphql::<StablesatsTransactionsList, _>(
             &self.client,
@@ -229,5 +223,44 @@ impl GaloyClient {
             usd_wallet_balance,
             btc_wallet_balance,
         })
+    }
+
+    pub async fn onchain_address(
+        &self,
+        wallet_id: WalletId,
+    ) -> Result<OnchainAddress, GaloyClientError> {
+        let variables = stablesats_deposit_address::Variables {
+            input: stablesats_deposit_address::OnChainAddressCreateInput { wallet_id },
+        };
+        let response =
+            post_graphql::<StablesatsDepositAddress, _>(&self.client, &self.config.api, variables)
+                .await?;
+        if response.errors.is_some() {
+            if let Some(error) = response.errors {
+                return Err(GaloyClientError::GrapqQlApi(error[0].clone().message));
+            }
+        }
+
+        let response_data = response.data;
+        let result = match response_data {
+            Some(data) => data,
+            None => {
+                return Err(GaloyClientError::GrapqQlApi(
+                    "Empty `on chain address create` in response data".to_string(),
+                ))
+            }
+        };
+
+        let onchain_address_create = StablesatsOnchainAddress::try_from(result)?;
+        let address = match onchain_address_create.address {
+            Some(address) => address,
+            None => {
+                return Err(GaloyClientError::GrapqQlApi(
+                    "Empty `address` in response data".to_string(),
+                ))
+            }
+        };
+
+        Ok(OnchainAddress { address })
     }
 }

@@ -25,8 +25,7 @@ async fn btc_transactions_list() -> anyhow::Result<()> {
     let config = staging_wallet_configuration();
     let mut wallet_client = GaloyClient::connect(config).await?;
 
-    let last_transaction_cursor =
-        LastTransactionCursor::from("YXJyYXljb25uZWN0aW9uOjQxMQ==".to_string());
+    let last_transaction_cursor = LastTransactionCursor("YXJyYXljb25uZWN0aW9uOjQxMQ==".to_string());
     let wallet_currency = stablesats_transactions_list::WalletCurrency::BTC;
 
     let mut btc_transactions = wallet_client
@@ -53,8 +52,7 @@ async fn usd_transactions_list() -> anyhow::Result<()> {
     let config = staging_wallet_configuration();
     let mut wallet_client = GaloyClient::connect(config).await?;
 
-    let last_transaction_cursor =
-        LastTransactionCursor::from("YXJyYXljb25uZWN0aW9uOjQwOA==".to_string());
+    let last_transaction_cursor = LastTransactionCursor("YXJyYXljb25uZWN0aW9uOjQwOA==".to_string());
     let wallet_currency = stablesats_transactions_list::WalletCurrency::USD;
 
     let mut usd_transactions = wallet_client
@@ -89,3 +87,27 @@ async fn wallet_balance() -> anyhow::Result<()> {
 
     Ok(())
 }
+
+/// Test to generate onchain deposit address
+#[tokio::test]
+async fn onchain_deposit_address() -> anyhow::Result<()> {
+    let config = staging_wallet_configuration();
+    let wallet_client = GaloyClient::connect(config).await?;
+    let wallet_id: WalletId = "e705aa02-052b-4c3e-be2b-523c98a1aec4".to_string();
+
+    let onchain_address = wallet_client.onchain_address(wallet_id).await?;
+    assert!(onchain_address.address.len() == 42);
+    Ok(())
+}
+
+// /// Test to get onchain transaction fee
+// #[tokio::test]
+// async fn onchain_tx_fee() -> anyhow::Result<()> {
+//     let config = staging_wallet_configuration();
+//     let wallet_client = GaloyClient::connect(config).await?;
+
+//     let onchain_tx_fee = wallet_client.onchain_tx_fee().await?;
+
+//     println!("{:?}", onchain_tx_fee);
+//     Ok(())
+// }
