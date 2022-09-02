@@ -9,51 +9,16 @@ async fn configured_okex_client() -> anyhow::Result<OkexClient> {
     let api_key = env::var("OKEX_API_KEY").expect("OKEX_API_KEY not set");
     let passphrase = env::var("OKEX_PASSPHRASE").expect("OKEX_PASS_PHRASE not set");
     let secret_key = env::var("OKEX_SECRET_KEY").expect("OKEX_SECRET_KEY not set");
-    let simulated = false;
-    let position_mode = OkexPositionMode::Net;
 
     let client = OkexClient::new(OkexClientConfig {
         api_key,
         passphrase,
         secret_key,
-        simulated,
-        position_mode,
+        simulated: true,
     })
     .await?;
 
     Ok(client)
-}
-
-async fn demo_okex_client() -> anyhow::Result<Option<OkexClient>> {
-    let api_key = env::var("OKEX_DEMO_API_KEY");
-    let passphrase = env::var("OKEX_DEMO_PASSPHRASE");
-    let secret_key = env::var("OKEX_DEMO_SECRET_KEY");
-    let simulated = true;
-    let position_mode = OkexPositionMode::Net;
-
-    if let (Ok(api_key), Ok(passphrase), Ok(secret_key)) = (api_key, passphrase, secret_key) {
-        let client = OkexClient::new(OkexClientConfig {
-            api_key,
-            passphrase,
-            secret_key,
-            simulated,
-            position_mode,
-        })
-        .await?;
-
-        return Ok(Some(client));
-    }
-
-    Ok(None)
-}
-
-#[tokio::test]
-async fn create_okex_client() -> anyhow::Result<()> {
-    let client = demo_okex_client().await;
-
-    assert!(client.is_ok());
-
-    Ok(())
 }
 
 #[tokio::test]
@@ -72,7 +37,6 @@ async fn client_is_missing_header() -> anyhow::Result<()> {
         passphrase: "".to_string(),
         secret_key: "".to_string(),
         simulated: true,
-        position_mode: OkexPositionMode::Net,
     })
     .await;
 
@@ -89,28 +53,28 @@ async fn client_is_missing_header() -> anyhow::Result<()> {
 
 #[tokio::test]
 async fn funding_account_balance() -> anyhow::Result<()> {
-    if let Some(client) = demo_okex_client().await? {
-        let avail_balance = client.funding_account_balance().await?;
-        let balance = avail_balance.amt_in_btc;
-        let minimum_balance = dec!(0);
-        assert!(balance >= minimum_balance);
-    }
+    let client = configured_okex_client().await?;
+    let avail_balance = client.funding_account_balance().await?;
+    let balance = avail_balance.amt_in_btc;
+    let minimum_balance = dec!(0);
+    assert!(balance >= minimum_balance);
 
     Ok(())
 }
 
 #[tokio::test]
 async fn trading_account_balance() -> anyhow::Result<()> {
-    if let Some(client) = demo_okex_client().await? {
-        let avail_balance = client.trading_account_balance().await?;
-        let minimum_balance = dec!(0);
-        assert!(avail_balance.amt_in_btc >= minimum_balance);
-    }
+    let client = configured_okex_client().await?;
+    let avail_balance = client.trading_account_balance().await?;
+    let minimum_balance = dec!(0);
+
+    assert!(avail_balance.amt_in_btc >= minimum_balance);
 
     Ok(())
 }
 
 #[tokio::test]
+#[ignore = "only works against real okex client"]
 async fn deposit_status() -> anyhow::Result<()> {
     if let (Ok(deposit_addr), Ok(deposit_amount)) = (
         env::var("OKEX_DEPOSIT_ADDRESS"),
@@ -127,17 +91,17 @@ async fn deposit_status() -> anyhow::Result<()> {
 }
 
 #[tokio::test]
+#[ignore = "only works against real okex client"]
 async fn withdraw_to_onchain_address() -> anyhow::Result<()> {
     let amount = Decimal::from_str_exact(OKEX_MINIMUM_WITHDRAWAL_AMOUNT)?;
     let fee = Decimal::from_str_exact(OKEX_MINIMUM_WITHDRAWAL_FEE)?;
     if let Ok(onchain_address) = env::var("ONCHAIN_BTC_WITHDRAWAL_ADDRESS") {
-        if let Some(client) = demo_okex_client().await? {
-            let withdraw_id = client
-                .withdraw_btc_onchain(amount, fee, onchain_address)
-                .await?;
+        let client = configured_okex_client().await?;
+        let withdraw_id = client
+            .withdraw_btc_onchain(amount, fee, onchain_address)
+            .await?;
 
-            assert!(withdraw_id.value.len() == 8);
-        }
+        assert!(withdraw_id.value.len() == 8);
     }
     Ok(())
 }
@@ -145,25 +109,11 @@ async fn withdraw_to_onchain_address() -> anyhow::Result<()> {
 #[tokio::test]
 #[ignore = "transfer call is rate limited"]
 async fn transfer_trading_to_funding() -> anyhow::Result<()> {
-    if let Some(client) = demo_okex_client().await? {
-        let amount = dec!(0.00001);
-        let transfer_id = client.transfer_trading_to_funding(amount).await?;
+    let client = configured_okex_client().await?;
+    let amount = dec!(0.00001);
+    let transfer_id = client.transfer_trading_to_funding(amount).await?;
 
-        assert!(transfer_id.value.len() == 9);
-    }
-
-    Ok(())
-}
-
-#[tokio::test]
-#[ignore = "transfer call is rate limited"]
-async fn transfer_funding_to_trading() -> anyhow::Result<()> {
-    if let Some(client) = demo_okex_client().await? {
-        let amount = dec!(0.00001);
-        let transfer_id = client.transfer_funding_to_trading(amount).await?;
-
-        assert!(transfer_id.value.len() == 9);
-    }
+    assert!(transfer_id.value.len() == 9);
 
     Ok(())
 }
@@ -171,60 +121,33 @@ async fn transfer_funding_to_trading() -> anyhow::Result<()> {
 #[tokio::test]
 #[ignore = "transfer call is rate limited"]
 async fn transfer_state() -> anyhow::Result<()> {
-    if let Some(client) = demo_okex_client().await? {
-        let amount = dec!(0.00001);
-        let transfer_id = client.transfer_funding_to_trading(amount).await?;
+    let client = configured_okex_client().await?;
+    let amount = dec!(0.00001);
+    let transfer_id = client.transfer_funding_to_trading(amount).await?;
 
-        let transfer_state = client.transfer_state(transfer_id).await?;
+    let transfer_state = client.transfer_state(transfer_id).await?;
 
-        assert_eq!(transfer_state.value, "success".to_string());
-    }
-
-    Ok(())
-}
-
-#[tokio::test]
-async fn place_order() -> anyhow::Result<()> {
-    if let Some(client) = demo_okex_client().await? {
-        let instrument = OkexInstrumentId::BtcUsdSwap;
-        let order_side = OkexOrderSide::Buy;
-
-        let order_id = client.place_order(instrument, order_side, 1).await?;
-
-        assert!(order_id.value.len() == 18);
-    }
+    assert_eq!(transfer_state.value, "success".to_string());
 
     Ok(())
 }
 
 #[tokio::test]
-async fn get_positions() -> anyhow::Result<()> {
-    if let Some(client) = demo_okex_client().await? {
-        let position = client.get_position().await?;
+async fn open_close_position() -> anyhow::Result<()> {
+    let client = configured_okex_client().await?;
 
-        assert_eq!(position.value.len(), 18);
-    }
+    client.close_positions().await?;
 
-    Ok(())
-}
+    client
+        .place_order(OkexOrderSide::Sell, BtcUsdSwapContracts(1))
+        .await?;
 
-#[tokio::test]
-async fn close_positions() -> anyhow::Result<()> {
-    if let Some(client) = demo_okex_client().await? {
-        let instrument = OkexInstrumentId::BtcUsdSwap;
-        let order_side = OkexOrderSide::Buy;
+    let position = client.get_position_in_usd().await?;
 
-        // 1. Open position
-        client
-            .place_order(instrument.clone(), order_side, 1)
-            .await?;
+    assert!(position.value < dec!(-95));
+    assert!(position.value > dec!(-105));
 
-        // 2. Close position(s)
-        let position = client.close_positions(instrument, false).await?;
-
-        assert_eq!(position.inst_id, "BTC-USD-SWAP".to_string());
-        assert_eq!(position.pos_side, "net".to_string());
-    }
+    assert!(client.close_positions().await.is_ok());
 
     Ok(())
 }
