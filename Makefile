@@ -13,7 +13,7 @@ check-code:
 	SQLX_OFFLINE=true cargo audit
 
 test-in-ci:
-	SQLX_OFFLINE=true cargo nextest run --all-features --verbose --locked
+	SQLX_OFFLINE=true cargo nextest run --verbose --locked
 
 cli-run:
 	cargo run --bin stablesats run
