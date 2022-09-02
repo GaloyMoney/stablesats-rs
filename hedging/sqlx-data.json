@@ -1,24 +1,6 @@
 {
   "db": "PostgreSQL",
-  "354f23b44b95a23670b96c2cab132df5221b13609b382ca16d81dca51bd5729b": {
-    "describe": {
-      "columns": [
-        {
-          "name": "amount",
-          "ordinal": 0,
-          "type_info": "Numeric"
-        }
-      ],
-      "nullable": [
-        false
-      ],
-      "parameters": {
-        "Left": []
-      }
-    },
-    "query": "SELECT amount FROM synth_usd_exposure ORDER BY idx DESC LIMIT 1"
-  },
-  "98f8afc4d91f6a894b5524ad912cfd8b4eba3afe1931b12f842f71fa5bdcd504": {
+  "774f260ef3109c246642f50d09384471a5bb9a7c59203fb5c1d7d9eca1a7f5dc": {
     "describe": {
       "columns": [
         {
@@ -37,6 +19,24 @@
         ]
       }
     },
-    "query": "INSERT INTO synth_usd_exposure (amount, correlation_id) \n  SELECT $1, $2\n  WHERE NOT EXISTS (\n    SELECT FROM (\n      SELECT amount FROM synth_usd_exposure ORDER BY idx DESC LIMIT 1\n    ) last_row WHERE amount = $1\n  )\nRETURNING amount;\n"
+    "query": "INSERT INTO synth_usd_liability (amount, correlation_id) \n  SELECT $1, $2\n  WHERE NOT EXISTS (\n    SELECT FROM (\n      SELECT amount FROM synth_usd_liability ORDER BY idx DESC LIMIT 1\n    ) last_row WHERE amount = $1\n  )\nRETURNING amount;\n"
+  },
+  "d1a41ae07e59886a30a1750d7e8dd8f24c0652c267b25d8fd5cf3698dc8ca699": {
+    "describe": {
+      "columns": [
+        {
+          "name": "amount",
+          "ordinal": 0,
+          "type_info": "Numeric"
+        }
+      ],
+      "nullable": [
+        false
+      ],
+      "parameters": {
+        "Left": []
+      }
+    },
+    "query": "SELECT amount FROM synth_usd_liability ORDER BY idx DESC LIMIT 1"
   }
 }

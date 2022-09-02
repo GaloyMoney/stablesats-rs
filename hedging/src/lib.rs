@@ -4,7 +4,7 @@
 mod app;
 mod error;
 mod job;
-mod synth_usd_exposure;
+mod synth_usd_liability;
 
 pub use app::*;
 pub use error::*;
