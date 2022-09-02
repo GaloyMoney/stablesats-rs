@@ -6,9 +6,9 @@ use galoy_client::{
 use std::env;
 
 fn staging_wallet_configuration() -> GaloyClientConfig {
-    let api = env::var("STAGING_GRAPHQL_URI").expect("STAGING_GRAPHQL_URI not set");
-    let phone_number = env::var("STAGING_PHONE_NUMBER").expect("PHONE_NUMBER not set");
-    let code = env::var("STAGING_AUTH_CODE").expect("STAGING_AUTH_CODE not set");
+    let api = env::var("GRAPHQL_URI").expect("GRAPHQL_URI not set");
+    let phone_number = env::var("PHONE_NUMBER").expect("PHONE_NUMBER not set");
+    let code = env::var("AUTH_CODE").expect("AUTH_CODE not set");
 
     let config = GaloyClientConfig {
         api,
