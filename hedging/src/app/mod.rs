@@ -6,6 +6,7 @@ use sqlxmq::OwnedHandle;
 use tracing::{info_span, instrument, Instrument};
 use tracing_opentelemetry::OpenTelemetrySpanExt;
 
+use okex_client::*;
 use shared::{
     payload::SynthUsdLiabilityPayload,
     pubsub::{PubSubConfig, Subscriber},
@@ -25,13 +26,19 @@ impl HedgingApp {
             pg_con,
             migrate_on_start: _,
         }: HedgingAppConfig,
+        okex_client_config: OkexClientConfig,
         config: PubSubConfig,
     ) -> Result<Self, HedgingError> {
         let pool = sqlx::PgPool::connect(&pg_con).await?;
         let subscriber = Subscriber::new(config).await?;
         let mut stream = subscriber.subscribe::<SynthUsdLiabilityPayload>().await?;
         let synth_usd_liability = SynthUsdLiability::new(pool.clone());
-        let job_runner = job::start_job_runner(pool.clone(), synth_usd_liability.clone()).await?;
+        let job_runner = job::start_job_runner(
+            pool.clone(),
+            synth_usd_liability.clone(),
+            OkexClient::new(okex_client_config).await?,
+        )
+        .await?;
         let app = HedgingApp {
             _runner: job_runner,
         };

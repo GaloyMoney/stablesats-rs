@@ -1,7 +1,8 @@
-use std::env;
-
 use rust_decimal::Decimal;
 use rust_decimal_macros::dec;
+use serial_test::serial;
+
+use std::env;
 
 use okex_client::*;
 
@@ -133,13 +134,14 @@ async fn transfer_state() -> anyhow::Result<()> {
 }
 
 #[tokio::test]
+#[serial]
 async fn open_close_position() -> anyhow::Result<()> {
     let client = configured_okex_client().await?;
 
     client.close_positions().await?;
 
     client
-        .place_order(OkexOrderSide::Sell, BtcUsdSwapContracts(1))
+        .place_order(OkexOrderSide::Sell, BtcUsdSwapContracts::from(1))
         .await?;
 
     let position = client.get_position_in_usd().await?;

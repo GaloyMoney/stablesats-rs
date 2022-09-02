@@ -1,13 +1,17 @@
 use sqlxmq::{job, CurrentJob, JobRegistry, OwnedHandle};
 
+use okex_client::OkexClient;
+
 use crate::{error::*, synth_usd_liability::*};
 
 pub async fn start_job_runner(
     pool: sqlx::PgPool,
     synth_usd_liability: SynthUsdLiability,
+    okex: OkexClient,
 ) -> Result<OwnedHandle, HedgingError> {
     let mut registry = JobRegistry::new(&[adjust_hedge]);
     registry.set_context(synth_usd_liability);
+    registry.set_context(okex);
 
     Ok(registry.runner(&pool).run().await?)
 }

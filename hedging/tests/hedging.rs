@@ -1,6 +1,10 @@
 use futures::stream::StreamExt;
-use std::fs;
+use rust_decimal_macros::dec;
+use serial_test::serial;
 
+use std::{env, fs};
+
+use okex_client::*;
 use shared::{payload::*, pubsub::*, time::*};
 
 use hedging::*;
@@ -16,7 +20,18 @@ fn load_fixture() -> anyhow::Result<Fixture> {
     Ok(serde_json::from_str(&contents)?)
 }
 
-#[tokio::test]
+fn okex_client_config() -> OkexClientConfig {
+    let api_key = env::var("OKEX_API_KEY").expect("OKEX_API_KEY not set");
+    let passphrase = env::var("OKEX_PASSPHRASE").expect("OKEX_PASS_PHRASE not set");
+    let secret_key = env::var("OKEX_SECRET_KEY").expect("OKEX_SECRET_KEY not set");
+    OkexClientConfig {
+        api_key,
+        passphrase,
+        secret_key,
+        simulated: true,
+    }
+}
+
 async fn hedging() -> anyhow::Result<()> {
     let redis_host = std::env::var("REDIS_HOST").unwrap_or("localhost".to_string());
     let pubsub_config = PubSubConfig {
@@ -34,28 +49,32 @@ async fn hedging() -> anyhow::Result<()> {
     let subscriber = Subscriber::new(pubsub_config.clone()).await?;
     let mut stream = subscriber.subscribe::<SynthUsdLiabilityPayload>().await?;
 
-    let mut payloads = load_fixture()?.payloads.into_iter();
-    let payload = payloads.next().unwrap();
     let app = HedgingApp::run(
         HedgingAppConfig {
             pg_con: pg_con,
             migrate_on_start: false,
         },
+        okex_client_config(),
         pubsub_config,
     )
     .await?;
 
-    // get balance from okex
-    publisher.publish(payload).await?;
+    let mut payloads = load_fixture()?.payloads.into_iter();
+    publisher.publish(payloads.next().unwrap()).await?;
+    let _ = stream.next().await;
 
-    let msg = stream.next().await;
+    tokio::time::sleep(std::time::Duration::from_secs(1)).await;
 
-    assert!(msg.is_some());
+    let okex = OkexClient::new(okex_client_config()).await?;
+    let position = okex.get_position_in_usd().await?;
+    assert_eq!(position.value, dec!(0));
 
-    // tokio::time::sleep(std::time::Duration::from_secs(60)).await;
+    publisher.publish(payloads.next().unwrap()).await?;
+    let _ = stream.next().await;
+    tokio::time::sleep(std::time::Duration::from_secs(1)).await;
 
-    // get balance from okex
-    // assert diff
-    // assert!(false);
+    let position = okex.get_position_in_usd().await?;
+    assert!(position.value < dec!(0));
+
     Ok(())
 }
