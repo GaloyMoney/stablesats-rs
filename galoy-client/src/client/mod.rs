@@ -24,7 +24,6 @@ pub struct StablesatsWalletsBalances {
 pub struct GaloyClient {
     client: ReqwestClient,
     config: GaloyClientConfig,
-    jwt: String,
 }
 
 #[derive(Debug, Clone)]
@@ -64,11 +63,7 @@ impl GaloyClient {
             )
             .build()?;
 
-        Ok(Self {
-            client,
-            config,
-            jwt,
-        })
+        Ok(Self { client, config })
     }
 
     pub async fn authentication_code(
@@ -140,9 +135,6 @@ impl GaloyClient {
         GaloyClientError,
     >{
         let variables = stablesats_transactions_list::Variables {
-            last: None,
-            first: None,
-            before: None,
             after: Some(last_transaction_cursor.0),
         };
         let response = post_graphql::<StablesatsTransactionsList, _>(

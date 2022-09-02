@@ -1,13 +1,8 @@
-query StablesatsTransactionsList(
-  $first: Int
-  $last: Int
-  $before: String
-  $after: String
-) {
+query StablesatsTransactionsList($after: String) {
   me {
     defaultAccount {
       __typename
-      transactions(first: $first, last: $last, before: $before, after: $after) {
+      transactions(after: $after) {
         edges {
           cursor
           node {
