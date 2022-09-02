@@ -1,4 +1,5 @@
 use graphql_client::GraphQLQuery;
+use rust_decimal::Decimal;
 
 use crate::GaloyClientError;
 
@@ -63,9 +64,9 @@ impl TryFrom<stablesats_user_login::ResponseData> for StablesatsLogin {
 )]
 pub struct StablesatsTransactionsList;
 pub type WalletId = String;
-pub type Timestamp = u64;
+pub type Timestamp = u64; // change to chrono
 pub type Memo = String;
-pub(crate) type SignedAmount = f64;
+pub(crate) type SignedAmount = Decimal;
 
 pub type StablesatsTransactions =
     stablesats_transactions_list::StablesatsTransactionsListMeDefaultAccountTransactionsEdges;
@@ -167,7 +168,7 @@ impl TryFrom<stablesats_wallets::ResponseData> for StablesatsWalletsWrapper {
 )]
 pub struct StablesatsOnChainTxFee;
 pub type TargetConfirmations = u32;
-pub type SatAmount = u128;
+pub type SatAmount = Decimal;
 pub type OnChainAddress = String;
 
 pub type StablesatsTxFee = stablesats_on_chain_tx_fee::StablesatsOnChainTxFeeOnChainTxFee;

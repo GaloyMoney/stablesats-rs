@@ -1,5 +1,7 @@
-use galoy_client::{stablesats_transactions_list::WalletCurrency, *};
+use rust_decimal_macros::dec;
 use std::env;
+
+use galoy_client::{stablesats_transactions_list::WalletCurrency, *};
 
 fn staging_wallet_configuration() -> GaloyClientConfig {
     let api = env::var("GRAPHQL_URI").expect("GRAPHQL_URI not set");
@@ -100,7 +102,7 @@ async fn onchain_payment() -> anyhow::Result<()> {
     let onchain_address: OnChainAddress =
         env::var("ONCHAIN_DEPOSIT_ADDRESS").expect("ONCHAIN_DEPOSIT_ADDRESS not set");
     let memo = "Test onchain payment".to_string();
-    let amount = 1001;
+    let amount = dec!(1001);
     let target_conf = 2;
 
     let payment_result = wallet_client
@@ -126,11 +128,11 @@ async fn onchain_payment() -> anyhow::Result<()> {
 async fn onchain_tx_fee() -> anyhow::Result<()> {
     let config = staging_wallet_configuration();
     let wallet_client = GaloyClient::connect(config).await?;
-    let testnet_onchain_tx_fee = 2142;
+    let testnet_onchain_tx_fee = dec!(2142);
 
     let onchain_address: OnChainAddress =
         env::var("ONCHAIN_DEPOSIT_ADDRESS").expect("ONCHAIN_DEPOSIT_ADDRESS not set");
-    let amount = 50000;
+    let amount = dec!(50000);
     let target_conf = 1;
     let btc_wallet_id: WalletId = env::var("BTC_WALLET_ID").expect("BTC_WALLET_ID not set");
 

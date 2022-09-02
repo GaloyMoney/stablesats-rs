@@ -723,10 +723,13 @@ name = "galoy-client"
 version = "0.1.0"
 dependencies = [
  "anyhow",
+ "chrono",
  "futures",
  "graphql_client",
  "itertools",
  "reqwest",
+ "rust_decimal",
+ "rust_decimal_macros",
  "serde",
  "thiserror",
  "tokio",
