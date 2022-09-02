@@ -11,5 +11,7 @@ pub enum HedgingError {
     #[error("HedgingError: {0}")]
     Migrate(#[from] sqlx::migrate::MigrateError),
     #[error("HedgingError: {0}")]
+    OkexClient(#[from] okex_client::OkexClientError),
+    #[error("HedgingError: {0}")]
     Job(String),
 }

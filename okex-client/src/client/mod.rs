@@ -30,6 +30,7 @@ const OKEX_API_URL: &str = "https://www.okex.com";
 pub const OKEX_MINIMUM_WITHDRAWAL_AMOUNT: &str = "0.001";
 pub const OKEX_MINIMUM_WITHDRAWAL_FEE: &str = "0.0002";
 
+#[derive(Clone)]
 pub struct OkexClientConfig {
     pub api_key: String,
     pub passphrase: String,
@@ -37,6 +38,7 @@ pub struct OkexClientConfig {
     pub simulated: bool,
 }
 
+#[derive(Clone)]
 pub struct OkexClient {
     client: ReqwestClient,
     config: OkexClientConfig,
@@ -349,8 +351,18 @@ impl OkexClient {
             notional_usd, pos, ..
         } = Self::extract_response_data::<PositionData>(response).await?;
 
+        let direction = pos.parse::<Decimal>().unwrap_or_else(|_| Decimal::ZERO);
+        let notional_usd = notional_usd
+            .parse::<Decimal>()
+            .unwrap_or_else(|_| Decimal::ZERO);
+
         Ok(PositionSize {
-            value: notional_usd * pos,
+            value: notional_usd
+                * if direction > Decimal::ZERO {
+                    Decimal::ONE
+                } else {
+                    Decimal::NEGATIVE_ONE
+                },
         })
     }
 

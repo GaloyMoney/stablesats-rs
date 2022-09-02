@@ -1,7 +1,13 @@
 use rust_decimal::Decimal;
 use std::fmt::Display;
 
-pub struct BtcUsdSwapContracts(pub u32);
+#[derive(Debug, PartialEq, Eq, Clone)]
+pub struct BtcUsdSwapContracts(pub(super) u32);
+impl From<u32> for BtcUsdSwapContracts {
+    fn from(contracts: u32) -> Self {
+        Self(contracts)
+    }
+}
 
 #[derive(Debug, PartialEq, Eq)]
 pub struct DepositAddress {
