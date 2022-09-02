@@ -1,7 +1,13 @@
 {
   "payloads": [
     {
-      "exposure": "1000"
+      "liability": "0"
+    },
+    {
+      "liability": "1000"
+    },
+    {
+      "liability": "0"
     }
   ]
 }

@@ -7,7 +7,7 @@ use hedging::*;
 
 #[derive(serde::Deserialize)]
 struct Fixture {
-    payloads: Vec<SynthUsdExposurePayload>,
+    payloads: Vec<SynthUsdLiabilityPayload>,
 }
 
 fn load_fixture() -> anyhow::Result<Fixture> {
@@ -32,12 +32,10 @@ async fn hedging() -> anyhow::Result<()> {
 
     let publisher = Publisher::new(pubsub_config.clone()).await?;
     let subscriber = Subscriber::new(pubsub_config.clone()).await?;
-    let mut stream = subscriber.subscribe::<SynthUsdExposurePayload>().await?;
+    let mut stream = subscriber.subscribe::<SynthUsdLiabilityPayload>().await?;
 
     let mut payloads = load_fixture()?.payloads.into_iter();
     let payload = payloads.next().unwrap();
-    publisher.publish(payload).await?;
-
     let app = HedgingApp::run(
         HedgingAppConfig {
             pg_con: pg_con,
@@ -47,11 +45,17 @@ async fn hedging() -> anyhow::Result<()> {
     )
     .await?;
 
+    // get balance from okex
+    publisher.publish(payload).await?;
+
     let msg = stream.next().await;
 
     assert!(msg.is_some());
 
     // tokio::time::sleep(std::time::Duration::from_secs(60)).await;
+
+    // get balance from okex
+    // assert diff
     // assert!(false);
     Ok(())
 }

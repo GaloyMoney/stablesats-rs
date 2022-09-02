@@ -6,11 +6,11 @@ use shared::pubsub::CorrelationId;
 use crate::error::HedgingError;
 
 #[derive(Clone)]
-pub struct SynthUsdExposure {
+pub struct SynthUsdLiability {
     pool: sqlx::PgPool,
 }
 
-impl SynthUsdExposure {
+impl SynthUsdLiability {
     pub fn new(pool: sqlx::PgPool) -> Self {
         Self { pool }
     }
@@ -21,7 +21,7 @@ impl SynthUsdExposure {
         amount: Decimal,
     ) -> Result<bool, HedgingError> {
         let result = sqlx::query_file!(
-            "src/synth_usd_exposure/sql/insert-if-new.sql",
+            "src/synth_usd_liability/sql/insert-if-new.sql",
             amount,
             Uuid::from(correlation_id)
         )
@@ -31,8 +31,8 @@ impl SynthUsdExposure {
         Ok(!result.is_empty())
     }
 
-    pub async fn get_latest_exposure(&self) -> Result<Decimal, HedgingError> {
-        let result = sqlx::query!("SELECT amount FROM synth_usd_exposure ORDER BY idx DESC LIMIT 1")
+    pub async fn get_latest_liability(&self) -> Result<Decimal, HedgingError> {
+        let result = sqlx::query!("SELECT amount FROM synth_usd_liability ORDER BY idx DESC LIMIT 1")
             .fetch_one(&self.pool)
             .await?;
 

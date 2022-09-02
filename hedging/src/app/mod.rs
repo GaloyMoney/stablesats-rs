@@ -7,11 +7,11 @@ use tracing::{info_span, instrument, Instrument};
 use tracing_opentelemetry::OpenTelemetrySpanExt;
 
 use shared::{
-    payload::SynthUsdExposurePayload,
+    payload::SynthUsdLiabilityPayload,
     pubsub::{PubSubConfig, Subscriber},
 };
 
-use crate::{error::*, job, synth_usd_exposure::*};
+use crate::{error::*, job, synth_usd_liability::*};
 
 pub use config::*;
 
@@ -29,9 +29,9 @@ impl HedgingApp {
     ) -> Result<Self, HedgingError> {
         let pool = sqlx::PgPool::connect(&pg_con).await?;
         let subscriber = Subscriber::new(config).await?;
-        let mut stream = subscriber.subscribe::<SynthUsdExposurePayload>().await?;
-        let synth_usd_exposure = SynthUsdExposure::new(pool.clone());
-        let job_runner = job::start_job_runner(pool.clone(), synth_usd_exposure.clone()).await?;
+        let mut stream = subscriber.subscribe::<SynthUsdLiabilityPayload>().await?;
+        let synth_usd_liability = SynthUsdLiability::new(pool.clone());
+        let job_runner = job::start_job_runner(pool.clone(), synth_usd_liability.clone()).await?;
         let app = HedgingApp {
             _runner: job_runner,
         };
@@ -41,15 +41,15 @@ impl HedgingApp {
             while let Some(msg) = stream.next().await {
                 let correlation_id = msg.meta.correlation_id;
                 let span = info_span!(
-                    "synth_usd_exposure_received",
+                    "synth_usd_liability_received",
                     message_type = %msg.payload_type,
                     correlation_id = %correlation_id
                 );
                 let context = propagator.extract(&msg.meta.tracing_data);
                 span.set_parent(context);
 
-                match synth_usd_exposure
-                    .insert_if_new(correlation_id, msg.payload.exposure)
+                match synth_usd_liability
+                    .insert_if_new(correlation_id, msg.payload.liability)
                     .await
                 {
                     Ok(true) => if let Err(_) = job::spawn_adjust_hedge(&pool).await {},
