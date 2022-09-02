@@ -1,11 +1,16 @@
+use chrono::{DateTime, Utc};
 use graphql_client::GraphQLQuery;
 use rust_decimal::Decimal;
+use serde::Deserialize;
 
 use crate::GaloyClientError;
 
 use self::stablesats_wallets::{StablesatsWalletsMeDefaultAccountWallets, WalletCurrency};
 
 pub type SafeInt = i64;
+
+#[derive(Debug, PartialEq, Deserialize, Clone)]
+pub struct GraphqlTimeStamp(#[serde(with = "chrono::serde::ts_seconds")] DateTime<Utc>);
 
 #[derive(GraphQLQuery)]
 #[graphql(
@@ -64,7 +69,8 @@ impl TryFrom<stablesats_user_login::ResponseData> for StablesatsLogin {
 )]
 pub struct StablesatsTransactionsList;
 pub type WalletId = String;
-pub type Timestamp = u64; // change to chrono
+
+pub type Timestamp = GraphqlTimeStamp;
 pub type Memo = String;
 pub(crate) type SignedAmount = Decimal;
 
