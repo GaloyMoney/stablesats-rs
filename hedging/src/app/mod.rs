@@ -11,7 +11,7 @@ use shared::{
     pubsub::{PubSubConfig, Subscriber},
 };
 
-use crate::error::*;
+use crate::{error::*, job, synth_usd_exposure::*};
 
 pub use config::*;
 
@@ -30,47 +30,31 @@ impl HedgingApp {
         let pool = sqlx::PgPool::connect(&pg_con).await?;
         let subscriber = Subscriber::new(config).await?;
         let mut stream = subscriber.subscribe::<SynthUsdExposurePayload>().await?;
-        let job_runner = crate::job::start_job_runner(pool.clone()).await?;
-        let app = HedgingApp { _runner: job_runner };
-        // balance updator {
-        //   tokio::spawn(async move {
-        //     poll or listen  to WS the exchange and write the current exposure
-        //   })
-        // }
-        // msg receiver
+        let synth_usd_exposure = SynthUsdExposure::new(pool.clone());
+        let job_runner = job::start_job_runner(pool.clone(), synth_usd_exposure.clone()).await?;
+        let app = HedgingApp {
+            _runner: job_runner,
+        };
         let _ = tokio::spawn(async move {
-            match crate::job::adjust_hedge.builder()
-                .set_channel_name("adjust_hedge")
-                .set_json("John").expect("set_json issue")
-                .spawn(&pool)
-                .await {
-                    Ok(_) => println!("Job created"),
-                    Err(e) => println!("job error: {}", e),
-                }
-
             let propagator = TraceContextPropagator::new();
 
             while let Some(msg) = stream.next().await {
+                let correlation_id = msg.meta.correlation_id;
                 let span = info_span!(
                     "synth_usd_exposure_received",
                     message_type = %msg.payload_type,
-                    correlation_id = %msg.meta.correlation_id
+                    correlation_id = %correlation_id
                 );
                 let context = propagator.extract(&msg.meta.tracing_data);
                 span.set_parent(context);
 
-                let exposure = msg.payload.exposure;
-                // load last known exposure
-                // diff with new exposure
-                //
-                //
-                // exposue changed => trigger check
-                // balance changed => trigger check
-                //
-                // if need action?
-                //   create job
-                // else
-                //   ignore
+                match synth_usd_exposure
+                    .insert_if_new(correlation_id, msg.payload.exposure)
+                    .await
+                {
+                    Ok(true) => if let Err(_) = job::spawn_adjust_hedge(&pool).await {},
+                    _ => {}
+                }
             }
         });
         Ok(app)

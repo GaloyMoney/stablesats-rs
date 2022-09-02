@@ -11,5 +11,5 @@ pub enum HedgingError {
     #[error("HedgingError: {0}")]
     Migrate(#[from] sqlx::migrate::MigrateError),
     #[error("HedgingError: {0}")]
-    Job(String)
+    Job(String),
 }

@@ -1,46 +1,33 @@
 use sqlxmq::{job, CurrentJob, JobRegistry, OwnedHandle};
 
-use std::error::Error;
+use crate::{error::*, synth_usd_exposure::*};
 
-use crate::error::*;
-
-pub async fn start_job_runner(pool: sqlx::PgPool) -> Result<OwnedHandle, HedgingError> {
-    // Construct a job registry from our single job.
+pub async fn start_job_runner(pool: sqlx::PgPool, synth_usd_exposure: SynthUsdExposure) -> Result<OwnedHandle, HedgingError> {
     let mut registry = JobRegistry::new(&[adjust_hedge]);
-    // Here is where you can configure the registry
-    // registry.set_error_handler(...)
+    registry.set_context(synth_usd_exposure);
 
-    // And add context
-    registry.set_context("Hello");
-
-    Ok(registry
-        // Create a job runner using the connection pool.
-        .runner(&pool)
-        // Here is where you can configure the job runner
-        // Aim to keep 10-20 jobs running at a time.
-        .set_concurrency(10, 20)
-        // Start the job runner in the background.
-        .run()
-        .await?)
+    Ok(registry.runner(&pool).run().await?)
 }
 
-#[job(channel_name = "adjust_hedge")]
-pub async fn adjust_hedge(
-    // The first argument should always be the current job.
-    mut current_job: CurrentJob,
-    // Additional arguments are optional, but can be used to access context
-    // provided via [`JobRegistry::set_context`].
-    message: &'static str,
-) -> Result<(), Box<dyn Error + Send + Sync + 'static>> {
-    println!("running job");
-    return Err(Box::new(HedgingError::Job("hello".to_string())));
-    // Decode a JSON payload
-    let who: Option<String> = current_job.json()?;
+pub async fn spawn_adjust_hedge(pool: &sqlx::PgPool) -> Result<(), HedgingError> {
+    adjust_hedge
+        .builder()
+        .set_channel_name("hedging")
+        .spawn(pool)
+        .await?;
+    Ok(())
+}
 
-    // Do some work
-    println!("{}, {}!", message, who.as_deref().unwrap_or("world"));
+#[job(name = "adjust_hedge", channel_name = "hedging")]
+pub async fn adjust_hedge(mut current_job: CurrentJob, synth_usd_exposure: SynthUsdExposure) -> Result<(), HedgingError> {
+    let latest_exposure = synth_usd_exposure.get_latest_exposure().await?;
+    // use OKEX client here
+    // load last known exposure
+    // if needed {
+      // execute hedge adjustment
+      // => if fail then fail job
+    // }
 
-    // Mark the job as complete
     current_job.complete().await?;
 
     Ok(())

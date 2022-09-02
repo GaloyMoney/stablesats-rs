@@ -789,6 +789,7 @@ dependencies = [
  "anyhow",
  "futures",
  "opentelemetry",
+ "rust_decimal",
  "serde",
  "serde_json",
  "sqlx",
@@ -798,6 +799,7 @@ dependencies = [
  "tokio",
  "tracing",
  "tracing-opentelemetry",
+ "uuid",
 ]
 
 [[package]]

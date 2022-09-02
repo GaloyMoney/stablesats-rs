@@ -51,7 +51,7 @@ async fn hedging() -> anyhow::Result<()> {
 
     assert!(msg.is_some());
 
-    tokio::time::sleep(std::time::Duration::from_secs(60)).await;
-    assert!(false);
+    // tokio::time::sleep(std::time::Duration::from_secs(60)).await;
+    // assert!(false);
     Ok(())
 }
