@@ -20,10 +20,14 @@ pub fn calculate_adjustment(abs_liability: Decimal, signed_exposure: Decimal) ->
         AdjustmentAction::ClosePosition
     } else if target_exposure > signed_exposure {
         let contracts = (signed_exposure - target_exposure) / Decimal::from(CONTRACT_SIZE);
-        AdjustmentAction::Buy(BtcUsdSwapContracts::from(u32::try_from(contracts.abs()).expect("decimal to u32")))
+        AdjustmentAction::Buy(BtcUsdSwapContracts::from(
+            u32::try_from(contracts.abs()).expect("decimal to u32"),
+        ))
     } else if target_exposure < signed_exposure {
         let contracts = (target_exposure - signed_exposure) / Decimal::from(CONTRACT_SIZE);
-        AdjustmentAction::Sell(BtcUsdSwapContracts::from(u32::try_from(contracts.abs()).expect("decimal to u32")))
+        AdjustmentAction::Sell(BtcUsdSwapContracts::from(
+            u32::try_from(contracts.abs()).expect("decimal to u32"),
+        ))
     } else {
         AdjustmentAction::DoNothing
     }
@@ -54,7 +58,10 @@ mod tests {
         let liability = Decimal::new(200, 0);
         let exposure = Decimal::new(-100, 0);
         let adjustment = calculate_adjustment(liability, exposure);
-        assert_eq!(adjustment, AdjustmentAction::Sell(BtcUsdSwapContracts::from(1)));
+        assert_eq!(
+            adjustment,
+            AdjustmentAction::Sell(BtcUsdSwapContracts::from(1))
+        );
     }
 
     #[test]
@@ -62,6 +69,9 @@ mod tests {
         let liability = Decimal::new(100, 0);
         let exposure = Decimal::new(-200, 0);
         let adjustment = calculate_adjustment(liability, exposure);
-        assert_eq!(adjustment, AdjustmentAction::Buy(BtcUsdSwapContracts::from(1)));
+        assert_eq!(
+            adjustment,
+            AdjustmentAction::Buy(BtcUsdSwapContracts::from(1))
+        );
     }
 }

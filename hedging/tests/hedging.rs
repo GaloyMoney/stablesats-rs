@@ -32,13 +32,14 @@ fn okex_client_config() -> OkexClientConfig {
     }
 }
 
+#[tokio::test]
+#[serial]
 async fn hedging() -> anyhow::Result<()> {
     let redis_host = std::env::var("REDIS_HOST").unwrap_or("localhost".to_string());
     let pubsub_config = PubSubConfig {
         host: Some(redis_host),
         ..PubSubConfig::default()
     };
-    let subscriber = Subscriber::new(pubsub_config.clone()).await?;
     let user_trades_pg_host = std::env::var("HEDGING_PG_HOST").unwrap_or("localhost".to_string());
     let user_trades_pg_port = std::env::var("HEDGING_PG_PORT").unwrap_or("5433".to_string());
     let pg_con = format!(
@@ -49,9 +50,9 @@ async fn hedging() -> anyhow::Result<()> {
     let subscriber = Subscriber::new(pubsub_config.clone()).await?;
     let mut stream = subscriber.subscribe::<SynthUsdLiabilityPayload>().await?;
 
-    let app = HedgingApp::run(
+    let _app = HedgingApp::run(
         HedgingAppConfig {
-            pg_con: pg_con,
+            pg_con,
             migrate_on_start: false,
         },
         okex_client_config(),
@@ -71,10 +72,18 @@ async fn hedging() -> anyhow::Result<()> {
 
     publisher.publish(payloads.next().unwrap()).await?;
     let _ = stream.next().await;
-    tokio::time::sleep(std::time::Duration::from_secs(1)).await;
+    tokio::time::sleep(std::time::Duration::from_secs(3)).await;
 
     let position = okex.get_position_in_usd().await?;
-    assert!(position.value < dec!(0));
+    assert!(position.value < dec!(-950));
+    assert!(position.value > dec!(-1050));
+
+    publisher.publish(payloads.next().unwrap()).await?;
+    let _ = stream.next().await;
+    tokio::time::sleep(std::time::Duration::from_secs(3)).await;
+
+    let position = okex.get_position_in_usd().await?;
+    assert_eq!(position.value , dec!(0));
 
     Ok(())
 }
