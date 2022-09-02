@@ -135,6 +135,7 @@ async fn transfer_state() -> anyhow::Result<()> {
 
 #[tokio::test]
 #[serial]
+#[ignore = "calls exercised from hedging crate"]
 async fn open_close_position() -> anyhow::Result<()> {
     let client = configured_okex_client().await?;
 

@@ -1,3 +1,5 @@
+mod adjust_hedge;
+
 use sqlxmq::{job, CurrentJob, JobRegistry, OwnedHandle};
 
 use okex_client::OkexClient;
@@ -29,16 +31,9 @@ pub async fn spawn_adjust_hedge(pool: &sqlx::PgPool) -> Result<(), HedgingError>
 pub async fn adjust_hedge(
     mut current_job: CurrentJob,
     synth_usd_liability: SynthUsdLiability,
+    okex: OkexClient,
 ) -> Result<(), HedgingError> {
-    let latest_liability = synth_usd_liability.get_latest_liability().await?;
-    // use OKEX client here
-    // load last known exposure
-    // if needed {
-    // execute hedge adjustment
-    // => if fail then fail job
-    // }
-
+    adjust_hedge::execute(synth_usd_liability, okex).await?;
     current_job.complete().await?;
-
     Ok(())
 }

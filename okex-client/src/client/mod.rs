@@ -351,10 +351,8 @@ impl OkexClient {
             notional_usd, pos, ..
         } = Self::extract_response_data::<PositionData>(response).await?;
 
-        let direction = pos.parse::<Decimal>().unwrap_or_else(|_| Decimal::ZERO);
-        let notional_usd = notional_usd
-            .parse::<Decimal>()
-            .unwrap_or_else(|_| Decimal::ZERO);
+        let direction = pos.parse::<Decimal>().unwrap_or(Decimal::ZERO);
+        let notional_usd = notional_usd.parse::<Decimal>().unwrap_or(Decimal::ZERO);
 
         Ok(PositionSize {
             value: notional_usd
