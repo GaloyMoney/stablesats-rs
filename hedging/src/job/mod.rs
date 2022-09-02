@@ -33,7 +33,7 @@ pub async fn adjust_hedge(
     synth_usd_liability: SynthUsdLiability,
     okex: OkexClient,
 ) -> Result<(), HedgingError> {
-    let _ = adjust_hedge::execute(synth_usd_liability, okex).await?;
+    adjust_hedge::execute(synth_usd_liability, okex).await?;
     current_job.complete().await?;
     Ok(())
 }

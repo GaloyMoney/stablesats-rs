@@ -83,7 +83,7 @@ async fn hedging() -> anyhow::Result<()> {
     tokio::time::sleep(std::time::Duration::from_secs(3)).await;
 
     let position = okex.get_position_in_usd().await?;
-    assert_eq!(position.value , dec!(0));
+    assert_eq!(position.value, dec!(0));
 
     Ok(())
 }

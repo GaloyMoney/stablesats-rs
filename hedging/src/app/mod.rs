@@ -3,7 +3,7 @@ mod config;
 use futures::stream::StreamExt;
 use opentelemetry::{propagation::TextMapPropagator, sdk::propagation::TraceContextPropagator};
 use sqlxmq::OwnedHandle;
-use tracing::{info_span, instrument, Instrument};
+use tracing::info_span;
 use tracing_opentelemetry::OpenTelemetrySpanExt;
 
 use okex_client::*;
@@ -55,12 +55,11 @@ impl HedgingApp {
                 let context = propagator.extract(&msg.meta.tracing_data);
                 span.set_parent(context);
 
-                match synth_usd_liability
+                if let Ok(true) = synth_usd_liability
                     .insert_if_new(correlation_id, msg.payload.liability)
                     .await
                 {
-                    Ok(true) => if let Err(_) = job::spawn_adjust_hedge(&pool).await {},
-                    _ => {}
+                    let _ = job::spawn_adjust_hedge(&pool).await;
                 }
             }
         });

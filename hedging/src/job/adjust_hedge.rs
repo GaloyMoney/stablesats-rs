@@ -12,13 +12,13 @@ pub(super) async fn execute(
     match calculate_adjustment(target_liability, current_position) {
         AdjustmentAction::DoNothing => {}
         AdjustmentAction::ClosePosition => {
-            let _ = okex.close_positions().await?;
+            okex.close_positions().await?;
         }
         AdjustmentAction::Sell(contracts) => {
-            let _ = okex.place_order(OkexOrderSide::Sell, contracts).await?;
+            okex.place_order(OkexOrderSide::Sell, contracts).await?;
         }
         AdjustmentAction::Buy(contracts) => {
-            let _ = okex.place_order(OkexOrderSide::Buy, contracts).await?;
+            okex.place_order(OkexOrderSide::Buy, contracts).await?;
         }
     };
     Ok(())
