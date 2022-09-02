@@ -12,6 +12,7 @@ reqwest = {version = "0.11.11", features = ["json"]}
 serde = "1.0.144"
 thiserror = "1.0.32"
 tokio = {version = "1.20.1", features = ["macros"]}
+itertools = "0.10.2"
 
 [dev-dependencies]
 anyhow = "1.0.62"

@@ -1,8 +1,4 @@
-use futures::StreamExt;
-use galoy_client::{
-    stablesats_transactions_list::{TxStatus, WalletCurrency},
-    *,
-};
+use galoy_client::{stablesats_transactions_list::WalletCurrency, *};
 use std::env;
 
 fn staging_wallet_configuration() -> GaloyClientConfig {
@@ -25,20 +21,20 @@ async fn btc_transactions_list() -> anyhow::Result<()> {
     let config = staging_wallet_configuration();
     let mut wallet_client = GaloyClient::connect(config).await?;
 
-    let last_transaction_cursor = LastTransactionCursor("YXJyYXljb25uZWN0aW9uOjQxMQ==".to_string());
+    let last_transaction_cursor = LastTransactionCursor(
+        env::var("LAST_BTC_TRANSACTION_CURSOR").expect("LAST_BTC_TRANSACTION_CURSOR not set"),
+    );
     let wallet_currency = stablesats_transactions_list::WalletCurrency::BTC;
 
-    let mut btc_transactions = wallet_client
+    let btc_transactions = wallet_client
         .transactions_list(last_transaction_cursor, wallet_currency)
         .await?;
 
-    let tx_1 = btc_transactions
-        .next()
-        .await
-        .expect("Expected transaction, found None");
-
-    assert_eq!(tx_1.node.status, TxStatus::SUCCESS);
-    assert_eq!(tx_1.node.settlement_currency, WalletCurrency::BTC);
+    assert!(btc_transactions.edges.len() > 0);
+    assert_eq!(
+        btc_transactions.edges[0].node.settlement_currency,
+        WalletCurrency::BTC
+    );
 
     Ok(())
 }
@@ -49,20 +45,20 @@ async fn usd_transactions_list() -> anyhow::Result<()> {
     let config = staging_wallet_configuration();
     let mut wallet_client = GaloyClient::connect(config).await?;
 
-    let last_transaction_cursor = LastTransactionCursor("YXJyYXljb25uZWN0aW9uOjQwOA==".to_string());
+    let last_transaction_cursor = LastTransactionCursor(
+        env::var("LAST_USD_TRANSACTION_CURSOR").expect("LAST_USD_TRANSACTION_CURSOR not set"),
+    );
     let wallet_currency = stablesats_transactions_list::WalletCurrency::USD;
 
-    let mut usd_transactions = wallet_client
+    let usd_transactions = wallet_client
         .transactions_list(last_transaction_cursor, wallet_currency)
         .await?;
 
-    let tx_1 = usd_transactions
-        .next()
-        .await
-        .expect("Expected transaction, found None");
-
-    assert_eq!(tx_1.node.status, TxStatus::SUCCESS);
-    assert_eq!(tx_1.node.settlement_currency, WalletCurrency::USD);
+    assert!(usd_transactions.edges.len() > 0);
+    assert_eq!(
+        usd_transactions.edges[0].node.settlement_currency,
+        WalletCurrency::USD
+    );
 
     Ok(())
 }
@@ -86,9 +82,9 @@ async fn wallet_balance() -> anyhow::Result<()> {
 async fn onchain_deposit_address() -> anyhow::Result<()> {
     let config = staging_wallet_configuration();
     let wallet_client = GaloyClient::connect(config).await?;
-    let wallet_id: WalletId = "e705aa02-052b-4c3e-be2b-523c98a1aec4".to_string();
+    let btc_wallet_id: WalletId = env::var("BTC_WALLET_ID").expect("BTC_WALLET_ID not set");
 
-    let onchain_address = wallet_client.onchain_address(wallet_id).await?;
+    let onchain_address = wallet_client.onchain_address(btc_wallet_id).await?;
 
     assert!(onchain_address.address.len() == 42);
     Ok(())
@@ -100,9 +96,10 @@ async fn onchain_payment() -> anyhow::Result<()> {
     let config = staging_wallet_configuration();
     let wallet_client = GaloyClient::connect(config).await?;
 
-    let btc_wallet_id: WalletId = "e705aa02-052b-4c3e-be2b-523c98a1aec4".to_string();
-    let onchain_address: OnChainAddress = "tb1qy4vzwfnfdsxmkjw8wh4mhw3h6gy7g2gw48zzkr".to_string();
-    let memo = "".to_string();
+    let btc_wallet_id: WalletId = env::var("BTC_WALLET_ID").expect("BTC_WALLET_ID not set");
+    let onchain_address: OnChainAddress =
+        env::var("ONCHAIN_DEPOSIT_ADDRESS").expect("ONCHAIN_DEPOSIT_ADDRESS not set");
+    let memo = "Test onchain payment".to_string();
     let amount = 1001;
     let target_conf = 2;
 
@@ -131,10 +128,11 @@ async fn onchain_tx_fee() -> anyhow::Result<()> {
     let wallet_client = GaloyClient::connect(config).await?;
     let testnet_onchain_tx_fee = 2142;
 
-    let onchain_address: OnChainAddress = "tb1qy4vzwfnfdsxmkjw8wh4mhw3h6gy7g2gw48zzkr".to_string();
+    let onchain_address: OnChainAddress =
+        env::var("ONCHAIN_DEPOSIT_ADDRESS").expect("ONCHAIN_DEPOSIT_ADDRESS not set");
     let amount = 50000;
     let target_conf = 1;
-    let btc_wallet_id: WalletId = "e705aa02-052b-4c3e-be2b-523c98a1aec4".to_string();
+    let btc_wallet_id: WalletId = env::var("BTC_WALLET_ID").expect("BTC_WALLET_ID not set");
 
     let onchain_tx_fee = wallet_client
         .onchain_tx_fee(onchain_address, amount, target_conf, btc_wallet_id)

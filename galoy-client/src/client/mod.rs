@@ -1,7 +1,7 @@
 mod queries;
 
-use futures::stream::{self, Stream};
 use graphql_client::reqwest::post_graphql;
+use itertools::{Either, Itertools};
 use reqwest::{
     header::{HeaderValue, AUTHORIZATION},
     Client as ReqwestClient,
@@ -128,12 +128,7 @@ impl GaloyClient {
         &mut self,
         last_transaction_cursor: LastTransactionCursor,
         wallet_currency: stablesats_transactions_list::WalletCurrency,
-    ) -> Result<
-        std::pin::Pin<
-            Box<impl Stream<Item = stablesats_transactions_list::StablesatsTransactionsListMeDefaultAccountTransactionsEdges>>,
-        >,
-        GaloyClientError,
-    >{
+    ) -> Result<StablesatsTransactionsEdges, GaloyClientError> {
         let variables = stablesats_transactions_list::Variables {
             after: Some(last_transaction_cursor.0),
         };
@@ -158,25 +153,22 @@ impl GaloyClient {
                 ))
             }
         };
-        let post_cursor_transactions = StablesatsTransactions::try_from(result)?;
+        let post_cursor_transactions = StablesatsTransactionsEdges::try_from(result)?;
 
         let tx_edges = post_cursor_transactions.edges;
 
-        let tx = match tx_edges {
-            Some(tx) => tx,
-            None => {
-                return Err(GaloyClientError::GrapqQlApi(
-                    "Empty `transactions edges` in response data".to_string(),
-                ))
-            }
-        };
+        let (wanted_transactions, _): (Vec<_>, Vec<_>) =
+            tx_edges.into_iter().partition_map(|tx_edge| {
+                if tx_edge.node.settlement_currency == wallet_currency {
+                    Either::Left(tx_edge)
+                } else {
+                    Either::Right(tx_edge)
+                }
+            });
 
-        let ccy_tx: Vec<stablesats_transactions_list::StablesatsTransactionsListMeDefaultAccountTransactionsEdges> = tx
-            .into_iter()
-            .filter(move |transaction| transaction.node.settlement_currency == wallet_currency)
-            .collect();
-
-        Ok(Box::pin(stream::iter(ccy_tx)))
+        Ok(StablesatsTransactionsEdges {
+            edges: wanted_transactions,
+        })
     }
 
     pub async fn wallets_balances(&self) -> Result<StablesatsWalletsBalances, GaloyClientError> {
@@ -269,7 +261,7 @@ impl GaloyClient {
             input: stablesats_on_chain_payment::OnChainPaymentSendInput {
                 address,
                 amount,
-                memo: memo,
+                memo,
                 target_confirmations: Some(target_conf),
                 wallet_id,
             },
