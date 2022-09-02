@@ -82,7 +82,7 @@ impl GaloyClient {
         if let Some(response_data) = response_data {
             StablesatsAuthenticationCode::try_from(response_data)?;
         }
-        Err(GaloyClientError::UnknownResponse(
+        Err(GaloyClientError::GrapqQlApi(
             "Failed to parse response data".to_string(),
         ))
     }
@@ -107,7 +107,7 @@ impl GaloyClient {
 
         let response_data = response.data;
         if response_data.is_none() {
-            return Err(GaloyClientError::UnknownResponse(
+            return Err(GaloyClientError::GrapqQlApi(
                 "Empty `data` in response".to_string(),
             ));
         }
@@ -115,7 +115,7 @@ impl GaloyClient {
         let auth_token = match response_data {
             Some(login_data) => StablesatsLogin::try_from(login_data)?.auth_token,
             None => {
-                return Err(GaloyClientError::UnknownResponse(format!(
+                return Err(GaloyClientError::GrapqQlApi(format!(
                     "Expected some response data, found {:?}",
                     response_data
                 )))
