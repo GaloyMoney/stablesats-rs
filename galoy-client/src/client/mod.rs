@@ -1,4 +1,3 @@
-mod error;
 mod queries;
 
 use futures::stream::{self, Stream};
@@ -8,7 +7,7 @@ use reqwest::{
     Client as ReqwestClient,
 };
 
-pub use error::*;
+pub use crate::error::*;
 pub use queries::*;
 
 use self::stablesats_on_chain_payment::PaymentSendResult;
