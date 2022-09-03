@@ -53,7 +53,7 @@ async fn hedging() -> anyhow::Result<()> {
     let _app = HedgingApp::run(
         HedgingAppConfig {
             pg_con,
-            migrate_on_start: false,
+            migrate_on_start: true,
         },
         okex_client_config(),
         pubsub_config,
