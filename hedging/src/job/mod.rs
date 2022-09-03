@@ -1,5 +1,6 @@
 mod adjust_hedge;
 
+use sqlx::{Executor, Postgres};
 use sqlxmq::{job, CurrentJob, JobRegistry, OwnedHandle};
 
 use okex_client::OkexClient;
@@ -18,11 +19,13 @@ pub async fn start_job_runner(
     Ok(registry.runner(&pool).run().await?)
 }
 
-pub async fn spawn_adjust_hedge(pool: &sqlx::PgPool) -> Result<(), HedgingError> {
+pub async fn spawn_adjust_hedge<'a>(
+    tx: impl Executor<'a, Database = Postgres>,
+) -> Result<(), HedgingError> {
     adjust_hedge
         .builder()
         .set_channel_name("hedging")
-        .spawn(pool)
+        .spawn(tx)
         .await?;
     Ok(())
 }

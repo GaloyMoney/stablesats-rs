@@ -1,5 +1,5 @@
 use rust_decimal::Decimal;
-use sqlx::{Executor, PgPool};
+use sqlx::{Executor, PgPool, Postgres, Transaction};
 use uuid::Uuid;
 
 use shared::pubsub::CorrelationId;
@@ -16,11 +16,11 @@ impl SynthUsdLiability {
         Self { pool }
     }
 
-    pub async fn insert_if_new(
+    pub async fn insert_if_new<'a>(
         &self,
         correlation_id: CorrelationId,
         amount: Decimal,
-    ) -> Result<bool, HedgingError> {
+    ) -> Result<Option<Transaction<'a, Postgres>>, HedgingError> {
         let mut tx = self.pool.begin().await?;
         tx.execute("SET TRANSACTION ISOLATION LEVEL SERIALIZABLE;")
             .await?;
@@ -33,9 +33,11 @@ impl SynthUsdLiability {
         .fetch_all(&mut tx)
         .await?;
 
-        tx.commit().await?;
-
-        Ok(!result.is_empty())
+        if result.is_empty() {
+            Ok(None)
+        } else {
+            Ok(Some(tx))
+        }
     }
 
     pub async fn get_latest_liability(&self) -> Result<Decimal, HedgingError> {

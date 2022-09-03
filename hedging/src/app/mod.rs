@@ -3,13 +3,13 @@ mod config;
 use futures::stream::StreamExt;
 use opentelemetry::{propagation::TextMapPropagator, sdk::propagation::TraceContextPropagator};
 use sqlxmq::OwnedHandle;
-use tracing::info_span;
+use tracing::{info_span, instrument, Instrument};
 use tracing_opentelemetry::OpenTelemetrySpanExt;
 
 use okex_client::*;
 use shared::{
     payload::SynthUsdLiabilityPayload,
-    pubsub::{PubSubConfig, Subscriber},
+    pubsub::{CorrelationId, PubSubConfig, Subscriber},
 };
 
 use crate::{error::*, job, synth_usd_liability::*};
@@ -54,15 +54,34 @@ impl HedgingApp {
                 );
                 let context = propagator.extract(&msg.meta.tracing_data);
                 span.set_parent(context);
-
-                if let Ok(true) = synth_usd_liability
-                    .insert_if_new(correlation_id, msg.payload.liability)
-                    .await
-                {
-                    let _ = job::spawn_adjust_hedge(&pool).await;
-                }
+                let _ = Self::handle_received_synth_usd_liability(
+                    msg.payload,
+                    correlation_id,
+                    &synth_usd_liability,
+                )
+                .instrument(span)
+                .await;
             }
         });
         Ok(app)
+    }
+
+    async fn handle_received_synth_usd_liability(
+        payload: SynthUsdLiabilityPayload,
+        correlation_id: CorrelationId,
+        synth_usd_liability: &SynthUsdLiability,
+    ) -> Result<(), HedgingError> {
+        match synth_usd_liability
+            .insert_if_new(correlation_id, payload.liability)
+            .await
+        {
+            Ok(Some(mut tx)) => {
+                job::spawn_adjust_hedge(&mut tx).await?;
+                tx.commit().await?;
+                Ok(())
+            }
+            Ok(None) => Ok(()),
+            Err(e) => Err(e),
+        }
     }
 }
