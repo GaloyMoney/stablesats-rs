@@ -1,5 +1,4 @@
 use rust_decimal::Decimal;
-use rust_decimal_macros::dec;
 
 pub use okex_client::BtcUsdSwapContracts;
 
@@ -16,7 +15,8 @@ pub enum AdjustmentAction {
 
 pub fn calculate_adjustment(abs_liability: Decimal, signed_exposure: Decimal) -> AdjustmentAction {
     let target_exposure = abs_liability * Decimal::NEGATIVE_ONE;
-    if target_exposure > Decimal::from(MIN_LIABILITY_THRESHOLD) && signed_exposure != dec!(0) {
+    if target_exposure > Decimal::from(MIN_LIABILITY_THRESHOLD) && signed_exposure != Decimal::ZERO
+    {
         AdjustmentAction::ClosePosition
     } else if target_exposure > signed_exposure {
         let contracts = (signed_exposure - target_exposure) / Decimal::from(CONTRACT_SIZE);
@@ -36,27 +36,28 @@ pub fn calculate_adjustment(abs_liability: Decimal, signed_exposure: Decimal) ->
 #[cfg(test)]
 mod tests {
     use super::*;
+    use rust_decimal_macros::dec;
 
     #[test]
     fn no_adjustment() {
-        let liability = Decimal::new(100, 0);
-        let exposure = Decimal::new(-100, 0);
+        let liability = dec!(100);
+        let exposure = dec!(-100);
         let adjustment = calculate_adjustment(liability, exposure);
         assert_eq!(adjustment, AdjustmentAction::DoNothing);
     }
 
     #[test]
     fn close_position() {
-        let liability = Decimal::new(0, 0);
-        let exposure = Decimal::new(-100, 0);
+        let liability = dec!(0);
+        let exposure = dec!(-100);
         let adjustment = calculate_adjustment(liability, exposure);
         assert_eq!(adjustment, AdjustmentAction::ClosePosition);
     }
 
     #[test]
     fn increase() {
-        let liability = Decimal::new(200, 0);
-        let exposure = Decimal::new(-100, 0);
+        let liability = dec!(200);
+        let exposure = dec!(-100);
         let adjustment = calculate_adjustment(liability, exposure);
         assert_eq!(
             adjustment,
@@ -66,8 +67,8 @@ mod tests {
 
     #[test]
     fn decrease() {
-        let liability = Decimal::new(100, 0);
-        let exposure = Decimal::new(-200, 0);
+        let liability = dec!(100);
+        let exposure = dec!(-200);
         let adjustment = calculate_adjustment(liability, exposure);
         assert_eq!(
             adjustment,
