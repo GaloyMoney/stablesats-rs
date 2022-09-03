@@ -22,6 +22,7 @@ pub async fn start_job_runner(
 pub async fn spawn_adjust_hedge<'a>(
     tx: impl Executor<'a, Database = Postgres>,
 ) -> Result<(), HedgingError> {
+    println!("SPAWN");
     adjust_hedge
         .builder()
         .set_channel_name("hedging")

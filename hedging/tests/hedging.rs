@@ -5,7 +5,7 @@ use serial_test::serial;
 use std::{env, fs};
 
 use okex_client::*;
-use shared::{payload::*, pubsub::*, time::*};
+use shared::{payload::*, pubsub::*};
 
 use hedging::*;
 

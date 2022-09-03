@@ -6,6 +6,7 @@ pub(super) async fn execute(
     synth_usd_liability: SynthUsdLiability,
     okex: OkexClient,
 ) -> Result<(), HedgingError> {
+    println!("EXECUTE");
     let target_liability = synth_usd_liability.get_latest_liability().await?;
     let current_position = okex.get_position_in_usd().await?.value;
 
