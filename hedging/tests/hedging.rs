@@ -64,7 +64,7 @@ async fn hedging() -> anyhow::Result<()> {
     publisher.publish(payloads.next().unwrap()).await?;
     let _ = stream.next().await;
 
-    tokio::time::sleep(std::time::Duration::from_secs(3)).await;
+    tokio::time::sleep(std::time::Duration::from_secs(10)).await;
 
     let okex = OkexClient::new(okex_client_config()).await?;
     let position = okex.get_position_in_usd().await?;
@@ -72,7 +72,7 @@ async fn hedging() -> anyhow::Result<()> {
 
     publisher.publish(payloads.next().unwrap()).await?;
     let _ = stream.next().await;
-    tokio::time::sleep(std::time::Duration::from_secs(3)).await;
+    tokio::time::sleep(std::time::Duration::from_secs(10)).await;
 
     let position = okex.get_position_in_usd().await?;
     assert!(position.value < dec!(-950));
@@ -80,7 +80,7 @@ async fn hedging() -> anyhow::Result<()> {
 
     publisher.publish(payloads.next().unwrap()).await?;
     let _ = stream.next().await;
-    tokio::time::sleep(std::time::Duration::from_secs(3)).await;
+    tokio::time::sleep(std::time::Duration::from_secs(10)).await;
 
     let position = okex.get_position_in_usd().await?;
     assert_eq!(position.value, dec!(0));
