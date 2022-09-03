@@ -5,7 +5,7 @@ use serial_test::serial;
 use std::{env, fs};
 
 use okex_client::*;
-use shared::{payload::*, pubsub::*, time::*};
+use shared::{payload::*, pubsub::*};
 
 use hedging::*;
 
@@ -53,7 +53,7 @@ async fn hedging() -> anyhow::Result<()> {
     let _app = HedgingApp::run(
         HedgingAppConfig {
             pg_con,
-            migrate_on_start: false,
+            migrate_on_start: true,
         },
         okex_client_config(),
         pubsub_config,
@@ -64,26 +64,54 @@ async fn hedging() -> anyhow::Result<()> {
     publisher.publish(payloads.next().unwrap()).await?;
     let _ = stream.next().await;
 
-    tokio::time::sleep(std::time::Duration::from_secs(10)).await;
+    tokio::time::sleep(std::time::Duration::from_secs(2)).await;
 
     let okex = OkexClient::new(okex_client_config()).await?;
-    let position = okex.get_position_in_usd().await?;
-    assert_eq!(position.value, dec!(0));
+    let mut passed = false;
+    let expected = dec!(0);
+    for _ in 0..3 {
+        let pos = okex.get_position_in_signed_usd().await?.value;
+        passed = pos == expected;
+        if passed {
+            break;
+        }
+        tokio::time::sleep(std::time::Duration::from_secs(1)).await;
+    }
+
+    assert!(passed);
 
     publisher.publish(payloads.next().unwrap()).await?;
     let _ = stream.next().await;
-    tokio::time::sleep(std::time::Duration::from_secs(10)).await;
-
-    let position = okex.get_position_in_usd().await?;
-    assert!(position.value < dec!(-950));
-    assert!(position.value > dec!(-1050));
+    tokio::time::sleep(std::time::Duration::from_secs(2)).await;
+    let upper_bound = dec!(-950);
+    let lower_bound = dec!(-1050);
+    passed = false;
+    for _ in 0..3 {
+        let pos = okex.get_position_in_signed_usd().await?.value;
+        if pos < upper_bound && pos > lower_bound {
+            passed = true;
+            break;
+        }
+        tokio::time::sleep(std::time::Duration::from_secs(1)).await;
+    }
+    assert!(passed);
 
     publisher.publish(payloads.next().unwrap()).await?;
     let _ = stream.next().await;
-    tokio::time::sleep(std::time::Duration::from_secs(10)).await;
+    tokio::time::sleep(std::time::Duration::from_secs(2)).await;
 
-    let position = okex.get_position_in_usd().await?;
-    assert_eq!(position.value, dec!(0));
+    passed = false;
+    let expected = dec!(0);
+    for _ in 0..3 {
+        let pos = okex.get_position_in_signed_usd().await?.value;
+        passed = pos == expected;
+        if passed {
+            break;
+        }
+        tokio::time::sleep(std::time::Duration::from_secs(1)).await;
+    }
+
+    assert!(passed);
 
     Ok(())
 }

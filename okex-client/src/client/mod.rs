@@ -335,7 +335,7 @@ impl OkexClient {
         })
     }
 
-    pub async fn get_position_in_usd(&self) -> Result<PositionSize, OkexClientError> {
+    pub async fn get_position_in_signed_usd(&self) -> Result<PositionSize, OkexClientError> {
         let request_path = "/api/v5/account/positions?instId=BTC-USD-SWAP";
         let headers = self.get_request_headers(request_path)?;
 

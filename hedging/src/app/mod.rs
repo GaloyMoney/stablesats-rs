@@ -3,7 +3,7 @@ mod config;
 use futures::stream::StreamExt;
 use opentelemetry::{propagation::TextMapPropagator, sdk::propagation::TraceContextPropagator};
 use sqlxmq::OwnedHandle;
-use tracing::{info_span, instrument, Instrument};
+use tracing::{info_span, Instrument};
 use tracing_opentelemetry::OpenTelemetrySpanExt;
 
 use okex_client::*;
@@ -24,12 +24,15 @@ impl HedgingApp {
     pub async fn run(
         HedgingAppConfig {
             pg_con,
-            migrate_on_start: _,
+            migrate_on_start,
         }: HedgingAppConfig,
         okex_client_config: OkexClientConfig,
         config: PubSubConfig,
     ) -> Result<Self, HedgingError> {
         let pool = sqlx::PgPool::connect(&pg_con).await?;
+        if migrate_on_start {
+            sqlx::migrate!().run(&pool).await?;
+        }
         let subscriber = Subscriber::new(config).await?;
         let mut stream = subscriber.subscribe::<SynthUsdLiabilityPayload>().await?;
         let synth_usd_liability = SynthUsdLiability::new(pool.clone());

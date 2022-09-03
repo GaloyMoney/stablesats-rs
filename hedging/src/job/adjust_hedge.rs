@@ -7,7 +7,7 @@ pub(super) async fn execute(
     okex: OkexClient,
 ) -> Result<(), HedgingError> {
     let target_liability = synth_usd_liability.get_latest_liability().await?;
-    let current_position = okex.get_position_in_usd().await?.value;
+    let current_position = okex.get_position_in_signed_usd().await?.value;
 
     match calculate_adjustment(target_liability, current_position) {
         AdjustmentAction::DoNothing => {}
