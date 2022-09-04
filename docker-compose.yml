@@ -39,6 +39,7 @@ services:
     - HEDGING_PG_HOST=hedging-db
     - HEDGING_PG_PORT=5432
     - STAGING_GRAPHQL_URI=https://api.staging.galoy.io/graphql
+    - GRAPHQL_URI=https://api.staging.galoy.io/graphql
     working_dir: /repo
     volumes:
       - ./:/repo
