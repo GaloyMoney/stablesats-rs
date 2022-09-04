@@ -41,3 +41,11 @@ pub struct SynthUsdLiabilityPayload {
     pub liability: rust_decimal::Decimal,
 }
 crate::payload! { SynthUsdLiabilityPayload, "liability.synth-usd" }
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct OkexBtcUsdSwapPositionPayload {
+    pub exchange: ExchangeIdRaw,
+    pub instrument_id: InstrumentIdRaw,
+    pub signed_usd_exposure: rust_decimal::Decimal,
+}
+crate::payload! { OkexBtcUsdSwapPositionPayload, "position.okex.btc-usd-swap" }

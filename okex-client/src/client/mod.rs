@@ -355,6 +355,7 @@ impl OkexClient {
         let notional_usd = notional_usd.parse::<Decimal>().unwrap_or(Decimal::ZERO);
 
         Ok(PositionSize {
+            instrument_id: OkexInstrumentId::BtcUsdSwap,
             value: notional_usd
                 * if direction > Decimal::ZERO {
                     Decimal::ONE

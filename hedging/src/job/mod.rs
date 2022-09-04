@@ -1,37 +1,85 @@
 mod adjust_hedge;
 
 use sqlx::{Executor, Postgres};
-use sqlxmq::{job, CurrentJob, JobRegistry, OwnedHandle};
+use sqlxmq::{job, CurrentJob, JobBuilder, JobRegistry, OwnedHandle};
+use uuid::{uuid, Uuid};
 
-use okex_client::OkexClient;
+use okex_client::{OkexClient, PositionSize};
+use shared::{
+    payload::{ExchangeIdRaw, InstrumentIdRaw, OkexBtcUsdSwapPositionPayload, OKEX_EXCHANGE_ID},
+    pubsub::Publisher,
+};
 
 use crate::{error::*, synth_usd_liability::*};
+
+const POLL_OKEX_ID: Uuid = uuid!("00000000-0000-0000-0000-000000000001");
+
+#[derive(Debug, Clone)]
+struct OkexPollDelay(std::time::Duration);
 
 pub async fn start_job_runner(
     pool: sqlx::PgPool,
     synth_usd_liability: SynthUsdLiability,
     okex: OkexClient,
+    publisher: Publisher,
+    delay: std::time::Duration,
 ) -> Result<OwnedHandle, HedgingError> {
-    let mut registry = JobRegistry::new(&[adjust_hedge]);
+    let mut registry = JobRegistry::new(&[adjust_hedge, poll_okex]);
     registry.set_context(synth_usd_liability);
     registry.set_context(okex);
+    registry.set_context(publisher);
+    registry.set_context(OkexPollDelay(delay));
 
     Ok(registry.runner(&pool).run().await?)
+}
+
+pub async fn spawn_poll_okex(
+    pool: &sqlx::PgPool,
+    duration: std::time::Duration,
+) -> Result<(), HedgingError> {
+    match JobBuilder::new_with_id(POLL_OKEX_ID, "poll_okex")
+        .set_delay(duration)
+        .spawn(pool)
+        .await
+    {
+        Err(sqlx::Error::Database(err)) if err.message().contains("duplicate key") => Ok(()),
+        Err(e) => Err(e.into()),
+        Ok(_) => Ok(()),
+    }
 }
 
 pub async fn spawn_adjust_hedge<'a>(
     tx: impl Executor<'a, Database = Postgres>,
 ) -> Result<(), HedgingError> {
-    adjust_hedge
-        .builder()
-        .set_channel_name("hedging")
-        .spawn(tx)
+    adjust_hedge.builder().spawn(tx).await?;
+    Ok(())
+}
+
+#[job(name = "poll_okex", channel_name = "hedging")]
+async fn poll_okex(
+    mut current_job: CurrentJob,
+    OkexPollDelay(delay): OkexPollDelay,
+    okex: OkexClient,
+    publisher: Publisher,
+) -> Result<(), HedgingError> {
+    let PositionSize {
+        value,
+        instrument_id,
+    } = okex.get_position_in_signed_usd().await?;
+    publisher
+        .publish(OkexBtcUsdSwapPositionPayload {
+            exchange: ExchangeIdRaw::from(OKEX_EXCHANGE_ID),
+            instrument_id: InstrumentIdRaw::from(instrument_id.to_string()),
+            signed_usd_exposure: value,
+        })
         .await?;
+    current_job.complete().await?;
+    spawn_poll_okex(current_job.pool(), delay).await?;
     Ok(())
 }
 
 #[job(name = "adjust_hedge", channel_name = "hedging")]
-pub async fn adjust_hedge(
+async fn adjust_hedge(
     mut current_job: CurrentJob,
     synth_usd_liability: SynthUsdLiability,
     okex: OkexClient,

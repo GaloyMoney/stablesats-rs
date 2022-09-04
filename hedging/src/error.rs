@@ -1,12 +1,14 @@
 use thiserror::Error;
 
-use shared::pubsub::SubscriberError;
+use shared::pubsub::{PublisherError, SubscriberError};
 
 #[allow(clippy::large_enum_variant)]
 #[derive(Error, Debug)]
 pub enum HedgingError {
     #[error("HedgingError: {0}")]
-    PubSub(#[from] SubscriberError),
+    Subscriber(#[from] SubscriberError),
+    #[error("HedgingError: {0}")]
+    Publisher(#[from] PublisherError),
     #[error("HedgingError: {0}")]
     Sqlx(#[from] sqlx::Error),
     #[error("HedgingError: {0}")]
