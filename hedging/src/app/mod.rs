@@ -155,7 +155,8 @@ impl HedgingApp {
         synth_usd_liability: &SynthUsdLiability,
     ) -> Result<(), HedgingError> {
         let amount = synth_usd_liability.get_latest_liability().await?;
-        if adjustment_action::determin_action(amount, payload.signed_usd_exposure).action_required()
+        if adjustment_action::determine_action(amount, payload.signed_usd_exposure)
+            .action_required()
         {
             job::spawn_adjust_hedge(pool, correlation_id).await?;
         }

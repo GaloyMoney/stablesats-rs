@@ -39,11 +39,11 @@ impl AdjustmentAction {
 
     pub fn size_in_usd(&self) -> Option<Decimal> {
         self.size()
-            .map(|size| Decimal::ONE_HUNDRED * Decimal::from(u32::from(size)))
+            .map(|size| Decimal::ONE_HUNDRED * Decimal::from(size))
     }
 }
 
-pub fn determin_action(abs_liability: Decimal, signed_exposure: Decimal) -> AdjustmentAction {
+pub fn determine_action(abs_liability: Decimal, signed_exposure: Decimal) -> AdjustmentAction {
     let target_exposure = abs_liability * Decimal::NEGATIVE_ONE;
     if target_exposure > Decimal::from(MIN_LIABILITY_THRESHOLD) && signed_exposure != Decimal::ZERO
     {
@@ -84,7 +84,7 @@ mod tests {
     fn no_adjustment() {
         let liability = dec!(100);
         let exposure = dec!(-100);
-        let adjustment = determin_action(liability, exposure);
+        let adjustment = determine_action(liability, exposure);
         assert_eq!(adjustment, AdjustmentAction::DoNothing);
     }
 
@@ -92,7 +92,7 @@ mod tests {
     fn close_position() {
         let liability = dec!(0);
         let exposure = dec!(-100);
-        let adjustment = determin_action(liability, exposure);
+        let adjustment = determine_action(liability, exposure);
         assert_eq!(adjustment, AdjustmentAction::ClosePosition);
     }
 
@@ -100,7 +100,7 @@ mod tests {
     fn increase() {
         let liability = dec!(200);
         let exposure = dec!(-100);
-        let adjustment = determin_action(liability, exposure);
+        let adjustment = determine_action(liability, exposure);
         assert_eq!(
             adjustment,
             AdjustmentAction::Sell(BtcUsdSwapContracts::from(1))
@@ -111,7 +111,7 @@ mod tests {
     fn decrease() {
         let liability = dec!(1000);
         let exposure = dec!(-5998.824959074429);
-        let adjustment = determin_action(liability, exposure);
+        let adjustment = determine_action(liability, exposure);
         assert_eq!(
             adjustment,
             AdjustmentAction::Buy(BtcUsdSwapContracts::from(50))
@@ -122,7 +122,7 @@ mod tests {
     fn ignores_rounding() {
         let liability = dec!(100);
         let exposure = dec!(-99.8);
-        let adjustment = determin_action(liability, exposure);
+        let adjustment = determine_action(liability, exposure);
         assert_eq!(adjustment, AdjustmentAction::DoNothing);
     }
 }

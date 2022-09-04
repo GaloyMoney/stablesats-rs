@@ -16,7 +16,7 @@ pub(super) async fn execute(
     let target_liability = synth_usd_liability.get_latest_liability().await?;
     let current_position = okex.get_position_in_signed_usd().await?.value;
 
-    let action = determin_action(target_liability, current_position);
+    let action = determine_action(target_liability, current_position);
     let mut exchange_ref = None;
     match action {
         AdjustmentAction::DoNothing => {}
