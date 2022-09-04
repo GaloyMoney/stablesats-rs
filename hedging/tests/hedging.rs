@@ -54,7 +54,7 @@ async fn hedging() -> anyhow::Result<()> {
         HedgingAppConfig {
             pg_con,
             migrate_on_start: true,
-            okex_poll_delay: std::time::Duration::from_secs(2),
+            okex_poll_delay: std::time::Duration::from_secs(1),
         },
         okex_client_config(),
         pubsub_config,
@@ -70,7 +70,7 @@ async fn hedging() -> anyhow::Result<()> {
     let okex = OkexClient::new(okex_client_config()).await?;
     let mut passed = false;
     let expected = dec!(0);
-    for _ in 0..3 {
+    for _ in 0..=3 {
         let pos = okex.get_position_in_signed_usd().await?.value;
         passed = pos == expected;
         if passed {
@@ -83,22 +83,22 @@ async fn hedging() -> anyhow::Result<()> {
     publisher.publish(payloads.next().unwrap()).await?;
     let _ = stream.next().await;
 
-    for idx in 0..1 {
-        let upper_bound = dec!(-950);
-        let lower_bound = dec!(-1050);
+    for idx in 0..=1 {
+        let upper_bound = dec!(-900);
+        let lower_bound = dec!(-1100);
         passed = false;
-        for _ in 0..3 {
+        for _ in 0..=6 {
             let pos = okex.get_position_in_signed_usd().await?.value;
             if pos < upper_bound && pos > lower_bound {
                 passed = true;
                 break;
             }
-            tokio::time::sleep(std::time::Duration::from_secs(1)).await;
+            tokio::time::sleep(std::time::Duration::from_secs(2)).await;
         }
         assert!(passed);
 
         if idx == 0 {
-            okex.place_order(OkexOrderSide::Sell, BtcUsdSwapContracts::from(50))
+            okex.place_order(OkexOrderSide::Sell, &BtcUsdSwapContracts::from(50))
                 .await?;
         }
     }
@@ -109,7 +109,7 @@ async fn hedging() -> anyhow::Result<()> {
 
     passed = false;
     let expected = dec!(0);
-    for _ in 0..3 {
+    for _ in 0..=3 {
         let pos = okex.get_position_in_signed_usd().await?.value;
         passed = pos == expected;
         if passed {

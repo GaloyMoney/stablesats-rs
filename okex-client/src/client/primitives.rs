@@ -8,6 +8,11 @@ impl From<u32> for BtcUsdSwapContracts {
         Self(contracts)
     }
 }
+impl From<&BtcUsdSwapContracts> for u32 {
+    fn from(contracts: &BtcUsdSwapContracts) -> Self {
+        contracts.0
+    }
+}
 
 #[derive(Debug, PartialEq, Eq)]
 pub struct DepositAddress {

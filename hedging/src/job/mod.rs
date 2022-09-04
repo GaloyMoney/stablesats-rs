@@ -14,7 +14,7 @@ use shared::{
     pubsub::{CorrelationId, Publisher},
 };
 
-use crate::{error::*, synth_usd_liability::*};
+use crate::{error::*, hedging_adjustments::HedgingAdjustments, synth_usd_liability::*};
 
 const POLL_OKEX_ID: Uuid = uuid!("00000000-0000-0000-0000-000000000001");
 
@@ -25,6 +25,7 @@ pub async fn start_job_runner(
     pool: sqlx::PgPool,
     synth_usd_liability: SynthUsdLiability,
     okex: OkexClient,
+    hedging_adjustments: HedgingAdjustments,
     publisher: Publisher,
     delay: std::time::Duration,
 ) -> Result<OwnedHandle, HedgingError> {
@@ -33,6 +34,7 @@ pub async fn start_job_runner(
     registry.set_context(okex);
     registry.set_context(publisher);
     registry.set_context(OkexPollDelay(delay));
+    registry.set_context(hedging_adjustments);
 
     Ok(registry.runner(&pool).run().await?)
 }
@@ -102,6 +104,7 @@ async fn adjust_hedge(
     current_job: CurrentJob,
     synth_usd_liability: SynthUsdLiability,
     okex: OkexClient,
+    hedging_adjustments: HedgingAdjustments,
 ) -> Result<(), HedgingError> {
     let AdjustHedgeData {
         tracing_data,
@@ -114,8 +117,14 @@ async fn adjust_hedge(
         job_name = %current_job.name(),
     );
     shared::tracing::inject_tracing_data(&span, &tracing_data);
-    adjust_hedge::execute(current_job, synth_usd_liability, okex)
-        .instrument(span)
-        .await?;
+    adjust_hedge::execute(
+        current_job,
+        correlation_id,
+        synth_usd_liability,
+        okex,
+        hedging_adjustments,
+    )
+    .instrument(span)
+    .await?;
     Ok(())
 }

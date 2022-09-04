@@ -1,11 +1,13 @@
 use futures::StreamExt;
 use rust_decimal_macros::dec;
+use serial_test::serial;
 
 use shared::{payload::*, pubsub::*};
 
 use user_trades::*;
 
 #[tokio::test]
+#[serial]
 async fn published_liability() -> anyhow::Result<()> {
     let redis_host = std::env::var("REDIS_HOST").unwrap_or("localhost".to_string());
     let pubsub_config = PubSubConfig {

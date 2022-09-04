@@ -4,6 +4,7 @@
 mod adjustment_action;
 mod app;
 mod error;
+mod hedging_adjustments;
 mod job;
 mod synth_usd_liability;
 

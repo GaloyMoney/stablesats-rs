@@ -2814,6 +2814,7 @@ dependencies = [
  "rust_decimal",
  "rust_decimal_macros",
  "serde",
+ "serial_test",
  "sqlx",
  "stablesats-shared",
  "thiserror",

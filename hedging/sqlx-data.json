@@ -1,5 +1,26 @@
 {
   "db": "PostgreSQL",
+  "192863d219480e8cd8b34d6ff86e553349c4445612ec48a1cd5bd5bec0687409": {
+    "describe": {
+      "columns": [],
+      "nullable": [],
+      "parameters": {
+        "Left": [
+          "Uuid",
+          "Int4",
+          "Varchar",
+          "Varchar",
+          "Numeric",
+          "Varchar",
+          "Numeric",
+          "Numeric",
+          "Numeric",
+          "Numeric"
+        ]
+      }
+    },
+    "query": "INSERT INTO hedging_adjustments (\n              correlation_id, instrument_id, exchange_ref, action, size, unit, size_usd_value,\n              target_usd_value, position_usd_value_before_adjustment, position_usd_value_after_adjustment\n            ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)\n            "
+  },
   "774f260ef3109c246642f50d09384471a5bb9a7c59203fb5c1d7d9eca1a7f5dc": {
     "describe": {
       "columns": [
@@ -20,6 +41,30 @@
       }
     },
     "query": "INSERT INTO synth_usd_liability (amount, correlation_id) \n  SELECT $1, $2\n  WHERE NOT EXISTS (\n    SELECT FROM (\n      SELECT amount FROM synth_usd_liability ORDER BY idx DESC LIMIT 1\n    ) last_row WHERE amount = $1\n  )\nRETURNING amount;\n"
+  },
+  "c81dc5ba5965f535327860add12b82dceeeb23dfe191ecda7c7bcee7330d4d53": {
+    "describe": {
+      "columns": [
+        {
+          "name": "id",
+          "ordinal": 0,
+          "type_info": "Int4"
+        },
+        {
+          "name": "name",
+          "ordinal": 1,
+          "type_info": "Varchar"
+        }
+      ],
+      "nullable": [
+        false,
+        false
+      ],
+      "parameters": {
+        "Left": []
+      }
+    },
+    "query": "SELECT id, name FROM hedging_instruments"
   },
   "d1a41ae07e59886a30a1750d7e8dd8f24c0652c267b25d8fd5cf3698dc8ca699": {
     "describe": {
