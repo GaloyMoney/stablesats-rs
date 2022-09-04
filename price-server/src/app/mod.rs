@@ -34,16 +34,13 @@ impl PriceApp {
         };
 
         let _ = tokio::spawn(async move {
-            let propagator = TraceContextPropagator::new();
-
             while let Some(msg) = stream.next().await {
                 let span = info_span!(
                     "price_tick_received",
                     message_type = %msg.payload_type,
                     correlation_id = %msg.meta.correlation_id
                 );
-                let context = propagator.extract(&msg.meta.tracing_data);
-                span.set_parent(context);
+                shared::tracing::inject_tracing_data(&span, &msg.meta.tracing_data);
 
                 async {
                     price_cache.apply_update(msg).await;

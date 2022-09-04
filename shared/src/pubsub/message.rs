@@ -1,7 +1,4 @@
-use opentelemetry::{propagation::TextMapPropagator, sdk::propagation::TraceContextPropagator};
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
-use tracing::Span;
-use tracing_opentelemetry::OpenTelemetrySpanExt;
 use uuid::Uuid;
 
 use std::collections::HashMap;
@@ -43,13 +40,8 @@ pub struct MessageMetadata {
 
 impl MessageMetadata {
     pub fn new() -> Self {
-        let mut tracing_data = HashMap::new();
-        let propagator = TraceContextPropagator::new();
-        let context = Span::current().context();
-        propagator.inject_context(&context, &mut tracing_data);
-
         Self {
-            tracing_data,
+            tracing_data: crate::tracing::extract_tracing_data(),
             correlation_id: CorrelationId::new(),
             published_at: TimeStamp::now(),
         }

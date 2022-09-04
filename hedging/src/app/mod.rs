@@ -106,8 +106,6 @@ impl HedgingApp {
             .subscribe::<OkexBtcUsdSwapPositionPayload>()
             .await?;
         let _ = tokio::spawn(async move {
-            let propagator = TraceContextPropagator::new();
-
             while let Some(msg) = stream.next().await {
                 let correlation_id = msg.meta.correlation_id;
                 let span = info_span!(
@@ -115,12 +113,15 @@ impl HedgingApp {
                     message_type = %msg.payload_type,
                     correlation_id = %correlation_id
                 );
-                let context = propagator.extract(&msg.meta.tracing_data);
-                span.set_parent(context);
-                let _ =
-                    Self::handle_received_okex_position(msg.payload, &pool, &synth_usd_liability)
-                        .instrument(span)
-                        .await;
+                shared::tracing::inject_tracing_data(&span, &msg.meta.tracing_data);
+                let _ = Self::handle_received_okex_position(
+                    msg.payload,
+                    correlation_id,
+                    &pool,
+                    &synth_usd_liability,
+                )
+                .instrument(span)
+                .await;
             }
         });
         Ok(())
@@ -136,7 +137,7 @@ impl HedgingApp {
             .await
         {
             Ok(Some(mut tx)) => {
-                job::spawn_adjust_hedge(&mut tx).await?;
+                job::spawn_adjust_hedge(&mut tx, correlation_id).await?;
                 tx.commit().await?;
                 Ok(())
             }
@@ -147,6 +148,7 @@ impl HedgingApp {
 
     async fn handle_received_okex_position(
         payload: OkexBtcUsdSwapPositionPayload,
+        correlation_id: CorrelationId,
         pool: &sqlx::PgPool,
         synth_usd_liability: &SynthUsdLiability,
     ) -> Result<(), HedgingError> {
@@ -154,7 +156,7 @@ impl HedgingApp {
         if adjustment_action::calculate_adjustment(amount, payload.signed_usd_exposure)
             .action_required()
         {
-            job::spawn_adjust_hedge(pool).await?;
+            job::spawn_adjust_hedge(pool, correlation_id).await?;
         }
         Ok(())
     }

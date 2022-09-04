@@ -10,6 +10,8 @@ pub enum HedgingError {
     #[error("HedgingError: {0}")]
     Publisher(#[from] PublisherError),
     #[error("HedgingError: {0}")]
+    SerdeJson(#[from] serde_json::Error),
+    #[error("HedgingError: {0}")]
     Sqlx(#[from] sqlx::Error),
     #[error("HedgingError: {0}")]
     Migrate(#[from] sqlx::migrate::MigrateError),

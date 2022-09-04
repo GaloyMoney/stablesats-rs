@@ -1,13 +1,16 @@
 mod adjust_hedge;
 
+use serde::{Deserialize, Serialize};
 use sqlx::{Executor, Postgres};
 use sqlxmq::{job, CurrentJob, JobBuilder, JobRegistry, OwnedHandle};
 use uuid::{uuid, Uuid};
 
+use std::collections::HashMap;
+
 use okex_client::{OkexClient, PositionSize};
 use shared::{
     payload::{ExchangeIdRaw, InstrumentIdRaw, OkexBtcUsdSwapPositionPayload, OKEX_EXCHANGE_ID},
-    pubsub::Publisher,
+    pubsub::{CorrelationId, Publisher},
 };
 
 use crate::{error::*, synth_usd_liability::*};
@@ -48,10 +51,25 @@ pub async fn spawn_poll_okex(
     }
 }
 
+#[derive(Serialize, Deserialize)]
+struct AdjustHedgeData {
+    #[serde(flatten)]
+    tracing_data: HashMap<String, String>,
+    correlation_id: CorrelationId,
+}
+
 pub async fn spawn_adjust_hedge<'a>(
     tx: impl Executor<'a, Database = Postgres>,
+    correlation_id: CorrelationId,
 ) -> Result<(), HedgingError> {
-    adjust_hedge.builder().spawn(tx).await?;
+    adjust_hedge
+        .builder()
+        .set_json(&AdjustHedgeData {
+            tracing_data: shared::tracing::extract_tracing_data(),
+            correlation_id,
+        })?
+        .spawn(tx)
+        .await?;
     Ok(())
 }
 
