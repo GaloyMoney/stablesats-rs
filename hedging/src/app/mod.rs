@@ -8,11 +8,11 @@ use tracing_opentelemetry::OpenTelemetrySpanExt;
 
 use okex_client::*;
 use shared::{
-    payload::SynthUsdLiabilityPayload,
+    payload::{OkexBtcUsdSwapPositionPayload, SynthUsdLiabilityPayload},
     pubsub::{CorrelationId, PubSubConfig, Publisher, Subscriber},
 };
 
-use crate::{error::*, job, synth_usd_liability::*};
+use crate::{adjustment_action, error::*, job, synth_usd_liability::*};
 
 pub use config::*;
 
@@ -28,7 +28,7 @@ impl HedgingApp {
             okex_poll_delay,
         }: HedgingAppConfig,
         okex_client_config: OkexClientConfig,
-        config: PubSubConfig,
+        pubsub_config: PubSubConfig,
     ) -> Result<Self, HedgingError> {
         let pool = sqlx::PgPool::connect(&pg_con).await?;
         if migrate_on_start {
@@ -39,11 +39,13 @@ impl HedgingApp {
             pool.clone(),
             synth_usd_liability.clone(),
             OkexClient::new(okex_client_config).await?,
-            Publisher::new(config.clone()).await?,
+            Publisher::new(pubsub_config.clone()).await?,
             okex_poll_delay,
         )
         .await?;
-        Self::spawn_synth_usd_listener(config, synth_usd_liability).await?;
+        Self::spawn_synth_usd_listener(pubsub_config.clone(), synth_usd_liability.clone()).await?;
+        Self::spawn_okex_position_listener(pubsub_config, pool.clone(), synth_usd_liability)
+            .await?;
         Self::spawn_okex_polling(pool, okex_poll_delay).await?;
         let app = HedgingApp {
             _runner: job_runner,
@@ -94,6 +96,36 @@ impl HedgingApp {
         Ok(())
     }
 
+    async fn spawn_okex_position_listener(
+        config: PubSubConfig,
+        pool: sqlx::PgPool,
+        synth_usd_liability: SynthUsdLiability,
+    ) -> Result<(), HedgingError> {
+        let subscriber = Subscriber::new(config).await?;
+        let mut stream = subscriber
+            .subscribe::<OkexBtcUsdSwapPositionPayload>()
+            .await?;
+        let _ = tokio::spawn(async move {
+            let propagator = TraceContextPropagator::new();
+
+            while let Some(msg) = stream.next().await {
+                let correlation_id = msg.meta.correlation_id;
+                let span = info_span!(
+                    "okex_btc_usd_swap_position_received",
+                    message_type = %msg.payload_type,
+                    correlation_id = %correlation_id
+                );
+                let context = propagator.extract(&msg.meta.tracing_data);
+                span.set_parent(context);
+                let _ =
+                    Self::handle_received_okex_position(msg.payload, &pool, &synth_usd_liability)
+                        .instrument(span)
+                        .await;
+            }
+        });
+        Ok(())
+    }
+
     async fn handle_received_synth_usd_liability(
         payload: SynthUsdLiabilityPayload,
         correlation_id: CorrelationId,
@@ -111,5 +143,19 @@ impl HedgingApp {
             Ok(None) => Ok(()),
             Err(e) => Err(e),
         }
+    }
+
+    async fn handle_received_okex_position(
+        payload: OkexBtcUsdSwapPositionPayload,
+        pool: &sqlx::PgPool,
+        synth_usd_liability: &SynthUsdLiability,
+    ) -> Result<(), HedgingError> {
+        let amount = synth_usd_liability.get_latest_liability().await?;
+        if adjustment_action::calculate_adjustment(amount, payload.signed_usd_exposure)
+            .action_required()
+        {
+            job::spawn_adjust_hedge(pool).await?;
+        }
+        Ok(())
     }
 }

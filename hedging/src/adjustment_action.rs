@@ -12,6 +12,14 @@ pub enum AdjustmentAction {
     Sell(BtcUsdSwapContracts),
     Buy(BtcUsdSwapContracts),
 }
+impl AdjustmentAction {
+    pub fn action_required(&self) -> bool {
+        match *self {
+            Self::DoNothing => false,
+            _ => true,
+        }
+    }
+}
 
 pub fn calculate_adjustment(abs_liability: Decimal, signed_exposure: Decimal) -> AdjustmentAction {
     let target_exposure = abs_liability * Decimal::NEGATIVE_ONE;

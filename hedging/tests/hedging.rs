@@ -78,24 +78,30 @@ async fn hedging() -> anyhow::Result<()> {
         }
         tokio::time::sleep(std::time::Duration::from_secs(1)).await;
     }
-
     assert!(passed);
 
     publisher.publish(payloads.next().unwrap()).await?;
     let _ = stream.next().await;
-    tokio::time::sleep(std::time::Duration::from_secs(2)).await;
-    let upper_bound = dec!(-950);
-    let lower_bound = dec!(-1050);
-    passed = false;
-    for _ in 0..3 {
-        let pos = okex.get_position_in_signed_usd().await?.value;
-        if pos < upper_bound && pos > lower_bound {
-            passed = true;
-            break;
+
+    for idx in 0..1 {
+        let upper_bound = dec!(-950);
+        let lower_bound = dec!(-1050);
+        passed = false;
+        for _ in 0..3 {
+            let pos = okex.get_position_in_signed_usd().await?.value;
+            if pos < upper_bound && pos > lower_bound {
+                passed = true;
+                break;
+            }
+            tokio::time::sleep(std::time::Duration::from_secs(1)).await;
         }
-        tokio::time::sleep(std::time::Duration::from_secs(1)).await;
+        assert!(passed);
+
+        if idx == 0 {
+            okex.place_order(OkexOrderSide::Sell, BtcUsdSwapContracts::from(50))
+                .await?;
+        }
     }
-    assert!(passed);
 
     publisher.publish(payloads.next().unwrap()).await?;
     let _ = stream.next().await;
