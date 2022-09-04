@@ -1,8 +1,10 @@
 use okex_client::*;
+use sqlxmq::CurrentJob;
 
 use crate::{adjustment_action::*, error::*, synth_usd_liability::*};
 
 pub(super) async fn execute(
+    mut current_job: CurrentJob,
     synth_usd_liability: SynthUsdLiability,
     okex: OkexClient,
 ) -> Result<(), HedgingError> {
@@ -21,5 +23,6 @@ pub(super) async fn execute(
             okex.place_order(OkexOrderSide::Buy, contracts).await?;
         }
     };
+    current_job.complete().await?;
     Ok(())
 }

@@ -14,10 +14,7 @@ pub enum AdjustmentAction {
 }
 impl AdjustmentAction {
     pub fn action_required(&self) -> bool {
-        match *self {
-            Self::DoNothing => false,
-            _ => true,
-        }
+        !matches!(*self, Self::DoNothing)
     }
 }
 

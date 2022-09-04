@@ -3,6 +3,7 @@ mod adjust_hedge;
 use serde::{Deserialize, Serialize};
 use sqlx::{Executor, Postgres};
 use sqlxmq::{job, CurrentJob, JobBuilder, JobRegistry, OwnedHandle};
+use tracing::{info_span, Instrument};
 use uuid::{uuid, Uuid};
 
 use std::collections::HashMap;
@@ -98,11 +99,23 @@ async fn poll_okex(
 
 #[job(name = "adjust_hedge", channel_name = "hedging")]
 async fn adjust_hedge(
-    mut current_job: CurrentJob,
+    current_job: CurrentJob,
     synth_usd_liability: SynthUsdLiability,
     okex: OkexClient,
 ) -> Result<(), HedgingError> {
-    adjust_hedge::execute(synth_usd_liability, okex).await?;
-    current_job.complete().await?;
+    let AdjustHedgeData {
+        tracing_data,
+        correlation_id,
+    } = current_job.json()?.expect("adjust_hedge missing data");
+    let span = info_span!(
+        "execute_job",
+        correlation_id = %correlation_id,
+        job_id = %current_job.id(),
+        job_name = %current_job.name(),
+    );
+    shared::tracing::inject_tracing_data(&span, &tracing_data);
+    adjust_hedge::execute(current_job, synth_usd_liability, okex)
+        .instrument(span)
+        .await?;
     Ok(())
 }

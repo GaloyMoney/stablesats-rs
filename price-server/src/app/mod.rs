@@ -2,9 +2,7 @@ mod error;
 
 use chrono::Duration;
 use futures::stream::StreamExt;
-use opentelemetry::{propagation::TextMapPropagator, sdk::propagation::TraceContextPropagator};
 use tracing::{info_span, instrument, Instrument};
-use tracing_opentelemetry::OpenTelemetrySpanExt;
 
 use shared::{payload::OkexBtcUsdSwapPricePayload, pubsub::*};
 
