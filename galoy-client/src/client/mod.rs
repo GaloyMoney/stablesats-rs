@@ -262,12 +262,11 @@ impl GaloyClient {
         })
     }
 
-    pub async fn onchain_address(
-        &self,
-        wallet_id: WalletId,
-    ) -> Result<OnchainAddress, GaloyClientError> {
+    pub async fn onchain_address(&self) -> Result<OnchainAddress, GaloyClientError> {
         let variables = stablesats_deposit_address::Variables {
-            input: stablesats_deposit_address::OnChainAddressCurrentInput { wallet_id },
+            input: stablesats_deposit_address::OnChainAddressCurrentInput {
+                wallet_id: self.btc_wallet_id.clone(),
+            },
         };
         let response =
             post_graphql::<StablesatsDepositAddress, _>(&self.client, &self.config.api, variables)
@@ -307,7 +306,6 @@ impl GaloyClient {
         amount: SatAmount,
         memo: Option<Memo>,
         target_conf: TargetConfirmations,
-        wallet_id: WalletId,
     ) -> Result<PaymentSendResult, GaloyClientError> {
         let variables = stablesats_on_chain_payment::Variables {
             input: stablesats_on_chain_payment::OnChainPaymentSendInput {
@@ -315,7 +313,7 @@ impl GaloyClient {
                 amount,
                 memo,
                 target_confirmations: Some(target_conf),
-                wallet_id,
+                wallet_id: self.btc_wallet_id.clone(),
             },
         };
         let response =
@@ -362,13 +360,12 @@ impl GaloyClient {
         address: OnChainAddress,
         amount: SatAmount,
         target_conf: TargetConfirmations,
-        wallet_id: WalletId,
     ) -> Result<StablesatsTxFee, GaloyClientError> {
         let variables = stablesats_on_chain_tx_fee::Variables {
             address,
             amount,
             target_confirmations: Some(target_conf),
-            wallet_id,
+            wallet_id: self.btc_wallet_id.clone(),
         };
         let response =
             post_graphql::<StablesatsOnChainTxFee, _>(&self.client, &self.config.api, variables)
