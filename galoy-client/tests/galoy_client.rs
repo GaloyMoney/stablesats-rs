@@ -3,7 +3,7 @@ use std::env;
 
 use galoy_client::{stablesats_transactions_list::WalletCurrency, *};
 
-fn staging_wallet_configuration() -> GaloyClientConfig {
+fn client_configuration() -> GaloyClientConfig {
     let api = env::var("GALOY_GRAPHQL_URI").expect("GALOY_GRAPHQL_URI not set");
     let phone_number = env::var("PHONE_NUMBER").expect("PHONE_NUMBER not set");
     let code = env::var("AUTH_CODE").expect("AUTH_CODE not set");
@@ -20,7 +20,7 @@ fn staging_wallet_configuration() -> GaloyClientConfig {
 /// Test to get btc transactions list of the default wallet
 #[tokio::test]
 async fn btc_transactions_list() -> anyhow::Result<()> {
-    let config = staging_wallet_configuration();
+    let config = client_configuration();
     let mut wallet_client = GaloyClient::connect(config).await?;
     let wallet_currency = GaloyWalletCurrency::BTC;
 
@@ -40,7 +40,7 @@ async fn btc_transactions_list() -> anyhow::Result<()> {
 /// Test to get the USD transactions list of the default wallet
 #[tokio::test]
 async fn usd_transactions_list() -> anyhow::Result<()> {
-    let config = staging_wallet_configuration();
+    let config = client_configuration();
     let mut wallet_client = GaloyClient::connect(config).await?;
 
     let wallet_currency = GaloyWalletCurrency::USD;
@@ -61,7 +61,7 @@ async fn usd_transactions_list() -> anyhow::Result<()> {
 /// Test to get wallet balances
 #[tokio::test]
 async fn wallet_balance() -> anyhow::Result<()> {
-    let config = staging_wallet_configuration();
+    let config = client_configuration();
     let wallet_client = GaloyClient::connect(config).await?;
 
     let balances = wallet_client.wallets_balances().await?;
@@ -76,7 +76,7 @@ async fn wallet_balance() -> anyhow::Result<()> {
 #[tokio::test]
 #[ignore]
 async fn onchain_deposit_address() -> anyhow::Result<()> {
-    let config = staging_wallet_configuration();
+    let config = client_configuration();
     let wallet_client = GaloyClient::connect(config).await?;
     let btc_wallet_id: WalletId = env::var("BTC_WALLET_ID").expect("BTC_WALLET_ID not set");
 
@@ -90,7 +90,7 @@ async fn onchain_deposit_address() -> anyhow::Result<()> {
 #[tokio::test]
 #[ignore]
 async fn onchain_payment() -> anyhow::Result<()> {
-    let config = staging_wallet_configuration();
+    let config = client_configuration();
     let wallet_client = GaloyClient::connect(config).await?;
 
     let btc_wallet_id: WalletId = env::var("BTC_WALLET_ID").expect("BTC_WALLET_ID not set");
@@ -122,7 +122,7 @@ async fn onchain_payment() -> anyhow::Result<()> {
 #[tokio::test]
 #[ignore]
 async fn onchain_tx_fee() -> anyhow::Result<()> {
-    let config = staging_wallet_configuration();
+    let config = client_configuration();
     let wallet_client = GaloyClient::connect(config).await?;
     let testnet_onchain_tx_fee = dec!(2142);
 
