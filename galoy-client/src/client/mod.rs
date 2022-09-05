@@ -1,3 +1,4 @@
+mod convert;
 mod queries;
 
 use graphql_client::reqwest::post_graphql;
@@ -27,19 +28,6 @@ pub struct StablesatsWalletsBalances {
     pub usd_wallet_balance: Option<queries::SignedAmount>,
 }
 
-#[derive(Debug, Clone)]
-pub struct GaloyClient {
-    client: ReqwestClient,
-    config: GaloyClientConfig,
-}
-
-#[derive(Debug, Clone)]
-pub struct GaloyClientConfig {
-    pub api: String,
-    pub code: String,
-    pub phone_number: String,
-}
-
 pub(crate) struct StablesatsAuthToken {
     pub inner: Option<String>,
 }
@@ -47,6 +35,27 @@ pub(crate) struct StablesatsAuthToken {
 #[derive(Debug)]
 pub struct OnchainAddress {
     pub address: String,
+}
+
+#[derive(Debug)]
+pub struct WalletIds {
+    btc: String,
+    usd: String,
+}
+
+#[derive(Debug, Clone)]
+pub struct GaloyClient {
+    client: ReqwestClient,
+    config: GaloyClientConfig,
+    btc_wallet_id: String,
+    usd_wallet_id: String,
+}
+
+#[derive(Debug, Clone)]
+pub struct GaloyClientConfig {
+    pub api: String,
+    pub code: String,
+    pub phone_number: String,
 }
 
 impl GaloyClient {
@@ -60,6 +69,7 @@ impl GaloyClient {
                 ))
             }
         };
+
         let client = ReqwestClient::builder()
             .default_headers(
                 std::iter::once((
@@ -70,7 +80,14 @@ impl GaloyClient {
             )
             .build()?;
 
-        Ok(Self { client, config })
+        let wallet_ids = Self::wallet_ids(client.clone(), config.clone()).await?;
+
+        Ok(Self {
+            client,
+            config,
+            btc_wallet_id: wallet_ids.btc,
+            usd_wallet_id: wallet_ids.usd,
+        })
     }
 
     pub async fn authentication_code(
@@ -129,6 +146,34 @@ impl GaloyClient {
             }
         };
         Ok(StablesatsAuthToken { inner: auth_token })
+    }
+
+    async fn wallet_ids(
+        client: ReqwestClient,
+        config: GaloyClientConfig,
+    ) -> Result<WalletIds, GaloyClientError> {
+        let variables = stablesats_wallets::Variables;
+        let response =
+            post_graphql::<StablesatsWallets, _>(&client, &config.api, variables).await?;
+        if response.errors.is_some() {
+            if let Some(error) = response.errors {
+                return Err(GaloyClientError::GrapqQlApi(error[0].clone().message));
+            }
+        }
+
+        let response_data = response.data;
+        let result = match response_data {
+            Some(result) => result,
+            None => {
+                return Err(GaloyClientError::GrapqQlApi(
+                    "Empty `me` in response data".to_string(),
+                ))
+            }
+        };
+
+        let wallet_ids = WalletIds::try_from(result)?;
+
+        Ok(wallet_ids)
     }
 
     pub async fn transactions_list(
