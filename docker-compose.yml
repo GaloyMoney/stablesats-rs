@@ -38,6 +38,9 @@ services:
     - RUST_BACKTRACE=1
     - HEDGING_PG_HOST=hedging-db
     - HEDGING_PG_PORT=5432
+    - GALOY_GRAPHQL_URI=https://api.staging.galoy.io/graphql
+    - PHONE_NUMBER=${PHONE_NUMBER}
+    - AUTH_CODE=${AUTH_CODE}
     working_dir: /repo
     volumes:
       - ./:/repo

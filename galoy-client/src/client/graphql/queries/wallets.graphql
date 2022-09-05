@@ -1,0 +1,14 @@
+query StablesatsWallets {
+  me {
+    defaultAccount {
+      __typename
+      defaultWalletId
+      wallets {
+        __typename
+        id
+        balance
+        walletCurrency
+      }
+    }
+  }
+}

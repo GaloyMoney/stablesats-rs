@@ -1,0 +1,10 @@
+mutation StablesatsOnChainPayment($input: OnChainPaymentSendInput!) {
+  onChainPaymentSend(input: $input) {
+    errors {
+      __typename
+      message
+      path
+    }
+    status
+  }
+}

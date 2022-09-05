@@ -1,0 +1,46 @@
+query StablesatsTransactionsList($after: String) {
+  me {
+    defaultAccount {
+      __typename
+      transactions(after: $after) {
+        edges {
+          cursor
+          node {
+            createdAt
+            direction
+            id
+            initiationVia {
+              __typename
+            }
+            memo
+            settlementAmount
+            settlementCurrency
+            settlementFee
+            settlementPrice {
+              base
+              currencyUnit
+              formattedAmount
+              offset
+            }
+            settlementVia {
+              __typename
+            }
+            status
+          }
+        }
+        pageInfo {
+          endCursor
+          hasNextPage
+          hasPreviousPage
+          startCursor
+        }
+      }
+      wallets {
+        __typename
+        id
+        balance
+        walletCurrency
+      }
+    }
+  }
+}

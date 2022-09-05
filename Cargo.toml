@@ -7,5 +7,6 @@ members = [
   "hedging",
   "user-trades",
   "okex-price",
-  "okex-client"
+  "okex-client",
+  "galoy-client",
 ]
