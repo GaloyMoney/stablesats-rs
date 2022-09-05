@@ -8,7 +8,7 @@ use user_trades::*;
 
 #[tokio::test]
 #[serial]
-async fn published_liability() -> anyhow::Result<()> {
+async fn publishes_liability() -> anyhow::Result<()> {
     let redis_host = std::env::var("REDIS_HOST").unwrap_or("localhost".to_string());
     let pubsub_config = PubSubConfig {
         host: Some(redis_host),
