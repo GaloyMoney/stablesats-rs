@@ -1,3 +1,6 @@
+#![allow(clippy::enum_variant_names)]
+#![allow(clippy::derive_partial_eq_without_eq)]
+
 use chrono::{DateTime, Utc};
 use graphql_client::GraphQLQuery;
 use rust_decimal::Decimal;
@@ -122,7 +125,7 @@ impl TryFrom<stablesats_transactions_list::ResponseData> for StablesatsTransacti
 #[graphql(
     schema_path = "src/client/graphql/schema.graphql",
     query_path = "src/client/graphql/queries/wallets.graphql",
-    response_derives = "Debug, PartialEq, Clone"
+    response_derives = "Debug, PartialEq, Eq, Clone"
 )]
 pub struct StablesatsWallets;
 
@@ -172,7 +175,7 @@ impl TryFrom<stablesats_deposit_address::ResponseData> for StablesatsOnchainAddr
 #[graphql(
     schema_path = "src/client/graphql/schema.graphql",
     query_path = "src/client/graphql/mutations/onchain_payment.graphql",
-    response_derives = "Debug, Clone, PartialEq"
+    response_derives = "Debug, Clone, PartialEq, Eq"
 )]
 pub struct StablesatsOnChainPayment;
 

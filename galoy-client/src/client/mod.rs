@@ -200,7 +200,7 @@ impl GaloyClient {
             }
         };
 
-        Ok(WalletBalances::try_from(result)?)
+        WalletBalances::try_from(result)
     }
 
     pub async fn onchain_address(

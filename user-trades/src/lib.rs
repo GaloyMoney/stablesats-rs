@@ -3,6 +3,7 @@
 
 mod app;
 mod error;
+mod job;
 pub mod user_trade;
 pub mod user_trade_balances;
 pub mod user_trade_unit;
