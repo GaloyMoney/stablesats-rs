@@ -5,7 +5,7 @@ use std::time::Duration;
 
 use crate::{error::*, user_trade::*, user_trade_balances::*, user_trade_unit::*};
 pub use config::*;
-use shared::{payload::SynthUsdExposurePayload, pubsub::*};
+use shared::{payload::SynthUsdLiabilityPayload, pubsub::*};
 
 pub struct UserTradesApp {
     _user_trades: UserTrades,
@@ -26,13 +26,13 @@ impl UserTradesApp {
         }
         let units = UserTradeUnits::load(&pool).await?;
         let user_trade_balances = UserTradeBalances::new(pool.clone(), units.clone()).await?;
-        Self::publish_exposure(user_trade_balances, pubsub_cfg, publish_frequency).await?;
+        Self::publish_liability(user_trade_balances, pubsub_cfg, publish_frequency).await?;
         Ok(Self {
             _user_trades: UserTrades::new(pool, units),
         })
     }
 
-    async fn publish_exposure(
+    async fn publish_liability(
         user_trade_balances: UserTradeBalances,
         pubsub_cfg: PubSubConfig,
         publish_frequency: Duration,
@@ -42,8 +42,8 @@ impl UserTradesApp {
             loop {
                 if let Ok(balances) = user_trade_balances.fetch_all().await {
                     let _ = pubsub
-                        .publish(SynthUsdExposurePayload {
-                            exposure: balances
+                        .publish(SynthUsdLiabilityPayload {
+                            liability: balances
                                 .get(&UserTradeUnit::SynthCent)
                                 .expect("SynthCents should always be present")
                                 .current_balance

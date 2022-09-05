@@ -1,12 +1,14 @@
 use futures::StreamExt;
 use rust_decimal_macros::dec;
+use serial_test::serial;
 
 use shared::{payload::*, pubsub::*};
 
 use user_trades::*;
 
 #[tokio::test]
-async fn published_exposure() -> anyhow::Result<()> {
+#[serial]
+async fn published_liability() -> anyhow::Result<()> {
     let redis_host = std::env::var("REDIS_HOST").unwrap_or("localhost".to_string());
     let pubsub_config = PubSubConfig {
         host: Some(redis_host),
@@ -29,9 +31,9 @@ async fn published_exposure() -> anyhow::Result<()> {
     )
     .await?;
 
-    let mut stream = subscriber.subscribe::<SynthUsdExposurePayload>().await?;
-    let received = stream.next().await.expect("expected exposure message");
-    assert!(received.payload.exposure >= dec!(0));
+    let mut stream = subscriber.subscribe::<SynthUsdLiabilityPayload>().await?;
+    let received = stream.next().await.expect("expected liability message");
+    assert!(received.payload.liability >= dec!(0));
 
     Ok(())
 }

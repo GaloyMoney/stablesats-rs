@@ -1,6 +1,19 @@
 use rust_decimal::Decimal;
 use std::fmt::Display;
 
+#[derive(Debug, PartialEq, Eq, Clone)]
+pub struct BtcUsdSwapContracts(pub(super) u32);
+impl From<u32> for BtcUsdSwapContracts {
+    fn from(contracts: u32) -> Self {
+        Self(contracts)
+    }
+}
+impl From<&BtcUsdSwapContracts> for u32 {
+    fn from(contracts: &BtcUsdSwapContracts) -> Self {
+        contracts.0
+    }
+}
+
 #[derive(Debug, PartialEq, Eq)]
 pub struct DepositAddress {
     pub value: String,
@@ -37,20 +50,19 @@ pub struct OrderId {
 }
 
 #[derive(Debug)]
-pub struct PositionId {
-    pub value: String,
+pub struct PositionSize {
+    pub instrument_id: OkexInstrumentId,
+    pub value: Decimal,
 }
 
 #[derive(Debug, Clone)]
 pub enum OkexInstrumentId {
     BtcUsdSwap,
-    BtcUsd,
 }
 
 impl Display for OkexInstrumentId {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match *self {
-            OkexInstrumentId::BtcUsd => write!(f, "BTC-USD"),
             OkexInstrumentId::BtcUsdSwap => write!(f, "BTC-USD-SWAP"),
         }
     }
@@ -59,28 +71,24 @@ impl Display for OkexInstrumentId {
 #[derive(Debug, Clone)]
 pub enum OkexMarginMode {
     Cross,
-    Isolated,
 }
 
 impl Display for OkexMarginMode {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match *self {
             OkexMarginMode::Cross => write!(f, "cross"),
-            OkexMarginMode::Isolated => write!(f, "isolated"),
         }
     }
 }
 
 #[derive(Debug, Clone)]
 pub enum OkexPositionMode {
-    LongShort,
     Net,
 }
 
 impl Display for OkexPositionMode {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match *self {
-            OkexPositionMode::LongShort => write!(f, "long_short_mode"),
             OkexPositionMode::Net => write!(f, "net_mode"),
         }
     }
@@ -138,14 +146,6 @@ impl Display for OkexOrderType {
             OkexOrderType::OptimalLimitIoc => write!(f, "optimal_limit_ioc"),
         }
     }
-}
-
-pub struct OkexClientConfig {
-    pub api_key: String,
-    pub passphrase: String,
-    pub secret_key: String,
-    pub simulated: bool,
-    pub position_mode: OkexPositionMode,
 }
 
 #[derive(Debug, Clone)]

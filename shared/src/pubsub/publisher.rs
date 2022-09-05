@@ -5,6 +5,7 @@ use super::config::*;
 use super::error::PublisherError;
 use super::message::*;
 
+#[derive(Clone)]
 pub struct Publisher {
     client: RedisClient,
 }

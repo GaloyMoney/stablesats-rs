@@ -25,9 +25,20 @@ lazy_static::lazy_static! {
     static ref LIMITER: RateLimiter<&'static str, DefaultKeyedStateStore<&'static str>, DefaultClock>  = RateLimiter::keyed(Quota::per_second(NonZeroU32::new(1).unwrap()));
 }
 
+const TESTNET_BURNER_ADDRESS: &str = "tb1qfqh7ksqcrhjgq35clnf06l5d9s6tk2ke46ecrj";
 const OKEX_API_URL: &str = "https://www.okex.com";
 pub const OKEX_MINIMUM_WITHDRAWAL_AMOUNT: &str = "0.001";
 pub const OKEX_MINIMUM_WITHDRAWAL_FEE: &str = "0.0002";
+
+#[derive(Clone)]
+pub struct OkexClientConfig {
+    pub api_key: String,
+    pub passphrase: String,
+    pub secret_key: String,
+    pub simulated: bool,
+}
+
+#[derive(Clone)]
 pub struct OkexClient {
     client: ReqwestClient,
     config: OkexClientConfig,
@@ -71,6 +82,12 @@ impl OkexClient {
     }
 
     pub async fn get_funding_deposit_address(&self) -> Result<DepositAddress, OkexClientError> {
+        if self.config.simulated {
+            return Ok(DepositAddress {
+                value: TESTNET_BURNER_ADDRESS.to_string(),
+            });
+        }
+
         let request_path = "/api/v5/asset/deposit-address?ccy=BTC";
 
         let headers = self.get_request_headers(request_path)?;
@@ -284,18 +301,20 @@ impl OkexClient {
 
     pub async fn place_order(
         &self,
-        inst_id: OkexInstrumentId,
         side: OkexOrderSide,
-        size: u64,
+        contracts: &BtcUsdSwapContracts,
     ) -> Result<OrderId, OkexClientError> {
         let mut body: HashMap<String, String> = HashMap::new();
         body.insert("ccy".to_string(), TradeCurrency::BTC.to_string());
-        body.insert("instId".to_string(), inst_id.to_string());
+        body.insert(
+            "instId".to_string(),
+            OkexInstrumentId::BtcUsdSwap.to_string(),
+        );
         body.insert("tdMode".to_string(), OkexMarginMode::Cross.to_string());
         body.insert("side".to_string(), side.to_string());
         body.insert("ordType".to_string(), OkexOrderType::Market.to_string());
         body.insert("posSide".to_string(), OkexPositionSide::Net.to_string());
-        body.insert("sz".to_string(), size.to_string());
+        body.insert("sz".to_string(), contracts.0.to_string());
         let request_body = serde_json::to_string(&body)?;
 
         let request_path = "/api/v5/trade/order";
@@ -316,7 +335,7 @@ impl OkexClient {
         })
     }
 
-    pub async fn get_position(&self) -> Result<PositionId, OkexClientError> {
+    pub async fn get_position_in_signed_usd(&self) -> Result<PositionSize, OkexClientError> {
         let request_path = "/api/v5/account/positions?instId=BTC-USD-SWAP";
         let headers = self.get_request_headers(request_path)?;
 
@@ -328,24 +347,34 @@ impl OkexClient {
             .send()
             .await?;
 
-        let position_data = Self::extract_response_data::<PositionData>(response).await?;
+        let PositionData {
+            notional_usd, pos, ..
+        } = Self::extract_response_data::<PositionData>(response).await?;
 
-        Ok(PositionId {
-            value: position_data.pos_id,
+        let direction = pos.parse::<Decimal>().unwrap_or(Decimal::ZERO);
+        let notional_usd = notional_usd.parse::<Decimal>().unwrap_or(Decimal::ZERO);
+
+        Ok(PositionSize {
+            instrument_id: OkexInstrumentId::BtcUsdSwap,
+            value: notional_usd
+                * if direction > Decimal::ZERO {
+                    Decimal::ONE
+                } else {
+                    Decimal::NEGATIVE_ONE
+                },
         })
     }
 
-    pub async fn close_positions(
-        &self,
-        inst_id: OkexInstrumentId,
-        auto_cxl: bool,
-    ) -> Result<ClosePositionData, OkexClientError> {
+    pub async fn close_positions(&self) -> Result<(), OkexClientError> {
         let mut body: HashMap<String, String> = HashMap::new();
-        body.insert("instId".to_string(), inst_id.to_string());
+        body.insert(
+            "instId".to_string(),
+            OkexInstrumentId::BtcUsdSwap.to_string(),
+        );
         body.insert("mgnMode".to_string(), OkexMarginMode::Cross.to_string());
         body.insert("posSide".to_string(), OkexPositionSide::Net.to_string());
         body.insert("ccy".to_string(), TradeCurrency::BTC.to_string());
-        body.insert("autoCxl".to_string(), auto_cxl.to_string());
+        body.insert("autoCxl".to_string(), "false".to_string());
         let request_body = serde_json::to_string(&body)?;
 
         let request_path = "/api/v5/trade/close-position";
@@ -360,9 +389,14 @@ impl OkexClient {
             .send()
             .await?;
 
-        let close_position = Self::extract_response_data::<ClosePositionData>(response).await?;
-
-        Ok(close_position)
+        match Self::extract_response_data::<ClosePositionData>(response).await {
+            Err(OkexClientError::UnexpectedResponse { msg, .. })
+                if msg.starts_with("Position does not exist") =>
+            {
+                Ok(())
+            }
+            res => res.map(|_| ()),
+        }
     }
 
     /// Extracts the first entry in the response data

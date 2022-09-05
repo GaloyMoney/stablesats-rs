@@ -37,7 +37,15 @@ impl std::ops::Deref for OkexBtcUsdSwapPricePayload {
 crate::payload! { OkexBtcUsdSwapPricePayload, "price.okex.btc-usd-swap" }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct SynthUsdExposurePayload {
-    pub exposure: rust_decimal::Decimal,
+pub struct SynthUsdLiabilityPayload {
+    pub liability: rust_decimal::Decimal,
 }
-crate::payload! { SynthUsdExposurePayload, "exposure.synth-usd" }
+crate::payload! { SynthUsdLiabilityPayload, "liability.synth-usd" }
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct OkexBtcUsdSwapPositionPayload {
+    pub exchange: ExchangeIdRaw,
+    pub instrument_id: InstrumentIdRaw,
+    pub signed_usd_exposure: rust_decimal::Decimal,
+}
+crate::payload! { OkexBtcUsdSwapPositionPayload, "position.okex.btc-usd-swap" }
