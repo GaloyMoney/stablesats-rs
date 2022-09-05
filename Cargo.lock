@@ -2920,6 +2920,7 @@ dependencies = [
  "serde",
  "serial_test",
  "sqlx",
+ "sqlxmq",
  "stablesats-shared",
  "thiserror",
  "tokio",

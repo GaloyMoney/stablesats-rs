@@ -12,7 +12,6 @@ reqwest = {version = "0.11.11", features = ["json"]}
 serde = { version = "1.0.144", features = ["derive"] }
 
 thiserror = "1.0.34"
-tokio = {version = "1.20.1", features = ["macros"]}
 itertools = "0.10.2"
 chrono = { version = "0.4", features = ["clock", "serde"], default-features = false }
 rust_decimal = "1.26.1"
@@ -20,3 +19,4 @@ rust_decimal_macros = "1.26.1"
 
 [dev-dependencies]
 anyhow = "1.0.64"
+tokio = { version = "1.20.1", features = ["macros"] }
