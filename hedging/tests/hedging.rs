@@ -48,7 +48,9 @@ async fn hedging() -> anyhow::Result<()> {
 
     let publisher = Publisher::new(pubsub_config.clone()).await?;
     let subscriber = Subscriber::new(pubsub_config.clone()).await?;
-    let mut stream = subscriber.subscribe::<SynthUsdLiabilityPayload>().await?;
+    let mut stream = subscriber
+        .subscribe::<OkexBtcUsdSwapPositionPayload>()
+        .await?;
 
     let _app = HedgingApp::run(
         HedgingAppConfig {
@@ -63,59 +65,64 @@ async fn hedging() -> anyhow::Result<()> {
 
     let mut payloads = load_fixture()?.payloads.into_iter();
     publisher.publish(payloads.next().unwrap()).await?;
-    let _ = stream.next().await;
-
-    tokio::time::sleep(std::time::Duration::from_secs(2)).await;
 
     let okex = OkexClient::new(okex_client_config()).await?;
     let mut passed = false;
     let expected = dec!(0);
     for _ in 0..=3 {
-        let pos = okex.get_position_in_signed_usd().await?.value;
+        let pos = stream
+            .next()
+            .await
+            .expect("msg stream")
+            .payload
+            .signed_usd_exposure;
         passed = pos == expected;
         if passed {
             break;
         }
-        tokio::time::sleep(std::time::Duration::from_secs(1)).await;
     }
     assert!(passed);
 
     publisher.publish(payloads.next().unwrap()).await?;
-    let _ = stream.next().await;
 
     for idx in 0..=1 {
         let upper_bound = dec!(-900);
         let lower_bound = dec!(-1100);
         passed = false;
         for _ in 0..=6 {
-            let pos = okex.get_position_in_signed_usd().await?.value;
+            let pos = stream.next().await.unwrap().payload.signed_usd_exposure;
             if pos < upper_bound && pos > lower_bound {
                 passed = true;
                 break;
             }
-            tokio::time::sleep(std::time::Duration::from_secs(2)).await;
         }
         assert!(passed);
 
         if idx == 0 {
             okex.place_order(OkexOrderSide::Sell, &BtcUsdSwapContracts::from(50))
                 .await?;
+            passed = false;
+            for _ in 0..=3 {
+                let pos = stream.next().await.unwrap().payload.signed_usd_exposure;
+                if pos < dec!(-4000) {
+                    passed = true;
+                    break;
+                }
+            }
+            assert!(passed);
         }
     }
 
     publisher.publish(payloads.next().unwrap()).await?;
-    let _ = stream.next().await;
-    tokio::time::sleep(std::time::Duration::from_secs(2)).await;
 
     passed = false;
     let expected = dec!(0);
-    for _ in 0..=3 {
-        let pos = okex.get_position_in_signed_usd().await?.value;
+    for _ in 0..=6 {
+        let pos = stream.next().await.unwrap().payload.signed_usd_exposure;
         passed = pos == expected;
         if passed {
             break;
         }
-        tokio::time::sleep(std::time::Duration::from_secs(1)).await;
     }
 
     assert!(passed);
