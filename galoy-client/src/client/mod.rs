@@ -12,7 +12,14 @@ pub use queries::*;
 
 use self::stablesats_on_chain_payment::PaymentSendResult;
 
-pub struct LastTransactionCursor(pub String);
+pub type GaloyWalletCurrency = stablesats_transactions_list::WalletCurrency;
+
+pub struct LastTransactionCursor(String);
+impl From<String> for LastTransactionCursor {
+    fn from(cursor: String) -> Self {
+        Self(cursor)
+    }
+}
 
 #[derive(Debug)]
 pub struct StablesatsWalletsBalances {
@@ -126,11 +133,11 @@ impl GaloyClient {
 
     pub async fn transactions_list(
         &mut self,
-        last_transaction_cursor: LastTransactionCursor,
-        wallet_currency: stablesats_transactions_list::WalletCurrency,
+        wallet_currency: GaloyWalletCurrency,
+        last_transaction_cursor: Option<LastTransactionCursor>,
     ) -> Result<StablesatsTransactionsEdges, GaloyClientError> {
         let variables = stablesats_transactions_list::Variables {
-            after: Some(last_transaction_cursor.0),
+            after: last_transaction_cursor.map(|cursor| cursor.0),
         };
         let response = post_graphql::<StablesatsTransactionsList, _>(
             &self.client,

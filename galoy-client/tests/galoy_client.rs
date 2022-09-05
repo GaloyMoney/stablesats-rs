@@ -4,7 +4,7 @@ use std::env;
 use galoy_client::{stablesats_transactions_list::WalletCurrency, *};
 
 fn staging_wallet_configuration() -> GaloyClientConfig {
-    let api = env::var("GRAPHQL_URI").expect("GRAPHQL_URI not set");
+    let api = env::var("GALOY_GRAPHQL_URI").expect("GALOY_GRAPHQL_URI not set");
     let phone_number = env::var("PHONE_NUMBER").expect("PHONE_NUMBER not set");
     let code = env::var("AUTH_CODE").expect("AUTH_CODE not set");
 
@@ -22,14 +22,10 @@ fn staging_wallet_configuration() -> GaloyClientConfig {
 async fn btc_transactions_list() -> anyhow::Result<()> {
     let config = staging_wallet_configuration();
     let mut wallet_client = GaloyClient::connect(config).await?;
-
-    let last_transaction_cursor = LastTransactionCursor(
-        env::var("LAST_BTC_TRANSACTION_CURSOR").expect("LAST_BTC_TRANSACTION_CURSOR not set"),
-    );
-    let wallet_currency = stablesats_transactions_list::WalletCurrency::BTC;
+    let wallet_currency = GaloyWalletCurrency::BTC;
 
     let btc_transactions = wallet_client
-        .transactions_list(last_transaction_cursor, wallet_currency)
+        .transactions_list(wallet_currency, None)
         .await?;
 
     assert!(btc_transactions.edges.len() > 0);
@@ -47,13 +43,10 @@ async fn usd_transactions_list() -> anyhow::Result<()> {
     let config = staging_wallet_configuration();
     let mut wallet_client = GaloyClient::connect(config).await?;
 
-    let last_transaction_cursor = LastTransactionCursor(
-        env::var("LAST_USD_TRANSACTION_CURSOR").expect("LAST_USD_TRANSACTION_CURSOR not set"),
-    );
-    let wallet_currency = stablesats_transactions_list::WalletCurrency::USD;
+    let wallet_currency = GaloyWalletCurrency::USD;
 
     let usd_transactions = wallet_client
-        .transactions_list(last_transaction_cursor, wallet_currency)
+        .transactions_list(wallet_currency, None)
         .await?;
 
     assert!(usd_transactions.edges.len() > 0);
@@ -81,6 +74,7 @@ async fn wallet_balance() -> anyhow::Result<()> {
 
 /// Test to generate onchain deposit address
 #[tokio::test]
+#[ignore]
 async fn onchain_deposit_address() -> anyhow::Result<()> {
     let config = staging_wallet_configuration();
     let wallet_client = GaloyClient::connect(config).await?;
@@ -94,6 +88,7 @@ async fn onchain_deposit_address() -> anyhow::Result<()> {
 
 /// Test making an onchain payment
 #[tokio::test]
+#[ignore]
 async fn onchain_payment() -> anyhow::Result<()> {
     let config = staging_wallet_configuration();
     let wallet_client = GaloyClient::connect(config).await?;
@@ -125,6 +120,7 @@ async fn onchain_payment() -> anyhow::Result<()> {
 
 /// Test to get onchain transaction fee
 #[tokio::test]
+#[ignore]
 async fn onchain_tx_fee() -> anyhow::Result<()> {
     let config = staging_wallet_configuration();
     let wallet_client = GaloyClient::connect(config).await?;
