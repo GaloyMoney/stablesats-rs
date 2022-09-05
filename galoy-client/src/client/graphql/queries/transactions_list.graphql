@@ -35,12 +35,6 @@ query StablesatsTransactionsList($after: String) {
           startCursor
         }
       }
-      wallets {
-        __typename
-        id
-        balance
-        walletCurrency
-      }
     }
   }
 }

@@ -12,8 +12,9 @@ use rust_decimal::Decimal;
 use crate::error::*;
 use queries::*;
 pub use queries::{
-    stablesats_on_chain_payment::PaymentSendResult, stablesats_transactions_list::WalletCurrency,
-    WalletId,
+    stablesats_on_chain_payment::PaymentSendResult,
+    stablesats_transactions_list::WalletCurrency as SettlementCurrency,
+    stablesats_wallets::WalletCurrency, WalletId,
 };
 
 pub struct LastTransactionCursor(String);
@@ -33,6 +34,7 @@ pub struct WalletBalances {
 pub struct GaloyClient {
     client: ReqwestClient,
     config: GaloyClientConfig,
+    btc_wallet_id: String,
 }
 
 #[derive(Debug, Clone)]
@@ -72,7 +74,13 @@ impl GaloyClient {
             )
             .build()?;
 
-        Ok(Self { client, config })
+        let btc_wallet_id = Self::wallet_ids(client.clone(), config.clone()).await?;
+
+        Ok(Self {
+            client,
+            config,
+            btc_wallet_id,
+        })
     }
 
     pub async fn authentication_code(
@@ -133,9 +141,37 @@ impl GaloyClient {
         Ok(StablesatsAuthToken { inner: auth_token })
     }
 
+    async fn wallet_ids(
+        client: ReqwestClient,
+        config: GaloyClientConfig,
+    ) -> Result<WalletId, GaloyClientError> {
+        let variables = stablesats_wallets::Variables;
+        let response =
+            post_graphql::<StablesatsWallets, _>(&client, &config.api, variables).await?;
+        if response.errors.is_some() {
+            if let Some(error) = response.errors {
+                return Err(GaloyClientError::GrapqQlApi(error[0].clone().message));
+            }
+        }
+
+        let response_data = response.data;
+        let result = match response_data {
+            Some(result) => result,
+            None => {
+                return Err(GaloyClientError::GrapqQlApi(
+                    "Empty `me` in response data".to_string(),
+                ))
+            }
+        };
+
+        let wallet_id = WalletId::try_from(result)?;
+
+        Ok(wallet_id)
+    }
+
     pub async fn transactions_list(
         &mut self,
-        wallet_currency: WalletCurrency,
+        wallet_currency: SettlementCurrency,
         last_transaction_cursor: Option<LastTransactionCursor>,
     ) -> Result<StablesatsTransactionsEdges, GaloyClientError> {
         let variables = stablesats_transactions_list::Variables {
@@ -203,12 +239,11 @@ impl GaloyClient {
         WalletBalances::try_from(result)
     }
 
-    pub async fn onchain_address(
-        &self,
-        wallet_id: WalletId,
-    ) -> Result<OnchainAddress, GaloyClientError> {
+    pub async fn onchain_address(&self) -> Result<OnchainAddress, GaloyClientError> {
         let variables = stablesats_deposit_address::Variables {
-            input: stablesats_deposit_address::OnChainAddressCurrentInput { wallet_id },
+            input: stablesats_deposit_address::OnChainAddressCurrentInput {
+                wallet_id: self.btc_wallet_id.clone(),
+            },
         };
         let response =
             post_graphql::<StablesatsDepositAddress, _>(&self.client, &self.config.api, variables)
@@ -248,7 +283,6 @@ impl GaloyClient {
         amount: Decimal,
         memo: Option<Memo>,
         target_conf: TargetConfirmations,
-        wallet_id: WalletId,
     ) -> Result<PaymentSendResult, GaloyClientError> {
         let variables = stablesats_on_chain_payment::Variables {
             input: stablesats_on_chain_payment::OnChainPaymentSendInput {
@@ -256,7 +290,7 @@ impl GaloyClient {
                 amount,
                 memo,
                 target_confirmations: Some(target_conf),
-                wallet_id,
+                wallet_id: self.btc_wallet_id.clone(),
             },
         };
         let response =
@@ -303,13 +337,12 @@ impl GaloyClient {
         address: OnChainAddress,
         amount: SatAmount,
         target_conf: TargetConfirmations,
-        wallet_id: WalletId,
     ) -> Result<StablesatsTxFee, GaloyClientError> {
         let variables = stablesats_on_chain_tx_fee::Variables {
             address,
             amount,
             target_confirmations: Some(target_conf),
-            wallet_id,
+            wallet_id: self.btc_wallet_id.clone(),
         };
         let response =
             post_graphql::<StablesatsOnChainTxFee, _>(&self.client, &self.config.api, variables)

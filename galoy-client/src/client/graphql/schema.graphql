@@ -1353,11 +1353,3 @@ enum WalletCurrency {
 Unique identifier of a wallet
 """
 scalar WalletId
-
-"""
-Wrapper around the BTC and USD wallets
-"""
-type StablesatsWalletsWrap {
-  btc_wallet: Wallet
-  usd_wallet: Wallet
-}

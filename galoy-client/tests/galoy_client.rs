@@ -22,7 +22,7 @@ fn client_configuration() -> GaloyClientConfig {
 async fn btc_transactions_list() -> anyhow::Result<()> {
     let config = client_configuration();
     let mut wallet_client = GaloyClient::connect(config).await?;
-    let wallet_currency = WalletCurrency::BTC;
+    let wallet_currency = SettlementCurrency::BTC;
 
     let btc_transactions = wallet_client
         .transactions_list(wallet_currency, None)
@@ -31,7 +31,7 @@ async fn btc_transactions_list() -> anyhow::Result<()> {
     assert!(btc_transactions.edges.len() > 0);
     assert_eq!(
         btc_transactions.edges[0].node.settlement_currency,
-        WalletCurrency::BTC
+        SettlementCurrency::BTC
     );
 
     Ok(())
@@ -43,7 +43,7 @@ async fn usd_transactions_list() -> anyhow::Result<()> {
     let config = client_configuration();
     let mut wallet_client = GaloyClient::connect(config).await?;
 
-    let wallet_currency = WalletCurrency::USD;
+    let wallet_currency = SettlementCurrency::USD;
 
     let usd_transactions = wallet_client
         .transactions_list(wallet_currency, None)
@@ -52,7 +52,7 @@ async fn usd_transactions_list() -> anyhow::Result<()> {
     assert!(usd_transactions.edges.len() > 0);
     assert_eq!(
         usd_transactions.edges[0].node.settlement_currency,
-        WalletCurrency::USD
+        SettlementCurrency::USD
     );
 
     Ok(())
@@ -75,13 +75,11 @@ async fn wallet_balance() -> anyhow::Result<()> {
 
 /// Test to generate onchain deposit address
 #[tokio::test]
-#[ignore]
 async fn onchain_deposit_address() -> anyhow::Result<()> {
     let config = client_configuration();
     let wallet_client = GaloyClient::connect(config).await?;
-    let btc_wallet_id: WalletId = env::var("BTC_WALLET_ID").expect("BTC_WALLET_ID not set");
 
-    let onchain_address = wallet_client.onchain_address(btc_wallet_id).await?;
+    let onchain_address = wallet_client.onchain_address().await?;
 
     assert!(onchain_address.address.len() == 42);
     Ok(())
@@ -89,12 +87,10 @@ async fn onchain_deposit_address() -> anyhow::Result<()> {
 
 /// Test making an onchain payment
 #[tokio::test]
-#[ignore]
 async fn onchain_payment() -> anyhow::Result<()> {
     let config = client_configuration();
     let wallet_client = GaloyClient::connect(config).await?;
 
-    let btc_wallet_id: WalletId = env::var("BTC_WALLET_ID").expect("BTC_WALLET_ID not set");
     let onchain_address =
         env::var("ONCHAIN_DEPOSIT_ADDRESS").expect("ONCHAIN_DEPOSIT_ADDRESS not set");
     let memo = "Test onchain payment".to_string();
@@ -102,13 +98,7 @@ async fn onchain_payment() -> anyhow::Result<()> {
     let target_conf = 2;
 
     let payment_result = wallet_client
-        .send_onchain_payment(
-            onchain_address,
-            amount,
-            Some(memo),
-            target_conf,
-            btc_wallet_id,
-        )
+        .send_onchain_payment(onchain_address, amount, Some(memo), target_conf)
         .await?;
 
     assert_eq!(payment_result, PaymentSendResult::SUCCESS);
@@ -118,7 +108,6 @@ async fn onchain_payment() -> anyhow::Result<()> {
 
 /// Test to get onchain transaction fee
 #[tokio::test]
-#[ignore]
 async fn onchain_tx_fee() -> anyhow::Result<()> {
     let config = client_configuration();
     let wallet_client = GaloyClient::connect(config).await?;
@@ -128,10 +117,9 @@ async fn onchain_tx_fee() -> anyhow::Result<()> {
         env::var("ONCHAIN_DEPOSIT_ADDRESS").expect("ONCHAIN_DEPOSIT_ADDRESS not set");
     let amount = dec!(50000);
     let target_conf = 1;
-    let btc_wallet_id: WalletId = env::var("BTC_WALLET_ID").expect("BTC_WALLET_ID not set");
 
     let onchain_tx_fee = wallet_client
-        .onchain_tx_fee(onchain_address, amount, target_conf, btc_wallet_id)
+        .onchain_tx_fee(onchain_address, amount, target_conf)
         .await?;
 
     assert_eq!(onchain_tx_fee.amount, testnet_onchain_tx_fee);
