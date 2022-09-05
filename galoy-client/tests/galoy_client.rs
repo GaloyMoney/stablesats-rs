@@ -86,6 +86,7 @@ async fn onchain_deposit_address() -> anyhow::Result<()> {
 
 /// Test making an onchain payment
 #[tokio::test]
+#[ignore]
 async fn onchain_payment() -> anyhow::Result<()> {
     let config = client_configuration();
     let wallet_client = GaloyClient::connect(config).await?;
@@ -107,6 +108,7 @@ async fn onchain_payment() -> anyhow::Result<()> {
 
 /// Test to get onchain transaction fee
 #[tokio::test]
+#[ignore]
 async fn onchain_tx_fee() -> anyhow::Result<()> {
     let config = client_configuration();
     let wallet_client = GaloyClient::connect(config).await?;
