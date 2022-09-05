@@ -29,5 +29,5 @@ rust_decimal = "1.26.1"
 uuid = "1.1.2"
 
 [dev-dependencies]
-anyhow = "1.0.63"
+anyhow = "1.0.64"
 serial_test = "*"

@@ -22,5 +22,5 @@ lazy_static = "1.4.0"
 rust_decimal_macros = "1.26.1"
 
 [dev-dependencies]
-anyhow = "1.0.63"
+anyhow = "1.0.64"
 serial_test = "*"

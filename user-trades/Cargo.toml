@@ -14,12 +14,12 @@ sqlx = { version = "0.6", features = [ "offline", "runtime-tokio-rustls", "postg
 uuid = "1.1.2"
 tracing = "0.1.36"
 serde = "1.0.143"
-anyhow = "1.0.63"
+anyhow = "1.0.64"
 rust_decimal = "1.26.1"
 rust_decimal_macros = "1.26.1"
 futures = "0.3.24"
 
 [dev-dependencies]
-anyhow = "1.0.63"
+anyhow = "1.0.64"
 lazy_static = "1.4.0"
 serial_test = "0.9.0"
