@@ -61,6 +61,8 @@ jobs:
         OKEX_API_KEY: #@ data.values.okex_api_key
         OKEX_PASSPHRASE: #@ data.values.okex_passphrase
         OKEX_SECRET_KEY: #@ data.values.okex_secret_key
+        PHONE_NUMBER: #@ data.values.phone_number
+        AUTH_CODE: #@ data.values.auth_code
       run:
         path: pipeline-tasks/ci/tasks/test-integration.sh
   on_failure: #@ slack_failure_notification()
