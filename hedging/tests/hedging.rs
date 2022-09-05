@@ -102,7 +102,7 @@ async fn hedging() -> anyhow::Result<()> {
             okex.place_order(OkexOrderSide::Sell, &BtcUsdSwapContracts::from(50))
                 .await?;
             passed = false;
-            for _ in 0..=3 {
+            for _ in 0..=5 {
                 let pos = stream.next().await.unwrap().payload.signed_usd_exposure;
                 if pos < dec!(-4000) {
                     passed = true;

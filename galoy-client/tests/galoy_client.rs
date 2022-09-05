@@ -67,8 +67,7 @@ async fn wallet_balance() -> anyhow::Result<()> {
     let balances = wallet_client.wallet_balances().await?;
 
     assert!(balances.btc >= dec!(0));
-    // TODO fix staging dealer
-    // assert!(balances.usd <= dec!(0));
+    assert!(balances.usd <= dec!(0));
 
     Ok(())
 }
