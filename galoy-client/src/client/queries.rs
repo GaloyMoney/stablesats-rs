@@ -5,9 +5,7 @@ use serde::Deserialize;
 
 use crate::GaloyClientError;
 
-use self::stablesats_wallets::{StablesatsWalletsMeDefaultAccountWallets, WalletCurrency};
-
-pub type SafeInt = i64;
+pub(super) type SafeInt = i64;
 
 #[derive(Debug, PartialEq, Deserialize, Clone)]
 pub struct GraphqlTimeStamp(#[serde(with = "chrono::serde::ts_seconds")] DateTime<Utc>);
@@ -127,44 +125,6 @@ impl TryFrom<stablesats_transactions_list::ResponseData> for StablesatsTransacti
     response_derives = "Debug, PartialEq, Clone"
 )]
 pub struct StablesatsWallets;
-pub type StablesatsWalletsWrap = StablesatsWalletsWrapper;
-
-pub struct StablesatsWalletsWrapper {
-    pub btc_wallet: Option<StablesatsWalletsMeDefaultAccountWallets>,
-    pub usd_wallet: Option<StablesatsWalletsMeDefaultAccountWallets>,
-}
-
-impl TryFrom<stablesats_wallets::ResponseData> for StablesatsWalletsWrapper {
-    type Error = GaloyClientError;
-
-    fn try_from(response: stablesats_wallets::ResponseData) -> Result<Self, Self::Error> {
-        let me = response.me;
-        let me = match me {
-            Some(me) => me,
-            None => {
-                return Err(GaloyClientError::GrapqQlApi(
-                    "Empty `me` in response data".to_string(),
-                ))
-            }
-        };
-        let default_account = me.default_account;
-        let wallets = default_account.wallets;
-
-        let btc_wallet = wallets
-            .clone()
-            .into_iter()
-            .find(|wallet| wallet.wallet_currency == WalletCurrency::BTC);
-
-        let usd_wallet = wallets
-            .into_iter()
-            .find(|wallet| wallet.wallet_currency == WalletCurrency::USD);
-
-        Ok(StablesatsWalletsWrapper {
-            btc_wallet,
-            usd_wallet,
-        })
-    }
-}
 
 #[derive(GraphQLQuery)]
 #[graphql(
@@ -173,9 +133,9 @@ impl TryFrom<stablesats_wallets::ResponseData> for StablesatsWalletsWrapper {
     response_derives = "Debug"
 )]
 pub struct StablesatsOnChainTxFee;
-pub type TargetConfirmations = u32;
-pub type SatAmount = Decimal;
-pub type OnChainAddress = String;
+pub(super) type TargetConfirmations = u32;
+pub(super) type SatAmount = Decimal;
+pub(super) type OnChainAddress = String;
 
 pub type StablesatsTxFee = stablesats_on_chain_tx_fee::StablesatsOnChainTxFeeOnChainTxFee;
 

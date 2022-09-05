@@ -1,3 +1,4 @@
+mod convert;
 mod queries;
 
 use graphql_client::reqwest::post_graphql;
@@ -6,13 +7,14 @@ use reqwest::{
     header::{HeaderValue, AUTHORIZATION},
     Client as ReqwestClient,
 };
+use rust_decimal::Decimal;
 
-pub use crate::error::*;
-pub use queries::*;
-
-use self::stablesats_on_chain_payment::PaymentSendResult;
-
-pub type GaloyWalletCurrency = stablesats_transactions_list::WalletCurrency;
+use crate::error::*;
+use queries::*;
+pub use queries::{
+    stablesats_on_chain_payment::PaymentSendResult, stablesats_transactions_list::WalletCurrency,
+    WalletId,
+};
 
 pub struct LastTransactionCursor(String);
 impl From<String> for LastTransactionCursor {
@@ -22,9 +24,9 @@ impl From<String> for LastTransactionCursor {
 }
 
 #[derive(Debug)]
-pub struct StablesatsWalletsBalances {
-    pub btc_wallet_balance: Option<queries::SignedAmount>,
-    pub usd_wallet_balance: Option<queries::SignedAmount>,
+pub struct WalletBalances {
+    pub btc: Decimal,
+    pub usd: Decimal,
 }
 
 #[derive(Debug, Clone)]
@@ -133,7 +135,7 @@ impl GaloyClient {
 
     pub async fn transactions_list(
         &mut self,
-        wallet_currency: GaloyWalletCurrency,
+        wallet_currency: WalletCurrency,
         last_transaction_cursor: Option<LastTransactionCursor>,
     ) -> Result<StablesatsTransactionsEdges, GaloyClientError> {
         let variables = stablesats_transactions_list::Variables {
@@ -178,7 +180,7 @@ impl GaloyClient {
         })
     }
 
-    pub async fn wallets_balances(&self) -> Result<StablesatsWalletsBalances, GaloyClientError> {
+    pub async fn wallet_balances(&self) -> Result<WalletBalances, GaloyClientError> {
         let variables = stablesats_wallets::Variables;
         let response =
             post_graphql::<StablesatsWallets, _>(&self.client, &self.config.api, variables).await?;
@@ -198,23 +200,7 @@ impl GaloyClient {
             }
         };
 
-        let wallets = StablesatsWalletsWrapper::try_from(result)?;
-        let btc_wallet = wallets.btc_wallet;
-        let usd_wallet = wallets.usd_wallet;
-
-        let btc_wallet_balance: Option<SignedAmount> = match btc_wallet {
-            Some(wallet) => Some(wallet.balance),
-            None => None,
-        };
-        let usd_wallet_balance: Option<SignedAmount> = match usd_wallet {
-            Some(wallet) => Some(wallet.balance),
-            None => None,
-        };
-
-        Ok(StablesatsWalletsBalances {
-            usd_wallet_balance,
-            btc_wallet_balance,
-        })
+        Ok(WalletBalances::try_from(result)?)
     }
 
     pub async fn onchain_address(
@@ -258,8 +244,8 @@ impl GaloyClient {
 
     pub async fn send_onchain_payment(
         &self,
-        address: OnChainAddress,
-        amount: SatAmount,
+        address: String,
+        amount: Decimal,
         memo: Option<Memo>,
         target_conf: TargetConfirmations,
         wallet_id: WalletId,
