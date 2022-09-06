@@ -98,8 +98,8 @@ impl TryFrom<stablesats_transactions_list::ResponseData> for GaloyTransactions {
 
         Ok(Self {
             list,
-            cursor: page_info.end_cursor.map(LastTransactionCursor::from),
-            has_more: page_info.has_next_page,
+            cursor: page_info.start_cursor.map(LastTransactionCursor::from),
+            has_more: page_info.has_previous_page,
         })
     }
 }
