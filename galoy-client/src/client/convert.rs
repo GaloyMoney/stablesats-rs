@@ -1,4 +1,4 @@
-use super::{queries::*, WalletBalances, WalletCurrency};
+use super::{queries::*, GaloyTransactions, LastTransactionCursor, WalletBalances, WalletCurrency};
 use crate::error::*;
 
 impl TryFrom<stablesats_wallets::ResponseData> for WalletBalances {
@@ -76,5 +76,30 @@ impl TryFrom<stablesats_wallets::ResponseData> for WalletId {
                 "Missing `btc id` in response data".to_string(),
             ))
         }
+    }
+}
+
+impl TryFrom<stablesats_transactions_list::ResponseData> for GaloyTransactions {
+    type Error = GaloyClientError;
+
+    fn try_from(response: stablesats_transactions_list::ResponseData) -> Result<Self, Self::Error> {
+        let me = response.me.ok_or_else(|| {
+            GaloyClientError::GrapqQlApi("Empty `me` in response data".to_string())
+        })?;
+
+        let transactions = me.default_account.transactions.ok_or_else(|| {
+            GaloyClientError::GrapqQlApi("Empty `transactions` in response data".to_string())
+        })?;
+        let page_info = transactions.page_info;
+        let edges = transactions.edges.ok_or_else(|| {
+            GaloyClientError::GrapqQlApi("Empty `transaction edges` in response data".to_string())
+        })?;
+        let list = edges.into_iter().map(|edge| edge.node).collect::<Vec<_>>();
+
+        Ok(Self {
+            list,
+            cursor: page_info.end_cursor.map(LastTransactionCursor::from),
+            has_more: page_info.has_next_page,
+        })
     }
 }

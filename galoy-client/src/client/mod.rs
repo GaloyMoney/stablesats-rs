@@ -2,7 +2,6 @@ mod convert;
 mod queries;
 
 use graphql_client::reqwest::post_graphql;
-use itertools::{Either, Itertools};
 use reqwest::{
     header::{HeaderValue, AUTHORIZATION},
     Client as ReqwestClient,
@@ -17,11 +16,20 @@ pub use queries::{
     stablesats_wallets::WalletCurrency, WalletId,
 };
 
+#[derive(Debug)]
 pub struct LastTransactionCursor(String);
 impl From<String> for LastTransactionCursor {
     fn from(cursor: String) -> Self {
         Self(cursor)
     }
+}
+pub type GaloyTransaction =
+    stablesats_transactions_list::StablesatsTransactionsListMeDefaultAccountTransactionsEdgesNode;
+#[derive(Debug)]
+pub struct GaloyTransactions {
+    pub cursor: Option<LastTransactionCursor>,
+    pub list: Vec<GaloyTransaction>,
+    pub has_more: bool,
 }
 
 #[derive(Debug)]
@@ -169,13 +177,10 @@ impl GaloyClient {
         Ok(wallet_id)
     }
 
-    pub async fn transactions_list(
-        &mut self,
-        wallet_currency: SettlementCurrency,
-        last_transaction_cursor: Option<LastTransactionCursor>,
-    ) -> Result<StablesatsTransactionsEdges, GaloyClientError> {
+    pub async fn transactions_list(&mut self) -> Result<GaloyTransactions, GaloyClientError> {
         let variables = stablesats_transactions_list::Variables {
-            after: last_transaction_cursor.map(|cursor| cursor.0),
+            first: None,
+            after: None,
         };
         let response = post_graphql::<StablesatsTransactionsList, _>(
             &self.client,
@@ -183,37 +188,14 @@ impl GaloyClient {
             variables,
         )
         .await?;
-        if response.errors.is_some() {
-            if let Some(error) = response.errors {
-                return Err(GaloyClientError::GrapqQlApi(error[0].clone().message));
-            }
+        if let Some(error) = response.errors {
+            return Err(GaloyClientError::GrapqQlApi(error[0].clone().message));
         }
 
-        let response_data = response.data;
-        let result = match response_data {
-            Some(result) => result,
-            None => {
-                return Err(GaloyClientError::GrapqQlApi(
-                    "Empty `me` in response data".to_string(),
-                ))
-            }
-        };
-        let post_cursor_transactions = StablesatsTransactionsEdges::try_from(result)?;
-
-        let tx_edges = post_cursor_transactions.edges;
-
-        let (wanted_transactions, _): (Vec<_>, Vec<_>) =
-            tx_edges.into_iter().partition_map(|tx_edge| {
-                if tx_edge.node.settlement_currency == wallet_currency {
-                    Either::Left(tx_edge)
-                } else {
-                    Either::Right(tx_edge)
-                }
-            });
-
-        Ok(StablesatsTransactionsEdges {
-            edges: wanted_transactions,
-        })
+        let result = response.data.ok_or_else(|| {
+            GaloyClientError::GrapqQlApi("Empty `me` in response data".to_string())
+        })?;
+        GaloyTransactions::try_from(result)
     }
 
     pub async fn wallet_balances(&self) -> Result<WalletBalances, GaloyClientError> {

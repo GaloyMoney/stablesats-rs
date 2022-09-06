@@ -75,52 +75,6 @@ pub type Timestamp = GraphqlTimeStamp;
 pub type Memo = String;
 pub(crate) type SignedAmount = Decimal;
 
-pub type StablesatsTransactions =
-    stablesats_transactions_list::StablesatsTransactionsListMeDefaultAccountTransactionsEdges;
-
-#[derive(Debug)]
-pub struct StablesatsTransactionsEdges {
-    pub edges: Vec<StablesatsTransactions>,
-}
-
-impl TryFrom<stablesats_transactions_list::ResponseData> for StablesatsTransactionsEdges {
-    type Error = GaloyClientError;
-
-    fn try_from(response: stablesats_transactions_list::ResponseData) -> Result<Self, Self::Error> {
-        let me = response.me;
-        let me = match me {
-            Some(me) => me,
-            None => {
-                return Err(GaloyClientError::GrapqQlApi(
-                    "Empty `me` in response data".to_string(),
-                ))
-            }
-        };
-
-        let default_account = me.default_account;
-        let transactions = default_account.transactions;
-
-        let transactions = match transactions {
-            Some(tx) => tx,
-            None => {
-                return Err(GaloyClientError::GrapqQlApi(
-                    "Empty `transactions` in response data".to_string(),
-                ))
-            }
-        };
-
-        let edges = match transactions.edges {
-            Some(edges) => edges,
-            None => {
-                return Err(GaloyClientError::GrapqQlApi(
-                    "Empty `transaction edges` in response data".to_string(),
-                ))
-            }
-        };
-        Ok(StablesatsTransactionsEdges { edges })
-    }
-}
-
 #[derive(GraphQLQuery)]
 #[graphql(
     schema_path = "src/client/graphql/schema.graphql",

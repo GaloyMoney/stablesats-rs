@@ -17,43 +17,14 @@ fn client_configuration() -> GaloyClientConfig {
     config
 }
 
-/// Test to get btc transactions list of the default wallet
+/// Test to get transactions list of the default wallet
 #[tokio::test]
-async fn btc_transactions_list() -> anyhow::Result<()> {
+async fn transactions_list() -> anyhow::Result<()> {
     let config = client_configuration();
-    let mut wallet_client = GaloyClient::connect(config).await?;
-    let wallet_currency = SettlementCurrency::BTC;
+    let mut client = GaloyClient::connect(config).await?;
 
-    let btc_transactions = wallet_client
-        .transactions_list(wallet_currency, None)
-        .await?;
-
-    assert!(btc_transactions.edges.len() > 0);
-    assert_eq!(
-        btc_transactions.edges[0].node.settlement_currency,
-        SettlementCurrency::BTC
-    );
-
-    Ok(())
-}
-
-/// Test to get the USD transactions list of the default wallet
-#[tokio::test]
-async fn usd_transactions_list() -> anyhow::Result<()> {
-    let config = client_configuration();
-    let mut wallet_client = GaloyClient::connect(config).await?;
-
-    let wallet_currency = SettlementCurrency::USD;
-
-    let usd_transactions = wallet_client
-        .transactions_list(wallet_currency, None)
-        .await?;
-
-    assert!(usd_transactions.edges.len() > 0);
-    assert_eq!(
-        usd_transactions.edges[0].node.settlement_currency,
-        SettlementCurrency::USD
-    );
+    let transactions = client.transactions_list().await?;
+    assert!(transactions.list.len() > 0);
 
     Ok(())
 }

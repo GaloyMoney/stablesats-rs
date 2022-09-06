@@ -726,7 +726,6 @@ dependencies = [
  "chrono",
  "futures",
  "graphql_client",
- "itertools",
  "reqwest",
  "rust_decimal",
  "rust_decimal_macros",
