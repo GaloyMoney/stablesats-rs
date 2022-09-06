@@ -23,12 +23,12 @@ impl From<String> for LastTransactionCursor {
         Self(cursor)
     }
 }
-pub type GaloyTransaction =
-    stablesats_transactions_list::StablesatsTransactionsListMeDefaultAccountTransactionsEdgesNode;
+pub type GaloyTransactionEdge =
+    stablesats_transactions_list::StablesatsTransactionsListMeDefaultAccountTransactionsEdges;
 #[derive(Debug)]
 pub struct GaloyTransactions {
     pub cursor: Option<LastTransactionCursor>,
-    pub list: Vec<GaloyTransaction>,
+    pub list: Vec<GaloyTransactionEdge>,
     pub has_more: bool,
 }
 

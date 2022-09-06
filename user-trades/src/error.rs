@@ -11,4 +11,6 @@ pub enum UserTradesError {
     Migrate(#[from] sqlx::migrate::MigrateError),
     #[error("UserTradesError: {0}")]
     PubSub(#[from] PublisherError),
+    #[error("UserTradesError: {0}")]
+    GaloyClient(#[from] galoy_client::GaloyClientError),
 }

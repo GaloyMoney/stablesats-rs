@@ -3,6 +3,7 @@ use sqlx::PgPool;
 use super::entity::*;
 use crate::{error::UserTradesError, user_trade_unit::*};
 
+#[derive(Clone)]
 pub struct UserTrades {
     pool: PgPool,
     units: UserTradeUnits,

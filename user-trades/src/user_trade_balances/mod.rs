@@ -38,7 +38,7 @@ impl UserTradeBalances {
         Ok(ret)
     }
 
-    pub async fn update_balances(&self) -> Result<(), UserTradesError> {
+    async fn update_balances(&self) -> Result<(), UserTradesError> {
         let mut tx = self.pool.begin().await?;
         tx.execute("SET TRANSACTION ISOLATION LEVEL SERIALIZABLE;")
             .await?;

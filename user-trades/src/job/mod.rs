@@ -2,10 +2,12 @@ use rust_decimal_macros::dec;
 use sqlxmq::{job, CurrentJob, JobBuilder, JobRegistry, OwnedHandle};
 use uuid::{uuid, Uuid};
 
+use galoy_client::GaloyClient;
 use shared::{payload::SynthUsdLiabilityPayload, pubsub::*};
 
 use crate::{
-    error::UserTradesError, user_trade_balances::UserTradeBalances, user_trade_unit::UserTradeUnit,
+    error::UserTradesError, user_trade::UserTrades, user_trade_balances::UserTradeBalances,
+    user_trade_unit::UserTradeUnit,
 };
 
 const PUBLISH_LIABILITY_ID: Uuid = uuid!("00000000-0000-0000-0000-000000000001");
@@ -18,11 +20,15 @@ pub async fn start_job_runner(
     publisher: Publisher,
     liability_publish_delay: std::time::Duration,
     user_trade_balances: UserTradeBalances,
+    user_trades: UserTrades,
+    galoy_client: GaloyClient,
 ) -> Result<OwnedHandle, UserTradesError> {
     let mut registry = JobRegistry::new(&[publish_liability]);
     registry.set_context(publisher);
     registry.set_context(user_trade_balances);
     registry.set_context(LiabilityPublishDelay(liability_publish_delay));
+    registry.set_context(user_trades);
+    registry.set_context(galoy_client);
 
     Ok(registry.runner(&pool).run().await?)
 }
@@ -61,5 +67,15 @@ async fn publish_liability(
         .await?;
     current_job.complete().await?;
     spawn_publish_liability(current_job.pool(), delay).await?;
+    Ok(())
+}
+
+#[job(name = "poll_galoy_transactions", channel_name = "user_trades")]
+async fn poll_galoy_transactions(
+    mut current_job: CurrentJob,
+    user_trades: UserTrades,
+    galoy: GaloyClient,
+) -> Result<(), UserTradesError> {
+    current_job.complete().await?;
     Ok(())
 }

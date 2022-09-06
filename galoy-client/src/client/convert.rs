@@ -94,10 +94,9 @@ impl TryFrom<stablesats_transactions_list::ResponseData> for GaloyTransactions {
         let edges = transactions.edges.ok_or_else(|| {
             GaloyClientError::GrapqQlApi("Empty `transaction edges` in response data".to_string())
         })?;
-        let list = edges.into_iter().map(|edge| edge.node).collect::<Vec<_>>();
 
         Ok(Self {
-            list,
+            list: edges,
             cursor: page_info.start_cursor.map(LastTransactionCursor::from),
             has_more: page_info.has_previous_page,
         })

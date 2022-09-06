@@ -2,12 +2,13 @@ mod config;
 
 use sqlxmq::OwnedHandle;
 
-use crate::{error::*, job, user_trade::*, user_trade_balances::*, user_trade_unit::*};
-pub use config::*;
+use galoy_client::{GaloyClient, GaloyClientConfig};
 use shared::pubsub::*;
 
+use crate::{error::*, job, user_trade::*, user_trade_balances::*, user_trade_unit::*};
+pub use config::*;
+
 pub struct UserTradesApp {
-    _user_trades: UserTrades,
     _runner: OwnedHandle,
 }
 
@@ -19,6 +20,7 @@ impl UserTradesApp {
             publish_frequency,
         }: UserTradesAppConfig,
         pubsub_cfg: PubSubConfig,
+        galoy_client_cfg: GaloyClientConfig,
     ) -> Result<Self, UserTradesError> {
         let pool = sqlx::PgPool::connect(&pg_con).await?;
         if migrate_on_start {
@@ -26,17 +28,19 @@ impl UserTradesApp {
         }
         let units = UserTradeUnits::load(&pool).await?;
         let user_trade_balances = UserTradeBalances::new(pool.clone(), units.clone()).await?;
+        let user_trades = UserTrades::new(pool.clone(), units);
         let publisher = Publisher::new(pubsub_cfg).await?;
         let job_runner = job::start_job_runner(
             pool.clone(),
             publisher,
             publish_frequency,
             user_trade_balances,
+            user_trades,
+            GaloyClient::connect(galoy_client_cfg).await?,
         )
         .await?;
-        Self::spawn_publish_liability(pool.clone(), publish_frequency).await?;
+        Self::spawn_publish_liability(pool, publish_frequency).await?;
         Ok(Self {
-            _user_trades: UserTrades::new(pool, units),
             _runner: job_runner,
         })
     }
