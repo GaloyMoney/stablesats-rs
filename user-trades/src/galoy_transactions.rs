@@ -1,5 +1,6 @@
 use sqlx::PgPool;
 
+#[derive(Clone)]
 pub struct GaloyTransactions {
     pool: PgPool,
 }

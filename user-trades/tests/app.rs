@@ -7,7 +7,7 @@ use std::env;
 use galoy_client::GaloyClientConfig;
 use shared::{payload::*, pubsub::*};
 
-use user_trades::*;
+use ::user_trades::*;
 
 fn galoy_client_configuration() -> GaloyClientConfig {
     let api = env::var("GALOY_GRAPHQL_URI").expect("GALOY_GRAPHQL_URI not set");

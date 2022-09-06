@@ -5,9 +5,9 @@ mod app;
 mod error;
 mod galoy_transactions;
 mod job;
-pub mod user_trade;
 pub mod user_trade_balances;
 pub mod user_trade_unit;
+pub mod user_trades;
 
 use galoy_client::GaloyClientConfig;
 use shared::pubsub::*;

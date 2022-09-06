@@ -1,6 +1,6 @@
+use ::user_trades::{user_trade_balances::*, user_trade_unit::*, user_trades::*};
 use rust_decimal_macros::dec;
 use sqlx::PgPool;
-use user_trades::{user_trade::*, user_trade_balances::*, user_trade_unit::*};
 
 lazy_static::lazy_static! {
     static ref POOL: PgPool = {
@@ -24,13 +24,13 @@ async fn user_trade_balances() -> anyhow::Result<()> {
     let sat_amount = dec!(1000);
     let cent_amount = dec!(10);
 
-    let trade = trades
-        .persist_new(NewUserTrade::new(
-            UserTradeUnit::SynthCent,
-            cent_amount,
-            UserTradeUnit::Satoshi,
-            sat_amount,
-        ))
+    let id = trades
+        .persist_new(NewUserTrade {
+            buy_unit: UserTradeUnit::SynthCent,
+            buy_amount: cent_amount,
+            sell_unit: UserTradeUnit::Satoshi,
+            sell_amount: sat_amount,
+        })
         .await?;
 
     tokio::time::sleep(std::time::Duration::from_secs(1)).await;
@@ -43,7 +43,7 @@ async fn user_trade_balances() -> anyhow::Result<()> {
         .get(&UserTradeUnit::Satoshi)
         .expect("new sats balance");
 
-    assert_eq!(new_sat_summary.last_trade_idx, Some(trade.idx));
+    assert_eq!(new_sat_summary.last_trade_id, Some(id));
     assert_eq!(
         old_sat_summary.current_balance + sat_amount,
         new_sat_summary.current_balance
@@ -56,7 +56,7 @@ async fn user_trade_balances() -> anyhow::Result<()> {
         .get(&UserTradeUnit::SynthCent)
         .expect("new cents balance");
 
-    assert_eq!(new_cent_summary.last_trade_idx, Some(trade.idx));
+    assert_eq!(new_cent_summary.last_trade_id, Some(id));
     assert_eq!(
         old_cent_summary.current_balance - cent_amount,
         new_cent_summary.current_balance
