@@ -5,10 +5,7 @@ use sqlxmq::OwnedHandle;
 use galoy_client::{GaloyClient, GaloyClientConfig};
 use shared::pubsub::*;
 
-use crate::{
-    error::*, galoy_transactions::GaloyTransactions, job, user_trade_balances::*,
-    user_trade_unit::*, user_trades::*,
-};
+use crate::{error::*, job, user_trade_balances::*, user_trade_unit::*, user_trades::*};
 pub use config::*;
 
 pub struct UserTradesApp {
@@ -39,7 +36,6 @@ impl UserTradesApp {
             publish_frequency,
             user_trade_balances,
             user_trades,
-            GaloyTransactions::new(pool.clone()),
             GaloyClient::connect(galoy_client_cfg).await?,
         )
         .await?;

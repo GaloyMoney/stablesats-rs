@@ -179,11 +179,10 @@ impl GaloyClient {
 
     pub async fn transactions_list(
         &mut self,
-        fetch: u32,
         cursor: Option<LastTransactionCursor>,
     ) -> Result<GaloyTransactions, GaloyClientError> {
         let variables = stablesats_transactions_list::Variables {
-            last: Some(fetch as i64),
+            last: None,
             before: cursor.map(|cursor| cursor.0),
         };
         let response = post_graphql::<StablesatsTransactionsList, _>(

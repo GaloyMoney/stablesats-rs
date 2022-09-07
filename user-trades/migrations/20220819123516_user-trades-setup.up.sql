@@ -34,13 +34,3 @@ CREATE TABLE user_trade_balances (
 
 INSERT INTO user_trade_balances (unit_id, current_balance, last_trade_id)
   SELECT id, 0, NULL FROM user_trade_units;
-
-CREATE TABLE galoy_transactions (
-  id SERIAL PRIMARY KEY,
-  tx_cursor VARCHAR(30) UNIQUE NOT NULL,
-  btc_tx_id VARCHAR(30) UNIQUE NOT NULL,
-  usd_tx_id VARCHAR(30) UNIQUE NOT NULL,
-  btc_amount NUMERIC NOT NULL,
-  usd_amount NUMERIC NOT NULL,
-  created_at TIMESTAMP WITH TIME ZONE NOT NULL
-);
