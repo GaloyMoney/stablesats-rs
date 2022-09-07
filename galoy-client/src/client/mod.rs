@@ -178,7 +178,7 @@ impl GaloyClient {
     }
 
     pub async fn transactions_list(
-        &mut self,
+        &self,
         cursor: Option<LastTransactionCursor>,
     ) -> Result<GaloyTransactions, GaloyClientError> {
         let variables = stablesats_transactions_list::Variables {

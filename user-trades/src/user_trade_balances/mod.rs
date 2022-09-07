@@ -40,8 +40,6 @@ impl UserTradeBalances {
 
     async fn update_balances(&self) -> Result<(), UserTradesError> {
         let mut tx = self.pool.begin().await?;
-        tx.execute("SET TRANSACTION ISOLATION LEVEL REPEATABLE READ;")
-            .await?;
         let balance_result =
             sqlx::query!(r#"SELECT last_trade_id FROM user_trade_balances FOR UPDATE"#)
                 .fetch_all(&mut tx)

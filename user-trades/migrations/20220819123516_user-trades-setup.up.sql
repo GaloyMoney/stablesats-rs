@@ -8,10 +8,12 @@ INSERT INTO user_trade_units (name) VALUES ('satoshi'), ('synthetic_cent');
 
 CREATE TABLE user_trades (
   id SERIAL PRIMARY KEY,
+  is_latest BOOLEAN UNIQUE,
   buy_amount NUMERIC NOT NULL,
   buy_unit_id INTEGER NOT NULL REFERENCES user_trade_units(id),
   sell_amount NUMERIC NOT NULL,
   sell_unit_id INTEGER NOT NULL REFERENCES user_trade_units(id),
+  external_ref JSONB,
   created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()
 );
 
