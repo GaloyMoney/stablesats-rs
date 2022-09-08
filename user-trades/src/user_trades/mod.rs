@@ -95,6 +95,8 @@ impl UserTrades {
         Ok(())
     }
 
+    /// Uses optimistic locking as described
+    /// https://stackoverflow.com/questions/71987836/postgresql-select-for-update-lock-new-rows/71988854#71988854
     pub async fn get_latest_ref(&self) -> Result<LatestRef, UserTradesError> {
         let mut tx = self.pool.begin().await?;
         tx.execute("SET TRANSACTION ISOLATION LEVEL REPEATABLE READ")

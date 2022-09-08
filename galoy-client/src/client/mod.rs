@@ -25,6 +25,8 @@ impl From<String> for LastTransactionCursor {
 }
 pub type GaloyTransactionEdge =
     stablesats_transactions_list::StablesatsTransactionsListMeDefaultAccountTransactionsEdges;
+pub type GaloyTransactionNode =
+    stablesats_transactions_list::StablesatsTransactionsListMeDefaultAccountTransactionsEdgesNode;
 #[derive(Debug)]
 pub struct GaloyTransactions {
     pub cursor: Option<LastTransactionCursor>,

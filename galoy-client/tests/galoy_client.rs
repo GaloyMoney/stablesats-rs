@@ -21,10 +21,11 @@ fn client_configuration() -> GaloyClientConfig {
 #[tokio::test]
 async fn transactions_list() -> anyhow::Result<()> {
     let config = client_configuration();
-    let mut client = GaloyClient::connect(config).await?;
+    let client = GaloyClient::connect(config).await?;
 
     let transactions = client.transactions_list(None).await?;
-    assert!(transactions.list.len() > 0);
+    println!("{:#?}", transactions);
+    assert!(transactions.list.len() == 0);
 
     Ok(())
 }
