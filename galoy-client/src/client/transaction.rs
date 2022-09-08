@@ -10,6 +10,11 @@ impl From<String> for TxCursor {
         Self(cursor)
     }
 }
+impl From<TxCursor> for String {
+    fn from(cursor: TxCursor) -> Self {
+        cursor.0
+    }
+}
 
 pub type GaloyTransactionEdge =
     stablesats_transactions_list::StablesatsTransactionsListMeDefaultAccountTransactionsEdges;

@@ -1,10 +1,14 @@
-use galoy_client::{GaloyClient, GaloyTransaction, TxCursor};
+use galoy_client::{GaloyClient, GaloyTransaction, SettlementCurrency, TxCursor};
+use rust_decimal::Decimal;
 use sqlxmq::CurrentJob;
 
-use crate::{error::UserTradesError, user_trades::*};
+use std::collections::BTreeMap;
 
+use crate::{error::UserTradesError, user_trade_unit::UserTradeUnit, user_trades::*};
+
+#[allow(dead_code)]
 pub(super) async fn execute(
-    mut current_job: CurrentJob,
+    current_job: &mut CurrentJob,
     user_trades: UserTrades,
     galoy: GaloyClient,
 ) -> Result<(), UserTradesError> {
@@ -13,40 +17,174 @@ pub(super) async fn execute(
     let cursor = external_ref.map(|ExternalRef { cursor, .. }| TxCursor::from(cursor));
     let transactions = galoy.transactions_list(cursor).await?;
 
-    let user_trades = unify(transactions.list);
+    let trades = unify(transactions.list);
 
-    // unify pairs
+    user_trades.persist_all(latest_ref, trades).await?;
 
-    // persist each new transaction in GaloyTransactions
-    // aggregate all new GaloyTransactions into 1 UserTrade
+    current_job.complete().await?;
+
     Ok(())
 }
 
 fn unify(galoy_transactions: Vec<GaloyTransaction>) -> Vec<NewUserTrade> {
-    unimplemented!()
+    let mut txs: BTreeMap<usize, GaloyTransaction> =
+        galoy_transactions.into_iter().enumerate().collect();
+    let mut user_trades = Vec::new();
+    let mut is_latest = true;
+    for idx in 0..txs.len() {
+        if txs.is_empty() {
+            break;
+        }
+        if let Some(tx) = txs.remove(&idx) {
+            let idx = if let Some((idx, _)) = txs.iter().find(|(_, other)| is_pair(&tx, other)) {
+                *idx
+            } else {
+                unimplemented!()
+            };
+            let other = txs.remove(&idx).unwrap();
+            let external_ref = if tx.settlement_currency == SettlementCurrency::BTC {
+                ExternalRef {
+                    cursor: tx.cursor.into(),
+                    btc_tx_id: tx.id,
+                    usd_tx_id: other.id,
+                }
+            } else {
+                ExternalRef {
+                    cursor: tx.cursor.into(),
+                    btc_tx_id: other.id,
+                    usd_tx_id: tx.id,
+                }
+            };
+            if tx.settlement_amount < Decimal::ZERO {
+                user_trades.push(NewUserTrade {
+                    is_latest,
+                    buy_unit: tx.settlement_currency.into(),
+                    buy_amount: tx.settlement_amount.abs(),
+                    sell_unit: other.settlement_currency.into(),
+                    sell_amount: other.settlement_amount.abs(),
+                    external_ref: Some(external_ref),
+                });
+            } else {
+                user_trades.push(NewUserTrade {
+                    is_latest,
+                    buy_unit: other.settlement_currency.into(),
+                    buy_amount: other.settlement_amount.abs(),
+                    sell_unit: tx.settlement_currency.into(),
+                    sell_amount: tx.settlement_amount.abs(),
+                    external_ref: Some(external_ref),
+                });
+            }
+            is_latest = false;
+        }
+    }
+    user_trades
+}
+
+fn is_pair(tx1: &GaloyTransaction, tx2: &GaloyTransaction) -> bool {
+    if tx1.created_at != tx2.created_at || tx1.settlement_currency == tx2.settlement_currency {
+        return false;
+    }
+
+    if tx1.settlement_currency == SettlementCurrency::BTC {
+        tx1.amount_in_usd_cents.abs() == tx2.settlement_amount.abs()
+    } else {
+        tx2.amount_in_usd_cents.abs() == tx1.settlement_amount.abs()
+    }
+}
+
+impl From<SettlementCurrency> for UserTradeUnit {
+    fn from(currency: SettlementCurrency) -> Self {
+        match currency {
+            SettlementCurrency::BTC => Self::Satoshi,
+            SettlementCurrency::USD => Self::SynthCent,
+            _ => unimplemented!(),
+        }
+    }
 }
 
 #[cfg(test)]
 mod tests {
+    use galoy_client::{SettlementCurrency, TxStatus};
+    use rust_decimal_macros::dec;
+
     use super::*;
 
-    fn unify_simple() {
-        // let created_at = chrono::Utc::now();
-        // let tx1 = GaloyTransactionEdge {
-        //     cursor: "1".to_string(),
-        //     node: GaloyTransactionNode {
-        //         id: "1".to_string(),
-        //         created_at,
-        //     },
-        // };
-        // let tx2 = GaloyTransactionEdge {
-        //     cursor: "2".to_string(),
-        //     node: GaloyTransactionNode {
-        //         id: "2".to_string(),
-        //         created_at,
-        //     },
-        // };
-        // let trades = unify(vec![tx1, tx2]);
-        // assert_eq!(trades.len(), 2);
+    #[test]
+    fn unify_transactions() {
+        let created_at = chrono::Utc::now();
+        let created_earlier = created_at - chrono::Duration::days(1);
+        let tx1 = GaloyTransaction {
+            cursor: TxCursor::from("1".to_string()),
+            id: "id1".to_string(),
+            created_at,
+            settlement_amount: dec!(1000),
+            settlement_currency: SettlementCurrency::BTC,
+            amount_in_usd_cents: dec!(10),
+            cents_per_unit: dec!(0.01),
+            status: TxStatus::SUCCESS,
+        };
+        let tx2 = GaloyTransaction {
+            cursor: TxCursor::from("2".to_string()),
+            id: "id2".to_string(),
+            created_at,
+            settlement_amount: dec!(-10),
+            settlement_currency: SettlementCurrency::USD,
+            amount_in_usd_cents: dec!(-10),
+            cents_per_unit: dec!(1),
+            status: TxStatus::SUCCESS,
+        };
+        let tx3 = GaloyTransaction {
+            cursor: TxCursor::from("3".to_string()),
+            id: "id3".to_string(),
+            created_at: created_earlier,
+            settlement_amount: dec!(-1000),
+            settlement_currency: SettlementCurrency::BTC,
+            amount_in_usd_cents: dec!(-10),
+            cents_per_unit: dec!(0.01),
+            status: TxStatus::SUCCESS,
+        };
+        let tx4 = GaloyTransaction {
+            cursor: TxCursor::from("4".to_string()),
+            id: "id4".to_string(),
+            created_at: created_earlier,
+            settlement_amount: dec!(10),
+            settlement_currency: SettlementCurrency::USD,
+            amount_in_usd_cents: dec!(10),
+            cents_per_unit: dec!(1),
+            status: TxStatus::SUCCESS,
+        };
+        let trades = unify(vec![tx1, tx2, tx3, tx4]);
+        assert!(trades.len() == 2);
+        let (trade1, trade2) = (trades.first().unwrap(), trades.last().unwrap());
+        assert_eq!(
+            trade1,
+            &NewUserTrade {
+                is_latest: true,
+                buy_unit: UserTradeUnit::SynthCent,
+                buy_amount: dec!(10),
+                sell_unit: UserTradeUnit::Satoshi,
+                sell_amount: dec!(1000),
+                external_ref: Some(ExternalRef {
+                    cursor: "1".to_string(),
+                    btc_tx_id: "id1".to_string(),
+                    usd_tx_id: "id2".to_string(),
+                }),
+            }
+        );
+        assert_eq!(
+            trade2,
+            &NewUserTrade {
+                is_latest: false,
+                buy_unit: UserTradeUnit::Satoshi,
+                buy_amount: dec!(1000),
+                sell_unit: UserTradeUnit::SynthCent,
+                sell_amount: dec!(10),
+                external_ref: Some(ExternalRef {
+                    cursor: "3".to_string(),
+                    btc_tx_id: "id3".to_string(),
+                    usd_tx_id: "id4".to_string(),
+                }),
+            }
+        );
     }
 }

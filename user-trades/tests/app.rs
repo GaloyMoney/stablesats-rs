@@ -43,6 +43,7 @@ async fn publishes_liability() -> anyhow::Result<()> {
             migrate_on_start: true,
             pg_con,
             publish_frequency: std::time::Duration::from_millis(100),
+            galoy_poll_frequency: std::time::Duration::from_secs(1),
         },
         pubsub_config,
         galoy_client_configuration(),

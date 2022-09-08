@@ -1,5 +1,5 @@
 use rust_decimal::Decimal;
-use sqlx::{postgres::PgListener, Executor, PgPool};
+use sqlx::{postgres::PgListener, PgPool};
 
 use std::collections::HashMap;
 

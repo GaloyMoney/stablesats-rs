@@ -28,6 +28,7 @@ impl<'a> LatestRef<'a> {
     }
 }
 
+#[derive(Debug, PartialEq, Eq)]
 pub struct NewUserTrade {
     pub is_latest: bool,
     pub buy_unit: UserTradeUnit,
