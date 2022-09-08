@@ -18,6 +18,7 @@ pub(super) async fn execute(
         .transactions_list(4, Some(LastTransactionCursor::from(latest_cursor)))
         .await?;
     // 3. Unify transaction pairs
+    let unified_transactions = transactions.unify()?;
     // 4. Persist vector of NewUserTrade to user_trades
     Ok(())
 }

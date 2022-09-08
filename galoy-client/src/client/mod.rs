@@ -16,7 +16,7 @@ pub use queries::{
     stablesats_wallets::WalletCurrency, WalletId,
 };
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct LastTransactionCursor(String);
 impl From<String> for LastTransactionCursor {
     fn from(cursor: String) -> Self {
@@ -25,11 +25,69 @@ impl From<String> for LastTransactionCursor {
 }
 pub type GaloyTransactionEdge =
     stablesats_transactions_list::StablesatsTransactionsListMeDefaultAccountTransactionsEdges;
+
+#[derive(Debug, Clone)]
+pub struct GaloyUnifiedTransaction {
+    pub cursor: LastTransactionCursor,
+    pub created_at: GraphqlTimeStamp,
+    pub btc_amount: SignedAmount,
+    pub usd_amount: SignedAmount,
+}
+
 #[derive(Debug)]
 pub struct GaloyTransactions {
     pub cursor: Option<LastTransactionCursor>,
     pub list: Vec<GaloyTransactionEdge>,
     pub has_more: bool,
+}
+
+impl GaloyTransactions {
+    // unify the corresponding USD and BTC transactions
+    pub fn unify(&self) -> Result<Vec<GaloyUnifiedTransaction>, GaloyClientError> {
+        let transactions = self.list.clone();
+
+        let is_even = transactions.len() % 2 == 0;
+        if !is_even {
+            return Err(GaloyClientError::TransactionUnification(
+                "Transactions list must be even".to_string(),
+            ));
+        }
+
+        let corresponding_pairs: Vec<&[_]> = transactions.chunks(2).collect();
+        let guts = corresponding_pairs
+            .into_iter()
+            .map(|pair| {
+                // 1. get btc and usd values
+                let btc_tx = pair
+                    .iter()
+                    .filter(|r| {
+                        r.node.settlement_currency
+                            == stablesats_transactions_list::WalletCurrency::BTC
+                    })
+                    .collect::<Vec<_>>()[0];
+
+                let usd_tx = pair
+                    .iter()
+                    .filter(|r| {
+                        r.node.settlement_currency
+                            == stablesats_transactions_list::WalletCurrency::USD
+                    })
+                    .collect::<Vec<_>>()[0];
+
+                // 2. convert to GaloyUnifiedTransaction
+                let unified_tx = GaloyUnifiedTransaction {
+                    created_at: btc_tx.node.clone().created_at,
+                    btc_amount: btc_tx.node.settlement_amount,
+                    usd_amount: usd_tx.node.clone().settlement_amount,
+                    cursor: LastTransactionCursor::from(usd_tx.cursor.clone()),
+                };
+
+                unified_tx
+            })
+            .collect::<Vec<_>>();
+
+        Ok(guts)
+    }
 }
 
 #[derive(Debug)]

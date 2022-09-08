@@ -2,12 +2,14 @@ use thiserror::Error;
 
 #[derive(Error, Debug)]
 pub enum GaloyClientError {
-    #[error("GaloyWalletError: {0}")]
+    #[error("GaloyClientError: {0}")]
     Reqwest(#[from] reqwest::Error),
-    #[error("GaloyWalletError: {0}")]
+    #[error("GaloyClientError: {0}")]
     Header(#[from] reqwest::header::InvalidHeaderValue),
-    #[error("GaloyWalletError: {0}")]
+    #[error("GaloyClientError: {0}")]
     GrapqQlApi(String),
-    #[error("GaloyWalletError: {0}")]
+    #[error("GaloyClientError: {0}")]
     Authentication(String),
+    #[error("GaloyClientError: {0}")]
+    TransactionUnification(String),
 }
