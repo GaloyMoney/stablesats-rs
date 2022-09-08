@@ -1,8 +1,9 @@
-use futures::stream::StreamExt;
+use futures::{stream::StreamExt, Stream};
+use rust_decimal::Decimal;
 use rust_decimal_macros::dec;
 use serial_test::serial;
 
-use std::{env, fs};
+use std::{env, fs, pin::Pin};
 
 use okex_client::*;
 use shared::{payload::*, pubsub::*};
@@ -30,6 +31,53 @@ fn okex_client_config() -> OkexClientConfig {
         secret_key,
         simulated: true,
     }
+}
+
+async fn expect_exposure_between(
+    stream: &mut Pin<Box<dyn Stream<Item = Envelope<OkexBtcUsdSwapPositionPayload>> + Send>>,
+    lower: Decimal,
+    upper: Decimal,
+) {
+    let mut passed = false;
+    for _ in 0..=6 {
+        let pos = stream.next().await.unwrap().payload.signed_usd_exposure;
+        passed = pos < upper && pos > lower;
+        if passed {
+            break;
+        }
+    }
+    assert!(passed);
+}
+
+async fn expect_exposure_below(
+    stream: &mut Pin<Box<dyn Stream<Item = Envelope<OkexBtcUsdSwapPositionPayload>> + Send>>,
+    expected: Decimal,
+) {
+    let mut passed = false;
+    for _ in 0..=6 {
+        let pos = stream.next().await.unwrap().payload.signed_usd_exposure;
+        println!("signed_usd_exposure={pos:?}");
+        passed = pos < expected;
+        if passed {
+            break;
+        }
+    }
+    assert!(passed);
+}
+
+async fn expect_exposure_equal(
+    stream: &mut Pin<Box<dyn Stream<Item = Envelope<OkexBtcUsdSwapPositionPayload>> + Send>>,
+    expected: Decimal,
+) {
+    let mut passed = false;
+    for _ in 0..=6 {
+        let pos = stream.next().await.unwrap().payload.signed_usd_exposure;
+        passed = pos == expected;
+        if passed {
+            break;
+        }
+    }
+    assert!(passed);
 }
 
 #[tokio::test]
@@ -70,65 +118,23 @@ async fn hedging() -> anyhow::Result<()> {
     publisher.publish(payloads.next().unwrap()).await?;
 
     let okex = OkexClient::new(okex_client_config()).await?;
-    let mut passed = false;
-    let expected = dec!(0);
-    for _ in 0..=3 {
-        let pos = stream
-            .next()
-            .await
-            .expect("msg stream")
-            .payload
-            .signed_usd_exposure;
-        passed = pos == expected;
-        if passed {
-            break;
-        }
-    }
-    assert!(passed);
+    expect_exposure_equal(&mut stream, dec!(0)).await;
 
     publisher.publish(payloads.next().unwrap()).await?;
 
     for idx in 0..=1 {
-        let upper_bound = dec!(-900);
-        let lower_bound = dec!(-1100);
-        passed = false;
-        for _ in 0..=6 {
-            let pos = stream.next().await.unwrap().payload.signed_usd_exposure;
-            if pos < upper_bound && pos > lower_bound {
-                passed = true;
-                break;
-            }
-        }
-        assert!(passed);
+        expect_exposure_between(&mut stream, dec!(-1100), dec!(-900)).await;
 
         if idx == 0 {
             okex.place_order(OkexOrderSide::Sell, &BtcUsdSwapContracts::from(50))
                 .await?;
-            passed = false;
-            for _ in 0..=5 {
-                let pos = stream.next().await.unwrap().payload.signed_usd_exposure;
-                if pos < dec!(-4000) {
-                    passed = true;
-                    break;
-                }
-            }
-            assert!(passed);
+            expect_exposure_below(&mut stream, dec!(-4000)).await;
         }
     }
 
     publisher.publish(payloads.next().unwrap()).await?;
 
-    passed = false;
-    let expected = dec!(0);
-    for _ in 0..=6 {
-        let pos = stream.next().await.unwrap().payload.signed_usd_exposure;
-        passed = pos == expected;
-        if passed {
-            break;
-        }
-    }
-
-    assert!(passed);
+    expect_exposure_equal(&mut stream, dec!(0)).await;
 
     Ok(())
 }
