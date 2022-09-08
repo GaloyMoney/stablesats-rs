@@ -24,8 +24,7 @@ async fn transactions_list() -> anyhow::Result<()> {
     let client = GaloyClient::connect(config).await?;
 
     let transactions = client.transactions_list(None).await?;
-    println!("{:#?}", transactions);
-    assert!(transactions.list.len() == 0);
+    assert!(transactions.list.len() > 0);
 
     Ok(())
 }

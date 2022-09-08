@@ -1,6 +1,4 @@
-use galoy_client::{
-    GaloyClient, GaloyTransactionEdge, GaloyTransactionNode, LastTransactionCursor,
-};
+use galoy_client::{GaloyClient, GaloyTransaction, TxCursor};
 use sqlxmq::CurrentJob;
 
 use crate::{error::UserTradesError, user_trades::*};
@@ -12,7 +10,7 @@ pub(super) async fn execute(
 ) -> Result<(), UserTradesError> {
     let mut latest_ref = user_trades.get_latest_ref().await?;
     let external_ref = latest_ref.take();
-    let cursor = external_ref.map(|ExternalRef { cursor, .. }| LastTransactionCursor::from(cursor));
+    let cursor = external_ref.map(|ExternalRef { cursor, .. }| TxCursor::from(cursor));
     let transactions = galoy.transactions_list(cursor).await?;
 
     let user_trades = unify(transactions.list);
@@ -24,7 +22,7 @@ pub(super) async fn execute(
     Ok(())
 }
 
-fn unify(galoy_transactions: Vec<GaloyTransactionEdge>) -> Vec<NewUserTrade> {
+fn unify(galoy_transactions: Vec<GaloyTransaction>) -> Vec<NewUserTrade> {
     unimplemented!()
 }
 

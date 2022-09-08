@@ -1,5 +1,6 @@
 mod convert;
 mod queries;
+mod transaction;
 
 use graphql_client::reqwest::post_graphql;
 use reqwest::{
@@ -16,23 +17,7 @@ pub use queries::{
     stablesats_wallets::WalletCurrency, WalletId,
 };
 
-#[derive(Debug)]
-pub struct LastTransactionCursor(String);
-impl From<String> for LastTransactionCursor {
-    fn from(cursor: String) -> Self {
-        Self(cursor)
-    }
-}
-pub type GaloyTransactionEdge =
-    stablesats_transactions_list::StablesatsTransactionsListMeDefaultAccountTransactionsEdges;
-pub type GaloyTransactionNode =
-    stablesats_transactions_list::StablesatsTransactionsListMeDefaultAccountTransactionsEdgesNode;
-#[derive(Debug)]
-pub struct GaloyTransactions {
-    pub cursor: Option<LastTransactionCursor>,
-    pub list: Vec<GaloyTransactionEdge>,
-    pub has_more: bool,
-}
+pub use transaction::*;
 
 #[derive(Debug)]
 pub struct WalletBalances {
@@ -181,7 +166,7 @@ impl GaloyClient {
 
     pub async fn transactions_list(
         &self,
-        cursor: Option<LastTransactionCursor>,
+        cursor: Option<TxCursor>,
     ) -> Result<GaloyTransactions, GaloyClientError> {
         let variables = stablesats_transactions_list::Variables {
             last: None,

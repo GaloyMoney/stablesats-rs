@@ -1,4 +1,6 @@
-use super::{queries::*, GaloyTransactions, LastTransactionCursor, WalletBalances, WalletCurrency};
+use super::{
+    queries::*, GaloyTransaction, GaloyTransactions, TxCursor, WalletBalances, WalletCurrency,
+};
 use crate::error::*;
 
 impl TryFrom<stablesats_wallets::ResponseData> for WalletBalances {
@@ -94,10 +96,29 @@ impl TryFrom<stablesats_transactions_list::ResponseData> for GaloyTransactions {
         let edges = transactions.edges.ok_or_else(|| {
             GaloyClientError::GrapqQlApi("Empty `transaction edges` in response data".to_string())
         })?;
+        let list = edges
+            .into_iter()
+            .map(|edge| {
+                let mut cents_per_unit = edge.node.settlement_price.base;
+                cents_per_unit
+                    .set_scale(edge.node.settlement_price.offset as u32)
+                    .expect("failed to set scale");
+                GaloyTransaction {
+                    cursor: TxCursor::from(edge.cursor),
+                    id: edge.node.id,
+                    created_at: edge.node.created_at.0,
+                    amount_in_usd_cents: (edge.node.settlement_amount * cents_per_unit).round(),
+                    settlement_amount: edge.node.settlement_amount,
+                    settlement_currency: edge.node.settlement_currency,
+                    cents_per_unit,
+                    status: edge.node.status,
+                }
+            })
+            .collect();
 
         Ok(Self {
-            list: edges,
-            cursor: page_info.start_cursor.map(LastTransactionCursor::from),
+            list,
+            cursor: page_info.start_cursor.map(TxCursor::from),
             has_more: page_info.has_previous_page,
         })
     }

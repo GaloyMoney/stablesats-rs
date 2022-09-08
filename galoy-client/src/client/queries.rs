@@ -8,10 +8,10 @@ use serde::Deserialize;
 
 use crate::GaloyClientError;
 
-pub(super) type SafeInt = i64;
+pub(super) type SafeInt = Decimal;
 
 #[derive(Debug, PartialEq, Deserialize, Clone)]
-pub struct GraphqlTimeStamp(#[serde(with = "chrono::serde::ts_seconds")] DateTime<Utc>);
+pub struct GraphqlTimeStamp(#[serde(with = "chrono::serde::ts_seconds")] pub(super) DateTime<Utc>);
 
 #[derive(GraphQLQuery)]
 #[graphql(
