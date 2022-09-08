@@ -10,6 +10,7 @@ pub struct NewUserTrade {
     pub buy_amount: Decimal,
     pub sell_unit: UserTradeUnit,
     pub sell_amount: Decimal,
+    pub tx_cursor: String, // TODO: refactor to domain type
 }
 
 #[derive(Clone)]
@@ -30,17 +31,35 @@ impl UserTrades {
             buy_amount,
             sell_unit,
             sell_amount,
+            tx_cursor,
         }: NewUserTrade,
     ) -> Result<i32, UserTradesError> {
         let res = sqlx::query!(
-            "INSERT INTO user_trades (buy_unit_id, buy_amount, sell_unit_id, sell_amount) VALUES ($1, $2, $3, $4) RETURNING id",
+            "INSERT INTO user_trades (buy_unit_id, buy_amount, sell_unit_id, sell_amount, tx_cursor) VALUES ($1, $2, $3, $4, $5) RETURNING id",
             self.units.get_id(buy_unit),
             &buy_amount,
             self.units.get_id(sell_unit),
             &sell_amount,
+            tx_cursor,
         )
         .fetch_one(&self.pool)
         .await?;
         Ok(res.id)
+    }
+
+    pub async fn latest_tx_cursor(&self) -> Result<String, UserTradesError> {
+        let latest_cursor = sqlx::query!(
+            r#"
+                SELECT tx_cursor
+                FROM user_trades
+                ORDER BY tx_cursor DESC
+                LIMIT 1 FOR UPDATE
+            "#
+        )
+        .fetch_one(&self.pool)
+        .await?
+        .tx_cursor;
+
+        Ok(latest_cursor)
     }
 }
