@@ -1,19 +1,23 @@
 #![allow(clippy::enum_variant_names)]
 #![allow(clippy::derive_partial_eq_without_eq)]
 
-use chrono::{DateTime, Utc};
 use graphql_client::GraphQLQuery;
 use rust_decimal::Decimal;
 use serde::Deserialize;
+
+pub use stablesats_transactions_list::{
+    ExchangeCurrencyUnit,
+    StablesatsTransactionsListMeDefaultAccountTransactionsEdgesNodeInitiationVia as InitiationVia,
+    StablesatsTransactionsListMeDefaultAccountTransactionsEdgesNodeSettlementPrice as SettlementPrice,
+    StablesatsTransactionsListMeDefaultAccountTransactionsEdgesNodeSettlementVia as SettlementVia,
+    TxDirection, TxStatus,
+};
 
 use crate::GaloyClientError;
 
 pub(super) type SafeInt = i64;
 
-#[derive(Debug, PartialEq, Deserialize, Clone)]
-pub struct GraphqlTimeStamp(#[serde(with = "chrono::serde::ts_seconds")] DateTime<Utc>);
-
-#[derive(GraphQLQuery)]
+#[derive(Debug, PartialEq, Deserialize, Clone, GraphQLQuery)]
 #[graphql(
     schema_path = "src/client/graphql/schema.graphql",
     query_path = "src/client/graphql/mutations/user_request_auth_code.graphql",
@@ -71,8 +75,8 @@ impl TryFrom<stablesats_user_login::ResponseData> for StablesatsLogin {
 pub struct StablesatsTransactionsList;
 pub type WalletId = String;
 
-pub type Timestamp = GraphqlTimeStamp;
-pub type Memo = String;
+pub type Timestamp = i64;
+pub(super) type Memo = String;
 pub(crate) type SignedAmount = Decimal;
 
 #[derive(GraphQLQuery)]

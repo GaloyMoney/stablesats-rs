@@ -1,5 +1,5 @@
 mod convert;
-mod queries;
+pub mod queries;
 
 use graphql_client::reqwest::post_graphql;
 use reqwest::{

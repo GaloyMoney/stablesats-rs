@@ -13,4 +13,8 @@ pub enum UserTradesError {
     PubSub(#[from] PublisherError),
     #[error("UserTradesError: {0}")]
     GaloyClient(#[from] galoy_client::GaloyClientError),
+    #[error("UserTradesError: {0}")]
+    Conversion(String),
+    #[error("UserTradesError: {0}")]
+    Unify(String),
 }

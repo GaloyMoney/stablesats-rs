@@ -2,8 +2,9 @@ use sqlx::PgPool;
 use std::collections::HashMap;
 
 use crate::error::UserTradesError;
+use galoy_client::SettlementCurrency;
 
-#[derive(Clone, PartialEq, Eq, Hash, Copy)]
+#[derive(Clone, PartialEq, Eq, Hash, Copy, Debug)]
 pub enum UserTradeUnit {
     Satoshi,
     SynthCent,
@@ -17,6 +18,20 @@ impl TryFrom<&str> for UserTradeUnit {
             "satoshi" => Ok(UserTradeUnit::Satoshi),
             "synthetic_cent" => Ok(UserTradeUnit::SynthCent),
             _ => Err(()),
+        }
+    }
+}
+
+impl TryFrom<SettlementCurrency> for UserTradeUnit {
+    type Error = UserTradesError;
+
+    fn try_from(ccy: SettlementCurrency) -> Result<Self, Self::Error> {
+        match ccy {
+            SettlementCurrency::BTC => Ok(Self::Satoshi),
+            SettlementCurrency::USD => Ok(Self::SynthCent),
+            _ => Err(UserTradesError::Conversion(
+                "Only USD and BTC variants convertible to UserTradeUnit".to_string(),
+            )),
         }
     }
 }

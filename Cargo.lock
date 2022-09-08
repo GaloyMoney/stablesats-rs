@@ -2912,6 +2912,7 @@ name = "user-trades"
 version = "0.1.0"
 dependencies = [
  "anyhow",
+ "chrono",
  "futures",
  "galoy-client",
  "lazy_static",
