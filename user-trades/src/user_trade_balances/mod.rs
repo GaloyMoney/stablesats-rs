@@ -1,5 +1,6 @@
 use rust_decimal::Decimal;
 use sqlx::{postgres::PgListener, PgPool};
+use tracing::instrument;
 
 use std::collections::HashMap;
 
@@ -38,6 +39,7 @@ impl UserTradeBalances {
         Ok(ret)
     }
 
+    #[instrument(name = "update_user_trade_balances", skip(self), err)]
     async fn update_balances(&self) -> Result<(), UserTradesError> {
         let mut tx = self.pool.begin().await?;
         let balance_result =

@@ -1,12 +1,13 @@
 use galoy_client::{GaloyClient, GaloyTransaction, SettlementCurrency, TxCursor};
 use rust_decimal::Decimal;
 use sqlxmq::CurrentJob;
+use tracing::instrument;
 
 use std::collections::BTreeMap;
 
 use crate::{error::UserTradesError, user_trade_unit::UserTradeUnit, user_trades::*};
 
-#[allow(dead_code)]
+#[instrument(name = "poll_galoy_transactions", skip_all, err)]
 pub(super) async fn execute(
     current_job: &mut CurrentJob,
     user_trades: UserTrades,
@@ -17,15 +18,17 @@ pub(super) async fn execute(
     let cursor = external_ref.map(|ExternalRef { cursor, .. }| TxCursor::from(cursor));
     let transactions = galoy.transactions_list(cursor).await?;
 
-    let trades = unify(transactions.list);
-
-    user_trades.persist_all(latest_ref, trades).await?;
+    if !transactions.list.is_empty() {
+        let trades = unify(transactions.list);
+        user_trades.persist_all(latest_ref, trades).await?;
+    }
 
     current_job.complete().await?;
 
     Ok(())
 }
 
+#[instrument(name = "unify_galoy_transactions", skip_all, fields(n_galoy_txs = galoy_transactions.len()))]
 fn unify(galoy_transactions: Vec<GaloyTransaction>) -> Vec<NewUserTrade> {
     let mut txs: BTreeMap<usize, GaloyTransaction> =
         galoy_transactions.into_iter().enumerate().collect();
@@ -44,12 +47,14 @@ fn unify(galoy_transactions: Vec<GaloyTransaction>) -> Vec<NewUserTrade> {
             let other = txs.remove(&idx).unwrap();
             let external_ref = if tx.settlement_currency == SettlementCurrency::BTC {
                 ExternalRef {
+                    timestamp: tx.created_at,
                     cursor: tx.cursor.into(),
                     btc_tx_id: tx.id,
                     usd_tx_id: other.id,
                 }
             } else {
                 ExternalRef {
+                    timestamp: tx.created_at,
                     cursor: tx.cursor.into(),
                     btc_tx_id: other.id,
                     usd_tx_id: tx.id,

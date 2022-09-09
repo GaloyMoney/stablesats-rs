@@ -1,3 +1,4 @@
+use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use sqlx::{Executor, PgPool, Postgres, QueryBuilder, Transaction};
 
@@ -8,6 +9,8 @@ use crate::user_trade_unit::UserTradeUnit;
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct ExternalRef {
+    #[serde(with = "chrono::serde::ts_seconds")]
+    pub timestamp: DateTime<Utc>,
     pub cursor: String,
     pub btc_tx_id: String,
     pub usd_tx_id: String,
@@ -58,6 +61,9 @@ impl UserTrades {
         }: LatestRef<'a>,
         new_user_trades: Vec<NewUserTrade>,
     ) -> Result<(), UserTradesError> {
+        if new_user_trades.is_empty() {
+            return Ok(());
+        }
         if let Some(latest_id) = latest_id {
             sqlx::query!(
                 "UPDATE user_trades SET is_latest = NULL WHERE id = $1",

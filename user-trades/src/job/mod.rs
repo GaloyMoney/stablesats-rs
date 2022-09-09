@@ -2,6 +2,7 @@ mod poll_galoy_transactions;
 
 use rust_decimal_macros::dec;
 use sqlxmq::{job, CurrentJob, JobBuilder, JobRegistry, OwnedHandle};
+use tracing::instrument;
 use uuid::{uuid, Uuid};
 
 use galoy_client::GaloyClient;
@@ -40,6 +41,7 @@ pub async fn start_job_runner(
     Ok(registry.runner(&pool).run().await?)
 }
 
+#[instrument(skip_all, err)]
 pub async fn spawn_publish_liability(
     pool: &sqlx::PgPool,
     duration: std::time::Duration,
@@ -55,6 +57,7 @@ pub async fn spawn_publish_liability(
     }
 }
 
+#[instrument(skip_all, err)]
 pub async fn spawn_poll_galoy_transactions(
     pool: &sqlx::PgPool,
     duration: std::time::Duration,

@@ -9,6 +9,7 @@ use reqwest::{
     Client as ReqwestClient,
 };
 use rust_decimal::Decimal;
+use tracing::instrument;
 
 use crate::error::*;
 use queries::*;
@@ -159,6 +160,7 @@ impl GaloyClient {
         Ok(wallet_id)
     }
 
+    #[instrument(name = "galoy_transactions_list", skip(self), err)]
     pub async fn transactions_list(
         &self,
         cursor: Option<TxCursor>,
