@@ -3,6 +3,15 @@
 # pubsub:
 #   host: localhost
 
+# galoy:
+#   api: galoy-endpoint
+#   phone_number: "+0123456"
+
+# user_trades:
+#  migrate_on_starte: true
+#  balance_publish_frequency: 2
+#  galoy_poll_frequency: 5
+
 # price_server:
   # enabled: true
   # server:

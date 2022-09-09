@@ -17,7 +17,7 @@ fn galoy_client_configuration() -> GaloyClientConfig {
     let config = GaloyClientConfig {
         api,
         phone_number,
-        code,
+        auth_code: code,
     };
 
     config
@@ -39,10 +39,10 @@ async fn publishes_liability() -> anyhow::Result<()> {
         user_trades_pg_host
     );
     UserTradesApp::run(
-        UserTradesAppConfig {
+        UserTradesConfig {
             migrate_on_start: true,
             pg_con,
-            publish_frequency: std::time::Duration::from_millis(100),
+            balance_publish_frequency: std::time::Duration::from_millis(100),
             galoy_poll_frequency: std::time::Duration::from_secs(1),
         },
         pubsub_config,

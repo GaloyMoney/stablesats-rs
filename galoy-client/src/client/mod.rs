@@ -1,3 +1,4 @@
+mod config;
 mod convert;
 mod queries;
 mod transaction;
@@ -17,6 +18,7 @@ pub use queries::{
     stablesats_wallets::WalletCurrency, WalletId,
 };
 
+pub use config::*;
 pub use transaction::*;
 
 #[derive(Debug)]
@@ -30,13 +32,6 @@ pub struct GaloyClient {
     client: ReqwestClient,
     config: GaloyClientConfig,
     btc_wallet_id: String,
-}
-
-#[derive(Debug, Clone)]
-pub struct GaloyClientConfig {
-    pub api: String,
-    pub code: String,
-    pub phone_number: String,
 }
 
 pub(crate) struct StablesatsAuthToken {
@@ -102,7 +97,7 @@ impl GaloyClient {
     async fn login_jwt(config: GaloyClientConfig) -> Result<StablesatsAuthToken, GaloyClientError> {
         let variables = stablesats_user_login::Variables {
             input: stablesats_user_login::UserLoginInput {
-                code: config.code.clone(),
+                code: config.auth_code.clone(),
                 phone: config.phone_number.clone(),
             },
         };

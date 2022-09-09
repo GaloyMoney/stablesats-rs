@@ -11,7 +11,7 @@ fn client_configuration() -> GaloyClientConfig {
     let config = GaloyClientConfig {
         api,
         phone_number,
-        code,
+        auth_code: code,
     };
 
     config

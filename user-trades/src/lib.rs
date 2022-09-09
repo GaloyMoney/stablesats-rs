@@ -15,7 +15,7 @@ pub use app::*;
 pub use error::*;
 
 pub async fn run(
-    config: UserTradesAppConfig,
+    config: UserTradesConfig,
     pubsub_cfg: PubSubConfig,
     galoy_client_cfg: GaloyClientConfig,
 ) -> Result<(), UserTradesError> {

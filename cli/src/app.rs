@@ -35,6 +35,12 @@ enum Command {
         /// Output config on crash
         #[clap(env = "CRASH_REPORT_CONFIG")]
         crash_report_config: Option<bool>,
+        /// Connection string for the user-trades database
+        #[clap(env = "USER_TRADES_PG_CON", default_value = "")]
+        user_trades_pg_con: String,
+        /// Phone code for the galoy client
+        #[clap(env = "GALOY_PHONE_CODE", default_value = "")]
+        galoy_phone_code: String,
     },
     /// Gets a quote from the price server
     Price {
@@ -57,8 +63,17 @@ pub async fn run() -> anyhow::Result<()> {
         Command::Run {
             redis_password,
             crash_report_config,
+            user_trades_pg_con,
+            galoy_phone_code,
         } => {
-            let config = Config::from_path(cli.config, EnvOverride { redis_password })?;
+            let config = Config::from_path(
+                cli.config,
+                EnvOverride {
+                    redis_password,
+                    user_trades_pg_con,
+                    galoy_phone_code,
+                },
+            )?;
             match (run_cmd(config.clone()).await, crash_report_config) {
                 (Err(e), Some(true)) => {
                     println!("Stablesats was started with the following config:");
@@ -84,7 +99,9 @@ async fn run_cmd(
         pubsub,
         price_server,
         okex_price_feed,
+        user_trades,
         tracing,
+        galoy,
     }: Config,
 ) -> anyhow::Result<()> {
     println!("Starting server process");
@@ -112,11 +129,24 @@ async fn run_cmd(
         println!("Starting Okex price feed");
 
         let okex_send = send.clone();
+        let pubsub = pubsub.clone();
         handles.push(tokio::spawn(async move {
             let _ = okex_send.try_send(
                 okex_price::run(okex_price_feed.config, pubsub)
                     .await
                     .context("Okex Price Feed error"),
+            );
+        }));
+    }
+    if user_trades.enabled {
+        println!("Starting user trades process");
+
+        let user_trades_send = send.clone();
+        handles.push(tokio::spawn(async move {
+            let _ = user_trades_send.try_send(
+                user_trades::run(user_trades.config, pubsub, galoy)
+                    .await
+                    .context("User Trades error"),
             );
         }));
     }

@@ -2325,6 +2325,7 @@ dependencies = [
  "anyhow",
  "clap",
  "futures",
+ "galoy-client",
  "okex-price",
  "opentelemetry",
  "opentelemetry-jaeger",
@@ -2339,6 +2340,7 @@ dependencies = [
  "tracing-opentelemetry",
  "tracing-subscriber",
  "url",
+ "user-trades",
 ]
 
 [[package]]

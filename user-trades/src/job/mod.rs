@@ -29,7 +29,7 @@ pub async fn start_job_runner(
     galoy_client: GaloyClient,
     galoy_poll_delay: std::time::Duration,
 ) -> Result<OwnedHandle, UserTradesError> {
-    let mut registry = JobRegistry::new(&[publish_liability]);
+    let mut registry = JobRegistry::new(&[publish_liability, poll_galoy_transactions]);
     registry.set_context(publisher);
     registry.set_context(user_trade_balances);
     registry.set_context(LiabilityPublishDelay(liability_publish_delay));

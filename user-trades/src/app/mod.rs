@@ -14,12 +14,12 @@ pub struct UserTradesApp {
 
 impl UserTradesApp {
     pub async fn run(
-        UserTradesAppConfig {
+        UserTradesConfig {
             pg_con,
             migrate_on_start,
-            publish_frequency,
+            balance_publish_frequency,
             galoy_poll_frequency,
-        }: UserTradesAppConfig,
+        }: UserTradesConfig,
         pubsub_cfg: PubSubConfig,
         galoy_client_cfg: GaloyClientConfig,
     ) -> Result<Self, UserTradesError> {
@@ -34,14 +34,14 @@ impl UserTradesApp {
         let job_runner = job::start_job_runner(
             pool.clone(),
             publisher,
-            publish_frequency,
+            balance_publish_frequency,
             user_trade_balances,
             user_trades,
             GaloyClient::connect(galoy_client_cfg).await?,
             galoy_poll_frequency,
         )
         .await?;
-        Self::spawn_publish_liability(pool.clone(), publish_frequency).await?;
+        Self::spawn_publish_liability(pool.clone(), balance_publish_frequency).await?;
         Self::spawn_poll_galoy_transactions(pool, galoy_poll_frequency).await?;
         Ok(Self {
             _runner: job_runner,
@@ -66,14 +66,10 @@ impl UserTradesApp {
         pool: sqlx::PgPool,
         delay: std::time::Duration,
     ) -> Result<(), UserTradesError> {
-        let _ = tokio::spawn(async move {
-            loop {
-                let _ =
-                    job::spawn_poll_galoy_transactions(&pool, std::time::Duration::from_secs(1))
-                        .await;
-                tokio::time::sleep(delay).await;
-            }
-        });
-        Ok(())
+        loop {
+            let _ =
+                job::spawn_poll_galoy_transactions(&pool, std::time::Duration::from_secs(1)).await;
+            tokio::time::sleep(delay).await;
+        }
     }
 }
