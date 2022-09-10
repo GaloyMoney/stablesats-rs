@@ -1,4 +1,5 @@
 use ::user_trades::{user_trade_balances::*, user_trade_unit::*, user_trades::*};
+use chrono::Utc;
 use rust_decimal_macros::dec;
 use sqlx::PgPool;
 
@@ -25,6 +26,7 @@ async fn user_trade_balances() -> anyhow::Result<()> {
     let cent_amount = dec!(10);
     let latest_ref = trades.get_latest_ref().await?;
     let external_ref = Some(ExternalRef {
+        timestamp: Utc::now(),
         cursor: "cursor".to_string(),
         btc_tx_id: "btc_tx_id".to_string(),
         usd_tx_id: "usd_tx_id".to_string(),
@@ -33,7 +35,7 @@ async fn user_trade_balances() -> anyhow::Result<()> {
         .persist_all(
             latest_ref,
             vec![NewUserTrade {
-                is_latest: true,
+                is_latest: None,
                 buy_unit: UserTradeUnit::SynthCent,
                 buy_amount: cent_amount,
                 sell_unit: UserTradeUnit::Satoshi,

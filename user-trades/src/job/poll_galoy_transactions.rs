@@ -7,33 +7,46 @@ use std::collections::BTreeMap;
 
 use crate::{error::UserTradesError, user_trade_unit::UserTradeUnit, user_trades::*};
 
-#[instrument(name = "poll_galoy_transactions", skip_all, err)]
+#[instrument(
+    name = "poll_galoy_transactions",
+    skip_all,
+    err,
+    fields(n_galoy_txs, n_user_trades, error, error.message)
+)]
 pub(super) async fn execute(
     current_job: &mut CurrentJob,
     user_trades: UserTrades,
     galoy: GaloyClient,
 ) -> Result<(), UserTradesError> {
-    let mut latest_ref = user_trades.get_latest_ref().await?;
-    let external_ref = latest_ref.take();
-    let cursor = external_ref.map(|ExternalRef { cursor, .. }| TxCursor::from(cursor));
-    let transactions = galoy.transactions_list(cursor).await?;
+    shared::tracing::record_error(|| async move {
+        let span = tracing::Span::current();
+        let mut latest_ref = user_trades.get_latest_ref().await?;
+        let external_ref = latest_ref.take();
+        let cursor = external_ref.map(|ExternalRef { cursor, .. }| TxCursor::from(cursor));
+        let transactions = galoy.transactions_list(cursor).await?;
 
-    if !transactions.list.is_empty() {
-        let trades = unify(transactions.list);
-        user_trades.persist_all(latest_ref, trades).await?;
-    }
+        span.record(
+            "n_galoy_txs",
+            &tracing::field::display(transactions.list.len()),
+        );
 
-    current_job.complete().await?;
+        if !transactions.list.is_empty() {
+            let trades = unify(transactions.list);
+            span.record("n_user_trades", &tracing::field::display(trades.len()));
+            user_trades.persist_all(latest_ref, trades).await?;
+        }
 
-    Ok(())
+        current_job.complete().await?;
+        Ok(())
+    })
+    .await
 }
 
-#[instrument(name = "unify_galoy_transactions", skip_all, fields(n_galoy_txs = galoy_transactions.len()))]
 fn unify(galoy_transactions: Vec<GaloyTransaction>) -> Vec<NewUserTrade> {
     let mut txs: BTreeMap<usize, GaloyTransaction> =
         galoy_transactions.into_iter().enumerate().collect();
     let mut user_trades = Vec::new();
-    let mut is_latest = true;
+    let mut is_latest = Some(true);
     for idx in 0..txs.len() {
         if txs.is_empty() {
             break;
@@ -79,7 +92,7 @@ fn unify(galoy_transactions: Vec<GaloyTransaction>) -> Vec<NewUserTrade> {
                     external_ref: Some(external_ref),
                 });
             }
-            is_latest = false;
+            is_latest = None;
         }
     }
     user_trades
@@ -164,12 +177,13 @@ mod tests {
         assert_eq!(
             trade1,
             &NewUserTrade {
-                is_latest: true,
+                is_latest: Some(true),
                 buy_unit: UserTradeUnit::SynthCent,
                 buy_amount: dec!(10),
                 sell_unit: UserTradeUnit::Satoshi,
                 sell_amount: dec!(1000),
                 external_ref: Some(ExternalRef {
+                    timestamp: created_at,
                     cursor: "1".to_string(),
                     btc_tx_id: "id1".to_string(),
                     usd_tx_id: "id2".to_string(),
@@ -179,12 +193,13 @@ mod tests {
         assert_eq!(
             trade2,
             &NewUserTrade {
-                is_latest: false,
+                is_latest: None,
                 buy_unit: UserTradeUnit::Satoshi,
                 buy_amount: dec!(1000),
                 sell_unit: UserTradeUnit::SynthCent,
                 sell_amount: dec!(10),
                 external_ref: Some(ExternalRef {
+                    timestamp: created_earlier,
                     cursor: "3".to_string(),
                     btc_tx_id: "id3".to_string(),
                     usd_tx_id: "id4".to_string(),

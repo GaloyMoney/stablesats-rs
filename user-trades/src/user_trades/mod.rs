@@ -33,7 +33,7 @@ impl<'a> LatestRef<'a> {
 
 #[derive(Debug, PartialEq, Eq)]
 pub struct NewUserTrade {
-    pub is_latest: bool,
+    pub is_latest: Option<bool>,
     pub buy_unit: UserTradeUnit,
     pub buy_amount: Decimal,
     pub sell_unit: UserTradeUnit,
