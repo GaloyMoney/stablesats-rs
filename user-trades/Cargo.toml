@@ -3,14 +3,20 @@ name = "user-trades"
 version = "0.1.0"
 edition = "2021"
 
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+[features]
+
+fail-on-warnings = []
 
 [dependencies]
 shared = { path = "../shared", package = "stablesats-shared" }
+galoy_client = { path = "../galoy-client", package = "galoy-client" }
 
 thiserror = "1.0.34"
+chrono = "0.4.22"
 tokio = "1.20.1"
-sqlx = { version = "0.6", features = [ "offline", "runtime-tokio-rustls", "postgres", "decimal", "uuid", "chrono" ] }
+sqlx = { version = "0.6", features = [ "offline", "runtime-tokio-rustls", "postgres", "decimal", "uuid", "chrono", "json" ] }
+sqlxmq = { version = "0.4.1", default-features = false, features = [ "runtime-tokio-rustls" ] }
+serde_json = "1.0.85"
 uuid = "1.1.2"
 tracing = "0.1.36"
 serde = "1.0.143"

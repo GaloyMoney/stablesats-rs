@@ -726,13 +726,13 @@ dependencies = [
  "chrono",
  "futures",
  "graphql_client",
- "itertools",
  "reqwest",
  "rust_decimal",
  "rust_decimal_macros",
  "serde",
  "thiserror",
  "tokio",
+ "tracing",
 ]
 
 [[package]]
@@ -2326,6 +2326,9 @@ dependencies = [
  "anyhow",
  "clap",
  "futures",
+ "galoy-client",
+ "hedging",
+ "okex-client",
  "okex-price",
  "opentelemetry",
  "opentelemetry-jaeger",
@@ -2340,6 +2343,7 @@ dependencies = [
  "tracing-opentelemetry",
  "tracing-subscriber",
  "url",
+ "user-trades",
 ]
 
 [[package]]
@@ -2913,13 +2917,17 @@ name = "user-trades"
 version = "0.1.0"
 dependencies = [
  "anyhow",
+ "chrono",
  "futures",
+ "galoy-client",
  "lazy_static",
  "rust_decimal",
  "rust_decimal_macros",
  "serde",
+ "serde_json",
  "serial_test",
  "sqlx",
+ "sqlxmq",
  "stablesats-shared",
  "thiserror",
  "tokio",

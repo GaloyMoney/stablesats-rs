@@ -13,6 +13,11 @@ impl From<&BtcUsdSwapContracts> for u32 {
         contracts.0
     }
 }
+impl std::fmt::Display for BtcUsdSwapContracts {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.0)
+    }
+}
 
 #[derive(Debug, PartialEq, Eq)]
 pub struct DepositAddress {

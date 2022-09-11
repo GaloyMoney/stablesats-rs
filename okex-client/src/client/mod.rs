@@ -2,15 +2,17 @@ mod error;
 mod okex_response;
 mod primitives;
 
-use std::{collections::HashMap, time::Duration};
-
 use chrono::{SecondsFormat, Utc};
 use data_encoding::BASE64;
+use reqwest::{
+    header::{HeaderMap, HeaderValue, CONTENT_TYPE},
+    Client as ReqwestClient,
+};
 use ring::hmac;
 use rust_decimal::Decimal;
+use serde::{Deserialize, Serialize};
 
-use reqwest::header::{HeaderMap, HeaderValue, CONTENT_TYPE};
-use reqwest::Client as ReqwestClient;
+use std::{collections::HashMap, time::Duration};
 
 pub use error::*;
 use okex_response::*;
@@ -30,11 +32,15 @@ const OKEX_API_URL: &str = "https://www.okex.com";
 pub const OKEX_MINIMUM_WITHDRAWAL_AMOUNT: &str = "0.001";
 pub const OKEX_MINIMUM_WITHDRAWAL_FEE: &str = "0.0002";
 
-#[derive(Clone)]
+#[derive(Clone, Debug, Default, Deserialize, Serialize)]
 pub struct OkexClientConfig {
+    #[serde(default)]
     pub api_key: String,
+    #[serde(default)]
     pub passphrase: String,
+    #[serde(default)]
     pub secret_key: String,
+    #[serde(default)]
     pub simulated: bool,
 }
 

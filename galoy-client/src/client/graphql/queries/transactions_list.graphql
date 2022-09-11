@@ -1,8 +1,8 @@
-query StablesatsTransactionsList($after: String) {
+query StablesatsTransactionsList($last: Int $before: String) {
   me {
     defaultAccount {
       __typename
-      transactions(after: $after) {
+      transactions(last: $last, before: $before) {
         edges {
           cursor
           node {
@@ -34,12 +34,6 @@ query StablesatsTransactionsList($after: String) {
           hasPreviousPage
           startCursor
         }
-      }
-      wallets {
-        __typename
-        id
-        balance
-        walletCurrency
       }
     }
   }

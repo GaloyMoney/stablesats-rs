@@ -1,9 +1,15 @@
 use rust_decimal::Decimal;
+use rust_decimal_macros::dec;
 
 pub use okex_client::BtcUsdSwapContracts;
 
-const CONTRACT_SIZE: u32 = 100;
-const MIN_LIABILITY_THRESHOLD: i32 = -95;
+const CONTRACT_SIZE: Decimal = dec!(100);
+const MIN_LIABILITY_THRESHOLD: Decimal = dec!(100); // CONTRACT_SIZE / 2
+
+const LOW_BOUND_RATIO_SHORTING: Decimal = dec!(0.95);
+const LOW_SAFEBOUND_RATIO_SHORTING: Decimal = dec!(0.98);
+const HIGH_SAFEBOUND_RATIO_SHORTING: Decimal = dec!(1.);
+const HIGH_BOUND_RATIO_SHORTING: Decimal = dec!(1.03);
 
 #[derive(Debug, PartialEq, Eq, Clone)]
 pub enum AdjustmentAction {
@@ -11,6 +17,16 @@ pub enum AdjustmentAction {
     ClosePosition,
     Sell(BtcUsdSwapContracts),
     Buy(BtcUsdSwapContracts),
+}
+impl std::fmt::Display for AdjustmentAction {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            AdjustmentAction::DoNothing => write!(f, "DoNothing"),
+            AdjustmentAction::ClosePosition => write!(f, "ClosePosition"),
+            AdjustmentAction::Sell(contracts) => write!(f, "Sell({})", contracts),
+            AdjustmentAction::Buy(contracts) => write!(f, "Buy({})", contracts),
+        }
+    }
 }
 impl AdjustmentAction {
     pub fn action_required(&self) -> bool {
@@ -44,34 +60,51 @@ impl AdjustmentAction {
 }
 
 pub fn determine_action(abs_liability: Decimal, signed_exposure: Decimal) -> AdjustmentAction {
-    let target_exposure = abs_liability * Decimal::NEGATIVE_ONE;
-    if target_exposure > Decimal::from(MIN_LIABILITY_THRESHOLD) && signed_exposure != Decimal::ZERO
-    {
+    if abs_liability >= Decimal::ZERO && abs_liability < MIN_LIABILITY_THRESHOLD {
         AdjustmentAction::ClosePosition
-    } else if target_exposure > signed_exposure {
-        let contracts = ((signed_exposure - target_exposure) / Decimal::from(CONTRACT_SIZE))
-            .round()
-            .abs();
-        if contracts == Decimal::ZERO {
-            AdjustmentAction::DoNothing
-        } else {
-            AdjustmentAction::Buy(BtcUsdSwapContracts::from(
-                u32::try_from(contracts).expect("decimal to u32"),
-            ))
-        }
-    } else if target_exposure < signed_exposure {
-        let contracts = ((target_exposure - signed_exposure) / Decimal::from(CONTRACT_SIZE))
-            .round()
-            .abs();
-        if contracts == Decimal::ZERO {
-            AdjustmentAction::DoNothing
-        } else {
-            AdjustmentAction::Sell(BtcUsdSwapContracts::from(
-                u32::try_from(contracts).expect("decimal to u32"),
-            ))
-        }
     } else {
-        AdjustmentAction::DoNothing
+        let signed_liability = abs_liability * Decimal::NEGATIVE_ONE;
+        let abs_exposure = signed_exposure.abs();
+        let exposure_ratio = signed_exposure / signed_liability;
+        if exposure_ratio.is_sign_negative() {
+            let target_exposure = abs_liability * LOW_SAFEBOUND_RATIO_SHORTING;
+            let contracts = ((target_exposure + abs_exposure) / CONTRACT_SIZE)
+                .round()
+                .abs();
+            if contracts.is_zero() {
+                AdjustmentAction::DoNothing
+            } else {
+                AdjustmentAction::Sell(BtcUsdSwapContracts::from(
+                    u32::try_from(contracts).expect("decimal to u32"),
+                ))
+            }
+        } else if exposure_ratio < LOW_BOUND_RATIO_SHORTING {
+            let target_exposure = abs_liability * LOW_SAFEBOUND_RATIO_SHORTING;
+            let contracts = ((target_exposure - abs_exposure) / CONTRACT_SIZE)
+                .round()
+                .abs();
+            if contracts.is_zero() {
+                AdjustmentAction::DoNothing
+            } else {
+                AdjustmentAction::Sell(BtcUsdSwapContracts::from(
+                    u32::try_from(contracts).expect("decimal to u32"),
+                ))
+            }
+        } else if exposure_ratio > HIGH_BOUND_RATIO_SHORTING {
+            let target_exposure = abs_liability * HIGH_SAFEBOUND_RATIO_SHORTING;
+            let contracts = ((abs_exposure - target_exposure) / CONTRACT_SIZE)
+                .round()
+                .abs();
+            if contracts.is_zero() {
+                AdjustmentAction::DoNothing
+            } else {
+                AdjustmentAction::Buy(BtcUsdSwapContracts::from(
+                    u32::try_from(contracts).expect("decimal to u32"),
+                ))
+            }
+        } else {
+            AdjustmentAction::DoNothing
+        }
     }
 }
 
@@ -124,5 +157,17 @@ mod tests {
         let exposure = dec!(-99.8);
         let adjustment = determine_action(liability, exposure);
         assert_eq!(adjustment, AdjustmentAction::DoNothing);
+    }
+
+    #[test]
+    fn positive_exposure() {
+        let liability = dec!(100);
+        let exposure = dec!(100);
+        let adjustment = determine_action(liability, exposure);
+        println!("The adjustment suggested: {adjustment:?}");
+        assert_eq!(
+            adjustment,
+            AdjustmentAction::Sell(BtcUsdSwapContracts::from(2))
+        );
     }
 }

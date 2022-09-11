@@ -25,7 +25,7 @@ impl HedgingApp {
         HedgingAppConfig {
             pg_con,
             migrate_on_start,
-            okex_poll_delay,
+            okex_poll_frequency: okex_poll_delay,
         }: HedgingAppConfig,
         okex_client_config: OkexClientConfig,
         pubsub_config: PubSubConfig,
@@ -59,13 +59,10 @@ impl HedgingApp {
         pool: sqlx::PgPool,
         delay: std::time::Duration,
     ) -> Result<(), HedgingError> {
-        let _ = tokio::spawn(async move {
-            loop {
-                let _ = job::spawn_poll_okex(&pool, std::time::Duration::from_secs(1)).await;
-                tokio::time::sleep(delay).await;
-            }
-        });
-        Ok(())
+        loop {
+            let _ = job::spawn_poll_okex(&pool, std::time::Duration::from_secs(1)).await;
+            tokio::time::sleep(delay).await;
+        }
     }
 
     async fn spawn_synth_usd_listener(
@@ -113,7 +110,9 @@ impl HedgingApp {
                 let span = info_span!(
                     "okex_btc_usd_swap_position_received",
                     message_type = %msg.payload_type,
-                    correlation_id = %correlation_id
+                    correlation_id = %correlation_id,
+                    error = tracing::field::Empty,
+                    error.message = tracing::field::Empty,
                 );
                 shared::tracing::inject_tracing_data(&span, &msg.meta.tracing_data);
                 let _ = Self::handle_received_okex_position(
@@ -144,7 +143,10 @@ impl HedgingApp {
                 Ok(())
             }
             Ok(None) => Ok(()),
-            Err(e) => Err(e),
+            Err(e) => {
+                shared::tracing::insert_error_fields(&e);
+                Err(e)
+            }
         }
     }
 

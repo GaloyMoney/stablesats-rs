@@ -3,7 +3,7 @@ use std::collections::HashMap;
 
 use crate::error::UserTradesError;
 
-#[derive(Clone, PartialEq, Eq, Hash, Copy)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, Copy)]
 pub enum UserTradeUnit {
     Satoshi,
     SynthCent,

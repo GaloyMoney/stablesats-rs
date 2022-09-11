@@ -1,24 +1,27 @@
 mod config;
 
-use rust_decimal_macros::dec;
-use std::time::Duration;
+use sqlxmq::OwnedHandle;
 
-use crate::{error::*, user_trade::*, user_trade_balances::*, user_trade_unit::*};
+use galoy_client::{GaloyClient, GaloyClientConfig};
+use shared::pubsub::*;
+
+use crate::{error::*, job, user_trade_balances::*, user_trade_unit::*, user_trades::*};
 pub use config::*;
-use shared::{payload::SynthUsdLiabilityPayload, pubsub::*};
 
 pub struct UserTradesApp {
-    _user_trades: UserTrades,
+    _runner: OwnedHandle,
 }
 
 impl UserTradesApp {
     pub async fn run(
-        UserTradesAppConfig {
+        UserTradesConfig {
             pg_con,
             migrate_on_start,
-            publish_frequency,
-        }: UserTradesAppConfig,
+            balance_publish_frequency,
+            galoy_poll_frequency,
+        }: UserTradesConfig,
         pubsub_cfg: PubSubConfig,
+        galoy_client_cfg: GaloyClientConfig,
     ) -> Result<Self, UserTradesError> {
         let pool = sqlx::PgPool::connect(&pg_con).await?;
         if migrate_on_start {
@@ -26,34 +29,47 @@ impl UserTradesApp {
         }
         let units = UserTradeUnits::load(&pool).await?;
         let user_trade_balances = UserTradeBalances::new(pool.clone(), units.clone()).await?;
-        Self::publish_liability(user_trade_balances, pubsub_cfg, publish_frequency).await?;
+        let user_trades = UserTrades::new(pool.clone(), units);
+        let publisher = Publisher::new(pubsub_cfg).await?;
+        let job_runner = job::start_job_runner(
+            pool.clone(),
+            publisher,
+            balance_publish_frequency,
+            user_trade_balances,
+            user_trades,
+            GaloyClient::connect(galoy_client_cfg).await?,
+            galoy_poll_frequency,
+        )
+        .await?;
+        Self::spawn_publish_liability(pool.clone(), balance_publish_frequency).await?;
+        Self::spawn_poll_galoy_transactions(pool, galoy_poll_frequency).await?;
         Ok(Self {
-            _user_trades: UserTrades::new(pool, units),
+            _runner: job_runner,
         })
     }
 
-    async fn publish_liability(
-        user_trade_balances: UserTradeBalances,
-        pubsub_cfg: PubSubConfig,
-        publish_frequency: Duration,
+    async fn spawn_publish_liability(
+        pool: sqlx::PgPool,
+        delay: std::time::Duration,
     ) -> Result<(), UserTradesError> {
-        let pubsub = Publisher::new(pubsub_cfg).await?;
-        tokio::spawn(async move {
+        let _ = tokio::spawn(async move {
             loop {
-                if let Ok(balances) = user_trade_balances.fetch_all().await {
-                    let _ = pubsub
-                        .publish(SynthUsdLiabilityPayload {
-                            liability: balances
-                                .get(&UserTradeUnit::SynthCent)
-                                .expect("SynthCents should always be present")
-                                .current_balance
-                                * dec!(-1),
-                        })
-                        .await;
-                    tokio::time::sleep(publish_frequency).await;
-                }
+                let _ =
+                    job::spawn_publish_liability(&pool, std::time::Duration::from_secs(1)).await;
+                tokio::time::sleep(delay).await;
             }
         });
         Ok(())
+    }
+
+    async fn spawn_poll_galoy_transactions(
+        pool: sqlx::PgPool,
+        delay: std::time::Duration,
+    ) -> Result<(), UserTradesError> {
+        loop {
+            let _ =
+                job::spawn_poll_galoy_transactions(&pool, std::time::Duration::from_secs(1)).await;
+            tokio::time::sleep(delay).await;
+        }
     }
 }

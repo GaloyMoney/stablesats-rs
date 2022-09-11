@@ -3,26 +3,22 @@
 
 mod app;
 mod error;
-pub mod user_trade;
+mod job;
 pub mod user_trade_balances;
 pub mod user_trade_unit;
+pub mod user_trades;
 
+use galoy_client::GaloyClientConfig;
 use shared::pubsub::*;
 
 pub use app::*;
 pub use error::*;
 
 pub async fn run(
-    config: UserTradesAppConfig,
+    config: UserTradesConfig,
     pubsub_cfg: PubSubConfig,
+    galoy_client_cfg: GaloyClientConfig,
 ) -> Result<(), UserTradesError> {
-    UserTradesApp::run(config, pubsub_cfg).await?;
-    Ok(())
-}
-
-pub async fn migrate(pg_con: &str) -> anyhow::Result<()> {
-    use sqlx::Connection;
-    let mut con = sqlx::PgConnection::connect(pg_con).await?;
-    sqlx::migrate!().run(&mut con).await?;
+    UserTradesApp::run(config, pubsub_cfg, galoy_client_cfg).await?;
     Ok(())
 }

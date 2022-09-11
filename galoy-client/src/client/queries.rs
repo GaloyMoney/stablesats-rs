@@ -1,3 +1,6 @@
+#![allow(clippy::enum_variant_names)]
+#![allow(clippy::derive_partial_eq_without_eq)]
+
 use chrono::{DateTime, Utc};
 use graphql_client::GraphQLQuery;
 use rust_decimal::Decimal;
@@ -5,12 +8,10 @@ use serde::Deserialize;
 
 use crate::GaloyClientError;
 
-use self::stablesats_wallets::{StablesatsWalletsMeDefaultAccountWallets, WalletCurrency};
-
-pub type SafeInt = i64;
+pub(super) type SafeInt = Decimal;
 
 #[derive(Debug, PartialEq, Deserialize, Clone)]
-pub struct GraphqlTimeStamp(#[serde(with = "chrono::serde::ts_seconds")] DateTime<Utc>);
+pub struct GraphqlTimeStamp(#[serde(with = "chrono::serde::ts_seconds")] pub(super) DateTime<Utc>);
 
 #[derive(GraphQLQuery)]
 #[graphql(
@@ -74,97 +75,13 @@ pub type Timestamp = GraphqlTimeStamp;
 pub type Memo = String;
 pub(crate) type SignedAmount = Decimal;
 
-pub type StablesatsTransactions =
-    stablesats_transactions_list::StablesatsTransactionsListMeDefaultAccountTransactionsEdges;
-
-#[derive(Debug)]
-pub struct StablesatsTransactionsEdges {
-    pub edges: Vec<StablesatsTransactions>,
-}
-
-impl TryFrom<stablesats_transactions_list::ResponseData> for StablesatsTransactionsEdges {
-    type Error = GaloyClientError;
-
-    fn try_from(response: stablesats_transactions_list::ResponseData) -> Result<Self, Self::Error> {
-        let me = response.me;
-        let me = match me {
-            Some(me) => me,
-            None => {
-                return Err(GaloyClientError::GrapqQlApi(
-                    "Empty `me` in response data".to_string(),
-                ))
-            }
-        };
-
-        let default_account = me.default_account;
-        let transactions = default_account.transactions;
-
-        let transactions = match transactions {
-            Some(tx) => tx,
-            None => {
-                return Err(GaloyClientError::GrapqQlApi(
-                    "Empty `transactions` in response data".to_string(),
-                ))
-            }
-        };
-
-        let edges = match transactions.edges {
-            Some(edges) => edges,
-            None => {
-                return Err(GaloyClientError::GrapqQlApi(
-                    "Empty `transaction edges` in response data".to_string(),
-                ))
-            }
-        };
-        Ok(StablesatsTransactionsEdges { edges })
-    }
-}
-
 #[derive(GraphQLQuery)]
 #[graphql(
     schema_path = "src/client/graphql/schema.graphql",
     query_path = "src/client/graphql/queries/wallets.graphql",
-    response_derives = "Debug, PartialEq, Clone"
+    response_derives = "Debug, PartialEq, Eq, Clone"
 )]
 pub struct StablesatsWallets;
-pub type StablesatsWalletsWrap = StablesatsWalletsWrapper;
-
-pub struct StablesatsWalletsWrapper {
-    pub btc_wallet: Option<StablesatsWalletsMeDefaultAccountWallets>,
-    pub usd_wallet: Option<StablesatsWalletsMeDefaultAccountWallets>,
-}
-
-impl TryFrom<stablesats_wallets::ResponseData> for StablesatsWalletsWrapper {
-    type Error = GaloyClientError;
-
-    fn try_from(response: stablesats_wallets::ResponseData) -> Result<Self, Self::Error> {
-        let me = response.me;
-        let me = match me {
-            Some(me) => me,
-            None => {
-                return Err(GaloyClientError::GrapqQlApi(
-                    "Empty `me` in response data".to_string(),
-                ))
-            }
-        };
-        let default_account = me.default_account;
-        let wallets = default_account.wallets;
-
-        let btc_wallet = wallets
-            .clone()
-            .into_iter()
-            .find(|wallet| wallet.wallet_currency == WalletCurrency::BTC);
-
-        let usd_wallet = wallets
-            .into_iter()
-            .find(|wallet| wallet.wallet_currency == WalletCurrency::USD);
-
-        Ok(StablesatsWalletsWrapper {
-            btc_wallet,
-            usd_wallet,
-        })
-    }
-}
 
 #[derive(GraphQLQuery)]
 #[graphql(
@@ -173,9 +90,9 @@ impl TryFrom<stablesats_wallets::ResponseData> for StablesatsWalletsWrapper {
     response_derives = "Debug"
 )]
 pub struct StablesatsOnChainTxFee;
-pub type TargetConfirmations = u32;
-pub type SatAmount = Decimal;
-pub type OnChainAddress = String;
+pub(super) type TargetConfirmations = u32;
+pub(super) type SatAmount = Decimal;
+pub(super) type OnChainAddress = String;
 
 pub type StablesatsTxFee = stablesats_on_chain_tx_fee::StablesatsOnChainTxFeeOnChainTxFee;
 
@@ -212,7 +129,7 @@ impl TryFrom<stablesats_deposit_address::ResponseData> for StablesatsOnchainAddr
 #[graphql(
     schema_path = "src/client/graphql/schema.graphql",
     query_path = "src/client/graphql/mutations/onchain_payment.graphql",
-    response_derives = "Debug, Clone, PartialEq"
+    response_derives = "Debug, Clone, PartialEq, Eq"
 )]
 pub struct StablesatsOnChainPayment;
 

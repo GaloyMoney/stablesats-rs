@@ -3,6 +3,22 @@
 # pubsub:
 #   host: localhost
 
+# galoy:
+#   api: galoy-endpoint
+#   phone_number: "+0123456"
+
+# user_trades:
+#   migrate_on_starte: true
+#   balance_publish_frequency: 5
+#   galoy_poll_frequency: 5
+#
+# hedging:
+#   migrate_on_starte: true
+#   okex_poll_freduency: 10
+# okex_client:
+#   api_key: ""
+#   simulated: false
+
 # price_server:
   # enabled: true
   # server:

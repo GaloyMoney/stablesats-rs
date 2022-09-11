@@ -1,43 +1,38 @@
+mod config;
+mod convert;
 mod queries;
+mod transaction;
 
 use graphql_client::reqwest::post_graphql;
-use itertools::{Either, Itertools};
 use reqwest::{
     header::{HeaderValue, AUTHORIZATION},
     Client as ReqwestClient,
 };
+use rust_decimal::Decimal;
+use tracing::instrument;
 
-pub use crate::error::*;
-pub use queries::*;
+use crate::error::*;
+use queries::*;
+pub use queries::{
+    stablesats_on_chain_payment::PaymentSendResult,
+    stablesats_transactions_list::WalletCurrency as SettlementCurrency,
+    stablesats_wallets::WalletCurrency, WalletId,
+};
 
-use self::stablesats_on_chain_payment::PaymentSendResult;
-
-pub type GaloyWalletCurrency = stablesats_transactions_list::WalletCurrency;
-
-pub struct LastTransactionCursor(String);
-impl From<String> for LastTransactionCursor {
-    fn from(cursor: String) -> Self {
-        Self(cursor)
-    }
-}
+pub use config::*;
+pub use transaction::*;
 
 #[derive(Debug)]
-pub struct StablesatsWalletsBalances {
-    pub btc_wallet_balance: Option<queries::SignedAmount>,
-    pub usd_wallet_balance: Option<queries::SignedAmount>,
+pub struct WalletBalances {
+    pub btc: Decimal,
+    pub usd: Decimal,
 }
 
 #[derive(Debug, Clone)]
 pub struct GaloyClient {
     client: ReqwestClient,
     config: GaloyClientConfig,
-}
-
-#[derive(Debug, Clone)]
-pub struct GaloyClientConfig {
-    pub api: String,
-    pub code: String,
-    pub phone_number: String,
+    btc_wallet_id: String,
 }
 
 pub(crate) struct StablesatsAuthToken {
@@ -70,7 +65,13 @@ impl GaloyClient {
             )
             .build()?;
 
-        Ok(Self { client, config })
+        let btc_wallet_id = Self::wallet_ids(client.clone(), config.clone()).await?;
+
+        Ok(Self {
+            client,
+            config,
+            btc_wallet_id,
+        })
     }
 
     pub async fn authentication_code(
@@ -97,7 +98,7 @@ impl GaloyClient {
     async fn login_jwt(config: GaloyClientConfig) -> Result<StablesatsAuthToken, GaloyClientError> {
         let variables = stablesats_user_login::Variables {
             input: stablesats_user_login::UserLoginInput {
-                code: config.code.clone(),
+                code: config.auth_code.clone(),
                 phone: config.phone_number.clone(),
             },
         };
@@ -131,20 +132,13 @@ impl GaloyClient {
         Ok(StablesatsAuthToken { inner: auth_token })
     }
 
-    pub async fn transactions_list(
-        &mut self,
-        wallet_currency: GaloyWalletCurrency,
-        last_transaction_cursor: Option<LastTransactionCursor>,
-    ) -> Result<StablesatsTransactionsEdges, GaloyClientError> {
-        let variables = stablesats_transactions_list::Variables {
-            after: last_transaction_cursor.map(|cursor| cursor.0),
-        };
-        let response = post_graphql::<StablesatsTransactionsList, _>(
-            &self.client,
-            &self.config.api,
-            variables,
-        )
-        .await?;
+    async fn wallet_ids(
+        client: ReqwestClient,
+        config: GaloyClientConfig,
+    ) -> Result<WalletId, GaloyClientError> {
+        let variables = stablesats_wallets::Variables;
+        let response =
+            post_graphql::<StablesatsWallets, _>(&client, &config.api, variables).await?;
         if response.errors.is_some() {
             if let Some(error) = response.errors {
                 return Err(GaloyClientError::GrapqQlApi(error[0].clone().message));
@@ -160,25 +154,38 @@ impl GaloyClient {
                 ))
             }
         };
-        let post_cursor_transactions = StablesatsTransactionsEdges::try_from(result)?;
 
-        let tx_edges = post_cursor_transactions.edges;
+        let wallet_id = WalletId::try_from(result)?;
 
-        let (wanted_transactions, _): (Vec<_>, Vec<_>) =
-            tx_edges.into_iter().partition_map(|tx_edge| {
-                if tx_edge.node.settlement_currency == wallet_currency {
-                    Either::Left(tx_edge)
-                } else {
-                    Either::Right(tx_edge)
-                }
-            });
-
-        Ok(StablesatsTransactionsEdges {
-            edges: wanted_transactions,
-        })
+        Ok(wallet_id)
     }
 
-    pub async fn wallets_balances(&self) -> Result<StablesatsWalletsBalances, GaloyClientError> {
+    #[instrument(name = "galoy_transactions_list", skip(self), err)]
+    pub async fn transactions_list(
+        &self,
+        cursor: Option<TxCursor>,
+    ) -> Result<GaloyTransactions, GaloyClientError> {
+        let variables = stablesats_transactions_list::Variables {
+            last: None,
+            before: cursor.map(|cursor| cursor.0),
+        };
+        let response = post_graphql::<StablesatsTransactionsList, _>(
+            &self.client,
+            &self.config.api,
+            variables,
+        )
+        .await?;
+        if let Some(error) = response.errors {
+            return Err(GaloyClientError::GrapqQlApi(error[0].clone().message));
+        }
+
+        let result = response.data.ok_or_else(|| {
+            GaloyClientError::GrapqQlApi("Empty `me` in response data".to_string())
+        })?;
+        GaloyTransactions::try_from(result)
+    }
+
+    pub async fn wallet_balances(&self) -> Result<WalletBalances, GaloyClientError> {
         let variables = stablesats_wallets::Variables;
         let response =
             post_graphql::<StablesatsWallets, _>(&self.client, &self.config.api, variables).await?;
@@ -198,31 +205,14 @@ impl GaloyClient {
             }
         };
 
-        let wallets = StablesatsWalletsWrapper::try_from(result)?;
-        let btc_wallet = wallets.btc_wallet;
-        let usd_wallet = wallets.usd_wallet;
-
-        let btc_wallet_balance: Option<SignedAmount> = match btc_wallet {
-            Some(wallet) => Some(wallet.balance),
-            None => None,
-        };
-        let usd_wallet_balance: Option<SignedAmount> = match usd_wallet {
-            Some(wallet) => Some(wallet.balance),
-            None => None,
-        };
-
-        Ok(StablesatsWalletsBalances {
-            usd_wallet_balance,
-            btc_wallet_balance,
-        })
+        WalletBalances::try_from(result)
     }
 
-    pub async fn onchain_address(
-        &self,
-        wallet_id: WalletId,
-    ) -> Result<OnchainAddress, GaloyClientError> {
+    pub async fn onchain_address(&self) -> Result<OnchainAddress, GaloyClientError> {
         let variables = stablesats_deposit_address::Variables {
-            input: stablesats_deposit_address::OnChainAddressCurrentInput { wallet_id },
+            input: stablesats_deposit_address::OnChainAddressCurrentInput {
+                wallet_id: self.btc_wallet_id.clone(),
+            },
         };
         let response =
             post_graphql::<StablesatsDepositAddress, _>(&self.client, &self.config.api, variables)
@@ -258,11 +248,10 @@ impl GaloyClient {
 
     pub async fn send_onchain_payment(
         &self,
-        address: OnChainAddress,
-        amount: SatAmount,
+        address: String,
+        amount: Decimal,
         memo: Option<Memo>,
         target_conf: TargetConfirmations,
-        wallet_id: WalletId,
     ) -> Result<PaymentSendResult, GaloyClientError> {
         let variables = stablesats_on_chain_payment::Variables {
             input: stablesats_on_chain_payment::OnChainPaymentSendInput {
@@ -270,7 +259,7 @@ impl GaloyClient {
                 amount,
                 memo,
                 target_confirmations: Some(target_conf),
-                wallet_id,
+                wallet_id: self.btc_wallet_id.clone(),
             },
         };
         let response =
@@ -317,13 +306,12 @@ impl GaloyClient {
         address: OnChainAddress,
         amount: SatAmount,
         target_conf: TargetConfirmations,
-        wallet_id: WalletId,
     ) -> Result<StablesatsTxFee, GaloyClientError> {
         let variables = stablesats_on_chain_tx_fee::Variables {
             address,
             amount,
             target_confirmations: Some(target_conf),
-            wallet_id,
+            wallet_id: self.btc_wallet_id.clone(),
         };
         let response =
             post_graphql::<StablesatsOnChainTxFee, _>(&self.client, &self.config.api, variables)
