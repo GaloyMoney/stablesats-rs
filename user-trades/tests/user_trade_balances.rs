@@ -1,7 +1,8 @@
-use ::user_trades::{user_trade_balances::*, user_trade_unit::*, user_trades::*};
 use chrono::Utc;
 use rust_decimal_macros::dec;
 use sqlx::PgPool;
+
+use ::user_trades::{user_trade_balances::*, user_trade_unit::*, user_trades::*};
 
 lazy_static::lazy_static! {
     static ref POOL: PgPool = {
@@ -35,7 +36,7 @@ async fn user_trade_balances() -> anyhow::Result<()> {
         .persist_all(
             latest_ref,
             vec![NewUserTrade {
-                is_latest: None,
+                is_latest: Some(true),
                 buy_unit: UserTradeUnit::SynthCent,
                 buy_amount: cent_amount,
                 sell_unit: UserTradeUnit::Satoshi,
@@ -45,7 +46,10 @@ async fn user_trade_balances() -> anyhow::Result<()> {
         )
         .await?;
     let mut new_ref = trades.get_latest_ref().await?;
-    assert_eq!(new_ref.take(), external_ref);
+    assert_eq!(
+        new_ref.take().unwrap().timestamp.timestamp(),
+        external_ref.unwrap().timestamp.timestamp()
+    );
 
     tokio::time::sleep(std::time::Duration::from_secs(1)).await;
 

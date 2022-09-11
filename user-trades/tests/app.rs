@@ -38,7 +38,7 @@ async fn publishes_liability() -> anyhow::Result<()> {
         "postgres://stablesats:stablesats@{}:5432/stablesats-user-trades",
         user_trades_pg_host
     );
-    UserTradesApp::run(
+    let _ = tokio::spawn(UserTradesApp::run(
         UserTradesConfig {
             migrate_on_start: true,
             pg_con,
@@ -47,8 +47,7 @@ async fn publishes_liability() -> anyhow::Result<()> {
         },
         pubsub_config,
         galoy_client_configuration(),
-    )
-    .await?;
+    ));
 
     let mut stream = subscriber.subscribe::<SynthUsdLiabilityPayload>().await?;
     let received = stream.next().await.expect("expected liability message");
