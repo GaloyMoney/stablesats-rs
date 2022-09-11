@@ -62,7 +62,7 @@ impl UserTrades {
         new_user_trades: impl Iterator<Item = NewUserTrade>,
     ) -> Result<(), UserTradesError> {
         let mut new_user_trades = new_user_trades.peekable();
-        if let None = new_user_trades.peek() {
+        if new_user_trades.peek().is_none() {
             return Ok(());
         }
         if let Some(latest_id) = latest_id {
