@@ -3,6 +3,8 @@ use serde::{Deserialize, Serialize};
 use std::path::Path;
 
 use galoy_client::GaloyClientConfig;
+use hedging::HedgingAppConfig;
+use okex_client::OkexClientConfig;
 use okex_price::PriceFeedConfig;
 use price_server::{FeeCalculatorConfig, PriceServerConfig};
 use shared::pubsub::PubSubConfig;
@@ -24,11 +26,18 @@ pub struct Config {
     pub user_trades: UserTradesConfigWrapper,
     #[serde(default)]
     pub galoy: GaloyClientConfig,
+    #[serde(default)]
+    pub okex: OkexClientConfig,
+    #[serde(default)]
+    pub hedging: HedgingConfigWrapper,
 }
 
 pub struct EnvOverride {
     pub redis_password: Option<String>,
     pub user_trades_pg_con: String,
+    pub hedging_pg_con: String,
+    pub okex_secret_key: String,
+    pub okex_passphrase: String,
     pub galoy_phone_code: String,
 }
 
@@ -39,6 +48,9 @@ impl Config {
             redis_password,
             user_trades_pg_con,
             galoy_phone_code,
+            okex_passphrase,
+            okex_secret_key,
+            hedging_pg_con,
         }: EnvOverride,
     ) -> anyhow::Result<Self> {
         let config_file = std::fs::read_to_string(path).context("Couldn't read config file")?;
@@ -49,6 +61,9 @@ impl Config {
         }
         config.user_trades.config.pg_con = user_trades_pg_con;
         config.galoy.auth_code = galoy_phone_code;
+        config.hedging.config.pg_con = hedging_pg_con;
+        config.okex.secret_key = okex_secret_key;
+        config.okex.passphrase = okex_passphrase;
         Ok(config)
     }
 }
@@ -100,6 +115,22 @@ impl Default for UserTradesConfigWrapper {
         Self {
             enabled: true,
             config: UserTradesConfig::default(),
+        }
+    }
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct HedgingConfigWrapper {
+    #[serde(default = "bool_true")]
+    pub enabled: bool,
+    #[serde(default)]
+    pub config: HedgingAppConfig,
+}
+impl Default for HedgingConfigWrapper {
+    fn default() -> Self {
+        Self {
+            enabled: true,
+            config: HedgingAppConfig::default(),
         }
     }
 }

@@ -52,16 +52,18 @@ async fn hedging() -> anyhow::Result<()> {
         .subscribe::<OkexBtcUsdSwapPositionPayload>()
         .await?;
 
-    let _app = HedgingApp::run(
-        HedgingAppConfig {
-            pg_con,
-            migrate_on_start: true,
-            okex_poll_delay: std::time::Duration::from_secs(1),
-        },
-        okex_client_config(),
-        pubsub_config,
-    )
-    .await?;
+    tokio::spawn(async move {
+        HedgingApp::run(
+            HedgingAppConfig {
+                pg_con,
+                migrate_on_start: true,
+                okex_poll_frequency: std::time::Duration::from_secs(1),
+            },
+            okex_client_config(),
+            pubsub_config,
+        )
+        .await
+    });
 
     let mut payloads = load_fixture()?.payloads.into_iter();
     publisher.publish(payloads.next().unwrap()).await?;

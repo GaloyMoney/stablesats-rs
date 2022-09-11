@@ -2327,6 +2327,8 @@ dependencies = [
  "clap",
  "futures",
  "galoy-client",
+ "hedging",
+ "okex-client",
  "okex-price",
  "opentelemetry",
  "opentelemetry-jaeger",

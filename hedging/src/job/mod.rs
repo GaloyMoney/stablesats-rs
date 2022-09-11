@@ -3,6 +3,7 @@ mod adjust_hedge;
 use serde::{Deserialize, Serialize};
 use sqlx::{Executor, Postgres};
 use sqlxmq::{job, CurrentJob, JobBuilder, JobRegistry, OwnedHandle};
+use tracing::instrument;
 use tracing::{info_span, Instrument};
 use uuid::{uuid, Uuid};
 
@@ -39,6 +40,7 @@ pub async fn start_job_runner(
     Ok(registry.runner(&pool).run().await?)
 }
 
+#[instrument(skip_all, fields(error, error.message), err)]
 pub async fn spawn_poll_okex(
     pool: &sqlx::PgPool,
     duration: std::time::Duration,
@@ -49,7 +51,10 @@ pub async fn spawn_poll_okex(
         .await
     {
         Err(sqlx::Error::Database(err)) if err.message().contains("duplicate key") => Ok(()),
-        Err(e) => Err(e.into()),
+        Err(e) => {
+            shared::tracing::insert_error_fields(&e);
+            Err(e.into())
+        }
         Ok(_) => Ok(()),
     }
 }
@@ -61,6 +66,7 @@ struct AdjustHedgeData {
     correlation_id: CorrelationId,
 }
 
+#[instrument(skip_all, err)]
 pub async fn spawn_adjust_hedge<'a>(
     tx: impl Executor<'a, Database = Postgres>,
     correlation_id: CorrelationId,
@@ -83,20 +89,31 @@ async fn poll_okex(
     okex: OkexClient,
     publisher: Publisher,
 ) -> Result<(), HedgingError> {
-    let PositionSize {
-        value,
-        instrument_id,
-    } = okex.get_position_in_signed_usd().await?;
-    publisher
-        .publish(OkexBtcUsdSwapPositionPayload {
-            exchange: ExchangeIdRaw::from(OKEX_EXCHANGE_ID),
-            instrument_id: InstrumentIdRaw::from(instrument_id.to_string()),
-            signed_usd_exposure: value,
-        })
-        .await?;
-    current_job.complete().await?;
-    spawn_poll_okex(current_job.pool(), delay).await?;
-    Ok(())
+    let span = info_span!(
+        "poll_okex",
+        job_id = %current_job.id(),
+        job_name = %current_job.name(),
+        error = tracing::field::Empty,
+        error.message = tracing::field::Empty,
+    );
+    shared::tracing::record_error(|| async move {
+        let PositionSize {
+            value,
+            instrument_id,
+        } = okex.get_position_in_signed_usd().await?;
+        publisher
+            .publish(OkexBtcUsdSwapPositionPayload {
+                exchange: ExchangeIdRaw::from(OKEX_EXCHANGE_ID),
+                instrument_id: InstrumentIdRaw::from(instrument_id.to_string()),
+                signed_usd_exposure: value,
+            })
+            .await?;
+        current_job.complete().await?;
+        spawn_poll_okex(current_job.pool(), delay).await?;
+        Ok(())
+    })
+    .instrument(span)
+    .await
 }
 
 #[job(name = "adjust_hedge", channel_name = "hedging")]

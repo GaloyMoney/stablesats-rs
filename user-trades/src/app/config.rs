@@ -25,7 +25,7 @@ impl Default for UserTradesConfig {
 }
 
 fn default_balance_publish_frequency() -> Duration {
-    Duration::from_secs(2)
+    Duration::from_secs(5)
 }
 
 fn default_galoy_poll_frequency() -> Duration {
