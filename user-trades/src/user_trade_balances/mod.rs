@@ -39,40 +39,43 @@ impl UserTradeBalances {
         Ok(ret)
     }
 
-    #[instrument(name = "update_user_trade_balances", skip(self), err)]
+    #[instrument(name = "update_user_trade_balances", skip(self),
+      fields(error, error.message), err)]
     async fn update_balances(&self) -> Result<(), UserTradesError> {
-        let mut tx = self.pool.begin().await?;
-        let balance_result =
-            sqlx::query!(r#"SELECT last_trade_id FROM user_trade_balances FOR UPDATE"#)
+        shared::tracing::record_error(|| async move {
+            let mut tx = self.pool.begin().await?;
+            let balance_result =
+                sqlx::query!(r#"SELECT last_trade_id FROM user_trade_balances FOR UPDATE"#)
                 .fetch_all(&mut tx)
                 .await?;
 
-        let last_tx_id = balance_result
-            .into_iter()
-            .map(|res| res.last_trade_id.unwrap_or(0))
-            .fold(0, |a, b| a.max(b));
+            let last_tx_id = balance_result
+                .into_iter()
+                .map(|res| res.last_trade_id.unwrap_or(0))
+                .fold(0, |a, b| a.max(b));
 
-        let new_balance_result = sqlx::query_file_as!(
-            NewBalanceResult,
-            "src/user_trade_balances/sql/new-balance.sql",
-            last_tx_id
-        )
-        .fetch_all(&mut tx)
-        .await?;
-
-        for NewBalanceResult {
-            unit_id,
-            new_balance,
-            new_latest_id,
-        } in new_balance_result
-        {
-            sqlx::query!("UPDATE user_trade_balances SET current_balance = $1, last_trade_id = $2, updated_at = now() WHERE unit_id = $3",
-                         new_balance, new_latest_id, unit_id)
-                .execute(&mut tx)
+            let new_balance_result = sqlx::query_file_as!(
+                NewBalanceResult,
+                "src/user_trade_balances/sql/new-balance.sql",
+                last_tx_id
+            )
+                .fetch_all(&mut tx)
                 .await?;
-        }
-        tx.commit().await?;
-        Ok(())
+
+            for NewBalanceResult {
+                unit_id,
+                new_balance,
+                new_latest_id,
+            } in new_balance_result
+            {
+                sqlx::query!("UPDATE user_trade_balances SET current_balance = $1, last_trade_id = $2, updated_at = now() WHERE unit_id = $3",
+                new_balance, new_latest_id, unit_id)
+                    .execute(&mut tx)
+                    .await?;
+                }
+            tx.commit().await?;
+            Ok(())
+        }).await
     }
 
     pub async fn fetch_all(

@@ -3,6 +3,7 @@ mod poll_galoy_transactions;
 use rust_decimal_macros::dec;
 use sqlxmq::{job, CurrentJob, JobBuilder, JobRegistry, OwnedHandle};
 use tracing::instrument;
+use tracing::{info_span, Instrument};
 use uuid::{uuid, Uuid};
 
 use galoy_client::GaloyClient;
@@ -57,7 +58,7 @@ pub async fn spawn_publish_liability(
     }
 }
 
-#[instrument(skip_all, err)]
+#[instrument(skip_all,fields(error, error.message), err)]
 pub async fn spawn_poll_galoy_transactions(
     pool: &sqlx::PgPool,
     duration: std::time::Duration,
@@ -68,7 +69,10 @@ pub async fn spawn_poll_galoy_transactions(
         .await
     {
         Err(sqlx::Error::Database(err)) if err.message().contains("duplicate key") => Ok(()),
-        Err(e) => Err(e.into()),
+        Err(e) => {
+            shared::tracing::insert_error_fields(&e);
+            Err(e.into())
+        }
         Ok(_) => Ok(()),
     }
 }
@@ -80,19 +84,32 @@ async fn publish_liability(
     user_trade_balances: UserTradeBalances,
     LiabilityPublishDelay(delay): LiabilityPublishDelay,
 ) -> Result<(), UserTradesError> {
-    let balances = user_trade_balances.fetch_all().await?;
-    publisher
-        .publish(SynthUsdLiabilityPayload {
-            liability: balances
-                .get(&UserTradeUnit::SynthCent)
-                .expect("SynthCents should always be present")
-                .current_balance
-                * dec!(-1),
-        })
-        .await?;
-    current_job.complete().await?;
-    spawn_publish_liability(current_job.pool(), delay).await?;
-    Ok(())
+    let span = info_span!(
+        "publish_liability",
+        job_id = %current_job.id(),
+        job_name = %current_job.name(),
+        error = tracing::field::Empty,
+        error.message = tracing::field::Empty,
+    );
+    shared::tracing::record_error(|| {
+        async move {
+            let balances = user_trade_balances.fetch_all().await?;
+            publisher
+                .publish(SynthUsdLiabilityPayload {
+                    liability: balances
+                        .get(&UserTradeUnit::SynthCent)
+                        .expect("SynthCents should always be present")
+                        .current_balance
+                        * dec!(-1),
+                })
+                .await?;
+            current_job.complete().await?;
+            spawn_publish_liability(current_job.pool(), delay).await?;
+            Ok(())
+        }
+        .instrument(span)
+    })
+    .await
 }
 
 #[job(name = "poll_galoy_transactions", channel_name = "user_trades")]
