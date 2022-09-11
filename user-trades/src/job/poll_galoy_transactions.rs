@@ -33,7 +33,9 @@ pub(super) async fn execute(
         if !transactions.list.is_empty() {
             let trades = unify(transactions.list);
             span.record("n_user_trades", &tracing::field::display(trades.len()));
-            user_trades.persist_all(latest_ref, trades).await?;
+            user_trades
+                .persist_all(latest_ref, trades.into_iter().rev())
+                .await?;
         }
 
         current_job.complete().await?;

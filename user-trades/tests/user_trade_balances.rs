@@ -42,7 +42,8 @@ async fn user_trade_balances() -> anyhow::Result<()> {
                 sell_unit: UserTradeUnit::Satoshi,
                 sell_amount: sat_amount,
                 external_ref: external_ref.clone(),
-            }],
+            }]
+            .into_iter(),
         )
         .await?;
     let mut new_ref = trades.get_latest_ref().await?;

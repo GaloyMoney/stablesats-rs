@@ -59,9 +59,10 @@ impl UserTrades {
             mut tx,
             ..
         }: LatestRef<'a>,
-        new_user_trades: Vec<NewUserTrade>,
+        new_user_trades: impl Iterator<Item = NewUserTrade>,
     ) -> Result<(), UserTradesError> {
-        if new_user_trades.is_empty() {
+        let mut new_user_trades = new_user_trades.peekable();
+        if let None = new_user_trades.peek() {
             return Ok(());
         }
         if let Some(latest_id) = latest_id {
