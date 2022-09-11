@@ -64,6 +64,7 @@ async fn hedging() -> anyhow::Result<()> {
         )
         .await
     });
+    tokio::time::sleep(std::time::Duration::from_secs(3)).await;
 
     let mut payloads = load_fixture()?.payloads.into_iter();
     publisher.publish(payloads.next().unwrap()).await?;

@@ -12,6 +12,7 @@ pub struct UserTradeBalanceSummary {
     pub last_trade_id: Option<i32>,
 }
 
+#[derive(Debug)]
 struct NewBalanceResult {
     unit_id: i32,
     new_balance: Option<Decimal>,
@@ -62,18 +63,24 @@ impl UserTradeBalances {
                 .fetch_all(&mut tx)
                 .await?;
 
+            let mut updated = false;
             for NewBalanceResult {
                 unit_id,
                 new_balance,
                 new_latest_id,
             } in new_balance_result
             {
-                sqlx::query!("UPDATE user_trade_balances SET current_balance = $1, last_trade_id = $2, updated_at = now() WHERE unit_id = $3",
-                new_balance, new_latest_id, unit_id)
-                    .execute(&mut tx)
-                    .await?;
+                if let Some(new_latest_id) = new_latest_id {
+                    sqlx::query!("UPDATE user_trade_balances SET current_balance = $1, last_trade_id = $2, updated_at = now() WHERE unit_id = $3",
+                    new_balance, new_latest_id, unit_id)
+                        .execute(&mut tx)
+                        .await?;
+                    updated = true;
                 }
-            tx.commit().await?;
+            }
+            if updated {
+                tx.commit().await?;
+            }
             Ok(())
         }).await
     }
