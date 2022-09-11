@@ -28,180 +28,220 @@ pub struct Price {
 #[tonic::async_trait]
 impl PriceService for Price {
     #[instrument(skip_all,
-        fields(amount_in_satoshis = request.get_ref().amount_in_satoshis),
+        fields(amount_in_satoshis = request.get_ref().amount_in_satoshis,
+               error, error.message),
         err
     )]
     async fn get_cents_from_sats_for_immediate_buy(
         &self,
         request: Request<GetCentsFromSatsForImmediateBuyRequest>,
     ) -> Result<Response<GetCentsFromSatsForImmediateBuyResponse>, Status> {
-        extract_tracing(&request);
+        shared::tracing::record_error(|| async move {
+            extract_tracing(&request);
 
-        let req = request.into_inner();
-        let amount_in_cents = self
-            .app
-            .get_cents_from_sats_for_immediate_buy(Sats::from_major(req.amount_in_satoshis))
-            .await?;
-        Ok(Response::new(GetCentsFromSatsForImmediateBuyResponse {
-            amount_in_cents: u64::try_from(amount_in_cents).map_err(PriceAppError::from)?,
-        }))
+            let req = request.into_inner();
+            let amount_in_cents = self
+                .app
+                .get_cents_from_sats_for_immediate_buy(Sats::from_major(req.amount_in_satoshis))
+                .await?;
+            Ok(Response::new(GetCentsFromSatsForImmediateBuyResponse {
+                amount_in_cents: u64::try_from(amount_in_cents).map_err(PriceAppError::from)?,
+            }))
+        })
+        .await
     }
 
     #[instrument(skip_all,
-        fields(amount_in_satoshis = request.get_ref().amount_in_satoshis),
+        fields(amount_in_satoshis = request.get_ref().amount_in_satoshis,
+               error, error.message),
         err
      )]
     async fn get_cents_from_sats_for_immediate_sell(
         &self,
         request: Request<GetCentsFromSatsForImmediateSellRequest>,
     ) -> Result<Response<GetCentsFromSatsForImmediateSellResponse>, Status> {
-        extract_tracing(&request);
+        shared::tracing::record_error(|| async move {
+            extract_tracing(&request);
 
-        let req = request.into_inner();
-        let amount_in_cents = self
-            .app
-            .get_cents_from_sats_for_immediate_sell(Sats::from_major(req.amount_in_satoshis))
-            .await?;
-        Ok(Response::new(GetCentsFromSatsForImmediateSellResponse {
-            amount_in_cents: u64::try_from(amount_in_cents).map_err(PriceAppError::from)?,
-        }))
+            let req = request.into_inner();
+            let amount_in_cents = self
+                .app
+                .get_cents_from_sats_for_immediate_sell(Sats::from_major(req.amount_in_satoshis))
+                .await?;
+            Ok(Response::new(GetCentsFromSatsForImmediateSellResponse {
+                amount_in_cents: u64::try_from(amount_in_cents).map_err(PriceAppError::from)?,
+            }))
+        })
+        .await
     }
 
     #[instrument(skip_all,
         fields(amount_in_satoshis = request.get_ref().amount_in_satoshis,
-                time_in_seconds = request.get_ref().time_in_seconds),
+                time_in_seconds = request.get_ref().time_in_seconds,
+                error, error.message),
         err
     )]
     async fn get_cents_from_sats_for_future_buy(
         &self,
         request: Request<GetCentsFromSatsForFutureBuyRequest>,
     ) -> Result<Response<GetCentsFromSatsForFutureBuyResponse>, Status> {
-        extract_tracing(&request);
+        shared::tracing::record_error(|| async move {
+            extract_tracing(&request);
 
-        let req = request.into_inner();
-        let amount_in_cents = self
-            .app
-            .get_cents_from_sats_for_future_buy(Sats::from_major(req.amount_in_satoshis))
-            .await?;
-        Ok(Response::new(GetCentsFromSatsForFutureBuyResponse {
-            amount_in_cents: u64::try_from(amount_in_cents).map_err(PriceAppError::from)?,
-        }))
+            let req = request.into_inner();
+            let amount_in_cents = self
+                .app
+                .get_cents_from_sats_for_future_buy(Sats::from_major(req.amount_in_satoshis))
+                .await?;
+            Ok(Response::new(GetCentsFromSatsForFutureBuyResponse {
+                amount_in_cents: u64::try_from(amount_in_cents).map_err(PriceAppError::from)?,
+            }))
+        })
+        .await
     }
 
     #[instrument(skip_all,
         fields(amount_in_satoshis = request.get_ref().amount_in_satoshis,
-                time_in_seconds = request.get_ref().time_in_seconds),
+                time_in_seconds = request.get_ref().time_in_seconds,
+                error, error.message),
         err
     )]
     async fn get_cents_from_sats_for_future_sell(
         &self,
         request: Request<GetCentsFromSatsForFutureSellRequest>,
     ) -> Result<Response<GetCentsFromSatsForFutureSellResponse>, Status> {
-        extract_tracing(&request);
+        shared::tracing::record_error(|| async move {
+            extract_tracing(&request);
 
-        let req = request.into_inner();
-        let amount_in_cents = self
-            .app
-            .get_cents_from_sats_for_future_sell(Sats::from_major(req.amount_in_satoshis))
-            .await?;
-        Ok(Response::new(GetCentsFromSatsForFutureSellResponse {
-            amount_in_cents: u64::try_from(amount_in_cents).map_err(PriceAppError::from)?,
-        }))
+            let req = request.into_inner();
+            let amount_in_cents = self
+                .app
+                .get_cents_from_sats_for_future_sell(Sats::from_major(req.amount_in_satoshis))
+                .await?;
+            Ok(Response::new(GetCentsFromSatsForFutureSellResponse {
+                amount_in_cents: u64::try_from(amount_in_cents).map_err(PriceAppError::from)?,
+            }))
+        })
+        .await
     }
 
     #[instrument(skip_all,
-        fields(amount_in_cents = request.get_ref().amount_in_cents),
+        fields(amount_in_cents = request.get_ref().amount_in_cents,
+            error, error.message),
         err
     )]
     async fn get_sats_from_cents_for_immediate_buy(
         &self,
         request: Request<GetSatsFromCentsForImmediateBuyRequest>,
     ) -> Result<Response<GetSatsFromCentsForImmediateBuyResponse>, Status> {
-        extract_tracing(&request);
+        shared::tracing::record_error(|| async move {
+            extract_tracing(&request);
 
-        let req = request.into_inner();
-        let amount_in_satoshis = self
-            .app
-            .get_sats_from_cents_for_immediate_buy(UsdCents::from_major(req.amount_in_cents))
-            .await?;
-        Ok(Response::new(GetSatsFromCentsForImmediateBuyResponse {
-            amount_in_satoshis: u64::try_from(amount_in_satoshis).map_err(PriceAppError::from)?,
-        }))
+            let req = request.into_inner();
+            let amount_in_satoshis = self
+                .app
+                .get_sats_from_cents_for_immediate_buy(UsdCents::from_major(req.amount_in_cents))
+                .await?;
+            Ok(Response::new(GetSatsFromCentsForImmediateBuyResponse {
+                amount_in_satoshis: u64::try_from(amount_in_satoshis)
+                    .map_err(PriceAppError::from)?,
+            }))
+        })
+        .await
     }
 
     #[instrument(skip_all,
-        fields(amount_in_cents = request.get_ref().amount_in_cents),
+        fields(amount_in_cents = request.get_ref().amount_in_cents,
+            error, error.message),
         err
     )]
     async fn get_sats_from_cents_for_immediate_sell(
         &self,
         request: Request<GetSatsFromCentsForImmediateSellRequest>,
     ) -> Result<Response<GetSatsFromCentsForImmediateSellResponse>, Status> {
-        extract_tracing(&request);
+        shared::tracing::record_error(|| async move {
+            extract_tracing(&request);
 
-        let req = request.into_inner();
-        let amount_in_satoshis = self
-            .app
-            .get_sats_from_cents_for_immediate_sell(UsdCents::from_major(req.amount_in_cents))
-            .await?;
-        Ok(Response::new(GetSatsFromCentsForImmediateSellResponse {
-            amount_in_satoshis: u64::try_from(amount_in_satoshis).map_err(PriceAppError::from)?,
-        }))
+            let req = request.into_inner();
+            let amount_in_satoshis = self
+                .app
+                .get_sats_from_cents_for_immediate_sell(UsdCents::from_major(req.amount_in_cents))
+                .await?;
+            Ok(Response::new(GetSatsFromCentsForImmediateSellResponse {
+                amount_in_satoshis: u64::try_from(amount_in_satoshis)
+                    .map_err(PriceAppError::from)?,
+            }))
+        })
+        .await
     }
 
     #[instrument(skip_all,
         fields(amount_in_cents = request.get_ref().amount_in_cents,
-                time_in_seconds = request.get_ref().time_in_seconds),
+                time_in_seconds = request.get_ref().time_in_seconds,
+                error, error.message),
         err
     )]
     async fn get_sats_from_cents_for_future_buy(
         &self,
         request: Request<GetSatsFromCentsForFutureBuyRequest>,
     ) -> Result<Response<GetSatsFromCentsForFutureBuyResponse>, Status> {
-        extract_tracing(&request);
+        shared::tracing::record_error(|| async move {
+            extract_tracing(&request);
 
-        let req = request.into_inner();
-        let amount_in_satoshis = self
-            .app
-            .get_sats_from_cents_for_future_buy(UsdCents::from_major(req.amount_in_cents))
-            .await?;
-        Ok(Response::new(GetSatsFromCentsForFutureBuyResponse {
-            amount_in_satoshis: u64::try_from(amount_in_satoshis).map_err(PriceAppError::from)?,
-        }))
+            let req = request.into_inner();
+            let amount_in_satoshis = self
+                .app
+                .get_sats_from_cents_for_future_buy(UsdCents::from_major(req.amount_in_cents))
+                .await?;
+            Ok(Response::new(GetSatsFromCentsForFutureBuyResponse {
+                amount_in_satoshis: u64::try_from(amount_in_satoshis)
+                    .map_err(PriceAppError::from)?,
+            }))
+        })
+        .await
     }
 
     #[instrument(skip_all,
         fields(amount_in_cents = request.get_ref().amount_in_cents,
-                time_in_seconds = request.get_ref().time_in_seconds),
+                time_in_seconds = request.get_ref().time_in_seconds,
+                error, error.message),
         err
     )]
     async fn get_sats_from_cents_for_future_sell(
         &self,
         request: Request<GetSatsFromCentsForFutureSellRequest>,
     ) -> Result<Response<GetSatsFromCentsForFutureSellResponse>, Status> {
-        extract_tracing(&request);
+        shared::tracing::record_error(|| async move {
+            extract_tracing(&request);
 
-        let req = request.into_inner();
-        let amount_in_satoshis = self
-            .app
-            .get_sats_from_cents_for_future_sell(UsdCents::from_major(req.amount_in_cents))
-            .await?;
-        Ok(Response::new(GetSatsFromCentsForFutureSellResponse {
-            amount_in_satoshis: u64::try_from(amount_in_satoshis).map_err(PriceAppError::from)?,
-        }))
+            let req = request.into_inner();
+            let amount_in_satoshis = self
+                .app
+                .get_sats_from_cents_for_future_sell(UsdCents::from_major(req.amount_in_cents))
+                .await?;
+            Ok(Response::new(GetSatsFromCentsForFutureSellResponse {
+                amount_in_satoshis: u64::try_from(amount_in_satoshis)
+                    .map_err(PriceAppError::from)?,
+            }))
+        })
+        .await
     }
 
-    #[instrument(skip_all, err)]
+    #[instrument(skip_all, fields(error, error.message) err)]
     async fn get_cents_per_sats_exchange_mid_rate(
         &self,
         request: Request<GetCentsPerSatsExchangeMidRateRequest>,
     ) -> Result<Response<GetCentsPerSatsExchangeMidRateResponse>, Status> {
-        extract_tracing(&request);
+        shared::tracing::record_error(|| async move {
+            extract_tracing(&request);
 
-        let ratio_in_cents_per_satoshis = self.app.get_cents_per_sat_exchange_mid_rate().await?;
-        Ok(Response::new(GetCentsPerSatsExchangeMidRateResponse {
-            ratio_in_cents_per_satoshis,
-        }))
+            let ratio_in_cents_per_satoshis =
+                self.app.get_cents_per_sat_exchange_mid_rate().await?;
+            Ok(Response::new(GetCentsPerSatsExchangeMidRateResponse {
+                ratio_in_cents_per_satoshis,
+            }))
+        })
+        .await
     }
 }
 
