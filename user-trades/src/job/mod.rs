@@ -91,24 +91,22 @@ async fn publish_liability(
         error = tracing::field::Empty,
         error.message = tracing::field::Empty,
     );
-    shared::tracing::record_error(|| {
-        async move {
-            let balances = user_trade_balances.fetch_all().await?;
-            publisher
-                .publish(SynthUsdLiabilityPayload {
-                    liability: balances
-                        .get(&UserTradeUnit::SynthCent)
-                        .expect("SynthCents should always be present")
-                        .current_balance
-                        * dec!(-1),
-                })
-                .await?;
-            current_job.complete().await?;
-            spawn_publish_liability(current_job.pool(), delay).await?;
-            Ok(())
-        }
-        .instrument(span)
+    shared::tracing::record_error(|| async move {
+        let balances = user_trade_balances.fetch_all().await?;
+        publisher
+            .publish(SynthUsdLiabilityPayload {
+                liability: balances
+                    .get(&UserTradeUnit::SynthCent)
+                    .expect("SynthCents should always be present")
+                    .current_balance
+                    * dec!(-1),
+            })
+            .await?;
+        current_job.complete().await?;
+        spawn_publish_liability(current_job.pool(), delay).await?;
+        Ok(())
     })
+    .instrument(span)
     .await
 }
 

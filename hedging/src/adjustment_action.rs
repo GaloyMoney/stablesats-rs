@@ -12,6 +12,16 @@ pub enum AdjustmentAction {
     Sell(BtcUsdSwapContracts),
     Buy(BtcUsdSwapContracts),
 }
+impl std::fmt::Display for AdjustmentAction {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            AdjustmentAction::DoNothing => write!(f, "DoNothing"),
+            AdjustmentAction::ClosePosition => write!(f, "ClosePosition"),
+            AdjustmentAction::Sell(contracts) => write!(f, "Sell({})", contracts),
+            AdjustmentAction::Buy(contracts) => write!(f, "Buy({})", contracts),
+        }
+    }
+}
 impl AdjustmentAction {
     pub fn action_required(&self) -> bool {
         !matches!(*self, Self::DoNothing)

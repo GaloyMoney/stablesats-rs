@@ -115,15 +115,20 @@ async fn adjust_hedge(
         correlation_id = %correlation_id,
         job_id = %current_job.id(),
         job_name = %current_job.name(),
+        error = tracing::field::Empty,
+        error.message = tracing::field::Empty,
     );
     shared::tracing::inject_tracing_data(&span, &tracing_data);
-    adjust_hedge::execute(
-        current_job,
-        correlation_id,
-        synth_usd_liability,
-        okex,
-        hedging_adjustments,
-    )
+    shared::tracing::record_error(|| async move {
+        adjust_hedge::execute(
+            current_job,
+            correlation_id,
+            synth_usd_liability,
+            okex,
+            hedging_adjustments,
+        )
+        .await
+    })
     .instrument(span)
     .await?;
     Ok(())
