@@ -4,9 +4,12 @@ members = [
   "shared",
   "price-server",
   "cli",
-  "hedging",
-  "user-trades",
   "okex-price",
   "okex-client",
   "galoy-client",
+]
+
+exclude = [
+  "hedging",
+  "user-trades",
 ]
