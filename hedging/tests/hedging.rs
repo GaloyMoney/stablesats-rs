@@ -15,9 +15,8 @@ struct Fixture {
     payloads: Vec<SynthUsdLiabilityPayload>,
 }
 
-fn load_fixture() -> anyhow::Result<Fixture> {
-    let contents =
-        fs::read_to_string("./tests/fixtures/hedging.json").expect("Couldn't load fixtures");
+fn load_fixture(path: &str) -> anyhow::Result<Fixture> {
+    let contents = fs::read_to_string(path).expect("Couldn't load fixtures");
     Ok(serde_json::from_str(&contents)?)
 }
 
@@ -39,7 +38,7 @@ async fn expect_exposure_between(
     upper: Decimal,
 ) {
     let mut passed = false;
-    for _ in 0..=6 {
+    for _ in 0..=10 {
         let pos = stream.next().await.unwrap().payload.signed_usd_exposure;
         passed = pos < upper && pos > lower;
         if passed {
@@ -56,7 +55,6 @@ async fn expect_exposure_below(
     let mut passed = false;
     for _ in 0..=10 {
         let pos = stream.next().await.unwrap().payload.signed_usd_exposure;
-        println!("signed_usd_exposure={pos:?}");
         passed = pos < expected;
         if passed {
             break;
@@ -114,7 +112,10 @@ async fn hedging() -> anyhow::Result<()> {
     });
     tokio::time::sleep(std::time::Duration::from_secs(3)).await;
 
-    let mut payloads = load_fixture()?.payloads.into_iter();
+    let mut payloads = load_fixture("./tests/fixtures/hedging.json")
+        .expect("Couldn't load fixtures")
+        .payloads
+        .into_iter();
     publisher.publish(payloads.next().unwrap()).await?;
 
     let okex = OkexClient::new(okex_client_config()).await?;
@@ -135,6 +136,72 @@ async fn hedging() -> anyhow::Result<()> {
     publisher.publish(payloads.next().unwrap()).await?;
 
     expect_exposure_equal(&mut stream, dec!(0)).await;
+
+    Ok(())
+}
+
+#[tokio::test]
+#[serial]
+async fn scenario_01() -> anyhow::Result<()> {
+    let redis_host = std::env::var("REDIS_HOST").unwrap_or("localhost".to_string());
+    let pubsub_config = PubSubConfig {
+        host: Some(redis_host),
+        ..PubSubConfig::default()
+    };
+    let user_trades_pg_host = std::env::var("HEDGING_PG_HOST").unwrap_or("localhost".to_string());
+    let user_trades_pg_port = std::env::var("HEDGING_PG_PORT").unwrap_or("5433".to_string());
+    let pg_con = format!(
+        "postgres://stablesats:stablesats@{user_trades_pg_host}:{user_trades_pg_port}/stablesats-hedging"
+    );
+
+    let publisher = Publisher::new(pubsub_config.clone()).await?;
+    let subscriber = Subscriber::new(pubsub_config.clone()).await?;
+    let mut stream = subscriber
+        .subscribe::<OkexBtcUsdSwapPositionPayload>()
+        .await?;
+
+    tokio::spawn(async move {
+        HedgingApp::run(
+            HedgingAppConfig {
+                pg_con,
+                migrate_on_start: true,
+                okex_poll_frequency: std::time::Duration::from_secs(1),
+            },
+            okex_client_config(),
+            pubsub_config,
+        )
+        .await
+    });
+    tokio::time::sleep(std::time::Duration::from_secs(3)).await;
+
+    let expected_exposure = [
+        (-1, 1),
+        (-101, -99),
+        (-201, -199),
+        (-101, -99),
+        (-201, -199),
+        (-101, -99),
+        (-1, 1),
+        (-1, 1),
+        (-101, -99),
+        (-101, -99),
+        (-1, 1),
+        (-1, 1),
+    ];
+    let mut payloads = load_fixture("./tests/fixtures/scenario_01.json")
+        .expect("Couldn't load fixtures")
+        .payloads
+        .into_iter();
+    for (exposure_low, exposure_up) in expected_exposure {
+        publisher.publish(payloads.next().unwrap()).await?;
+        tokio::time::sleep(std::time::Duration::from_secs(1)).await;
+        expect_exposure_between(
+            &mut stream,
+            Decimal::from(exposure_low),
+            Decimal::from(exposure_up),
+        )
+        .await;
+    }
 
     Ok(())
 }
