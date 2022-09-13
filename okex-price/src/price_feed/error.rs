@@ -6,14 +6,14 @@ use shared::pubsub::PublisherError;
 
 #[derive(Error, Debug)]
 pub enum PriceFeedError {
-    #[error("PriceFeedError: {0}")]
+    #[error("PriceFeedError - OkexWsError: {0}")]
     OkexWsError(#[from] TungsteniteError),
-    #[error("PriceFeedError: OkexPriceTick.data was empty")]
+    #[error("PriceFeedError - EmptyPriceData: OkexPriceTick.data was empty")]
     EmptyPriceData,
-    #[error("PriceFeedError: {0}")]
+    #[error("PriceFeedError - InvalidTimestamp: {0}")]
     InvalidTimestamp(#[from] std::num::ParseIntError),
-    #[error("PriceFeedError: {0}")]
+    #[error("PriceFeedError - SerdeError: {0}")]
     SerializationError(#[from] SerdeError),
-    #[error("PriceFeedError: {0}")]
+    #[error("PriceFeedError - PublisherError: {0}")]
     PublisherError(#[from] PublisherError),
 }
