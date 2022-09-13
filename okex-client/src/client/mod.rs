@@ -52,9 +52,8 @@ pub struct OkexClient {
 
 impl OkexClient {
     pub async fn new(config: OkexClientConfig) -> Result<Self, OkexClientError> {
-        // 1. Get account configuration
         let client = Self {
-            client: ReqwestClient::new(),
+            client: ReqwestClient::builder().use_rustls_tls().build()?,
             config,
         };
         let path = "/api/v5/account/config";
@@ -71,7 +70,6 @@ impl OkexClient {
         let config_data =
             Self::extract_response_data::<OkexAccountConfigurationData>(response).await?;
 
-        // 2. Check position_mode, i.e. order placement mode
         if config_data.pos_mode == *"net_mode" {
             return Ok(client);
         }

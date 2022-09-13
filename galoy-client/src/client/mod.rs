@@ -56,6 +56,7 @@ impl GaloyClient {
             }
         };
         let client = ReqwestClient::builder()
+            .use_rustls_tls()
             .default_headers(
                 std::iter::once((
                     AUTHORIZATION,
