@@ -4,7 +4,7 @@ use rust_decimal_macros::dec;
 pub use okex_client::BtcUsdSwapContracts;
 
 const CONTRACT_SIZE: Decimal = dec!(100);
-const MIN_LIABILITY_THRESHOLD: Decimal = dec!(100); // CONTRACT_SIZE / 2
+const MIN_LIABILITY_THRESHOLD: Decimal = dec!(50); // CONTRACT_SIZE / 2
 
 const LOW_BOUND_RATIO_SHORTING: Decimal = dec!(0.95);
 const LOW_SAFEBOUND_RATIO_SHORTING: Decimal = dec!(0.98);
@@ -164,10 +164,97 @@ mod tests {
         let liability = dec!(100);
         let exposure = dec!(100);
         let adjustment = determine_action(liability, exposure);
-        println!("The adjustment suggested: {adjustment:?}");
         assert_eq!(
             adjustment,
             AdjustmentAction::Sell(BtcUsdSwapContracts::from(2))
+        );
+    }
+
+    #[test]
+    fn low_bound_limit() {
+        // condition: exposure / liability == LOW_BOUND_RATIO_SHORTING
+        // expected:  do nothing
+        let nominal_liability = 10000;
+        let liability = Decimal::from(nominal_liability);
+        let exposure = Decimal::from(-nominal_liability) * LOW_BOUND_RATIO_SHORTING;
+
+        let adjustment = determine_action(liability, exposure);
+        assert_eq!(adjustment, AdjustmentAction::DoNothing);
+    }
+
+    #[test]
+    fn low_bound_below() {
+        // condition: exposure / liability < LOW_BOUND_RATIO_SHORTING
+        // expected:  exposure = liability * LOW_SAFEBOUND_RATIO_SHORTING
+        let nominal_liability = 10000;
+        let liability = Decimal::from(nominal_liability);
+        let exposure = Decimal::from(-(nominal_liability - 1)) * LOW_BOUND_RATIO_SHORTING;
+
+        let expected = liability * LOW_SAFEBOUND_RATIO_SHORTING;
+        let expected_ct = ((expected - exposure.abs()) / CONTRACT_SIZE).round().abs();
+
+        let adjustment = determine_action(liability, exposure);
+        assert_eq!(
+            adjustment,
+            AdjustmentAction::Sell(BtcUsdSwapContracts::from(
+                u32::try_from(expected_ct).expect("decimal to u32")
+            ))
+        );
+    }
+
+    #[test]
+    fn high_bound_limit() {
+        // condition: exposure / liability == HIGH_BOUND_RATIO_SHORTING
+        // expected:  do nothing
+        let nominal_liability = 10000;
+        let liability = Decimal::from(nominal_liability);
+        let exposure = Decimal::from(-nominal_liability) * HIGH_BOUND_RATIO_SHORTING;
+
+        let adjustment = determine_action(liability, exposure);
+        assert_eq!(adjustment, AdjustmentAction::DoNothing);
+    }
+
+    #[test]
+    fn high_bound_above() {
+        // condition: exposure / liability > HIGH_BOUND_RATIO_SHORTING
+        // expected:  exposure = liability * HIGH_SAFEBOUND_RATIO_SHORTING
+        let nominal_liability = 10000;
+        let liability = Decimal::from(nominal_liability);
+        let exposure = Decimal::from(-(nominal_liability + 1)) * HIGH_BOUND_RATIO_SHORTING;
+
+        let expected = liability * HIGH_SAFEBOUND_RATIO_SHORTING;
+        let expected_ct = ((exposure.abs() - expected) / CONTRACT_SIZE).round().abs();
+
+        let adjustment = determine_action(liability, exposure);
+        assert_eq!(
+            adjustment,
+            AdjustmentAction::Buy(BtcUsdSwapContracts::from(
+                u32::try_from(expected_ct).expect("decimal to u32")
+            ))
+        );
+    }
+
+    #[test]
+    fn min_liability_threshold_below() {
+        let liability = dec!(49);
+        let exposure = dec!(-199.98);
+
+        let adjustment = determine_action(liability, exposure);
+        assert_eq!(adjustment, AdjustmentAction::ClosePosition);
+    }
+
+    #[test]
+    fn min_liability_threshold_above() {
+        let liability = dec!(55);
+        let exposure = dec!(-199.98);
+        let expected_ct = 1;
+
+        let adjustment = determine_action(liability, exposure);
+        assert_eq!(
+            adjustment,
+            AdjustmentAction::Buy(BtcUsdSwapContracts::from(
+                u32::try_from(expected_ct).expect("decimal to u32")
+            ))
         );
     }
 }
