@@ -2,7 +2,7 @@ use futures::stream::StreamExt;
 use rust_decimal_macros::dec;
 use std::fs;
 
-use price_server::app::*;
+use price_server::{app::*, *};
 use shared::{payload::*, pubsub::*, time::*};
 
 #[derive(serde::Deserialize)]
@@ -40,10 +40,13 @@ async fn price_app() -> anyhow::Result<()> {
     let err = app
         .get_cents_from_sats_for_immediate_buy(Sats::from_major(100_000_000))
         .await;
-    assert_eq!(
-        format!("{}", err.unwrap_err()),
-        "PriceAppError: No price data available"
-    );
+    if let Err(PriceAppError::ExchangePriceCacheError(ExchangePriceCacheError::NoPriceAvailable)) =
+        err
+    {
+        assert!(true)
+    } else {
+        assert!(false)
+    }
 
     let mut payloads = load_fixture()?.payloads.into_iter();
     let mut payload = payloads.next().unwrap();
@@ -56,10 +59,12 @@ async fn price_app() -> anyhow::Result<()> {
     let err = app
         .get_cents_from_sats_for_immediate_buy(Sats::from_major(100_000_000))
         .await;
-    assert_eq!(
-        format!("{}", err.unwrap_err()),
-        "PriceAppError: StalePrice: last update was at 1"
-    );
+    if let Err(PriceAppError::ExchangePriceCacheError(ExchangePriceCacheError::StalePrice(_))) = err
+    {
+        assert!(true)
+    } else {
+        assert!(false)
+    }
 
     payload.timestamp = TimeStamp::now();
     publisher

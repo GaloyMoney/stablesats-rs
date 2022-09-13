@@ -10,6 +10,7 @@ mod server;
 use shared::pubsub::PubSubConfig;
 
 use app::PriceApp;
+pub use exchange_price_cache::ExchangePriceCacheError;
 pub use fee_calculator::FeeCalculatorConfig;
 pub use server::*;
 
