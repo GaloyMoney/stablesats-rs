@@ -18,8 +18,8 @@
 #   enabled: true
 #   config:
 #     migrate_on_starte: true
-#     okex_poll_freduency: 10
-# okex_client:
+#     okex_poll_frequency: 10
+# okex:
 #   api_key: ""
 #   simulated: false
 
