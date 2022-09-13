@@ -27,6 +27,6 @@ url = { version = "2.3.1", features = ["serde"] }
 rust_decimal = "1.26.1"
 opentelemetry = "0.17.0"
 tracing = "0.1.36"
-opentelemetry-jaeger = { version = "0.16.0", features = ["rt-tokio"] }
+opentelemetry-jaeger = { version = "0.17.0", features = ["rt-tokio"] }
 tracing-subscriber = { version = "0.3.15", features = ["env-filter"] }
 tracing-opentelemetry = "0.17.4"
