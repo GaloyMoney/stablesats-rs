@@ -11,7 +11,7 @@ impl TryFrom<stablesats_wallets::ResponseData> for WalletBalances {
         let me = match me {
             Some(me) => me,
             None => {
-                return Err(GaloyClientError::GrapqQlApi(
+                return Err(GaloyClientError::GraphQLApi(
                     "Empty `me` in response data".to_string(),
                 ))
             }
@@ -40,7 +40,7 @@ impl TryFrom<stablesats_wallets::ResponseData> for WalletBalances {
         if let (Some(btc), Some(usd)) = (btc, usd) {
             Ok(Self { btc, usd })
         } else {
-            Err(GaloyClientError::GrapqQlApi(
+            Err(GaloyClientError::GraphQLApi(
                 "Missing `btc` or `usd` in response data".to_string(),
             ))
         }
@@ -55,7 +55,7 @@ impl TryFrom<stablesats_wallets::ResponseData> for WalletId {
         let me = match me {
             Some(me) => me,
             None => {
-                return Err(GaloyClientError::GrapqQlApi(
+                return Err(GaloyClientError::GraphQLApi(
                     "Empty `me` in response data".to_string(),
                 ))
             }
@@ -74,7 +74,7 @@ impl TryFrom<stablesats_wallets::ResponseData> for WalletId {
         if let Some(btc_id) = btc_id {
             Ok(btc_id)
         } else {
-            Err(GaloyClientError::GrapqQlApi(
+            Err(GaloyClientError::GraphQLApi(
                 "Missing `btc id` in response data".to_string(),
             ))
         }
@@ -86,15 +86,15 @@ impl TryFrom<stablesats_transactions_list::ResponseData> for GaloyTransactions {
 
     fn try_from(response: stablesats_transactions_list::ResponseData) -> Result<Self, Self::Error> {
         let me = response.me.ok_or_else(|| {
-            GaloyClientError::GrapqQlApi("Empty `me` in response data".to_string())
+            GaloyClientError::GraphQLApi("Empty `me` in response data".to_string())
         })?;
 
         let transactions = me.default_account.transactions.ok_or_else(|| {
-            GaloyClientError::GrapqQlApi("Empty `transactions` in response data".to_string())
+            GaloyClientError::GraphQLApi("Empty `transactions` in response data".to_string())
         })?;
         let page_info = transactions.page_info;
         let edges = transactions.edges.ok_or_else(|| {
-            GaloyClientError::GrapqQlApi("Empty `transaction edges` in response data".to_string())
+            GaloyClientError::GraphQLApi("Empty `transaction edges` in response data".to_string())
         })?;
         let list = edges
             .into_iter()

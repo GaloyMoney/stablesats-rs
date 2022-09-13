@@ -91,7 +91,7 @@ impl GaloyClient {
         if let Some(response_data) = response_data {
             StablesatsAuthenticationCode::try_from(response_data)?;
         }
-        Err(GaloyClientError::GrapqQlApi(
+        Err(GaloyClientError::GraphQLApi(
             "Failed to parse response data".to_string(),
         ))
     }
@@ -104,19 +104,19 @@ impl GaloyClient {
             },
         };
 
-        let client = ReqwestClient::new();
+        let client = ReqwestClient::builder().use_rustls_tls().build()?;
 
         let response =
             post_graphql::<StablesatsUserLogin, _>(&client, config.api, variables).await?;
         if response.errors.is_some() {
             if let Some(error) = response.errors {
-                return Err(GaloyClientError::GrapqQlApi(error[0].clone().message));
+                return Err(GaloyClientError::GraphQLApi(error[0].clone().message));
             }
         }
 
         let response_data = response.data;
         if response_data.is_none() {
-            return Err(GaloyClientError::GrapqQlApi(
+            return Err(GaloyClientError::GraphQLApi(
                 "Empty `data` in response".to_string(),
             ));
         }
@@ -124,7 +124,7 @@ impl GaloyClient {
         let auth_token = match response_data {
             Some(login_data) => StablesatsLogin::try_from(login_data)?.auth_token,
             None => {
-                return Err(GaloyClientError::GrapqQlApi(format!(
+                return Err(GaloyClientError::GraphQLApi(format!(
                     "Expected some response data, found {:?}",
                     response_data
                 )))
@@ -142,7 +142,7 @@ impl GaloyClient {
             post_graphql::<StablesatsWallets, _>(&client, &config.api, variables).await?;
         if response.errors.is_some() {
             if let Some(error) = response.errors {
-                return Err(GaloyClientError::GrapqQlApi(error[0].clone().message));
+                return Err(GaloyClientError::GraphQLApi(error[0].clone().message));
             }
         }
 
@@ -150,7 +150,7 @@ impl GaloyClient {
         let result = match response_data {
             Some(result) => result,
             None => {
-                return Err(GaloyClientError::GrapqQlApi(
+                return Err(GaloyClientError::GraphQLApi(
                     "Empty `me` in response data".to_string(),
                 ))
             }
@@ -177,11 +177,11 @@ impl GaloyClient {
         )
         .await?;
         if let Some(error) = response.errors {
-            return Err(GaloyClientError::GrapqQlApi(error[0].clone().message));
+            return Err(GaloyClientError::GraphQLApi(error[0].clone().message));
         }
 
         let result = response.data.ok_or_else(|| {
-            GaloyClientError::GrapqQlApi("Empty `me` in response data".to_string())
+            GaloyClientError::GraphQLApi("Empty `me` in response data".to_string())
         })?;
         GaloyTransactions::try_from(result)
     }
@@ -192,7 +192,7 @@ impl GaloyClient {
             post_graphql::<StablesatsWallets, _>(&self.client, &self.config.api, variables).await?;
         if response.errors.is_some() {
             if let Some(error) = response.errors {
-                return Err(GaloyClientError::GrapqQlApi(error[0].clone().message));
+                return Err(GaloyClientError::GraphQLApi(error[0].clone().message));
             }
         }
 
@@ -200,7 +200,7 @@ impl GaloyClient {
         let result = match response_data {
             Some(result) => result,
             None => {
-                return Err(GaloyClientError::GrapqQlApi(
+                return Err(GaloyClientError::GraphQLApi(
                     "Empty `me` in response data".to_string(),
                 ))
             }
@@ -220,7 +220,7 @@ impl GaloyClient {
                 .await?;
         if response.errors.is_some() {
             if let Some(error) = response.errors {
-                return Err(GaloyClientError::GrapqQlApi(error[0].clone().message));
+                return Err(GaloyClientError::GraphQLApi(error[0].clone().message));
             }
         }
 
@@ -228,7 +228,7 @@ impl GaloyClient {
         let result = match response_data {
             Some(data) => data,
             None => {
-                return Err(GaloyClientError::GrapqQlApi(
+                return Err(GaloyClientError::GraphQLApi(
                     "Empty `on chain address create` in response data".to_string(),
                 ))
             }
@@ -238,7 +238,7 @@ impl GaloyClient {
         let address = match onchain_address_create.address {
             Some(address) => address,
             None => {
-                return Err(GaloyClientError::GrapqQlApi(
+                return Err(GaloyClientError::GraphQLApi(
                     "Empty `address` in response data".to_string(),
                 ))
             }
@@ -268,7 +268,7 @@ impl GaloyClient {
                 .await?;
         if response.errors.is_some() {
             if let Some(error) = response.errors {
-                return Err(GaloyClientError::GrapqQlApi(error[0].clone().message));
+                return Err(GaloyClientError::GraphQLApi(error[0].clone().message));
             }
         }
 
@@ -276,7 +276,7 @@ impl GaloyClient {
         let result = match response_data {
             Some(data) => data,
             None => {
-                return Err(GaloyClientError::GrapqQlApi(
+                return Err(GaloyClientError::GraphQLApi(
                     "Empty `onChainPaymentSend` in response data".to_string(),
                 ))
             }
@@ -284,7 +284,7 @@ impl GaloyClient {
 
         let onchain_payment_send = StablesatsPaymentSend::try_from(result)?;
         if !onchain_payment_send.errors.is_empty() {
-            return Err(GaloyClientError::GrapqQlApi(
+            return Err(GaloyClientError::GraphQLApi(
                 onchain_payment_send.errors[0].clone().message,
             ));
         };
@@ -293,7 +293,7 @@ impl GaloyClient {
         let status = match payment_status {
             Some(status) => status,
             None => {
-                return Err(GaloyClientError::GrapqQlApi(
+                return Err(GaloyClientError::GraphQLApi(
                     "Empty `status` in response data".to_string(),
                 ))
             }
@@ -319,7 +319,7 @@ impl GaloyClient {
                 .await?;
         if response.errors.is_some() {
             if let Some(error) = response.errors {
-                return Err(GaloyClientError::GrapqQlApi(error[0].clone().message));
+                return Err(GaloyClientError::GraphQLApi(error[0].clone().message));
             }
         }
 
@@ -327,7 +327,7 @@ impl GaloyClient {
         let result = match response_data {
             Some(data) => data,
             None => {
-                return Err(GaloyClientError::GrapqQlApi(
+                return Err(GaloyClientError::GraphQLApi(
                     "Empty `onChainTxFee` in response data".to_string(),
                 ))
             }
