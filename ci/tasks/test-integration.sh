@@ -36,7 +36,7 @@ rsync --delete --exclude target -avr -e "ssh -l ${DOCKER_HOST_USER} ${ADDITIONAL
   ./ ${DOCKER_HOST_IP}:${REPO_PATH} > /dev/null
 echo "Done!"
 
-docker compose down --volumes --remove-orphans --timeout 1
+docker compose down --volumes --remove-orphans --timeout 1 || true
 
 ssh ${ADDITIONAL_SSH_OPTS} ${DOCKER_HOST_USER}@${DOCKER_HOST_IP} \
   "cd ${REPO_PATH}; export PHONE_NUMBER=\"${PHONE_NUMBER}\"; export AUTH_CODE=\"${AUTH_CODE}\"; export OKEX_API_KEY=\"${OKEX_API_KEY}\"; export OKEX_PASSPHRASE=\"${OKEX_PASSPHRASE}\"; export OKEX_SECRET_KEY=\"${OKEX_SECRET_KEY}\"; docker compose -f docker-compose.yml up integration-tests"
@@ -45,6 +45,6 @@ container_id=$(docker ps -q -f status=exited -f name="${PWD##*/}-integration-tes
 test_status=$(docker inspect $container_id --format='{{.State.ExitCode}}')
 
 set +e
-docker compose down --volumes --remove-orphans --timeout 1
+docker compose down --volumes --remove-orphans --timeout 1 || true
 
 exit $test_status
