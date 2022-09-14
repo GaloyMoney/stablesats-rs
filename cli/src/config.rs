@@ -59,11 +59,13 @@ impl Config {
         if let Some(redis_password) = redis_password {
             config.pubsub.password = Some(redis_password);
         }
+
         config.user_trades.config.pg_con = user_trades_pg_con;
         config.galoy.auth_code = galoy_phone_code;
         config.hedging.config.pg_con = hedging_pg_con;
         config.okex.secret_key = okex_secret_key;
         config.okex.passphrase = okex_passphrase;
+
         Ok(config)
     }
 }

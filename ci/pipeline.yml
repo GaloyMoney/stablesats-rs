@@ -27,6 +27,7 @@ groups:
     - check-code
     - test-integration
     - release
+    - release-docker
     - set-dev-version
     - bump-image-in-chart
 
@@ -178,6 +179,19 @@ jobs:
       tag: artifacts/gh-release-tag
       body: artifacts/gh-release-notes.md
       globs: [artifacts/binaries/*]
+
+- name: release-docker
+  serial: true
+  plan:
+  - in_parallel:
+    - get: repo
+      passed:
+      - release
+    - get: version
+      passed:
+      - release
+      trigger: true
+    - get: pipeline-tasks
   - task: prepare-docker-build
     config:
       platform: linux
@@ -245,14 +259,14 @@ jobs:
   plan:
     - in_parallel:
         - get: latest-image
-          passed: [ release ]
+          passed: [ release-docker ]
           params: { skip_download: true }
         - get: repo
           trigger: true
-          passed: [ release ]
+          passed: [ release-docker ]
         - get: version
           trigger: true
-          passed: [ release ]
+          passed: [ release-docker ]
         - get: charts-repo
           params: { skip_download: true }
         - get: pipeline-tasks
