@@ -69,14 +69,22 @@ impl OkexClient {
             .await?;
         let config_data =
             Self::extract_response_data::<OkexAccountConfigurationData>(response).await?;
+        println!("OkexClient::new: {:?}", config_data);
 
-        if config_data.pos_mode == *"net_mode" {
-            return Ok(client);
+        if &config_data.pos_mode != "net_mode" {
+            return Err(OkexClientError::MisconfiguredAccount(format!(
+                "Expected `net_mode`, got `{}`",
+                config_data.pos_mode
+            )));
         }
-        Err(OkexClientError::MisconfiguredAccount(format!(
-            "Expected `net_mode`, got `{}`",
-            config_data.pos_mode
-        )))
+
+        if &config_data.acct_lv != "2" {
+            return Err(OkexClientError::MisconfiguredAccount(format!(
+                "Expected `acct_lv: 2`, got `{}`",
+                config_data.acct_lv
+            )));
+        }
+        Ok(client)
     }
 
     pub async fn rate_limit_client(&self, key: &'static str) -> &ReqwestClient {
@@ -334,6 +342,12 @@ impl OkexClient {
             .await?;
 
         let order_data = Self::extract_response_data::<OrderData>(response).await?;
+        if order_data.s_msg != "0" {
+            return Err(OkexClientError::UnexpectedResponse {
+                msg: order_data.s_msg,
+                code: order_data.s_code,
+            });
+        }
         Ok(OrderId {
             value: order_data.ord_id,
         })
@@ -351,22 +365,28 @@ impl OkexClient {
             .send()
             .await?;
 
-        let PositionData {
+        if let Some(PositionData {
             notional_usd, pos, ..
-        } = Self::extract_response_data::<PositionData>(response).await?;
+        }) = Self::extract_optional_response_data::<PositionData>(response).await?
+        {
+            let direction = pos.parse::<Decimal>().unwrap_or(Decimal::ZERO);
+            let notional_usd = notional_usd.parse::<Decimal>().unwrap_or(Decimal::ZERO);
 
-        let direction = pos.parse::<Decimal>().unwrap_or(Decimal::ZERO);
-        let notional_usd = notional_usd.parse::<Decimal>().unwrap_or(Decimal::ZERO);
-
-        Ok(PositionSize {
-            instrument_id: OkexInstrumentId::BtcUsdSwap,
-            value: notional_usd
-                * if direction > Decimal::ZERO {
-                    Decimal::ONE
-                } else {
-                    Decimal::NEGATIVE_ONE
-                },
-        })
+            Ok(PositionSize {
+                instrument_id: OkexInstrumentId::BtcUsdSwap,
+                value: notional_usd
+                    * if direction > Decimal::ZERO {
+                        Decimal::ONE
+                    } else {
+                        Decimal::NEGATIVE_ONE
+                    },
+            })
+        } else {
+            Ok(PositionSize {
+                instrument_id: OkexInstrumentId::BtcUsdSwap,
+                value: Decimal::ZERO,
+            })
+        }
     }
 
     pub async fn close_positions(&self) -> Result<(), OkexClientError> {
@@ -413,6 +433,22 @@ impl OkexClient {
         if let Some(data) = data {
             if let Some(first) = data.into_iter().next() {
                 return Ok(first);
+            }
+        }
+        Err(OkexClientError::UnexpectedResponse { msg, code })
+    }
+
+    async fn extract_optional_response_data<T: serde::de::DeserializeOwned>(
+        response: reqwest::Response,
+    ) -> Result<Option<T>, OkexClientError> {
+        let response_text = response.text().await?;
+        let OkexResponse { code, msg, data } =
+            serde_json::from_str::<OkexResponse<T>>(&response_text)?;
+        if let Some(data) = data {
+            if let Some(first) = data.into_iter().next() {
+                return Ok(Some(first));
+            } else {
+                return Ok(None);
             }
         }
         Err(OkexClientError::UnexpectedResponse { msg, code })
