@@ -69,7 +69,6 @@ impl OkexClient {
             .await?;
         let config_data =
             Self::extract_response_data::<OkexAccountConfigurationData>(response).await?;
-        println!("OkexClient::new: {:?}", config_data);
 
         if &config_data.pos_mode != "net_mode" {
             return Err(OkexClientError::MisconfiguredAccount(format!(
@@ -342,12 +341,6 @@ impl OkexClient {
             .await?;
 
         let order_data = Self::extract_response_data::<OrderData>(response).await?;
-        if order_data.s_msg != "0" {
-            return Err(OkexClientError::UnexpectedResponse {
-                msg: order_data.s_msg,
-                code: order_data.s_code,
-            });
-        }
         Ok(OrderId {
             value: order_data.ord_id,
         })
@@ -413,7 +406,7 @@ impl OkexClient {
             .send()
             .await?;
 
-        match Self::extract_response_data::<ClosePositionData>(response).await {
+        match Self::extract_optional_response_data::<ClosePositionData>(response).await {
             Err(OkexClientError::UnexpectedResponse { msg, .. })
                 if msg.starts_with("Position does not exist") =>
             {

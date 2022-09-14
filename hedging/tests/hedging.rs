@@ -54,7 +54,7 @@ async fn expect_exposure_below(
     expected: Decimal,
 ) {
     let mut passed = false;
-    for _ in 0..=6 {
+    for _ in 0..=10 {
         let pos = stream.next().await.unwrap().payload.signed_usd_exposure;
         println!("signed_usd_exposure={pos:?}");
         passed = pos < expected;
@@ -70,7 +70,7 @@ async fn expect_exposure_equal(
     expected: Decimal,
 ) {
     let mut passed = false;
-    for _ in 0..=6 {
+    for _ in 0..=10 {
         let pos = stream.next().await.unwrap().payload.signed_usd_exposure;
         passed = pos == expected;
         if passed {
