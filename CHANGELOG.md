@@ -1,3 +1,145 @@
+# [stablesats release v0.2.0](https://github.com/GaloyMoney/stablesats/releases/tag/v0.2.0)
+
+
+### Bug Fixes
+
+- Sqlx for release compiling
+- Typo in stablesats.yml
+- Use rust-tls in galoy-client login
+- Force use_rustls on clients
+- Error test in price_app
+- Deserialize Duration with serde_with
+- Security upgrade
+- Stablesats.yml defaults doc
+- User_trade_balances bug
+- Clippy
+- Galoy-client handles cursor
+- Clippy in galoy-client and user-trades
+- Typo
+- Cursos is optional in transactions_list
+- Check-code
+- Cleanup okex-client for hedging use case
+- Serialize insert-if-new
+- Add SQLX_OFFLINE=true to Dockerfile
+- Correct position typo and deposit_status test
+- Construct okex client if position mode is set to "net_mode"
+
+### Documentation
+
+- Typo in example stablesats.yml
+
+### Features
+
+- Adding hysteresis around hedging actions
+- Add hedging to cli
+- Retrieve onchain transaction fee
+- Send onchain payment
+- Create onchain deposit address
+- Impl try_from for transactions_list and wallets
+- Retrieve btc and usd wallet balances
+- Return stream of transactions
+- Get btc and usd transactions list
+- Retrieve default btc and usd wallets
+- Get transactions list for stablesats account
+- Login to wallet account
+- Send auth code to wallet phone number
+- Scaffold galoy wallet library
+- Add hedging_adjustments table to record actions
+- Hedging boilerplate
+- User-trades crate
+
+### Miscellaneous Tasks
+
+- Patch upgrades
+- Bump anyhow from 1.0.64 to 1.0.65
+- Bump thiserror from 1.0.34 to 1.0.35
+- Remove default-features for reqwest
+- Fix cert validation for reqwest calls
+- Improve error outupt
+- Patch bump deps
+- Bump url from 2.3.0 to 2.3.1
+- Bump tonic from 0.8.0 to 0.8.1
+- Refactor test to use helper functions
+- Use sig exposure to handle neg feedback loop
+- Some tracing in hedging
+- Use record_error in price-server
+- More user trade tracing
+- Improve user_trades insert order
+- Fixes for tests
+- Record error and make is_latest optional
+- Add some tracing to user-trades
+- Wire config for user-trades to cli
+- Implement transaction unification
+- Explicit translation of GaloyTransaction
+- Unify WIP
+- Bump url from 2.2.2 to 2.3.0
+- Extend user_trades repo
+- Remove GaloyTransactions table
+- Some boilerplate for user_trade/galoy_transactions
+- Clean up transactions list
+- Ignore onchain payment and tx fee tests
+- Sqlxmq setup in user-trades
+- Cleanup some galoy-client types
+- Bump thiserror from 1.0.33 to 1.0.34
+- Bump protobuf-src from 1.0.5+3.19.3 to 1.1.0+21.5
+- Bump anyhow from 1.0.63 to 1.0.64
+- Bump serde_yaml from 0.9.10 to 0.9.11
+- Decouple graphql url from environment
+- Jwt, transaction list variables, tokio macros
+- Decouple environment from environment variable names
+- Remove reqwest-blocking and toggle tokio test-util
+- Remove sensitive environment variables
+- Rename galoy-wallet to galoy-client
+- Pass correlation_id to adjust_hedge / extract shared::tracing
+- Add okex polling to hedge
+- Create job in transaction
+- Adjustment_action (and lots more)
+- Rename exposure -> liability
+- Bump fred from 5.1.0 to 5.2.0
+- Bump clap from 3.2.19 to 3.2.20
+- Bump clap from 3.2.18 to 3.2.19
+- Bump thiserror from 1.0.32 to 1.0.33
+- Bump anyhow from 1.0.62 to 1.0.63
+- Bump futures from 0.3.23 to 0.3.24
+- Bump clap from 3.2.17 to 3.2.18
+- Bump serde_yaml from 0.9.9 to 0.9.10
+- Add order type and margin mode to config
+- Bump serde_json from 1.0.83 to 1.0.85
+- Bump serde from 1.0.143 to 1.0.144
+
+### Refactor
+
+- Simplify UserTrade structs and fields
+- Remove wallet id from 'onchain-x' methods + cleanup
+- Rename client_configuration
+- Deserialize timestamp integer to chrono type
+- Replace f64 and u32 with Decimal
+- Remove redundant UnknownResponse error
+- Return vector of transactions
+- Move error to src/error
+- Type aliases for long query-struct names
+- Reimplement galoy client constructor
+- Add Stablesats prefix to gql names
+- Remove redundant btc_price query
+- Extract wallet configuration into a function
+- Complete job in job execution
+- Use dec! in adjustment_action test
+- UserTradeUnit in pg table + single error file
+- Make new-balance.sql more efficient
+- Extract balance update into single query
+- Enumerate trade currency & remove from parameters
+- Remove margin_mode, position_side, & order_type from client config
+- Rename create to new & rename misconfiguration error
+
+### Testing
+
+- Fix tx list and hedging
+- Remove tests against dev galoy backend
+- Refactor hedging to assert on OkexPosition msg
+- External position change is acted on
+- Hedging test working in ci
+- Hedging e2e working locally
+
 # [stablesats release v0.1.11](https://github.com/GaloyMoney/stablesats/releases/tag/v0.1.11)
 
 
