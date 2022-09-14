@@ -1,3 +1,11 @@
+# [stablesats release v0.2.2](https://github.com/GaloyMoney/stablesats/releases/tag/v0.2.2)
+
+
+### Bug Fixes
+
+- Tests passing
+- Some issues from initial run
+
 # [stablesats release v0.2.1](https://github.com/GaloyMoney/stablesats/releases/tag/v0.2.1)
 
 
