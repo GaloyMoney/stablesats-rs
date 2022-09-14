@@ -172,8 +172,6 @@ mod tests {
 
     #[test]
     fn low_bound_limit() {
-        // condition: exposure / liability == LOW_BOUND_RATIO_SHORTING
-        // expected:  do nothing
         let nominal_liability = 10000;
         let liability = Decimal::from(nominal_liability);
         let exposure = Decimal::from(-nominal_liability) * LOW_BOUND_RATIO_SHORTING;
@@ -184,8 +182,6 @@ mod tests {
 
     #[test]
     fn low_bound_below() {
-        // condition: exposure / liability < LOW_BOUND_RATIO_SHORTING
-        // expected:  exposure = liability * LOW_SAFEBOUND_RATIO_SHORTING
         let nominal_liability = 10000;
         let liability = Decimal::from(nominal_liability);
         let exposure = Decimal::from(-(nominal_liability - 1)) * LOW_BOUND_RATIO_SHORTING;
@@ -204,8 +200,6 @@ mod tests {
 
     #[test]
     fn high_bound_limit() {
-        // condition: exposure / liability == HIGH_BOUND_RATIO_SHORTING
-        // expected:  do nothing
         let nominal_liability = 10000;
         let liability = Decimal::from(nominal_liability);
         let exposure = Decimal::from(-nominal_liability) * HIGH_BOUND_RATIO_SHORTING;
@@ -216,8 +210,6 @@ mod tests {
 
     #[test]
     fn high_bound_above() {
-        // condition: exposure / liability > HIGH_BOUND_RATIO_SHORTING
-        // expected:  exposure = liability * HIGH_SAFEBOUND_RATIO_SHORTING
         let nominal_liability = 10000;
         let liability = Decimal::from(nominal_liability);
         let exposure = Decimal::from(-(nominal_liability + 1)) * HIGH_BOUND_RATIO_SHORTING;
