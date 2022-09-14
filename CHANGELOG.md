@@ -1,3 +1,10 @@
+# [stablesats release v0.2.1](https://github.com/GaloyMoney/stablesats/releases/tag/v0.2.1)
+
+
+### Miscellaneous Tasks
+
+- Whitespace for release
+
 # [stablesats release v0.2.0](https://github.com/GaloyMoney/stablesats/releases/tag/v0.2.0)
 
 
