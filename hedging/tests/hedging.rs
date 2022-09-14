@@ -80,6 +80,68 @@ async fn expect_exposure_equal(
 
 #[tokio::test]
 #[serial]
+async fn hedging() -> anyhow::Result<()> {
+    let redis_host = std::env::var("REDIS_HOST").unwrap_or("localhost".to_string());
+    let pubsub_config = PubSubConfig {
+        host: Some(redis_host),
+        ..PubSubConfig::default()
+    };
+    let user_trades_pg_host = std::env::var("HEDGING_PG_HOST").unwrap_or("localhost".to_string());
+    let user_trades_pg_port = std::env::var("HEDGING_PG_PORT").unwrap_or("5433".to_string());
+    let pg_con = format!(
+        "postgres://stablesats:stablesats@{user_trades_pg_host}:{user_trades_pg_port}/stablesats-hedging"
+    );
+
+    let publisher = Publisher::new(pubsub_config.clone()).await?;
+    let subscriber = Subscriber::new(pubsub_config.clone()).await?;
+    let mut stream = subscriber
+        .subscribe::<OkexBtcUsdSwapPositionPayload>()
+        .await?;
+
+    tokio::spawn(async move {
+        HedgingApp::run(
+            HedgingAppConfig {
+                pg_con,
+                migrate_on_start: true,
+                okex_poll_frequency: std::time::Duration::from_secs(1),
+            },
+            okex_client_config(),
+            pubsub_config,
+        )
+        .await
+    });
+    tokio::time::sleep(std::time::Duration::from_secs(3)).await;
+
+    let mut payloads = load_fixture("./tests/fixtures/hedging.json")
+        .expect("Couldn't load fixtures")
+        .payloads
+        .into_iter();
+    publisher.publish(payloads.next().unwrap()).await?;
+
+    let okex = OkexClient::new(okex_client_config()).await?;
+    expect_exposure_equal(&mut stream, dec!(0)).await;
+
+    publisher.publish(payloads.next().unwrap()).await?;
+
+    for idx in 0..=1 {
+        expect_exposure_between(&mut stream, dec!(-1100), dec!(-900)).await;
+
+        if idx == 0 {
+            okex.place_order(OkexOrderSide::Sell, &BtcUsdSwapContracts::from(50))
+                .await?;
+            expect_exposure_below(&mut stream, dec!(-4000)).await;
+        }
+    }
+
+    publisher.publish(payloads.next().unwrap()).await?;
+
+    expect_exposure_equal(&mut stream, dec!(0)).await;
+
+    Ok(())
+}
+
+#[tokio::test]
+#[serial]
 async fn scenario_01() -> anyhow::Result<()> {
     let redis_host = std::env::var("REDIS_HOST").unwrap_or("localhost".to_string());
     let pubsub_config = PubSubConfig {
