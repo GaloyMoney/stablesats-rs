@@ -346,7 +346,7 @@ impl OkexClient {
         })
     }
 
-    pub async fn get_position_in_signed_usd(&self) -> Result<PositionSize, OkexClientError> {
+    pub async fn get_position_in_signed_usd_cents(&self) -> Result<PositionSize, OkexClientError> {
         let request_path = "/api/v5/account/positions?instId=BTC-USD-SWAP";
         let headers = self.get_request_headers(request_path)?;
 
@@ -367,7 +367,8 @@ impl OkexClient {
 
             Ok(PositionSize {
                 instrument_id: OkexInstrumentId::BtcUsdSwap,
-                value: notional_usd
+                usd_cents: notional_usd
+                    * Decimal::ONE_HUNDRED
                     * if direction > Decimal::ZERO {
                         Decimal::ONE
                     } else {
@@ -377,7 +378,7 @@ impl OkexClient {
         } else {
             Ok(PositionSize {
                 instrument_id: OkexInstrumentId::BtcUsdSwap,
-                value: Decimal::ZERO,
+                usd_cents: Decimal::ZERO,
             })
         }
     }

@@ -22,13 +22,13 @@ pub(super) async fn execute(
         "target_liability",
         &tracing::field::display(target_liability),
     );
-    let current_position = okex.get_position_in_signed_usd().await?.value;
+    let current_position = okex.get_position_in_signed_usd_cents().await?.usd_cents;
     span.record(
         "current_position",
         &tracing::field::display(current_position),
     );
 
-    let action = determine_action(target_liability, current_position);
+    let action = determine_action(target_liability, current_position.into());
     span.record("action", &tracing::field::display(&action));
     let mut exchange_ref = None;
     match action {
@@ -48,7 +48,7 @@ pub(super) async fn execute(
         }
     };
     if action.action_required() {
-        let usd_value_after_adjustment = okex.get_position_in_signed_usd().await?.value;
+        let usd_value_after_adjustment = okex.get_position_in_signed_usd_cents().await?.usd_cents;
         span.record(
             "usd_value_after_adjustment",
             &tracing::field::display(usd_value_after_adjustment),

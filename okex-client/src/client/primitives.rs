@@ -57,7 +57,7 @@ pub struct OrderId {
 #[derive(Debug)]
 pub struct PositionSize {
     pub instrument_id: OkexInstrumentId,
-    pub value: Decimal,
+    pub usd_cents: Decimal,
 }
 
 #[derive(Debug, Clone)]

@@ -6,6 +6,9 @@ crate::string_wrapper! { ExchangeIdRaw }
 crate::string_wrapper! { InstrumentIdRaw }
 crate::string_wrapper! { CurrencyRaw }
 
+crate::abs_decimal_wrapper! { SyntheticCentLiability }
+crate::decimal_wrapper! { SyntheticCentExposure }
+
 pub const USD_CENT_UNIT_NAME: &str = "USD_CENT";
 pub const SATOSHI_UNIT_NAME: &str = "SATOSHI";
 

@@ -124,12 +124,12 @@ async fn hedging() -> anyhow::Result<()> {
     publisher.publish(payloads.next().unwrap()).await?;
 
     for idx in 0..=1 {
-        expect_exposure_between(&mut stream, dec!(-1100), dec!(-900)).await;
+        expect_exposure_between(&mut stream, dec!(-21000), dec!(-19000)).await;
 
         if idx == 0 {
-            okex.place_order(OkexOrderSide::Sell, &BtcUsdSwapContracts::from(50))
+            okex.place_order(OkexOrderSide::Sell, &BtcUsdSwapContracts::from(5))
                 .await?;
-            expect_exposure_below(&mut stream, dec!(-4000)).await;
+            expect_exposure_below(&mut stream, dec!(-50000)).await;
         }
     }
 

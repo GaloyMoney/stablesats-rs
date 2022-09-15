@@ -145,10 +145,10 @@ async fn open_close_position() -> anyhow::Result<()> {
         .place_order(OkexOrderSide::Sell, &BtcUsdSwapContracts::from(1))
         .await?;
 
-    let position = client.get_position_in_signed_usd().await?;
+    let position = client.get_position_in_signed_usd_cents().await?;
 
-    assert!(position.value < dec!(-95));
-    assert!(position.value > dec!(-105));
+    assert!(position.usd_cents < dec!(-95));
+    assert!(position.usd_cents > dec!(-105));
 
     assert!(client.close_positions().await.is_ok());
 

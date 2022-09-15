@@ -6,7 +6,10 @@ use tracing::{info_span, instrument, Instrument, Span};
 use uuid::{uuid, Uuid};
 
 use galoy_client::GaloyClient;
-use shared::{payload::SynthUsdLiabilityPayload, pubsub::*};
+use shared::{
+    payload::{SynthUsdLiabilityPayload, SyntheticCentLiability},
+    pubsub::*,
+};
 
 use crate::{
     error::UserTradesError, user_trade_balances::UserTradeBalances, user_trade_unit::UserTradeUnit,
@@ -113,11 +116,14 @@ async fn publish_liability(
         let balances = user_trade_balances.fetch_all().await?;
         publisher
             .publish(SynthUsdLiabilityPayload {
-                liability: balances
-                    .get(&UserTradeUnit::SynthCent)
-                    .expect("SynthCents should always be present")
-                    .current_balance
-                    * dec!(-1),
+                liability: SyntheticCentLiability::try_from(
+                    balances
+                        .get(&UserTradeUnit::SynthCent)
+                        .expect("SynthCents should always be present")
+                        .current_balance
+                        * dec!(-1),
+                )
+                .expect("SynthCents should be negative"),
             })
             .await?;
         if !job_completed {
