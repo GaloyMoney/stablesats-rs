@@ -77,11 +77,7 @@ pub async fn spawn_poll_galoy_transactions(
     }
 }
 
-#[job(
-    name = "publish_liability",
-    channel_name = "user_trades",
-    retries = 1000
-)]
+#[job(name = "publish_liability", channel_name = "user_trades", retries = 20)]
 async fn publish_liability(
     mut current_job: CurrentJob,
     publisher: Publisher,
@@ -118,7 +114,7 @@ async fn publish_liability(
 #[job(
     name = "poll_galoy_transactions",
     channel_name = "user_trades",
-    retries = 1000
+    retries = 20
 )]
 async fn poll_galoy_transactions(
     mut current_job: CurrentJob,

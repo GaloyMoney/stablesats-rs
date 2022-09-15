@@ -82,7 +82,7 @@ pub async fn spawn_adjust_hedge<'a>(
     Ok(())
 }
 
-#[job(name = "poll_okex", channel_name = "hedging", retries = 1000)]
+#[job(name = "poll_okex", channel_name = "hedging", retries = 20)]
 async fn poll_okex(
     mut current_job: CurrentJob,
     OkexPollDelay(delay): OkexPollDelay,
@@ -117,7 +117,7 @@ async fn poll_okex(
     .await
 }
 
-#[job(name = "adjust_hedge", channel_name = "hedging")]
+#[job(name = "adjust_hedge", channel_name = "hedging", retries = 20)]
 async fn adjust_hedge(
     current_job: CurrentJob,
     synth_usd_liability: SynthUsdLiability,
