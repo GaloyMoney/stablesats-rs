@@ -1,3 +1,23 @@
+# [stablesats release v0.2.4](https://github.com/GaloyMoney/stablesats/releases/tag/v0.2.4)
+
+
+### Bug Fixes
+
+- Contract size was in usd (instead of cents)
+- Minimum liability threshold to dealer v1
+
+### Miscellaneous Tasks
+
+- No comments
+- Newline eof, discard test data
+- Removing duplicate test
+- Add error recording to all publish calls
+
+### Testing
+
+- Use the original hedging integration test
+- Add dealer v1 scenario based integration test
+
 # [stablesats release v0.2.3](https://github.com/GaloyMoney/stablesats/releases/tag/v0.2.3)
 
 
