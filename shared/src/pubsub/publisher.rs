@@ -21,7 +21,7 @@ impl Publisher {
         Ok(Self { client })
     }
 
-    #[instrument(skip(self), fields(correlation_id, payload_type, payload_json), err)]
+    #[instrument(skip_all, fields(correlation_id, payload_type, payload_json, error, error.message), err)]
     pub async fn publish<P: MessagePayload>(&self, payload: P) -> Result<(), PublisherError> {
         let span = tracing::Span::current();
         span.record(
@@ -39,9 +39,12 @@ impl Publisher {
         );
 
         let payload_str = serde_json::to_string(&msg)?;
-        self.client
-            .publish(<P as MessagePayload>::channel(), payload_str)
-            .await?;
+        crate::tracing::record_error(|| async move {
+            self.client
+                .publish(<P as MessagePayload>::channel(), payload_str)
+                .await
+        })
+        .await?;
         Ok(())
     }
 }
