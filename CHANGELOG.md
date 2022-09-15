@@ -1,3 +1,19 @@
+# [stablesats release v0.2.3](https://github.com/GaloyMoney/stablesats/releases/tag/v0.2.3)
+
+
+### Bug Fixes
+
+- More robust listen to user trades notification
+- Ensure poll jobs do not run out of retries
+
+### Miscellaneous Tasks
+
+- Track poll attempts per job
+- Default to 20 retries (~1 week)
+- Add .gitignore to hedging
+- Bump sqlx from 0.6.1 to 0.6.2
+- Bump serde_yaml from 0.9.11 to 0.9.13
+
 # [stablesats release v0.2.2](https://github.com/GaloyMoney/stablesats/releases/tag/v0.2.2)
 
 
