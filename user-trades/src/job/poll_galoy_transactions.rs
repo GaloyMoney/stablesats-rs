@@ -1,6 +1,5 @@
 use galoy_client::{GaloyClient, GaloyTransaction, SettlementCurrency, TxCursor};
 use rust_decimal::Decimal;
-use sqlxmq::CurrentJob;
 use tracing::instrument;
 
 use std::collections::BTreeMap;
@@ -14,7 +13,6 @@ use crate::{error::UserTradesError, user_trade_unit::UserTradeUnit, user_trades:
     fields(n_galoy_txs, n_user_trades, error, error.message)
 )]
 pub(super) async fn execute(
-    current_job: &mut CurrentJob,
     user_trades: UserTrades,
     galoy: GaloyClient,
 ) -> Result<(), UserTradesError> {
@@ -37,8 +35,6 @@ pub(super) async fn execute(
                 .persist_all(latest_ref, trades.into_iter().rev())
                 .await?;
         }
-
-        current_job.complete().await?;
         Ok(())
     })
     .await

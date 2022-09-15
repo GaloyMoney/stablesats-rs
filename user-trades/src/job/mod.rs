@@ -2,8 +2,7 @@ mod poll_galoy_transactions;
 
 use rust_decimal_macros::dec;
 use sqlxmq::{job, CurrentJob, JobBuilder, JobRegistry, OwnedHandle};
-use tracing::instrument;
-use tracing::{info_span, Instrument};
+use tracing::{info_span, instrument, Instrument, Span};
 use uuid::{uuid, Uuid};
 
 use galoy_client::GaloyClient;
@@ -21,6 +20,11 @@ const POLL_GALOY_TRANSACTIONS_ID: Uuid = uuid!("00000000-0000-0000-0000-00000000
 struct LiabilityPublishDelay(std::time::Duration);
 #[derive(Debug, Clone)]
 struct PollGaloyTransactionsDelay(std::time::Duration);
+
+#[derive(serde::Serialize, serde::Deserialize, Debug, Clone)]
+pub struct AttemptTracker {
+    pub attempts: u32,
+}
 
 pub async fn start_job_runner(
     pool: sqlx::PgPool,
@@ -49,6 +53,8 @@ pub async fn spawn_publish_liability(
 ) -> Result<(), UserTradesError> {
     match JobBuilder::new_with_id(PUBLISH_LIABILITY_ID, "publish_liability")
         .set_delay(duration)
+        .set_json(&AttemptTracker { attempts: 0 })
+        .expect("couldn't set json")
         .spawn(pool)
         .await
     {
@@ -65,6 +71,8 @@ pub async fn spawn_poll_galoy_transactions(
 ) -> Result<(), UserTradesError> {
     match JobBuilder::new_with_id(POLL_GALOY_TRANSACTIONS_ID, "poll_galoy_transactions")
         .set_delay(duration)
+        .set_json(&AttemptTracker { attempts: 0 })
+        .expect("couldn't set json")
         .spawn(pool)
         .await
     {
@@ -77,7 +85,7 @@ pub async fn spawn_poll_galoy_transactions(
     }
 }
 
-#[job(name = "publish_liability", channel_name = "user_trades", retries = 20)]
+#[job(name = "publish_liability", channel_name = "user_trades", retries = 10)]
 async fn publish_liability(
     mut current_job: CurrentJob,
     publisher: Publisher,
@@ -88,11 +96,20 @@ async fn publish_liability(
         "publish_liability",
         job_id = %current_job.id(),
         job_name = %current_job.name(),
+        attempt = tracing::field::Empty,
+        last_attempt = false,
         error = tracing::field::Empty,
         error.message = tracing::field::Empty,
     );
     shared::tracing::record_error(|| async move {
-        checkpoint_job(&mut current_job).await?;
+        let mut job_completed = false;
+        if let Ok(tracker) = update_tracker(&mut current_job).await {
+            if tracker.attempts > 5 {
+                Span::current().record("last_attempt", &true);
+                current_job.complete().await?;
+                job_completed = true;
+            }
+        }
         let balances = user_trade_balances.fetch_all().await?;
         publisher
             .publish(SynthUsdLiabilityPayload {
@@ -103,7 +120,9 @@ async fn publish_liability(
                     * dec!(-1),
             })
             .await?;
-        current_job.complete().await?;
+        if !job_completed {
+            current_job.complete().await?;
+        }
         spawn_publish_liability(current_job.pool(), delay).await?;
         Ok(())
     })
@@ -114,7 +133,7 @@ async fn publish_liability(
 #[job(
     name = "poll_galoy_transactions",
     channel_name = "user_trades",
-    retries = 20
+    retries = 10
 )]
 async fn poll_galoy_transactions(
     mut current_job: CurrentJob,
@@ -122,20 +141,37 @@ async fn poll_galoy_transactions(
     galoy: GaloyClient,
     PollGaloyTransactionsDelay(delay): PollGaloyTransactionsDelay,
 ) -> Result<(), UserTradesError> {
-    checkpoint_job(&mut current_job).await?;
-    poll_galoy_transactions::execute(&mut current_job, user_trades, galoy).await?;
+    let mut job_completed = false;
+    if let Ok(tracker) = update_tracker(&mut current_job).await {
+        if tracker.attempts > 5 {
+            Span::current().record("last_attempt", &true);
+            current_job.complete().await?;
+            job_completed = true;
+        }
+    }
+    poll_galoy_transactions::execute(user_trades, galoy).await?;
+    if !job_completed {
+        current_job.complete().await?;
+    }
     spawn_poll_galoy_transactions(current_job.pool(), delay).await?;
     Ok(())
 }
 
-async fn checkpoint_job(current_job: &mut CurrentJob) -> Result<(), UserTradesError> {
+async fn update_tracker(current_job: &mut CurrentJob) -> Result<AttemptTracker, UserTradesError> {
     let mut checkpoint = sqlxmq::Checkpoint::new();
-    checkpoint.set_extra_retries(1);
+    let tracker =
+        if let Ok(Some(AttemptTracker { attempts })) = current_job.json::<AttemptTracker>() {
+            AttemptTracker {
+                attempts: attempts + 1,
+            }
+        } else {
+            AttemptTracker { attempts: 1 }
+        };
+    Span::current().record("attempt", &tracing::field::display(tracker.attempts));
+    checkpoint
+        .set_json(&tracker)
+        .expect("Couldn't update tracker");
 
-    let raw_json = current_job.raw_json().map(String::from);
-    if let Some(json) = raw_json.as_ref() {
-        checkpoint.set_raw_json(json);
-    }
     current_job.checkpoint(&checkpoint).await?;
-    Ok(())
+    Ok(tracker)
 }
