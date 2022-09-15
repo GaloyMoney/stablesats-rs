@@ -82,7 +82,7 @@ pub async fn spawn_adjust_hedge<'a>(
     Ok(())
 }
 
-#[job(name = "poll_okex", channel_name = "hedging")]
+#[job(name = "poll_okex", channel_name = "hedging", retries = 1000)]
 async fn poll_okex(
     mut current_job: CurrentJob,
     OkexPollDelay(delay): OkexPollDelay,
@@ -97,6 +97,7 @@ async fn poll_okex(
         error.message = tracing::field::Empty,
     );
     shared::tracing::record_error(|| async move {
+        checkpoint_job(&mut current_job).await?;
         let PositionSize {
             value,
             instrument_id,
@@ -148,5 +149,17 @@ async fn adjust_hedge(
     })
     .instrument(span)
     .await?;
+    Ok(())
+}
+
+async fn checkpoint_job(current_job: &mut CurrentJob) -> Result<(), HedgingError> {
+    let mut checkpoint = sqlxmq::Checkpoint::new();
+    checkpoint.set_extra_retries(1);
+
+    let raw_json = current_job.raw_json().map(String::from);
+    if let Some(json) = raw_json.as_ref() {
+        checkpoint.set_raw_json(json);
+    }
+    current_job.checkpoint(&checkpoint).await?;
     Ok(())
 }

@@ -77,7 +77,11 @@ pub async fn spawn_poll_galoy_transactions(
     }
 }
 
-#[job(name = "publish_liability", channel_name = "user_trades")]
+#[job(
+    name = "publish_liability",
+    channel_name = "user_trades",
+    retries = 1000
+)]
 async fn publish_liability(
     mut current_job: CurrentJob,
     publisher: Publisher,
@@ -92,6 +96,7 @@ async fn publish_liability(
         error.message = tracing::field::Empty,
     );
     shared::tracing::record_error(|| async move {
+        checkpoint_job(&mut current_job).await?;
         let balances = user_trade_balances.fetch_all().await?;
         publisher
             .publish(SynthUsdLiabilityPayload {
@@ -110,14 +115,31 @@ async fn publish_liability(
     .await
 }
 
-#[job(name = "poll_galoy_transactions", channel_name = "user_trades")]
+#[job(
+    name = "poll_galoy_transactions",
+    channel_name = "user_trades",
+    retries = 1000
+)]
 async fn poll_galoy_transactions(
     mut current_job: CurrentJob,
     user_trades: UserTrades,
     galoy: GaloyClient,
     PollGaloyTransactionsDelay(delay): PollGaloyTransactionsDelay,
 ) -> Result<(), UserTradesError> {
+    checkpoint_job(&mut current_job).await?;
     poll_galoy_transactions::execute(&mut current_job, user_trades, galoy).await?;
     spawn_poll_galoy_transactions(current_job.pool(), delay).await?;
+    Ok(())
+}
+
+async fn checkpoint_job(current_job: &mut CurrentJob) -> Result<(), UserTradesError> {
+    let mut checkpoint = sqlxmq::Checkpoint::new();
+    checkpoint.set_extra_retries(1);
+
+    let raw_json = current_job.raw_json().map(String::from);
+    if let Some(json) = raw_json.as_ref() {
+        checkpoint.set_raw_json(json);
+    }
+    current_job.checkpoint(&checkpoint).await?;
     Ok(())
 }
