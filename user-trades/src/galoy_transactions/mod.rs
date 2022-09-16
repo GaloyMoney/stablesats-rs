@@ -162,11 +162,10 @@ impl GaloyTransactions {
             return Ok(());
         }
         let mut query_builder: QueryBuilder<Postgres> =
-            QueryBuilder::new("UPDATE galoy_transactions SET is_paired = 'true' WHERE id IN (");
-        query_builder.push_values(ids, |mut builder, id| {
+            QueryBuilder::new("UPDATE galoy_transactions SET is_paired = 'true' WHERE id IN");
+        query_builder.push_tuples(ids, |mut builder, id| {
             builder.push_bind(id);
         });
-        query_builder.push(")");
         let query = query_builder.build();
         query.execute(tx).await?;
         Ok(())
