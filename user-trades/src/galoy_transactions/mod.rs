@@ -15,7 +15,7 @@ impl<'a> LatestCursor<'a> {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct UnpairedTransaction {
     pub id: String,
     pub settlement_amount: Decimal,

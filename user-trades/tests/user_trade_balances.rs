@@ -25,15 +25,15 @@ async fn user_trade_balances() -> anyhow::Result<()> {
 
     let sat_amount = dec!(1000);
     let cent_amount = dec!(10);
-    let latest_ref = trades.get_latest_ref().await?;
     let external_ref = Some(ExternalRef {
         timestamp: Utc::now(),
         btc_tx_id: "btc_tx_id".to_string(),
         usd_tx_id: "usd_tx_id".to_string(),
     });
+    let mut tx = POOL.begin().await?;
     trades
         .persist_all(
-            latest_ref,
+            &mut tx,
             vec![NewUserTrade {
                 is_latest: Some(true),
                 buy_unit: UserTradeUnit::SynthCent,
@@ -41,15 +41,10 @@ async fn user_trade_balances() -> anyhow::Result<()> {
                 sell_unit: UserTradeUnit::Satoshi,
                 sell_amount: sat_amount,
                 external_ref: external_ref.clone(),
-            }]
-            .into_iter(),
+            }],
         )
         .await?;
-    let mut new_ref = trades.get_latest_ref().await?;
-    assert_eq!(
-        new_ref.take().unwrap().timestamp.timestamp(),
-        external_ref.unwrap().timestamp.timestamp()
-    );
+    tx.commit().await?;
 
     tokio::time::sleep(std::time::Duration::from_secs(1)).await;
 
@@ -61,7 +56,6 @@ async fn user_trade_balances() -> anyhow::Result<()> {
         .get(&UserTradeUnit::Satoshi)
         .expect("new sats balance");
 
-    assert_eq!(new_sat_summary.last_trade_id, new_ref.id());
     assert_eq!(
         old_sat_summary.current_balance + sat_amount,
         new_sat_summary.current_balance
@@ -74,7 +68,6 @@ async fn user_trade_balances() -> anyhow::Result<()> {
         .get(&UserTradeUnit::SynthCent)
         .expect("new cents balance");
 
-    assert_eq!(new_cent_summary.last_trade_id, new_ref.id());
     assert_eq!(
         old_cent_summary.current_balance - cent_amount,
         new_cent_summary.current_balance
