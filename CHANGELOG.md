@@ -1,3 +1,13 @@
+# [stablesats release v0.3.0](https://github.com/GaloyMoney/stablesats/releases/tag/v0.3.0)
+
+
+### Miscellaneous Tasks
+
+- [**breaking**] Update sqlx-data and deps
+- Remove redundant code
+- Add update_paired_ids
+- Add galoy_transactions table
+
 # [stablesats release v0.2.4](https://github.com/GaloyMoney/stablesats/releases/tag/v0.2.4)
 
 
