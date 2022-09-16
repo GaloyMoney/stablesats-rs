@@ -1,3 +1,16 @@
+# [stablesats release v0.3.1](https://github.com/GaloyMoney/stablesats/releases/tag/v0.3.1)
+
+
+### Bug Fixes
+
+- Clippy
+- Handle bootstrapping large no of txs
+
+### Miscellaneous Tasks
+
+- Remove redundant code
+- Use push_tuples
+
 # [stablesats release v0.3.0](https://github.com/GaloyMoney/stablesats/releases/tag/v0.3.0)
 
 
