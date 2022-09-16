@@ -28,7 +28,6 @@ async fn user_trade_balances() -> anyhow::Result<()> {
     let latest_ref = trades.get_latest_ref().await?;
     let external_ref = Some(ExternalRef {
         timestamp: Utc::now(),
-        cursor: "cursor".to_string(),
         btc_tx_id: "btc_tx_id".to_string(),
         usd_tx_id: "usd_tx_id".to_string(),
     });

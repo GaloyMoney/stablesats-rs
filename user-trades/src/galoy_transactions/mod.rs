@@ -1,7 +1,8 @@
+use rust_decimal::Decimal;
 use sqlx::{Executor, PgPool, Postgres, QueryBuilder, Transaction};
 
 use crate::error::UserTradesError;
-use galoy_client::GaloyTransaction;
+use galoy_client::{GaloyTransaction, SettlementCurrency};
 
 pub struct LatestCursor<'a> {
     id: Option<String>,
@@ -14,12 +15,18 @@ impl<'a> LatestCursor<'a> {
     }
 }
 
+#[derive(Debug)]
 pub struct UnpairedTransaction {
-    created_at: chrono::DateTime<chrono::Utc>,
+    pub id: String,
+    pub settlement_amount: Decimal,
+    pub settlement_currency: SettlementCurrency,
+    pub amount_in_usd_cents: Decimal,
+    pub created_at: chrono::DateTime<chrono::Utc>,
 }
+
 pub struct UnpairedTransactions<'a> {
-    list: Vec<GaloyTransaction>,
-    tx: Transaction<'a, Postgres>,
+    pub list: Vec<UnpairedTransaction>,
+    pub tx: Transaction<'a, Postgres>,
 }
 
 #[derive(Clone)]
@@ -122,6 +129,46 @@ impl GaloyTransactions {
     pub async fn list_unpaired_transactions(
         &self,
     ) -> Result<UnpairedTransactions, UserTradesError> {
-        unimplemented!()
+        let mut tx = self.pool.begin().await?;
+        let res = sqlx::query!(
+            "SELECT id, settlement_amount, settlement_currency, amount_in_usd_cents, created_at FROM galoy_transactions WHERE is_paired = 'false' FOR UPDATE"
+        )
+        .fetch_all(&mut tx)
+        .await?;
+        Ok(UnpairedTransactions {
+            list: res
+                .into_iter()
+                .map(|res| UnpairedTransaction {
+                    id: res.id,
+                    settlement_amount: res.settlement_amount,
+                    settlement_currency: res
+                        .settlement_currency
+                        .parse()
+                        .expect("Couldn't parse settlement currency"),
+                    amount_in_usd_cents: res.amount_in_usd_cents,
+                    created_at: res.created_at,
+                })
+                .collect(),
+            tx,
+        })
+    }
+
+    pub async fn update_paired_ids<'a>(
+        &self,
+        tx: &mut Transaction<'a, Postgres>,
+        ids: Vec<String>,
+    ) -> Result<(), UserTradesError> {
+        if ids.is_empty() {
+            return Ok(());
+        }
+        let mut query_builder: QueryBuilder<Postgres> =
+            QueryBuilder::new("UPDATE galoy_transactions SET is_paired = 'true' WHERE id IN (");
+        query_builder.push_values(ids, |mut builder, id| {
+            builder.push_bind(id);
+        });
+        query_builder.push(")");
+        let query = query_builder.build();
+        query.execute(tx).await?;
+        Ok(())
     }
 }

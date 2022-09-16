@@ -31,6 +31,17 @@ impl std::fmt::Display for SettlementCurrency {
         }
     }
 }
+impl std::str::FromStr for SettlementCurrency {
+    type Err = String;
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s {
+            "BTC" => Ok(Self::BTC),
+            "USD" => Ok(Self::USD),
+            other => Ok(Self::Other(other.to_string())),
+        }
+    }
+}
+
 pub type TxStatus = stablesats_transactions_list::TxStatus;
 pub type SettlementMethod = stablesats_transactions_list::StablesatsTransactionsListMeDefaultAccountTransactionsEdgesNodeSettlementVia;
 impl std::fmt::Display for SettlementMethod {

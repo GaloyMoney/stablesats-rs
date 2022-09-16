@@ -11,7 +11,6 @@ use crate::user_trade_unit::UserTradeUnit;
 pub struct ExternalRef {
     #[serde(with = "chrono::serde::ts_seconds")]
     pub timestamp: DateTime<Utc>,
-    pub cursor: String,
     pub btc_tx_id: String,
     pub usd_tx_id: String,
 }
