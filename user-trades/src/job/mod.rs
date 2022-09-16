@@ -12,7 +12,8 @@ use shared::{
 };
 
 use crate::{
-    error::UserTradesError, user_trade_balances::UserTradeBalances, user_trade_unit::UserTradeUnit,
+    error::UserTradesError, galoy_transactions::GaloyTransactions,
+    user_trade_balances::UserTradeBalances, user_trade_unit::UserTradeUnit,
     user_trades::UserTrades,
 };
 
@@ -155,7 +156,12 @@ async fn poll_galoy_transactions(
             job_completed = true;
         }
     }
-    poll_galoy_transactions::execute(user_trades, galoy).await?;
+    poll_galoy_transactions::execute(
+        user_trades,
+        GaloyTransactions::new(current_job.pool().clone()),
+        galoy,
+    )
+    .await?;
     if !job_completed {
         current_job.complete().await?;
     }

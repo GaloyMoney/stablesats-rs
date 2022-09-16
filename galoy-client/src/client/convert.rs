@@ -110,6 +110,7 @@ impl TryFrom<stablesats_transactions_list::ResponseData> for GaloyTransactions {
                     amount_in_usd_cents: (edge.node.settlement_amount * cents_per_unit).round(),
                     settlement_amount: edge.node.settlement_amount,
                     settlement_currency: edge.node.settlement_currency,
+                    settlement_method: edge.node.settlement_via,
                     cents_per_unit,
                     status: edge.node.status,
                 }

@@ -64,6 +64,18 @@
     },
     "query": " WITH amounts AS (\n   SELECT MAX(id) as latest_id, buy_unit_id, SUM(buy_amount) AS to_sub, sell_unit_id, SUM(sell_amount) AS to_add \n   FROM user_trades\n   WHERE id > $1\n   GROUP BY GROUPING SETS ((buy_unit_id), (sell_unit_id))\n )\nSELECT\n  unit_id,\n  current_balance + COALESCE(sell_amounts.to_add, 0) - COALESCE(buy_amounts.to_sub, 0) AS new_balance,\n  MAX(GREATEST(sell_amounts.latest_id, buy_amounts.latest_id)) OVER () AS new_latest_id\nFROM user_trade_balances\nLEFT JOIN amounts buy_amounts ON unit_id = buy_amounts.buy_unit_id\nLEFT JOIN amounts sell_amounts ON unit_id = sell_amounts.sell_unit_id;\n"
   },
+  "8eb093b11063a11f36af9096daa53481825571796642992fd87e717a23cad8ce": {
+    "describe": {
+      "columns": [],
+      "nullable": [],
+      "parameters": {
+        "Left": [
+          "Text"
+        ]
+      }
+    },
+    "query": "UPDATE galoy_transactions SET is_latest_cursor = NULL WHERE id = $1"
+  },
   "9afafd1fc5d1bc1130b130a1c94cad02eba9ead36564e2b5962cd56d0a9fce66": {
     "describe": {
       "columns": [
@@ -118,40 +130,70 @@
     },
     "query": "SELECT unit_id, current_balance, last_trade_id FROM user_trade_balances"
   },
-  "be8bf756668c83b336baea38f40ae17e64a7c4f906f3a5678a564216a186f5ea": {
-    "describe": {
-      "columns": [],
-      "nullable": [],
-      "parameters": {
-        "Left": [
-          "Int4"
-        ]
-      }
-    },
-    "query": "UPDATE user_trades SET is_latest = NULL WHERE id = $1"
-  },
-  "e8ecf162bd74e5d883408481f98f01eb2354ff898d2d333f909e076a2c8b0c9b": {
+  "b66d0f7acd0f7c75af9c8efdcc382955e9daa9d99e69a3bac265ad6d56fc99e3": {
     "describe": {
       "columns": [
         {
           "name": "id",
           "ordinal": 0,
-          "type_info": "Int4"
+          "type_info": "Varchar"
         },
         {
-          "name": "external_ref",
+          "name": "settlement_amount",
           "ordinal": 1,
-          "type_info": "Jsonb"
+          "type_info": "Numeric"
+        },
+        {
+          "name": "settlement_currency",
+          "ordinal": 2,
+          "type_info": "Varchar"
+        },
+        {
+          "name": "amount_in_usd_cents",
+          "ordinal": 3,
+          "type_info": "Numeric"
+        },
+        {
+          "name": "created_at",
+          "ordinal": 4,
+          "type_info": "Timestamptz"
         }
       ],
       "nullable": [
         false,
-        true
+        false,
+        false,
+        false,
+        false
       ],
       "parameters": {
         "Left": []
       }
     },
-    "query": "SELECT id, external_ref FROM user_trades WHERE is_latest = 'true'"
+    "query": "SELECT id, settlement_amount, settlement_currency, amount_in_usd_cents, created_at FROM galoy_transactions WHERE is_paired = 'false' FOR UPDATE"
+  },
+  "d251fd377a8bf3e43c481a6ed10ea44156c236d31202f85b4b7bd1647cf0ee35": {
+    "describe": {
+      "columns": [
+        {
+          "name": "id",
+          "ordinal": 0,
+          "type_info": "Varchar"
+        },
+        {
+          "name": "cursor",
+          "ordinal": 1,
+          "type_info": "Varchar"
+        }
+      ],
+      "nullable": [
+        false,
+        false
+      ],
+      "parameters": {
+        "Left": []
+      }
+    },
+    "query": "SELECT id, cursor FROM galoy_transactions WHERE is_latest_cursor = 'true'"
   }
 }
