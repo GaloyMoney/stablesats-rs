@@ -1,10 +1,14 @@
-use galoy_client::{GaloyClient, GaloyTransaction, SettlementCurrency, TxCursor};
 use rust_decimal::Decimal;
-use tracing::instrument;
+use tracing::{error, instrument};
 
 use std::collections::BTreeMap;
 
-use crate::{error::UserTradesError, user_trade_unit::UserTradeUnit, user_trades::*};
+use galoy_client::{GaloyClient, GaloyTransaction, SettlementCurrency, TxCursor};
+
+use crate::{
+    error::UserTradesError, galoy_transactions::GaloyTransactions, user_trade_unit::UserTradeUnit,
+    user_trades::*,
+};
 
 #[instrument(
     name = "poll_galoy_transactions",
@@ -14,19 +18,18 @@ use crate::{error::UserTradesError, user_trade_unit::UserTradeUnit, user_trades:
 )]
 pub(super) async fn execute(
     user_trades: UserTrades,
+    galoy_transactions: GaloyTransactions,
     galoy: GaloyClient,
 ) -> Result<(), UserTradesError> {
     shared::tracing::record_error(|| async move {
         let span = tracing::Span::current();
+
+        import_galoy_transactions(galoy_transactions, galoy.clone()).await?;
+
         let mut latest_ref = user_trades.get_latest_ref().await?;
         let external_ref = latest_ref.take();
         let cursor = external_ref.map(|ExternalRef { cursor, .. }| TxCursor::from(cursor));
         let transactions = galoy.transactions_list(cursor).await?;
-
-        span.record(
-            "n_galoy_txs",
-            &tracing::field::display(transactions.list.len()),
-        );
 
         if !transactions.list.is_empty() {
             let trades = unify(transactions.list);
@@ -40,6 +43,30 @@ pub(super) async fn execute(
     .await
 }
 
+#[instrument(
+    skip_all,
+    err,
+    fields(n_galoy_txs, error, error.message)
+)]
+async fn import_galoy_transactions(
+    galoy_transactions: GaloyTransactions,
+    galoy: GaloyClient,
+) -> Result<(), UserTradesError> {
+    let mut latest_cursor = galoy_transactions.get_latest_cursor().await?;
+    let transactions = galoy
+        .transactions_list(latest_cursor.take().map(TxCursor::from))
+        .await?;
+    tracing::Span::current().record(
+        "n_galoy_txs",
+        &tracing::field::display(transactions.list.len()),
+    );
+    if !transactions.list.is_empty() {
+        galoy_transactions
+            .persist_all(latest_cursor, transactions.list)
+            .await?;
+    }
+    Ok(())
+}
 fn unify(galoy_transactions: Vec<GaloyTransaction>) -> Vec<NewUserTrade> {
     let mut txs: BTreeMap<usize, GaloyTransaction> =
         galoy_transactions.into_iter().enumerate().collect();
@@ -53,7 +80,8 @@ fn unify(galoy_transactions: Vec<GaloyTransaction>) -> Vec<NewUserTrade> {
             let idx = if let Some((idx, _)) = txs.iter().find(|(_, other)| is_pair(&tx, other)) {
                 *idx
             } else {
-                unimplemented!()
+                error!({ transaction = ?tx, tx_idx = idx }, "no pair for galoy transaction");
+                return vec![];
             };
             let other = txs.remove(&idx).unwrap();
             let external_ref = if tx.settlement_currency == SettlementCurrency::BTC {
@@ -120,7 +148,7 @@ impl From<SettlementCurrency> for UserTradeUnit {
 
 #[cfg(test)]
 mod tests {
-    use galoy_client::{SettlementCurrency, TxStatus};
+    use galoy_client::{SettlementCurrency, SettlementMethod, TxStatus};
     use rust_decimal_macros::dec;
 
     use super::*;
@@ -135,6 +163,7 @@ mod tests {
             created_at,
             settlement_amount: dec!(1000),
             settlement_currency: SettlementCurrency::BTC,
+            settlement_method: SettlementMethod::SettlementViaIntraLedger,
             amount_in_usd_cents: dec!(10),
             cents_per_unit: dec!(0.01),
             status: TxStatus::SUCCESS,
@@ -145,6 +174,7 @@ mod tests {
             created_at,
             settlement_amount: dec!(-10),
             settlement_currency: SettlementCurrency::USD,
+            settlement_method: SettlementMethod::SettlementViaIntraLedger,
             amount_in_usd_cents: dec!(-10),
             cents_per_unit: dec!(1),
             status: TxStatus::SUCCESS,
@@ -155,6 +185,7 @@ mod tests {
             created_at: created_earlier,
             settlement_amount: dec!(-1000),
             settlement_currency: SettlementCurrency::BTC,
+            settlement_method: SettlementMethod::SettlementViaIntraLedger,
             amount_in_usd_cents: dec!(-10),
             cents_per_unit: dec!(0.01),
             status: TxStatus::SUCCESS,
@@ -164,6 +195,7 @@ mod tests {
             id: "id4".to_string(),
             created_at: created_earlier,
             settlement_amount: dec!(10),
+            settlement_method: SettlementMethod::SettlementViaIntraLedger,
             settlement_currency: SettlementCurrency::USD,
             amount_in_usd_cents: dec!(10),
             cents_per_unit: dec!(1),
