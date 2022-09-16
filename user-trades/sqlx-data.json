@@ -1,5 +1,47 @@
 {
   "db": "PostgreSQL",
+  "14d985ef639ed93ae82020835741cc9bf8189ac0c0abd09e04bf2734c8fae103": {
+    "describe": {
+      "columns": [
+        {
+          "name": "id",
+          "ordinal": 0,
+          "type_info": "Varchar"
+        },
+        {
+          "name": "settlement_amount",
+          "ordinal": 1,
+          "type_info": "Numeric"
+        },
+        {
+          "name": "settlement_currency",
+          "ordinal": 2,
+          "type_info": "Varchar"
+        },
+        {
+          "name": "amount_in_usd_cents",
+          "ordinal": 3,
+          "type_info": "Numeric"
+        },
+        {
+          "name": "created_at",
+          "ordinal": 4,
+          "type_info": "Timestamptz"
+        }
+      ],
+      "nullable": [
+        false,
+        false,
+        false,
+        false,
+        false
+      ],
+      "parameters": {
+        "Left": []
+      }
+    },
+    "query": "\n            SELECT id, settlement_amount, settlement_currency, amount_in_usd_cents, created_at\n            FROM galoy_transactions\n            WHERE is_paired = false AND settlement_method = 'SettlementViaIntraLedger' AND amount_in_usd_cents != 0 FOR UPDATE\n         "
+  },
   "2bd20eee766a5eb278d25c67fb87c998f20a5af7c02a0b05c175af3d6464f9f7": {
     "describe": {
       "columns": [
@@ -129,48 +171,6 @@
       }
     },
     "query": "SELECT unit_id, current_balance, last_trade_id FROM user_trade_balances"
-  },
-  "b66d0f7acd0f7c75af9c8efdcc382955e9daa9d99e69a3bac265ad6d56fc99e3": {
-    "describe": {
-      "columns": [
-        {
-          "name": "id",
-          "ordinal": 0,
-          "type_info": "Varchar"
-        },
-        {
-          "name": "settlement_amount",
-          "ordinal": 1,
-          "type_info": "Numeric"
-        },
-        {
-          "name": "settlement_currency",
-          "ordinal": 2,
-          "type_info": "Varchar"
-        },
-        {
-          "name": "amount_in_usd_cents",
-          "ordinal": 3,
-          "type_info": "Numeric"
-        },
-        {
-          "name": "created_at",
-          "ordinal": 4,
-          "type_info": "Timestamptz"
-        }
-      ],
-      "nullable": [
-        false,
-        false,
-        false,
-        false,
-        false
-      ],
-      "parameters": {
-        "Left": []
-      }
-    },
-    "query": "SELECT id, settlement_amount, settlement_currency, amount_in_usd_cents, created_at FROM galoy_transactions WHERE is_paired = 'false' FOR UPDATE"
   },
   "d251fd377a8bf3e43c481a6ed10ea44156c236d31202f85b4b7bd1647cf0ee35": {
     "describe": {

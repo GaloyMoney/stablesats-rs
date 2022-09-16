@@ -16,15 +16,15 @@ use crate::{
     fields(error, error.message)
 )]
 pub(super) async fn execute(
-    user_trades: UserTrades,
-    galoy_transactions: GaloyTransactions,
-    galoy: GaloyClient,
-) -> Result<(), UserTradesError> {
+    user_trades: &UserTrades,
+    galoy_transactions: &GaloyTransactions,
+    galoy: &GaloyClient,
+) -> Result<bool, UserTradesError> {
     shared::tracing::record_error(|| async move {
-        import_galoy_transactions(&galoy_transactions, galoy.clone()).await?;
-        update_user_trades(galoy_transactions, &user_trades).await?;
+        let has_more = import_galoy_transactions(&galoy_transactions, galoy.clone()).await?;
+        update_user_trades(&galoy_transactions, &user_trades).await?;
 
-        Ok(())
+        Ok(has_more)
     })
     .await
 }
@@ -33,7 +33,7 @@ pub(super) async fn execute(
 async fn import_galoy_transactions(
     galoy_transactions: &GaloyTransactions,
     galoy: GaloyClient,
-) -> Result<(), UserTradesError> {
+) -> Result<bool, UserTradesError> {
     let mut latest_cursor = galoy_transactions.get_latest_cursor().await?;
     let transactions = galoy
         .transactions_list(latest_cursor.take().map(TxCursor::from))
@@ -47,12 +47,12 @@ async fn import_galoy_transactions(
             .persist_all(latest_cursor, transactions.list)
             .await?;
     }
-    Ok(())
+    Ok(transactions.has_more)
 }
 
 #[instrument(skip_all, err, fields(n_unpaired_txs, n_user_trades))]
 async fn update_user_trades(
-    galoy_transactions: GaloyTransactions,
+    galoy_transactions: &GaloyTransactions,
     user_trades: &UserTrades,
 ) -> Result<(), UserTradesError> {
     let UnpairedTransactions { list, mut tx } =

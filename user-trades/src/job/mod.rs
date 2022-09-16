@@ -10,6 +10,7 @@ use shared::{
     payload::{SynthUsdLiabilityPayload, SyntheticCentLiability},
     pubsub::*,
 };
+use std::time::Duration;
 
 use crate::{
     error::UserTradesError, galoy_transactions::GaloyTransactions,
@@ -21,9 +22,9 @@ const PUBLISH_LIABILITY_ID: Uuid = uuid!("00000000-0000-0000-0000-000000000001")
 const POLL_GALOY_TRANSACTIONS_ID: Uuid = uuid!("00000000-0000-0000-0000-000000000002");
 
 #[derive(Debug, Clone)]
-struct LiabilityPublishDelay(std::time::Duration);
+struct LiabilityPublishDelay(Duration);
 #[derive(Debug, Clone)]
-struct PollGaloyTransactionsDelay(std::time::Duration);
+struct PollGaloyTransactionsDelay(Duration);
 
 #[derive(serde::Serialize, serde::Deserialize, Debug, Clone)]
 pub struct AttemptTracker {
@@ -33,11 +34,11 @@ pub struct AttemptTracker {
 pub async fn start_job_runner(
     pool: sqlx::PgPool,
     publisher: Publisher,
-    liability_publish_delay: std::time::Duration,
+    liability_publish_delay: Duration,
     user_trade_balances: UserTradeBalances,
     user_trades: UserTrades,
     galoy_client: GaloyClient,
-    galoy_poll_delay: std::time::Duration,
+    galoy_poll_delay: Duration,
 ) -> Result<OwnedHandle, UserTradesError> {
     let mut registry = JobRegistry::new(&[publish_liability, poll_galoy_transactions]);
     registry.set_context(publisher);
@@ -53,7 +54,7 @@ pub async fn start_job_runner(
 #[instrument(skip_all, err)]
 pub async fn spawn_publish_liability(
     pool: &sqlx::PgPool,
-    duration: std::time::Duration,
+    duration: Duration,
 ) -> Result<(), UserTradesError> {
     match JobBuilder::new_with_id(PUBLISH_LIABILITY_ID, "publish_liability")
         .set_delay(duration)
@@ -71,7 +72,7 @@ pub async fn spawn_publish_liability(
 #[instrument(skip_all,fields(error, error.message), err)]
 pub async fn spawn_poll_galoy_transactions(
     pool: &sqlx::PgPool,
-    duration: std::time::Duration,
+    duration: Duration,
 ) -> Result<(), UserTradesError> {
     match JobBuilder::new_with_id(POLL_GALOY_TRANSACTIONS_ID, "poll_galoy_transactions")
         .set_delay(duration)
@@ -156,12 +157,15 @@ async fn poll_galoy_transactions(
             job_completed = true;
         }
     }
-    poll_galoy_transactions::execute(
-        user_trades,
-        GaloyTransactions::new(current_job.pool().clone()),
-        galoy,
-    )
-    .await?;
+    let mut has_more = true;
+    let galoy_transactions = GaloyTransactions::new(current_job.pool().clone());
+    while has_more {
+        has_more =
+            poll_galoy_transactions::execute(&user_trades, &galoy_transactions, &galoy).await?;
+        if has_more {
+            current_job.keep_alive(Duration::from_secs(5)).await?;
+        }
+    }
     if !job_completed {
         current_job.complete().await?;
     }

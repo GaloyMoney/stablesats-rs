@@ -167,7 +167,7 @@ impl GaloyClient {
         cursor: Option<TxCursor>,
     ) -> Result<GaloyTransactions, GaloyClientError> {
         let variables = stablesats_transactions_list::Variables {
-            last: None,
+            last: Some(200),
             before: cursor.map(|cursor| cursor.0),
         };
         let response = post_graphql::<StablesatsTransactionsList, _>(
