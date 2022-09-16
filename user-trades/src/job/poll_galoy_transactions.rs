@@ -21,8 +21,8 @@ pub(super) async fn execute(
     galoy: &GaloyClient,
 ) -> Result<bool, UserTradesError> {
     shared::tracing::record_error(|| async move {
-        let has_more = import_galoy_transactions(&galoy_transactions, galoy.clone()).await?;
-        update_user_trades(&galoy_transactions, &user_trades).await?;
+        let has_more = import_galoy_transactions(galoy_transactions, galoy.clone()).await?;
+        update_user_trades(galoy_transactions, user_trades).await?;
 
         Ok(has_more)
     })
