@@ -45,7 +45,7 @@ impl UserTrades {
         }
 
         let mut query_builder: QueryBuilder<Postgres> = QueryBuilder::new(
-            "INSERT INTO user_trades (buy_unit_id, buy_amount, sell_unit_id, sell_amount, external_ref) "
+            "INSERT INTO user_trades (buy_unit_id, buy_amount, sell_unit_id, sell_amount, external_ref)"
         );
         query_builder.push_values(
             new_user_trades,

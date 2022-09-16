@@ -13,7 +13,7 @@ use crate::{
     name = "poll_galoy_transactions",
     skip_all,
     err,
-    fields(n_galoy_txs, n_user_trades, error, error.message)
+    fields(error, error.message)
 )]
 pub(super) async fn execute(
     user_trades: UserTrades,
