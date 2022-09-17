@@ -75,20 +75,27 @@ struct AdjustHedgeData {
     correlation_id: CorrelationId,
 }
 
-#[instrument(skip_all, err)]
+#[instrument(skip_all, fields(error, error.message) err)]
 pub async fn spawn_adjust_hedge<'a>(
     tx: impl Executor<'a, Database = Postgres>,
     correlation_id: CorrelationId,
 ) -> Result<(), HedgingError> {
-    adjust_hedge
-        .builder()
+    match JobBuilder::new_with_id(Uuid::from(correlation_id), "adjust_hedge")
         .set_json(&AdjustHedgeData {
             tracing_data: shared::tracing::extract_tracing_data(),
             correlation_id,
-        })?
+        })
+        .expect("Couldn't set json")
         .spawn(tx)
-        .await?;
-    Ok(())
+        .await
+    {
+        Err(sqlx::Error::Database(err)) if err.message().contains("duplicate key") => Ok(()),
+        Err(e) => {
+            shared::tracing::insert_error_fields(&e);
+            Err(e.into())
+        }
+        Ok(_) => Ok(()),
+    }
 }
 
 #[job(name = "poll_okex", channel_name = "hedging", retries = 10)]
