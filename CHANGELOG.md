@@ -1,3 +1,11 @@
+# [stablesats release v0.3.2](https://github.com/GaloyMoney/stablesats/releases/tag/v0.3.2)
+
+
+### Miscellaneous Tasks
+
+- Deduplicate adjust_hedge job
+- Dedup adjust_hedge job
+
 # [stablesats release v0.3.1](https://github.com/GaloyMoney/stablesats/releases/tag/v0.3.1)
 
 
