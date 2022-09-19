@@ -41,15 +41,27 @@ enum Command {
         /// Phone code for the galoy client
         #[clap(env = "GALOY_PHONE_CODE", default_value = "")]
         galoy_phone_code: String,
+        /// Phone number for the galoy client
+        #[clap(env = "GALOY_PHONE_NUMBER", default_value = "")]
+        galoy_phone_number: String,
+        /// API for the galoy client
+        #[clap(env = "GALOY_API", default_value = "")]
+        galoy_api: String,
         /// Connection string for the hedging database
         #[clap(env = "HEDGING_PG_CON", default_value = "")]
         hedging_pg_con: String,
+        /// Okex access key
+        #[clap(env = "OKEX_API_KEY", default_value = "")]
+        okex_api_key: String,
         /// Okex secret key
         #[clap(env = "OKEX_SECRET_KEY", default_value = "")]
         okex_secret_key: String,
         /// Okex passphrase
         #[clap(env = "OKEX_PASSPHRASE", default_value = "")]
         okex_passphrase: String,
+        /// Okex simulation flag, either "true" or "false"
+        #[clap(env = "OKEX_SIMULATED", default_value = "true")]
+        okex_simulated: String,
     },
     /// Gets a quote from the price server
     Price {
@@ -74,7 +86,11 @@ pub async fn run() -> anyhow::Result<()> {
             crash_report_config,
             user_trades_pg_con,
             galoy_phone_code,
+            galoy_phone_number,
+            galoy_api,
+            okex_api_key,
             okex_passphrase,
+            okex_simulated,
             okex_secret_key,
             hedging_pg_con,
         } => {
@@ -84,8 +100,12 @@ pub async fn run() -> anyhow::Result<()> {
                     redis_password,
                     user_trades_pg_con,
                     galoy_phone_code,
+                    galoy_phone_number,
+                    galoy_api,
                     okex_passphrase,
+                    okex_api_key,
                     okex_secret_key,
+                    okex_simulated,
                     hedging_pg_con,
                 },
             )?;

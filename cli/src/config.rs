@@ -36,9 +36,13 @@ pub struct EnvOverride {
     pub redis_password: Option<String>,
     pub user_trades_pg_con: String,
     pub hedging_pg_con: String,
+    pub okex_api_key: String,
     pub okex_secret_key: String,
+    pub okex_simulated: String,
     pub okex_passphrase: String,
     pub galoy_phone_code: String,
+    pub galoy_phone_number: String,
+    pub galoy_api: String,
 }
 
 impl Config {
@@ -48,6 +52,10 @@ impl Config {
             redis_password,
             user_trades_pg_con,
             galoy_phone_code,
+            galoy_phone_number,
+            galoy_api,
+            okex_api_key,
+            okex_simulated,
             okex_passphrase,
             okex_secret_key,
             hedging_pg_con,
@@ -62,8 +70,16 @@ impl Config {
 
         config.user_trades.config.pg_con = user_trades_pg_con;
         config.galoy.auth_code = galoy_phone_code;
+        config.galoy.phone_number = galoy_phone_number;
+        config.galoy.api = galoy_api;
         config.hedging.config.pg_con = hedging_pg_con;
+        config.okex.api_key = okex_api_key;
         config.okex.secret_key = okex_secret_key;
+        config.okex.simulated = match okex_simulated.as_str() {
+            "true" => true,
+            "false" => false,
+            _ => false,
+        };
         config.okex.passphrase = okex_passphrase;
 
         Ok(config)
