@@ -25,7 +25,7 @@ serde = "1.0.144"
 rust_decimal = "1.25.0"
 tracing = "0.1.36"
 opentelemetry = { version = "0.17.0", features = ["trace"] }
-tracing-opentelemetry = "0.17.4"
+tracing-opentelemetry = "0.18.0"
 rust_decimal_macros = "1.26.1"
 rusty-money = "0.4.1"
 
