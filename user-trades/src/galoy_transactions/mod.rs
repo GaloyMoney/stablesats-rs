@@ -130,11 +130,13 @@ impl GaloyTransactions {
         &self,
     ) -> Result<UnpairedTransactions, UserTradesError> {
         let mut tx = self.pool.begin().await?;
-        let res = sqlx::query!("
+        let res = sqlx::query!(
+            "
             SELECT id, settlement_amount, settlement_currency, amount_in_usd_cents, created_at
             FROM galoy_transactions
-            WHERE is_paired = false AND settlement_method = 'SettlementViaIntraLedger' AND amount_in_usd_cents != 0 FOR UPDATE
-         ")
+            WHERE is_paired = false AND amount_in_usd_cents != 0 FOR UPDATE
+         "
+        )
         .fetch_all(&mut tx)
         .await?;
         Ok(UnpairedTransactions {

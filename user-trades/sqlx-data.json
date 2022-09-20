@@ -1,47 +1,5 @@
 {
   "db": "PostgreSQL",
-  "14d985ef639ed93ae82020835741cc9bf8189ac0c0abd09e04bf2734c8fae103": {
-    "describe": {
-      "columns": [
-        {
-          "name": "id",
-          "ordinal": 0,
-          "type_info": "Varchar"
-        },
-        {
-          "name": "settlement_amount",
-          "ordinal": 1,
-          "type_info": "Numeric"
-        },
-        {
-          "name": "settlement_currency",
-          "ordinal": 2,
-          "type_info": "Varchar"
-        },
-        {
-          "name": "amount_in_usd_cents",
-          "ordinal": 3,
-          "type_info": "Numeric"
-        },
-        {
-          "name": "created_at",
-          "ordinal": 4,
-          "type_info": "Timestamptz"
-        }
-      ],
-      "nullable": [
-        false,
-        false,
-        false,
-        false,
-        false
-      ],
-      "parameters": {
-        "Left": []
-      }
-    },
-    "query": "\n            SELECT id, settlement_amount, settlement_currency, amount_in_usd_cents, created_at\n            FROM galoy_transactions\n            WHERE is_paired = false AND settlement_method = 'SettlementViaIntraLedger' AND amount_in_usd_cents != 0 FOR UPDATE\n         "
-  },
   "2bd20eee766a5eb278d25c67fb87c998f20a5af7c02a0b05c175af3d6464f9f7": {
     "describe": {
       "columns": [
@@ -195,5 +153,47 @@
       }
     },
     "query": "SELECT id, cursor FROM galoy_transactions WHERE is_latest_cursor = 'true'"
+  },
+  "f1353aa7ecf75375f32be2736a51f09fb13ed8492a0a3c51659743fa0a47b3ab": {
+    "describe": {
+      "columns": [
+        {
+          "name": "id",
+          "ordinal": 0,
+          "type_info": "Varchar"
+        },
+        {
+          "name": "settlement_amount",
+          "ordinal": 1,
+          "type_info": "Numeric"
+        },
+        {
+          "name": "settlement_currency",
+          "ordinal": 2,
+          "type_info": "Varchar"
+        },
+        {
+          "name": "amount_in_usd_cents",
+          "ordinal": 3,
+          "type_info": "Numeric"
+        },
+        {
+          "name": "created_at",
+          "ordinal": 4,
+          "type_info": "Timestamptz"
+        }
+      ],
+      "nullable": [
+        false,
+        false,
+        false,
+        false,
+        false
+      ],
+      "parameters": {
+        "Left": []
+      }
+    },
+    "query": "\n            SELECT id, settlement_amount, settlement_currency, amount_in_usd_cents, created_at\n            FROM galoy_transactions\n            WHERE is_paired = false AND amount_in_usd_cents != 0 FOR UPDATE\n         "
   }
 }

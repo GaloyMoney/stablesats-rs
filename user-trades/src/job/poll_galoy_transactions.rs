@@ -135,11 +135,7 @@ fn is_pair(tx1: &UnpairedTransaction, tx2: &UnpairedTransaction) -> bool {
         return false;
     }
 
-    if tx1.settlement_currency == SettlementCurrency::BTC {
-        tx1.amount_in_usd_cents.abs() == tx2.settlement_amount.abs()
-    } else {
-        tx2.amount_in_usd_cents.abs() == tx1.settlement_amount.abs()
-    }
+    tx1.amount_in_usd_cents.abs() == tx2.amount_in_usd_cents.abs()
 }
 
 impl From<SettlementCurrency> for UserTradeUnit {
