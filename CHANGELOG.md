@@ -1,3 +1,14 @@
+# [stablesats release v0.3.3](https://github.com/GaloyMoney/stablesats/releases/tag/v0.3.3)
+
+
+### Bug Fixes
+
+- Pairing of ln user-trades
+
+### Miscellaneous Tasks
+
+- Bump clap from 3.2.21 to 3.2.22
+
 # [stablesats release v0.3.2](https://github.com/GaloyMoney/stablesats/releases/tag/v0.3.2)
 
 
