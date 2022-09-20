@@ -30,3 +30,27 @@ async fn pubsub() -> anyhow::Result<()> {
     assert_eq!(msg, received.unwrap().payload);
     Ok(())
 }
+
+#[tokio::test]
+async fn pubsub_alt() -> anyhow::Result<()> {
+    let redis_host = std::env::var("REDIS_HOST").unwrap_or("localhost".to_string());
+    let config = PubSubConfig {
+        host: Some(redis_host),
+        ..PubSubConfig::default()
+    };
+
+    let msg = TestMessage {
+        test: "test".to_string(),
+        value: u64::MAX,
+    };
+    let publisher = Publisher::new(config.clone()).await?;
+    publisher.publish(msg).await?;
+    let subscriber = Subscriber::new(config).await?;
+    let mut stream_recv = subscriber.subscribe_alt().await?;
+
+    let msg = stream_recv.recv()?;
+
+    println!("{:?}", msg);
+
+    Ok(())
+}
