@@ -6,7 +6,7 @@ use graphql_client::GraphQLQuery;
 use rust_decimal::Decimal;
 use serde::Deserialize;
 
-use crate::GaloyClientError;
+use crate::{GaloyClientError, InnerError};
 
 pub(super) type SafeInt = Decimal;
 
@@ -52,13 +52,26 @@ impl TryFrom<stablesats_auth_code::ResponseData> for StablesatsAuthenticationCod
 pub struct StablesatsUserLogin;
 pub type AuthToken = String;
 pub type OneTimeAuthCode = String;
-pub type StablesatsLogin = stablesats_user_login::StablesatsUserLoginUserLogin;
-impl TryFrom<stablesats_user_login::ResponseData> for StablesatsLogin {
+pub type StablesatsLoginErrors = stablesats_user_login::StablesatsUserLoginUserLoginErrors;
+
+pub type StablesatsAuthToken = Option<String>;
+impl TryFrom<stablesats_user_login::ResponseData> for StablesatsAuthToken {
     type Error = GaloyClientError;
 
     fn try_from(response: stablesats_user_login::ResponseData) -> Result<Self, Self::Error> {
         let user_login = response.user_login;
-        Ok(user_login)
+        let (auth_token, errors) = (user_login.auth_token, user_login.errors);
+
+        if errors.len() > 0 {
+            let mut errors_list = Vec::new();
+            for error in errors {
+                let err = InnerError::from(error);
+                errors_list.push(err)
+            }
+
+            return Err(GaloyClientError::GraphQLApi(format!("{:#?}", errors_list)));
+        }
+        Ok(auth_token)
     }
 }
 

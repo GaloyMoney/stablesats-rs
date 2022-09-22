@@ -124,3 +124,23 @@ impl TryFrom<stablesats_transactions_list::ResponseData> for GaloyTransactions {
         })
     }
 }
+
+impl From<StablesatsLoginErrors> for InnerError {
+    fn from(err: StablesatsLoginErrors) -> Self {
+        InnerError {
+            message: err.message,
+            path: err.path,
+        }
+    }
+}
+
+impl From<graphql_client::Error> for TopLevelError {
+    fn from(err: graphql_client::Error) -> Self {
+        TopLevelError {
+            message: err.message,
+            path: err.path,
+            location: err.locations,
+            extensions: err.extensions,
+        }
+    }
+}

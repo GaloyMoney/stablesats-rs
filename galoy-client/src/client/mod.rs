@@ -18,7 +18,7 @@ use queries::*;
 pub use queries::{
     stablesats_on_chain_payment::PaymentSendResult,
     stablesats_transactions_list::WalletCurrency as SettlementCurrency,
-    stablesats_wallets::WalletCurrency, WalletId,
+    stablesats_wallets::WalletCurrency, StablesatsAuthToken, WalletId,
 };
 
 pub use config::*;
@@ -37,10 +37,6 @@ pub struct GaloyClient {
     btc_wallet_id: String,
 }
 
-pub(crate) struct StablesatsAuthToken {
-    pub inner: Option<String>,
-}
-
 #[derive(Debug)]
 pub struct OnchainAddress {
     pub address: String,
@@ -49,10 +45,14 @@ pub struct OnchainAddress {
 impl GaloyClient {
     pub async fn connect(config: GaloyClientConfig) -> Result<Self, GaloyClientError> {
         let jwt = Self::login_jwt(config.clone()).await?;
-        let jwt = jwt.inner.ok_or_else(|| {
-            GaloyClientError::Authentication("Empty authentication token".to_string())
-        })?;
-
+        let jwt = match jwt {
+            Some(jwt) => jwt,
+            None => {
+                return Err(GaloyClientError::Authentication(
+                    "Empty authentication token".to_string(),
+                ))
+            }
+        };
         let client = ReqwestClient::builder()
             .use_rustls_tls()
             .default_headers(
@@ -114,8 +114,14 @@ impl GaloyClient {
         .await?;
 
         if response.errors.is_some() {
-            if let Some(error) = response.errors {
-                return Err(GaloyClientError::GraphQLApi(error[0].clone().message));
+            if let Some(errors) = response.errors {
+                let mut errors_list = Vec::new();
+                for error in errors {
+                    let err = TopLevelError::from(error);
+                    errors_list.push(err)
+                }
+
+                return Err(GaloyClientError::GraphQLApi(format!("{:#?}", errors_list)));
             }
         }
 
@@ -127,7 +133,7 @@ impl GaloyClient {
         }
 
         let auth_token = match response_data {
-            Some(login_data) => StablesatsLogin::try_from(login_data)?.auth_token,
+            Some(token) => StablesatsAuthToken::try_from(token)?,
             None => {
                 return Err(GaloyClientError::GraphQLApi(format!(
                     "Expected some response data, found {:?}",
@@ -135,7 +141,8 @@ impl GaloyClient {
                 )))
             }
         };
-        Ok(StablesatsAuthToken { inner: auth_token })
+
+        Ok(auth_token)
     }
 
     #[instrument(name = "galoy_wallet_ids", err)]

@@ -1,3 +1,9 @@
+use std::collections::HashMap;
+
+use graphql_client::{Location, PathFragment};
+use serde::Deserialize;
+use serde_json::Value;
+use std::collections::hash_map::RandomState;
 use thiserror::Error;
 
 #[derive(Error, Debug)]
@@ -10,4 +16,18 @@ pub enum GaloyClientError {
     GraphQLApi(String),
     #[error("GaloyClientError - Authentication: {0}")]
     Authentication(String),
+}
+
+#[derive(Debug, Deserialize)]
+pub struct InnerError {
+    pub message: String,
+    pub path: Option<Vec<Option<String>>>,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct TopLevelError {
+    pub message: String,
+    pub path: std::option::Option<Vec<PathFragment>>,
+    pub location: Option<Vec<Location>>,
+    pub extensions: Option<HashMap<String, Value, RandomState>>,
 }
