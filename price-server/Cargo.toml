@@ -24,7 +24,7 @@ thiserror = "1.0.35"
 serde = "1.0.145"
 rust_decimal = "1.25.0"
 tracing = "0.1.36"
-opentelemetry = { version = "0.17.0", features = ["trace"] }
+opentelemetry = { version = "0.18.0", features = ["trace"] }
 tracing-opentelemetry = "0.17.4"
 rust_decimal_macros = "1.26.1"
 rusty-money = "0.4.1"
