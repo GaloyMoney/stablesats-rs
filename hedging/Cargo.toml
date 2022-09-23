@@ -14,7 +14,7 @@ shared = { path = "../shared", package = "stablesats-shared" }
 okex-client = { path = "../okex-client" }
 
 rust_decimal_macros = "1.26.1"
-serde = "1.0.144"
+serde = "1.0.145"
 serde_json = "1.0.85"
 tokio = "1.20.1"
 futures = "0.3.24"

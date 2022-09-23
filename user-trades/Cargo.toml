@@ -19,7 +19,7 @@ sqlxmq = { version = "0.4.1", default-features = false, features = [ "runtime-to
 serde_json = "1.0.85"
 uuid = "1.1.2"
 tracing = "0.1.36"
-serde = "1.0.143"
+serde = "1.0.145"
 anyhow = "1.0.65"
 rust_decimal = "1.26.1"
 rust_decimal_macros = "1.26.1"
