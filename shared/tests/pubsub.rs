@@ -20,6 +20,7 @@ async fn pubsub() -> anyhow::Result<()> {
     };
     let publisher = Publisher::new(config.clone()).await?;
     let subscriber = Subscriber::new(config).await?;
+    assert!(subscriber.time_since_last_msg().await.is_none());
     let mut stream = subscriber.subscribe::<TestMessage>().await?;
     let msg = TestMessage {
         test: "test".to_string(),
@@ -27,6 +28,7 @@ async fn pubsub() -> anyhow::Result<()> {
     };
     publisher.publish(msg.clone()).await?;
     let received = stream.next().await;
+    assert!(subscriber.time_since_last_msg().await.is_some());
     assert_eq!(msg, received.unwrap().payload);
     Ok(())
 }

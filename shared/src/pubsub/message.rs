@@ -53,9 +53,9 @@ impl Default for MessageMetadata {
     }
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Clone, Serialize, Deserialize, Debug)]
 #[serde(rename_all = "camelCase")]
-pub struct Envelope<P: MessagePayload> {
+pub struct Envelope<P: MessagePayload + Clone> {
     pub meta: MessageMetadata,
     pub payload_type: String,
     #[serde(bound = "P: DeserializeOwned")]

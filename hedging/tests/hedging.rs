@@ -3,7 +3,7 @@ use rust_decimal::Decimal;
 use rust_decimal_macros::dec;
 use serial_test::serial;
 
-use std::{env, fs, pin::Pin};
+use std::{env, fs};
 
 use okex_client::*;
 use shared::{payload::*, pubsub::*};
@@ -33,7 +33,7 @@ fn okex_client_config() -> OkexClientConfig {
 }
 
 async fn expect_exposure_between(
-    stream: &mut Pin<Box<dyn Stream<Item = Envelope<OkexBtcUsdSwapPositionPayload>> + Send>>,
+    mut stream: impl Stream<Item = Envelope<OkexBtcUsdSwapPositionPayload>> + Unpin,
     lower: Decimal,
     upper: Decimal,
 ) {
@@ -49,7 +49,7 @@ async fn expect_exposure_between(
 }
 
 async fn expect_exposure_below(
-    stream: &mut Pin<Box<dyn Stream<Item = Envelope<OkexBtcUsdSwapPositionPayload>> + Send>>,
+    mut stream: impl Stream<Item = Envelope<OkexBtcUsdSwapPositionPayload>> + Unpin,
     expected: Decimal,
 ) {
     let mut passed = false;
@@ -64,7 +64,7 @@ async fn expect_exposure_below(
 }
 
 async fn expect_exposure_equal(
-    stream: &mut Pin<Box<dyn Stream<Item = Envelope<OkexBtcUsdSwapPositionPayload>> + Send>>,
+    mut stream: impl Stream<Item = Envelope<OkexBtcUsdSwapPositionPayload>> + Unpin,
     expected: Decimal,
 ) {
     let mut passed = false;
