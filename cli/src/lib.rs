@@ -3,6 +3,7 @@
 
 pub mod app;
 pub mod config;
+mod health;
 mod tracing;
 
 mod price_client;

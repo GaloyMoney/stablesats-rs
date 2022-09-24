@@ -4,7 +4,7 @@ use chrono::Duration;
 use futures::stream::StreamExt;
 use tracing::{info_span, instrument, Instrument};
 
-use shared::{payload::OkexBtcUsdSwapPricePayload, pubsub::*};
+use shared::{health::HealthCheckTrigger, payload::OkexBtcUsdSwapPricePayload, pubsub::*};
 
 use super::exchange_price_cache::ExchangePriceCache;
 
@@ -18,6 +18,7 @@ pub struct PriceApp {
 
 impl PriceApp {
     pub async fn run(
+        health_check_trigger: HealthCheckTrigger,
         fee_calc_cfg: FeeCalculatorConfig,
         pubsub_cfg: PubSubConfig,
     ) -> Result<Self, PriceAppError> {

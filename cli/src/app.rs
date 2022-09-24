@@ -125,6 +125,7 @@ async fn run_cmd(
     crate::tracing::init_tracer(tracing)?;
     let (send, mut receive) = tokio::sync::mpsc::channel(1);
     let mut handles = Vec::new();
+    let mut checkers = Vec::new();
 
     if price_server.enabled {
         println!(
@@ -134,9 +135,11 @@ async fn run_cmd(
 
         let price_send = send.clone();
         let pubsub = pubsub.clone();
+        let (snd, recv) = futures::channel::mpsc::unbounded();
+        checkers.push(snd);
         handles.push(tokio::spawn(async move {
             let _ = price_send.try_send(
-                price_server::run(price_server.server, price_server.fees, pubsub)
+                price_server::run(recv, price_server.server, price_server.fees, pubsub)
                     .await
                     .context("Price Server error"),
             );
@@ -179,6 +182,9 @@ async fn run_cmd(
             );
         }));
     }
+    handles.push(tokio::spawn(async move {
+        let _ = send.try_send(crate::health::run(checkers).await);
+    }));
     let reason = receive.recv().await.expect("Didn't receive msg");
     for handle in handles {
         handle.abort();
