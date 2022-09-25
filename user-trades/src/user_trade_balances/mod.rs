@@ -48,42 +48,48 @@ impl UserTradeBalances {
         let span = info_span!(
             "spawn_listen_to_user_trades_notifications",
             error = tracing::field::Empty,
+            error.level = tracing::field::Empty,
             error.message = tracing::field::Empty,
         );
         let (send, recv) = tokio::sync::oneshot::channel();
-        shared::tracing::record_error::<(), UserTradesError, _, _>(|| async move {
-            let mut listener = PgListener::connect_with(&pool).await?;
-            listener.listen("user_trades").await?;
-            user_trade_balances.update_balances().await?;
-            tokio::spawn(async move {
-                loop {
-                    match listener.recv().await {
-                        Ok(_) => {
-                            let span = info_span!(
-                                "user_trades_notification_received",
-                                error = tracing::field::Empty,
-                                error.message = tracing::field::Empty,
-                            );
-                            let repo = user_trade_balances.clone();
-                            if let Err(e) = shared::tracing::record_error(|| async move {
-                                repo.update_balances().await
-                            })
-                            .instrument(span)
-                            .await
-                            {
-                                let _ = send.send(e);
+        shared::tracing::record_error::<(), UserTradesError, _, _>(
+            tracing::Level::ERROR,
+            || async move {
+                let mut listener = PgListener::connect_with(&pool).await?;
+                listener.listen("user_trades").await?;
+                user_trade_balances.update_balances().await?;
+                tokio::spawn(async move {
+                    loop {
+                        match listener.recv().await {
+                            Ok(_) => {
+                                let span = info_span!(
+                                    "user_trades_notification_received",
+                                    error = tracing::field::Empty,
+                                    error.level = tracing::field::Empty,
+                                    error.message = tracing::field::Empty,
+                                );
+                                let repo = user_trade_balances.clone();
+                                if let Err(e) = shared::tracing::record_error(
+                                    tracing::Level::WARN,
+                                    || async move { repo.update_balances().await },
+                                )
+                                .instrument(span)
+                                .await
+                                {
+                                    let _ = send.send(e);
+                                    break;
+                                }
+                            }
+                            Err(e) => {
+                                let _ = send.send(e.into());
                                 break;
                             }
                         }
-                        Err(e) => {
-                            let _ = send.send(e.into());
-                            break;
-                        }
                     }
-                }
-            });
-            Ok(())
-        })
+                });
+                Ok(())
+            },
+        )
         .instrument(span)
         .await?;
         let _ = recv.await;
@@ -91,9 +97,9 @@ impl UserTradeBalances {
     }
 
     #[instrument(name = "update_user_trade_balances", skip(self),
-      fields(error, error.message), err)]
+      fields(error, error.level, error.message), err)]
     async fn update_balances(&self) -> Result<(), UserTradesError> {
-        shared::tracing::record_error(|| async move {
+        shared::tracing::record_error(tracing::Level::WARN, || async move {
             let mut tx = self.pool.begin().await?;
             let balance_result =
                 sqlx::query!(r#"SELECT last_trade_id FROM user_trade_balances FOR UPDATE"#)

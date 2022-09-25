@@ -29,14 +29,14 @@ pub struct Price {
 impl PriceService for Price {
     #[instrument(skip_all,
         fields(amount_in_satoshis = request.get_ref().amount_in_satoshis,
-               error, error.message),
+               error, error.level, error.message),
         err
     )]
     async fn get_cents_from_sats_for_immediate_buy(
         &self,
         request: Request<GetCentsFromSatsForImmediateBuyRequest>,
     ) -> Result<Response<GetCentsFromSatsForImmediateBuyResponse>, Status> {
-        shared::tracing::record_error(|| async move {
+        shared::tracing::record_error(tracing::Level::ERROR, || async move {
             extract_tracing(&request);
 
             let req = request.into_inner();
@@ -53,14 +53,14 @@ impl PriceService for Price {
 
     #[instrument(skip_all,
         fields(amount_in_satoshis = request.get_ref().amount_in_satoshis,
-               error, error.message),
+               error, error.level, error.message),
         err
      )]
     async fn get_cents_from_sats_for_immediate_sell(
         &self,
         request: Request<GetCentsFromSatsForImmediateSellRequest>,
     ) -> Result<Response<GetCentsFromSatsForImmediateSellResponse>, Status> {
-        shared::tracing::record_error(|| async move {
+        shared::tracing::record_error(tracing::Level::ERROR, || async move {
             extract_tracing(&request);
 
             let req = request.into_inner();
@@ -78,14 +78,14 @@ impl PriceService for Price {
     #[instrument(skip_all,
         fields(amount_in_satoshis = request.get_ref().amount_in_satoshis,
                 time_in_seconds = request.get_ref().time_in_seconds,
-                error, error.message),
+                error, error.level, error.message),
         err
     )]
     async fn get_cents_from_sats_for_future_buy(
         &self,
         request: Request<GetCentsFromSatsForFutureBuyRequest>,
     ) -> Result<Response<GetCentsFromSatsForFutureBuyResponse>, Status> {
-        shared::tracing::record_error(|| async move {
+        shared::tracing::record_error(tracing::Level::ERROR, || async move {
             extract_tracing(&request);
 
             let req = request.into_inner();
@@ -103,14 +103,14 @@ impl PriceService for Price {
     #[instrument(skip_all,
         fields(amount_in_satoshis = request.get_ref().amount_in_satoshis,
                 time_in_seconds = request.get_ref().time_in_seconds,
-                error, error.message),
+                error, error.level, error.message),
         err
     )]
     async fn get_cents_from_sats_for_future_sell(
         &self,
         request: Request<GetCentsFromSatsForFutureSellRequest>,
     ) -> Result<Response<GetCentsFromSatsForFutureSellResponse>, Status> {
-        shared::tracing::record_error(|| async move {
+        shared::tracing::record_error(tracing::Level::ERROR, || async move {
             extract_tracing(&request);
 
             let req = request.into_inner();
@@ -127,14 +127,14 @@ impl PriceService for Price {
 
     #[instrument(skip_all,
         fields(amount_in_cents = request.get_ref().amount_in_cents,
-            error, error.message),
+            error, error.level, error.message),
         err
     )]
     async fn get_sats_from_cents_for_immediate_buy(
         &self,
         request: Request<GetSatsFromCentsForImmediateBuyRequest>,
     ) -> Result<Response<GetSatsFromCentsForImmediateBuyResponse>, Status> {
-        shared::tracing::record_error(|| async move {
+        shared::tracing::record_error(tracing::Level::ERROR, || async move {
             extract_tracing(&request);
 
             let req = request.into_inner();
@@ -152,14 +152,14 @@ impl PriceService for Price {
 
     #[instrument(skip_all,
         fields(amount_in_cents = request.get_ref().amount_in_cents,
-            error, error.message),
+            error, error.level, error.message),
         err
     )]
     async fn get_sats_from_cents_for_immediate_sell(
         &self,
         request: Request<GetSatsFromCentsForImmediateSellRequest>,
     ) -> Result<Response<GetSatsFromCentsForImmediateSellResponse>, Status> {
-        shared::tracing::record_error(|| async move {
+        shared::tracing::record_error(tracing::Level::ERROR, || async move {
             extract_tracing(&request);
 
             let req = request.into_inner();
@@ -178,14 +178,14 @@ impl PriceService for Price {
     #[instrument(skip_all,
         fields(amount_in_cents = request.get_ref().amount_in_cents,
                 time_in_seconds = request.get_ref().time_in_seconds,
-                error, error.message),
+                error, error.level, error.message),
         err
     )]
     async fn get_sats_from_cents_for_future_buy(
         &self,
         request: Request<GetSatsFromCentsForFutureBuyRequest>,
     ) -> Result<Response<GetSatsFromCentsForFutureBuyResponse>, Status> {
-        shared::tracing::record_error(|| async move {
+        shared::tracing::record_error(tracing::Level::ERROR, || async move {
             extract_tracing(&request);
 
             let req = request.into_inner();
@@ -204,14 +204,14 @@ impl PriceService for Price {
     #[instrument(skip_all,
         fields(amount_in_cents = request.get_ref().amount_in_cents,
                 time_in_seconds = request.get_ref().time_in_seconds,
-                error, error.message),
+                error, error.level, error.message),
         err
     )]
     async fn get_sats_from_cents_for_future_sell(
         &self,
         request: Request<GetSatsFromCentsForFutureSellRequest>,
     ) -> Result<Response<GetSatsFromCentsForFutureSellResponse>, Status> {
-        shared::tracing::record_error(|| async move {
+        shared::tracing::record_error(tracing::Level::ERROR, || async move {
             extract_tracing(&request);
 
             let req = request.into_inner();
@@ -227,12 +227,12 @@ impl PriceService for Price {
         .await
     }
 
-    #[instrument(skip_all, fields(error, error.message) err)]
+    #[instrument(skip_all, fields(error, error.level, error.message) err)]
     async fn get_cents_per_sats_exchange_mid_rate(
         &self,
         request: Request<GetCentsPerSatsExchangeMidRateRequest>,
     ) -> Result<Response<GetCentsPerSatsExchangeMidRateResponse>, Status> {
-        shared::tracing::record_error(|| async move {
+        shared::tracing::record_error(tracing::Level::ERROR, || async move {
             extract_tracing(&request);
 
             let ratio_in_cents_per_satoshis =

@@ -47,7 +47,7 @@ pub async fn start_job_runner(
     Ok(registry.runner(&pool).run().await?)
 }
 
-#[instrument(skip_all, fields(error, error.message), err)]
+#[instrument(skip_all, fields(error, error.level, error.message), err)]
 pub async fn spawn_poll_okex(
     pool: &sqlx::PgPool,
     duration: std::time::Duration,
@@ -61,7 +61,7 @@ pub async fn spawn_poll_okex(
     {
         Err(sqlx::Error::Database(err)) if err.message().contains("duplicate key") => Ok(()),
         Err(e) => {
-            shared::tracing::insert_error_fields(&e);
+            shared::tracing::insert_error_fields(tracing::Level::ERROR, &e);
             Err(e.into())
         }
         Ok(_) => Ok(()),
@@ -91,7 +91,7 @@ pub async fn spawn_adjust_hedge<'a>(
     {
         Err(sqlx::Error::Database(err)) if err.message().contains("duplicate key") => Ok(()),
         Err(e) => {
-            shared::tracing::insert_error_fields(&e);
+            shared::tracing::insert_error_fields(tracing::Level::ERROR, &e);
             Err(e.into())
         }
         Ok(_) => Ok(()),
@@ -112,34 +112,43 @@ async fn poll_okex(
         attempt = tracing::field::Empty,
         last_attempt = false,
         error = tracing::field::Empty,
+        error.level = tracing::field::Empty,
         error.message = tracing::field::Empty,
     );
-    shared::tracing::record_error(|| async move {
-        let mut job_completed = false;
-        if let Ok(tracker) = update_tracker(&mut current_job).await {
-            if tracker.attempts > 5 {
-                Span::current().record("last_attempt", &true);
-                current_job.complete().await?;
-                job_completed = true;
+    let tracker = current_tracker(&current_job);
+    shared::tracing::record_error(
+        if tracker.attempts >= 4 {
+            tracing::Level::ERROR
+        } else {
+            tracing::Level::WARN
+        },
+        || async move {
+            let mut job_completed = false;
+            if let Ok(tracker) = update_tracker(&mut current_job).await {
+                if tracker.attempts > 5 {
+                    Span::current().record("last_attempt", &true);
+                    current_job.complete().await?;
+                    job_completed = true;
+                }
             }
-        }
-        let PositionSize {
-            usd_cents,
-            instrument_id,
-        } = okex.get_position_in_signed_usd_cents().await?;
-        publisher
-            .publish(OkexBtcUsdSwapPositionPayload {
-                exchange: ExchangeIdRaw::from(OKEX_EXCHANGE_ID),
-                instrument_id: InstrumentIdRaw::from(instrument_id.to_string()),
-                signed_usd_exposure: SyntheticCentExposure::from(usd_cents),
-            })
-            .await?;
-        if !job_completed {
-            current_job.complete().await?;
-        }
-        spawn_poll_okex(current_job.pool(), delay).await?;
-        Ok(())
-    })
+            let PositionSize {
+                usd_cents,
+                instrument_id,
+            } = okex.get_position_in_signed_usd_cents().await?;
+            publisher
+                .publish(OkexBtcUsdSwapPositionPayload {
+                    exchange: ExchangeIdRaw::from(OKEX_EXCHANGE_ID),
+                    instrument_id: InstrumentIdRaw::from(instrument_id.to_string()),
+                    signed_usd_exposure: SyntheticCentExposure::from(usd_cents),
+                })
+                .await?;
+            if !job_completed {
+                current_job.complete().await?;
+            }
+            spawn_poll_okex(current_job.pool(), delay).await?;
+            Ok(())
+        },
+    )
     .instrument(span)
     .await
 }
@@ -161,34 +170,46 @@ async fn adjust_hedge(
         job_id = %current_job.id(),
         job_name = %current_job.name(),
         error = tracing::field::Empty,
+        error.level = tracing::field::Empty,
         error.message = tracing::field::Empty,
     );
     shared::tracing::inject_tracing_data(&span, &tracing_data);
-    shared::tracing::record_error(|| async move {
-        adjust_hedge::execute(
-            current_job,
-            correlation_id,
-            synth_usd_liability,
-            okex,
-            hedging_adjustments,
-        )
-        .await
-    })
+    let tracker = current_tracker(&current_job);
+    shared::tracing::record_error(
+        if tracker.attempts >= 10 {
+            tracing::Level::ERROR
+        } else {
+            tracing::Level::WARN
+        },
+        || async move {
+            adjust_hedge::execute(
+                current_job,
+                correlation_id,
+                synth_usd_liability,
+                okex,
+                hedging_adjustments,
+            )
+            .await
+        },
+    )
     .instrument(span)
     .await?;
     Ok(())
 }
 
+fn current_tracker(current_job: &CurrentJob) -> AttemptTracker {
+    if let Ok(Some(AttemptTracker { attempts })) = current_job.json::<AttemptTracker>() {
+        AttemptTracker {
+            attempts: attempts + 1,
+        }
+    } else {
+        AttemptTracker { attempts: 1 }
+    }
+}
+
 async fn update_tracker(current_job: &mut CurrentJob) -> Result<AttemptTracker, HedgingError> {
     let mut checkpoint = sqlxmq::Checkpoint::new();
-    let tracker =
-        if let Ok(Some(AttemptTracker { attempts })) = current_job.json::<AttemptTracker>() {
-            AttemptTracker {
-                attempts: attempts + 1,
-            }
-        } else {
-            AttemptTracker { attempts: 1 }
-        };
+    let tracker = current_tracker(current_job);
     Span::current().record("attempt", &tracing::field::display(tracker.attempts));
     checkpoint
         .set_json(&tracker)

@@ -32,7 +32,7 @@ fn default_balance_publish_frequency() -> Duration {
 }
 
 fn default_galoy_poll_frequency() -> Duration {
-    Duration::from_secs(5)
+    Duration::from_secs(8)
 }
 
 fn bool_true() -> bool {

@@ -164,6 +164,8 @@ dependencies = [
  "percent-encoding",
  "pin-project-lite",
  "serde",
+ "serde_json",
+ "serde_urlencoded",
  "sync_wrapper",
  "tokio",
  "tower",
@@ -2456,6 +2458,7 @@ name = "stablesats"
 version = "0.3.4-dev"
 dependencies = [
  "anyhow",
+ "axum",
  "clap",
  "futures",
  "galoy-client",

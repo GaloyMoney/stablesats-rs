@@ -1,11 +1,10 @@
 use anyhow::Context;
 use clap::{Parser, Subcommand};
 use rust_decimal::Decimal;
-use std::path::PathBuf;
+use std::{collections::HashMap, path::PathBuf};
 use url::Url;
 
-use super::config::*;
-use super::price_client::*;
+use super::{config::*, price_client::*};
 
 #[derive(Parser)]
 #[clap(version, long_about = None)]
@@ -125,6 +124,7 @@ async fn run_cmd(
     crate::tracing::init_tracer(tracing)?;
     let (send, mut receive) = tokio::sync::mpsc::channel(1);
     let mut handles = Vec::new();
+    let mut checkers = HashMap::new();
 
     if price_server.enabled {
         println!(
@@ -134,9 +134,11 @@ async fn run_cmd(
 
         let price_send = send.clone();
         let pubsub = pubsub.clone();
+        let (snd, recv) = futures::channel::mpsc::unbounded();
+        checkers.insert("price", snd);
         handles.push(tokio::spawn(async move {
             let _ = price_send.try_send(
-                price_server::run(price_server.server, price_server.fees, pubsub)
+                price_server::run(recv, price_server.server, price_server.fees, pubsub)
                     .await
                     .context("Price Server error"),
             );
@@ -159,9 +161,11 @@ async fn run_cmd(
         println!("Starting hedging process");
         let hedging_send = send.clone();
         let pubsub = pubsub.clone();
+        let (snd, recv) = futures::channel::mpsc::unbounded();
+        checkers.insert("hedging", snd);
         handles.push(tokio::spawn(async move {
             let _ = hedging_send.try_send(
-                hedging::run(hedging.config, okex, pubsub)
+                hedging::run(recv, hedging.config, okex, pubsub)
                     .await
                     .context("Hedging error"),
             );
@@ -179,6 +183,9 @@ async fn run_cmd(
             );
         }));
     }
+    handles.push(tokio::spawn(async move {
+        let _ = send.try_send(crate::health::run(checkers).await);
+    }));
     let reason = receive.recv().await.expect("Didn't receive msg");
     for handle in handles {
         handle.abort();

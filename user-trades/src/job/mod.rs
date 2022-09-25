@@ -69,7 +69,7 @@ pub async fn spawn_publish_liability(
     }
 }
 
-#[instrument(skip_all,fields(error, error.message), err)]
+#[instrument(skip_all,fields(error, error.level, error.message), err)]
 pub async fn spawn_poll_galoy_transactions(
     pool: &sqlx::PgPool,
     duration: Duration,
@@ -83,7 +83,7 @@ pub async fn spawn_poll_galoy_transactions(
     {
         Err(sqlx::Error::Database(err)) if err.message().contains("duplicate key") => Ok(()),
         Err(e) => {
-            shared::tracing::insert_error_fields(&e);
+            shared::tracing::insert_error_fields(tracing::Level::ERROR, &e);
             Err(e.into())
         }
         Ok(_) => Ok(()),
@@ -104,36 +104,44 @@ async fn publish_liability(
         attempt = tracing::field::Empty,
         last_attempt = false,
         error = tracing::field::Empty,
+        error.level = tracing::field::Empty,
         error.message = tracing::field::Empty,
     );
-    shared::tracing::record_error(|| async move {
-        let mut job_completed = false;
-        if let Ok(tracker) = update_tracker(&mut current_job).await {
+    let tracker = current_tracker(&current_job);
+    shared::tracing::record_error(
+        if tracker.attempts >= 4 {
+            tracing::Level::ERROR
+        } else {
+            tracing::Level::WARN
+        },
+        || async move {
+            let mut job_completed = false;
+            let tracker = update_tracker(&mut current_job).await?;
             if tracker.attempts > 5 {
                 Span::current().record("last_attempt", &true);
                 current_job.complete().await?;
                 job_completed = true;
             }
-        }
-        let balances = user_trade_balances.fetch_all().await?;
-        publisher
-            .publish(SynthUsdLiabilityPayload {
-                liability: SyntheticCentLiability::try_from(
-                    balances
-                        .get(&UserTradeUnit::SynthCent)
-                        .expect("SynthCents should always be present")
-                        .current_balance
-                        * dec!(-1),
-                )
-                .expect("SynthCents should be negative"),
-            })
-            .await?;
-        if !job_completed {
-            current_job.complete().await?;
-        }
-        spawn_publish_liability(current_job.pool(), delay).await?;
-        Ok(())
-    })
+            let balances = user_trade_balances.fetch_all().await?;
+            publisher
+                .publish(SynthUsdLiabilityPayload {
+                    liability: SyntheticCentLiability::try_from(
+                        balances
+                            .get(&UserTradeUnit::SynthCent)
+                            .expect("SynthCents should always be present")
+                            .current_balance
+                            * dec!(-1),
+                    )
+                    .expect("SynthCents should be negative"),
+                })
+                .await?;
+            if !job_completed {
+                current_job.complete().await?;
+            }
+            spawn_publish_liability(current_job.pool(), delay).await?;
+            Ok(())
+        },
+    )
     .instrument(span)
     .await
 }
@@ -149,40 +157,64 @@ async fn poll_galoy_transactions(
     galoy: GaloyClient,
     PollGaloyTransactionsDelay(delay): PollGaloyTransactionsDelay,
 ) -> Result<(), UserTradesError> {
-    let mut job_completed = false;
-    if let Ok(tracker) = update_tracker(&mut current_job).await {
-        if tracker.attempts > 5 {
-            Span::current().record("last_attempt", &true);
-            current_job.complete().await?;
-            job_completed = true;
+    let span = info_span!(
+        "execute_job",
+        job_id = %current_job.id(),
+        job_name = %current_job.name(),
+        error = tracing::field::Empty,
+        error.level = tracing::field::Empty,
+        error.message = tracing::field::Empty,
+    );
+    let tracker = current_tracker(&current_job);
+    shared::tracing::record_error(
+        if tracker.attempts >= 4 {
+            tracing::Level::ERROR
+        } else {
+            tracing::Level::WARN
+        },
+        || async move {
+            let mut job_completed = false;
+            if let Ok(tracker) = update_tracker(&mut current_job).await {
+                if tracker.attempts > 5 {
+                    Span::current().record("last_attempt", &true);
+                    current_job.complete().await?;
+                    job_completed = true;
+                }
+            }
+            let mut has_more = true;
+            let galoy_transactions = GaloyTransactions::new(current_job.pool().clone());
+            while has_more {
+                has_more =
+                    poll_galoy_transactions::execute(&user_trades, &galoy_transactions, &galoy)
+                        .await?;
+                if has_more {
+                    current_job.keep_alive(Duration::from_secs(5)).await?;
+                }
+            }
+            if !job_completed {
+                current_job.complete().await?;
+            }
+            spawn_poll_galoy_transactions(current_job.pool(), delay).await?;
+            Ok(())
+        },
+    )
+    .instrument(span)
+    .await
+}
+
+fn current_tracker(current_job: &CurrentJob) -> AttemptTracker {
+    if let Ok(Some(AttemptTracker { attempts })) = current_job.json::<AttemptTracker>() {
+        AttemptTracker {
+            attempts: attempts + 1,
         }
+    } else {
+        AttemptTracker { attempts: 1 }
     }
-    let mut has_more = true;
-    let galoy_transactions = GaloyTransactions::new(current_job.pool().clone());
-    while has_more {
-        has_more =
-            poll_galoy_transactions::execute(&user_trades, &galoy_transactions, &galoy).await?;
-        if has_more {
-            current_job.keep_alive(Duration::from_secs(5)).await?;
-        }
-    }
-    if !job_completed {
-        current_job.complete().await?;
-    }
-    spawn_poll_galoy_transactions(current_job.pool(), delay).await?;
-    Ok(())
 }
 
 async fn update_tracker(current_job: &mut CurrentJob) -> Result<AttemptTracker, UserTradesError> {
     let mut checkpoint = sqlxmq::Checkpoint::new();
-    let tracker =
-        if let Ok(Some(AttemptTracker { attempts })) = current_job.json::<AttemptTracker>() {
-            AttemptTracker {
-                attempts: attempts + 1,
-            }
-        } else {
-            AttemptTracker { attempts: 1 }
-        };
+    let tracker = current_tracker(current_job);
     Span::current().record("attempt", &tracing::field::display(tracker.attempts));
     checkpoint
         .set_json(&tracker)
