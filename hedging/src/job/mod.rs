@@ -47,7 +47,7 @@ pub async fn start_job_runner(
     Ok(registry.runner(&pool).run().await?)
 }
 
-#[instrument(skip_all, fields(error, error.message), err)]
+#[instrument(skip_all, fields(error, error.level, error.message), err)]
 pub async fn spawn_poll_okex(
     pool: &sqlx::PgPool,
     duration: std::time::Duration,
@@ -61,7 +61,7 @@ pub async fn spawn_poll_okex(
     {
         Err(sqlx::Error::Database(err)) if err.message().contains("duplicate key") => Ok(()),
         Err(e) => {
-            shared::tracing::insert_error_fields(&e);
+            shared::tracing::insert_error_fields(tracing::Level::ERROR, &e);
             Err(e.into())
         }
         Ok(_) => Ok(()),
@@ -91,7 +91,7 @@ pub async fn spawn_adjust_hedge<'a>(
     {
         Err(sqlx::Error::Database(err)) if err.message().contains("duplicate key") => Ok(()),
         Err(e) => {
-            shared::tracing::insert_error_fields(&e);
+            shared::tracing::insert_error_fields(tracing::Level::ERROR, &e);
             Err(e.into())
         }
         Ok(_) => Ok(()),
@@ -114,7 +114,7 @@ async fn poll_okex(
         error = tracing::field::Empty,
         error.message = tracing::field::Empty,
     );
-    shared::tracing::record_error(|| async move {
+    shared::tracing::record_error(tracing::Level::WARN, || async move {
         let mut job_completed = false;
         if let Ok(tracker) = update_tracker(&mut current_job).await {
             if tracker.attempts > 5 {
@@ -164,7 +164,7 @@ async fn adjust_hedge(
         error.message = tracing::field::Empty,
     );
     shared::tracing::inject_tracing_data(&span, &tracing_data);
-    shared::tracing::record_error(|| async move {
+    shared::tracing::record_error(tracing::Level::WARN, || async move {
         adjust_hedge::execute(
             current_job,
             correlation_id,

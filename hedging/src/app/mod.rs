@@ -112,6 +112,7 @@ impl HedgingApp {
                     message_type = %msg.payload_type,
                     correlation_id = %correlation_id,
                     error = tracing::field::Empty,
+                    error.level = tracing::field::Empty,
                     error.message = tracing::field::Empty,
                 );
                 shared::tracing::inject_tracing_data(&span, &msg.meta.tracing_data);
@@ -144,7 +145,7 @@ impl HedgingApp {
             }
             Ok(None) => Ok(()),
             Err(e) => {
-                shared::tracing::insert_error_fields(&e);
+                shared::tracing::insert_error_fields(tracing::Level::ERROR, &e);
                 Err(e)
             }
         }
