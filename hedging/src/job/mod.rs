@@ -115,7 +115,7 @@ async fn poll_okex(
         error.level = tracing::field::Empty,
         error.message = tracing::field::Empty,
     );
-    let tracker = current_tracker(&mut current_job);
+    let tracker = current_tracker(&current_job);
     shared::tracing::record_error(
         if tracker.attempts >= 4 {
             tracing::Level::ERROR

@@ -110,7 +110,7 @@ impl ExchangePriceCacheInner {
     fn latest_tick(&self) -> Result<BtcSatTick, ExchangePriceCacheError> {
         if let Some(ref tick) = self.tick {
             if tick.timestamp.duration_since() > self.stale_after {
-                return Err(ExchangePriceCacheError::StalePrice(tick.timestamp.clone()));
+                return Err(ExchangePriceCacheError::StalePrice(tick.timestamp));
             }
             return Ok(tick.clone());
         }
