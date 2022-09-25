@@ -18,12 +18,17 @@ pub struct PriceApp {
 
 impl PriceApp {
     pub async fn run(
-        health_check_trigger: HealthCheckTrigger,
+        mut health_check_trigger: HealthCheckTrigger,
         fee_calc_cfg: FeeCalculatorConfig,
         pubsub_cfg: PubSubConfig,
     ) -> Result<Self, PriceAppError> {
         let subscriber = Subscriber::new(pubsub_cfg).await?;
         let mut stream = subscriber.subscribe::<OkexBtcUsdSwapPricePayload>().await?;
+        tokio::spawn(async move {
+            while let Some(check) = health_check_trigger.next().await {
+                subscriber.report_health(Duration::seconds(20), check).await;
+            }
+        });
 
         let price_cache = ExchangePriceCache::new(Duration::seconds(30));
         let fee_calculator = FeeCalculator::new(fee_calc_cfg);

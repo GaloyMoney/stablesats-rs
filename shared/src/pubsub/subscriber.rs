@@ -1,10 +1,14 @@
 use fred::{clients::SubscriberClient, prelude::*};
-use futures::{channel::mpsc::*, stream::StreamExt, SinkExt};
+use futures::{
+    channel::{mpsc::*, oneshot},
+    stream::StreamExt,
+    SinkExt,
+};
 use std::sync::Arc;
 use tokio::sync::RwLock;
 
 use super::{config::*, error::SubscriberError, message::*};
-use crate::time::TimeStamp;
+use crate::{health::HealthCheckResponse, time::TimeStamp};
 
 pub struct Subscriber {
     client: SubscriberClient,
@@ -39,6 +43,29 @@ impl Subscriber {
     pub async fn time_since_last_msg(&self) -> Option<chrono::Duration> {
         let last_msg_timestamp = self.last_msg_timestamp.read().await;
         last_msg_timestamp.map(|ts| ts.duration_since())
+    }
+
+    pub async fn report_health(
+        &self,
+        largest_msg_delay: chrono::Duration,
+        report: oneshot::Sender<HealthCheckResponse>,
+    ) {
+        if let Some(time_since) = self.time_since_last_msg().await {
+            if time_since <= largest_msg_delay {
+                report
+                    .send(Ok(()))
+                    .expect("Couldn't respond to health check");
+            } else {
+                report
+                    .send(Err(format!(
+                        "No messages received in the last {} seconds",
+                        time_since.num_seconds()
+                    )))
+                    .expect("Couldn't respond to health check");
+            }
+        } else {
+            let _ = report.send(Err("No messages received".to_string()));
+        }
     }
 
     pub async fn subscribe<M: MessagePayload>(

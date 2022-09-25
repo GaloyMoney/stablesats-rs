@@ -8,6 +8,7 @@ use tracing_opentelemetry::OpenTelemetrySpanExt;
 
 use okex_client::*;
 use shared::{
+    health::HealthCheckTrigger,
     payload::{OkexBtcUsdSwapPositionPayload, SynthUsdLiabilityPayload},
     pubsub::{CorrelationId, PubSubConfig, Publisher, Subscriber},
 };
@@ -22,6 +23,7 @@ pub struct HedgingApp {
 
 impl HedgingApp {
     pub async fn run(
+        health_check_trigger: HealthCheckTrigger,
         HedgingAppConfig {
             pg_con,
             migrate_on_start,
@@ -45,7 +47,12 @@ impl HedgingApp {
             okex_poll_delay,
         )
         .await?;
-        Self::spawn_synth_usd_listener(pubsub_config.clone(), synth_usd_liability.clone()).await?;
+        Self::spawn_synth_usd_listener(
+            health_check_trigger,
+            pubsub_config.clone(),
+            synth_usd_liability.clone(),
+        )
+        .await?;
         Self::spawn_okex_position_listener(pubsub_config, pool.clone(), synth_usd_liability)
             .await?;
         Self::spawn_okex_polling(pool, okex_poll_delay).await?;
@@ -66,11 +73,19 @@ impl HedgingApp {
     }
 
     async fn spawn_synth_usd_listener(
+        mut health_check_trigger: HealthCheckTrigger,
         config: PubSubConfig,
         synth_usd_liability: SynthUsdLiability,
     ) -> Result<(), HedgingError> {
         let subscriber = Subscriber::new(config).await?;
         let mut stream = subscriber.subscribe::<SynthUsdLiabilityPayload>().await?;
+        tokio::spawn(async move {
+            while let Some(check) = health_check_trigger.next().await {
+                subscriber
+                    .report_health(chrono::Duration::seconds(20), check)
+                    .await;
+            }
+        });
         let _ = tokio::spawn(async move {
             let propagator = TraceContextPropagator::new();
 

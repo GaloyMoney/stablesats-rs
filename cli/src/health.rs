@@ -1,12 +1,13 @@
 use anyhow::Context;
 use axum::{http::StatusCode, response::IntoResponse, routing::get, Router};
 use futures::SinkExt;
-use std::{net::SocketAddr, sync::Arc};
+use std::{collections::HashMap, net::SocketAddr, sync::Arc};
 
 use shared::health::HealthChecker;
 
-async fn health(checkers: Arc<Vec<HealthChecker>>) -> impl IntoResponse {
-    for checker in checkers.iter() {
+async fn health(checkers: Arc<HashMap<&'static str, HealthChecker>>) -> impl IntoResponse {
+    for (name, checker) in checkers.iter() {
+        println!("Executing '{}' health check:", name);
         let (snd, recv) = futures::channel::oneshot::channel();
         if let Err(e) = checker.clone().send(snd).await {
             eprintln!("Couldn't send health check: {}", e);
@@ -18,16 +19,22 @@ async fn health(checkers: Arc<Vec<HealthChecker>>) -> impl IntoResponse {
                 return StatusCode::SERVICE_UNAVAILABLE;
             }
             Ok(Err(e)) => {
-                eprintln!("Health check failed: {}", e);
+                eprintln!("Error receiving return {}", e);
                 return StatusCode::SERVICE_UNAVAILABLE;
             }
-            Ok(Ok(_)) => (),
+            Ok(Ok(Err(e))) => {
+                eprintln!("FAILED: '{}'", e);
+                return StatusCode::SERVICE_UNAVAILABLE;
+            }
+            _ => {
+                println!("OK");
+            }
         }
     }
     StatusCode::OK
 }
 
-pub async fn run(checkers: Vec<HealthChecker>) -> anyhow::Result<()> {
+pub async fn run(checkers: HashMap<&'static str, HealthChecker>) -> anyhow::Result<()> {
     let app = Router::new().route(
         "/healthz",
         get({

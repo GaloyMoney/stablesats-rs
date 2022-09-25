@@ -99,7 +99,9 @@ async fn hedging() -> anyhow::Result<()> {
         .await?;
 
     tokio::spawn(async move {
+        let (_, recv) = futures::channel::mpsc::unbounded();
         HedgingApp::run(
+            recv,
             HedgingAppConfig {
                 pg_con,
                 migrate_on_start: true,
