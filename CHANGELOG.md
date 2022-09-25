@@ -1,3 +1,21 @@
+# [stablesats release v0.3.4](https://github.com/GaloyMoney/stablesats/releases/tag/v0.3.4)
+
+
+### Bug Fixes
+
+- Clippy
+
+### Miscellaneous Tasks
+
+- Wire price + hedging health check
+- Report Level::ERROR after 4 retries
+- Record error.level in error traces
+- Some health check boilerplate
+- Record last_msg_timestamp in subscriber
+- Bump OTEL libraries
+- Bump serde from 1.0.144 to 1.0.145
+- Bump reqwest from 0.11.11 to 0.11.12
+
 # [stablesats release v0.3.3](https://github.com/GaloyMoney/stablesats/releases/tag/v0.3.3)
 
 
