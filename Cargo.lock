@@ -813,6 +813,24 @@ dependencies = [
 ]
 
 [[package]]
+name = "governor"
+version = "0.5.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "de1b4626e87b9eb1d603ed23067ba1e29ec1d0b35325a2b96c3fe1cf20871f56"
+dependencies = [
+ "cfg-if",
+ "dashmap",
+ "futures",
+ "futures-timer",
+ "no-std-compat",
+ "nonzero_ext",
+ "parking_lot 0.12.1",
+ "quanta",
+ "rand",
+ "smallvec",
+]
+
+[[package]]
 name = "graphql-introspection-query"
 version = "0.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1368,7 +1386,7 @@ dependencies = [
  "anyhow",
  "chrono",
  "data-encoding",
- "governor",
+ "governor 0.4.2",
  "lazy_static",
  "rand",
  "reqwest",
@@ -2491,6 +2509,8 @@ dependencies = [
  "chrono",
  "fred",
  "futures",
+ "governor 0.5.0",
+ "lazy_static",
  "opentelemetry",
  "rust_decimal",
  "rust_decimal_macros",
