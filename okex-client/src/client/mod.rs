@@ -445,7 +445,7 @@ impl OkexClient {
                 return Ok(None);
             }
         }
-        Err(OkexClientError::UnexpectedResponse { msg, code })
+        Err(OkexClientError::from((msg, code)))
     }
 
     /// Extracts the array of entries in the response data
@@ -459,7 +459,7 @@ impl OkexClient {
         if let Some(data) = data {
             return Ok(data);
         }
-        Err(OkexClientError::UnexpectedResponse { msg, code })
+        Err(OkexClientError::from((msg, code)))
     }
 
     fn sign_okex_request(&self, pre_hash: String) -> String {

@@ -10,8 +10,19 @@ pub enum OkexClientError {
     Header(#[from] reqwest::header::InvalidHeaderValue),
     #[error("OkexClientError - UnexpectedResponse: {code:?} - {msg:?}")]
     UnexpectedResponse { msg: String, code: String },
+    #[error("OkexClientError - ServiceUnavailable: {code:?} - {msg:?}")]
+    ServiceUnavailable { msg: String, code: String },
     #[error("OkexClientError - DecimalConversion: {0}")]
     DecimalConversion(#[from] rust_decimal::Error),
     #[error("OkexClientError - MosconfiguredAccount: {0}")]
     MisconfiguredAccount(String),
+}
+
+impl From<(String, String)> for OkexClientError {
+    fn from((msg, code): (String, String)) -> Self {
+        match code.as_str() {
+            "50001" => OkexClientError::ServiceUnavailable { msg, code },
+            _ => OkexClientError::UnexpectedResponse { msg, code },
+        }
+    }
 }

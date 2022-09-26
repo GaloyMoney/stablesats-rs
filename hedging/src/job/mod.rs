@@ -8,7 +8,7 @@ use uuid::{uuid, Uuid};
 
 use std::collections::HashMap;
 
-use okex_client::{OkexClient, PositionSize};
+use okex_client::{OkexClient, OkexClientError, PositionSize};
 use shared::{
     payload::{
         ExchangeIdRaw, InstrumentIdRaw, OkexBtcUsdSwapPositionPayload, SyntheticCentExposure,
@@ -155,7 +155,7 @@ async fn poll_okex(
 
 #[job(name = "adjust_hedge", channel_name = "hedging", retries = 20)]
 async fn adjust_hedge(
-    current_job: CurrentJob,
+    mut current_job: CurrentJob,
     synth_usd_liability: SynthUsdLiability,
     okex: OkexClient,
     hedging_adjustments: HedgingAdjustments,
@@ -174,24 +174,21 @@ async fn adjust_hedge(
         error.message = tracing::field::Empty,
     );
     shared::tracing::inject_tracing_data(&span, &tracing_data);
-    let tracker = current_tracker(&current_job);
-    shared::tracing::record_error(
-        if tracker.attempts >= 10 {
-            tracing::Level::ERROR
-        } else {
-            tracing::Level::WARN
-        },
-        || async move {
-            adjust_hedge::execute(
-                current_job,
-                correlation_id,
-                synth_usd_liability,
-                okex,
-                hedging_adjustments,
-            )
-            .await
-        },
-    )
+    shared::tracing::record_error(tracing::Level::ERROR, || async move {
+        let result = match adjust_hedge::execute(
+            correlation_id,
+            synth_usd_liability,
+            okex,
+            hedging_adjustments,
+        )
+        .await
+        {
+            Err(HedgingError::OkexClient(OkexClientError::ServiceUnavailable { .. })) => Ok(()),
+            res => res,
+        };
+        current_job.complete().await?;
+        result
+    })
     .instrument(span)
     .await?;
     Ok(())

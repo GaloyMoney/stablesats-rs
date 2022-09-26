@@ -10,7 +10,6 @@ use crate::{adjustment_action::*, error::*, hedging_adjustments::*, synth_usd_li
 #[instrument(name = "adjust_hedge", skip_all, fields(
         target_liability, current_position, action, usd_value_after_adjustment) err)]
 pub(super) async fn execute(
-    mut current_job: CurrentJob,
     correlation_id: CorrelationId,
     synth_usd_liability: SynthUsdLiability,
     okex: OkexClient,
@@ -64,6 +63,5 @@ pub(super) async fn execute(
             })
             .await;
     }
-    current_job.complete().await?;
     Ok(())
 }
