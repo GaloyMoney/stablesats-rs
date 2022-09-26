@@ -36,7 +36,7 @@ impl Publisher {
         &self,
         key: &'static str,
     ) -> Result<&RedisClient, NotUntil<QuantaInstant>> {
-        let _outcome = LIMITER.check_key(&key)?;
+        LIMITER.check_key(&key)?;
         Ok(&self.client)
     }
 
