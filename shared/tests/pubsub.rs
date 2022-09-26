@@ -61,13 +61,13 @@ async fn throttle_publishing() -> anyhow::Result<()> {
         }
     });
 
-    let ten_seconds = Duration::from_secs(10);
-    let _ = time::sleep(ten_seconds).await;
+    let thirty_seconds = Duration::from_secs(30);
+    let _ = time::sleep(thirty_seconds).await;
     println!("{:?}", now.elapsed());
 
     let _ = tp_jh.abort();
     let mut count = 0_u32;
-    if now.elapsed() >= ten_seconds {
+    if now.elapsed() >= thirty_seconds {
         while let Some(_msg) = stream.next().await {
             count = count + 1;
         }

@@ -1,5 +1,4 @@
 use fred::prelude::*;
-use std::time::Duration;
 use tracing::instrument;
 
 use super::config::*;
@@ -7,7 +6,9 @@ use super::error::PublisherError;
 use super::message::*;
 
 use governor::{
-    clock::DefaultClock, state::keyed::DefaultKeyedStateStore, Jitter, Quota, RateLimiter,
+    clock::{DefaultClock, QuantaInstant},
+    state::keyed::DefaultKeyedStateStore,
+    NotUntil, Quota, RateLimiter,
 };
 use std::num::NonZeroU32;
 
@@ -31,10 +32,12 @@ impl Publisher {
         Ok(Self { client })
     }
 
-    pub async fn rate_limit_publisher(&self, key: &'static str) -> &RedisClient {
-        let jitter = Jitter::new(Duration::from_secs(2), Duration::from_secs(1));
-        LIMITER.until_key_ready_with_jitter(&key, jitter).await;
-        &self.client
+    pub fn rate_limit_publisher(
+        &self,
+        key: &'static str,
+    ) -> Result<&RedisClient, NotUntil<QuantaInstant>> {
+        let _outcome = LIMITER.check_key(&key)?;
+        Ok(&self.client)
     }
 
     /// Throttles the publishing of price ticks
@@ -45,11 +48,19 @@ impl Publisher {
         let msg = Envelope::new(payload);
         let payload_str = serde_json::to_string(&msg)?;
 
-        let _throttled_publishing = self
-            .rate_limit_publisher(<P as MessagePayload>::channel())
-            .await
-            .publish(<P as MessagePayload>::channel(), payload_str)
-            .await?;
+        match self.rate_limit_publisher(<P as MessagePayload>::channel()) {
+            Ok(client) => {
+                client
+                    .publish(<P as MessagePayload>::channel(), payload_str)
+                    .await?;
+            }
+            Err(err) => {
+                println!(
+                    "Error: {}. Negative rate limit outcome. Message dropped",
+                    err
+                );
+            }
+        }
 
         Ok(())
     }
