@@ -1,5 +1,4 @@
 use rust_decimal::Decimal;
-use sqlxmq::CurrentJob;
 use tracing::instrument;
 
 use okex_client::*;
