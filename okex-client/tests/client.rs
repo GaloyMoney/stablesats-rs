@@ -142,7 +142,11 @@ async fn open_close_position() -> anyhow::Result<()> {
     client.close_positions().await?;
 
     client
-        .place_order(OkexOrderSide::Sell, &BtcUsdSwapContracts::from(1))
+        .place_order(
+            ClientOrderId::new(),
+            OkexOrderSide::Sell,
+            &BtcUsdSwapContracts::from(1),
+        )
         .await?;
 
     let position = client.get_position_in_signed_usd_cents().await?;

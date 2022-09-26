@@ -28,6 +28,7 @@ pub(super) async fn execute(
 
     let action = determine_action(target_liability, current_position.into());
     span.record("action", &tracing::field::display(&action));
+    let id = ClientOrderId::new();
     let mut exchange_ref = None;
     match action {
         AdjustmentAction::DoNothing => {}
@@ -36,13 +37,17 @@ pub(super) async fn execute(
         }
         AdjustmentAction::Sell(ref contracts) => {
             exchange_ref = Some(
-                okex.place_order(OkexOrderSide::Sell, contracts)
+                okex.place_order(id, OkexOrderSide::Sell, contracts)
                     .await?
                     .value,
             );
         }
         AdjustmentAction::Buy(ref contracts) => {
-            exchange_ref = Some(okex.place_order(OkexOrderSide::Buy, contracts).await?.value);
+            exchange_ref = Some(
+                okex.place_order(id, OkexOrderSide::Buy, contracts)
+                    .await?
+                    .value,
+            );
         }
     };
     if action.action_required() {

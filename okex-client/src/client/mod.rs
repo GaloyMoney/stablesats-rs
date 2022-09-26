@@ -312,11 +312,13 @@ impl OkexClient {
 
     pub async fn place_order(
         &self,
+        id: ClientOrderId,
         side: OkexOrderSide,
         contracts: &BtcUsdSwapContracts,
     ) -> Result<OrderId, OkexClientError> {
         let mut body: HashMap<String, String> = HashMap::new();
         body.insert("ccy".to_string(), TradeCurrency::BTC.to_string());
+        body.insert("clOrdId".to_string(), id.0);
         body.insert(
             "instId".to_string(),
             OkexInstrumentId::BtcUsdSwap.to_string(),
