@@ -348,6 +348,23 @@ impl OkexClient {
         })
     }
 
+    pub async fn order_details(&self, id: ClientOrderId) -> Result<OrderDetails, OkexClientError> {
+        let static_request_path = "/api/v5/trade/order?instId=BTC-USD-SWAP&clOrdId=";
+        let request_path = format!("{}{}", static_request_path, id.0);
+        let headers = self.get_request_headers(&request_path)?;
+
+        let response = self
+            .rate_limit_client(&static_request_path)
+            .await
+            .get(Self::url_for_path(&request_path))
+            .headers(headers)
+            .send()
+            .await?;
+
+        let details = Self::extract_response_data::<OrderDetails>(response).await?;
+        Ok(details)
+    }
+
     pub async fn get_position_in_signed_usd_cents(&self) -> Result<PositionSize, OkexClientError> {
         let request_path = "/api/v5/account/positions?instId=BTC-USD-SWAP";
         let headers = self.get_request_headers(request_path)?;

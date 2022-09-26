@@ -1,6 +1,8 @@
 use rust_decimal::Decimal;
 use std::fmt::Display;
 
+#[derive(serde::Deserialize, Debug, Clone)]
+#[serde(transparent)]
 pub struct ClientOrderId(pub(super) String);
 impl ClientOrderId {
     pub fn new() -> Self {
