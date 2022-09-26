@@ -31,7 +31,7 @@ async fn okex_price_tick_received(
     tick: OkexPriceTick,
 ) -> Result<(), PriceFeedError> {
     if let Ok(payload) = OkexBtcUsdSwapPricePayload::try_from(tick) {
-        publisher.publish_price(payload).await?
+        publisher.throttle_publish(payload).await?
     }
     Ok(())
 }

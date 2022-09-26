@@ -38,7 +38,10 @@ impl Publisher {
     }
 
     /// Throttles the publishing of price ticks
-    pub async fn publish_price<P: MessagePayload>(&self, payload: P) -> Result<(), PublisherError> {
+    pub async fn throttle_publish<P: MessagePayload>(
+        &self,
+        payload: P,
+    ) -> Result<(), PublisherError> {
         let msg = Envelope::new(payload);
         let payload_str = serde_json::to_string(&msg)?;
 

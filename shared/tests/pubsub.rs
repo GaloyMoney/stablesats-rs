@@ -1,9 +1,8 @@
-use futures::future;
 use futures::stream::{self, StreamExt};
 use serde::*;
 use stablesats_shared::{payload, pubsub::*};
-use std::thread;
 use std::time::{Duration, Instant};
+use tokio::time;
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
 struct TestMessage {
@@ -37,7 +36,7 @@ async fn pubsub() -> anyhow::Result<()> {
 }
 
 #[tokio::test]
-async fn throttle_price_publishing() -> anyhow::Result<()> {
+async fn throttle_publishing() -> anyhow::Result<()> {
     let redis_host = std::env::var("REDIS_HOST").unwrap_or("localhost".to_string());
     let config = PubSubConfig {
         host: Some(redis_host),
@@ -50,14 +49,32 @@ async fn throttle_price_publishing() -> anyhow::Result<()> {
         test: "test".to_string(),
         value: u64::MAX,
     };
+    let mut price_feed_stream = stream::repeat(msg);
 
-    publisher.publish_price(msg.clone()).await?;
-    // 1. Spawn thread publishing okex messages
-    // 2. Sleep for 1 minute
-    // 3. subscribe until none
-    // 4. count shouls be <= 30
+    let now = Instant::now();
+    let tp_jh = tokio::spawn(async move {
+        while let Some(msg) = price_feed_stream.next().await {
+            publisher
+                .throttle_publish(msg)
+                .await
+                .expect("Publisher error");
+        }
+    });
 
-    // let received = stream.next().await;
-    // assert_eq!(msg, received.unwrap().payload);
+    let ten_seconds = Duration::from_secs(10);
+    let _ = time::sleep(ten_seconds).await;
+    println!("{:?}", now.elapsed());
+
+    let _ = tp_jh.abort();
+    let mut count = 0_u32;
+    if now.elapsed() >= ten_seconds {
+        while let Some(_msg) = stream.next().await {
+            count = count + 1;
+        }
+    }
+
+    println!("{}", count);
+    assert!(count <= 15);
+
     Ok(())
 }
