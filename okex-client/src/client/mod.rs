@@ -15,6 +15,7 @@ use serde::{Deserialize, Serialize};
 use std::{collections::HashMap, time::Duration};
 
 pub use error::*;
+pub use okex_response::OrderDetails;
 use okex_response::*;
 pub use primitives::*;
 
@@ -361,7 +362,10 @@ impl OkexClient {
             .send()
             .await?;
 
-        let details = Self::extract_response_data::<OrderDetails>(response).await?;
+        let mut details = Self::extract_response_data::<OrderDetails>(response).await?;
+        if details.state == "filled" || details.state == "canceled" {
+            details.complete = true;
+        }
         Ok(details)
     }
 
@@ -402,12 +406,13 @@ impl OkexClient {
         }
     }
 
-    pub async fn close_positions(&self) -> Result<(), OkexClientError> {
+    pub async fn close_positions(&self, id: ClientOrderId) -> Result<(), OkexClientError> {
         let mut body: HashMap<String, String> = HashMap::new();
         body.insert(
             "instId".to_string(),
             OkexInstrumentId::BtcUsdSwap.to_string(),
         );
+        body.insert("clOrdId".to_string(), id.0);
         body.insert("mgnMode".to_string(), OkexMarginMode::Cross.to_string());
         body.insert("posSide".to_string(), OkexPositionSide::Net.to_string());
         body.insert("ccy".to_string(), TradeCurrency::BTC.to_string());
@@ -448,7 +453,7 @@ impl OkexClient {
                 return Ok(first);
             }
         }
-        Err(OkexClientError::UnexpectedResponse { msg, code })
+        Err(OkexClientError::from((msg, code)))
     }
 
     async fn extract_optional_response_data<T: serde::de::DeserializeOwned>(

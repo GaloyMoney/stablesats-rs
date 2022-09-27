@@ -75,6 +75,19 @@ async fn trading_account_balance() -> anyhow::Result<()> {
 }
 
 #[tokio::test]
+async fn unknown_client_order_id() -> anyhow::Result<()> {
+    let client = configured_okex_client().await?;
+    let id = ClientOrderId::new();
+    let result = client.order_details(id).await;
+    if let Err(OkexClientError::OrderDoesNotExist) = result {
+        assert!(true)
+    } else {
+        assert!(false)
+    }
+    Ok(())
+}
+
+#[tokio::test]
 #[ignore = "only works against real okex client"]
 async fn deposit_status() -> anyhow::Result<()> {
     if let (Ok(deposit_addr), Ok(deposit_amount)) = (
@@ -139,7 +152,7 @@ async fn transfer_state() -> anyhow::Result<()> {
 async fn open_close_position() -> anyhow::Result<()> {
     let client = configured_okex_client().await?;
 
-    client.close_positions().await?;
+    client.close_positions(ClientOrderId::new()).await?;
 
     client
         .place_order(
@@ -154,7 +167,7 @@ async fn open_close_position() -> anyhow::Result<()> {
     assert!(position.usd_cents < dec!(-95));
     assert!(position.usd_cents > dec!(-105));
 
-    assert!(client.close_positions().await.is_ok());
+    assert!(client.close_positions(ClientOrderId::new()).await.is_ok());
 
     Ok(())
 }

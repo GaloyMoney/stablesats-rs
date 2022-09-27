@@ -1,4 +1,5 @@
 mod adjust_hedge;
+mod poll_okex;
 
 use serde::{Deserialize, Serialize};
 use sqlx::{Executor, Postgres};
@@ -103,6 +104,7 @@ async fn poll_okex(
     mut current_job: CurrentJob,
     OkexPollDelay(delay): OkexPollDelay,
     okex: OkexClient,
+    okex_orders: OkexOrders,
     publisher: Publisher,
 ) -> Result<(), HedgingError> {
     let span = info_span!(
@@ -131,17 +133,7 @@ async fn poll_okex(
                     job_completed = true;
                 }
             }
-            let PositionSize {
-                usd_cents,
-                instrument_id,
-            } = okex.get_position_in_signed_usd_cents().await?;
-            publisher
-                .publish(OkexBtcUsdSwapPositionPayload {
-                    exchange: ExchangeIdRaw::from(OKEX_EXCHANGE_ID),
-                    instrument_id: InstrumentIdRaw::from(instrument_id.to_string()),
-                    signed_usd_exposure: SyntheticCentExposure::from(usd_cents),
-                })
-                .await?;
+            poll_okex::execute(okex_orders, okex, publisher).await?;
             if !job_completed {
                 current_job.complete().await?;
             }
@@ -153,7 +145,7 @@ async fn poll_okex(
     .await
 }
 
-#[job(name = "adjust_hedge", channel_name = "hedging", retries = 20)]
+#[job(name = "adjust_hedge", channel_name = "hedging", ordered, retries = 20)]
 async fn adjust_hedge(
     mut current_job: CurrentJob,
     synth_usd_liability: SynthUsdLiability,

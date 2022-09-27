@@ -136,10 +136,13 @@ pub struct OrderData {
 #[serde(rename_all = "camelCase")]
 pub struct OrderDetails {
     pub cl_ord_id: ClientOrderId,
+    pub ord_id: String,
     pub avg_px: Decimal,
     pub fee: Decimal,
     pub sz: Decimal,
     pub state: String,
+    #[serde(skip)]
+    pub complete: bool,
 }
 
 #[derive(Deserialize, Debug)]
