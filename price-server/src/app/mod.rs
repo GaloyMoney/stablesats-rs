@@ -168,7 +168,7 @@ impl PriceApp {
         Ok(self.fee_calculator.decrease_by_delayed_fee(sats).floor())
     }
 
-    #[instrument(skip_all, fields(correlation_id, ret, err))]
+    #[instrument(skip_all, fields(correlation_id), ret, err)]
     pub async fn get_cents_per_sat_exchange_mid_rate(&self) -> Result<f64, PriceAppError> {
         let cents_per_sat = self.price_cache.latest_tick().await?.mid_price_of_one_sat();
         Ok(f64::try_from(cents_per_sat)?)

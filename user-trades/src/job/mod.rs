@@ -9,6 +9,7 @@ use galoy_client::GaloyClient;
 use shared::{
     payload::{SynthUsdLiabilityPayload, SyntheticCentLiability},
     pubsub::*,
+    sqlxmq::JobExecutor,
 };
 use std::time::Duration;
 
@@ -25,11 +26,6 @@ const POLL_GALOY_TRANSACTIONS_ID: Uuid = uuid!("00000000-0000-0000-0000-00000000
 struct LiabilityPublishDelay(Duration);
 #[derive(Debug, Clone)]
 struct PollGaloyTransactionsDelay(Duration);
-
-#[derive(serde::Serialize, serde::Deserialize, Debug, Clone)]
-pub struct AttemptTracker {
-    pub attempts: u32,
-}
 
 pub async fn start_job_runner(
     pool: sqlx::PgPool,
@@ -58,8 +54,6 @@ pub async fn spawn_publish_liability(
 ) -> Result<(), UserTradesError> {
     match JobBuilder::new_with_id(PUBLISH_LIABILITY_ID, "publish_liability")
         .set_delay(duration)
-        .set_json(&AttemptTracker { attempts: 0 })
-        .expect("couldn't set json")
         .spawn(pool)
         .await
     {
@@ -76,8 +70,6 @@ pub async fn spawn_poll_galoy_transactions(
 ) -> Result<(), UserTradesError> {
     match JobBuilder::new_with_id(POLL_GALOY_TRANSACTIONS_ID, "poll_galoy_transactions")
         .set_delay(duration)
-        .set_json(&AttemptTracker { attempts: 0 })
-        .expect("couldn't set json")
         .spawn(pool)
         .await
     {
@@ -90,38 +82,17 @@ pub async fn spawn_poll_galoy_transactions(
     }
 }
 
-#[job(name = "publish_liability", channel_name = "user_trades", retries = 10)]
+#[job(name = "publish_liability", channel_name = "user_trades")]
 async fn publish_liability(
     mut current_job: CurrentJob,
     publisher: Publisher,
     user_trade_balances: UserTradeBalances,
     LiabilityPublishDelay(delay): LiabilityPublishDelay,
 ) -> Result<(), UserTradesError> {
-    let span = info_span!(
-        "publish_liability",
-        job_id = %current_job.id(),
-        job_name = %current_job.name(),
-        attempt = tracing::field::Empty,
-        last_attempt = false,
-        error = tracing::field::Empty,
-        error.level = tracing::field::Empty,
-        error.message = tracing::field::Empty,
-    );
-    let tracker = current_tracker(&current_job);
-    shared::tracing::record_error(
-        if tracker.attempts >= 4 {
-            tracing::Level::ERROR
-        } else {
-            tracing::Level::WARN
-        },
-        || async move {
-            let mut job_completed = false;
-            let tracker = update_tracker(&mut current_job).await?;
-            if tracker.attempts > 5 {
-                Span::current().record("last_attempt", &true);
-                current_job.complete().await?;
-                job_completed = true;
-            }
+    let result = JobExecutor::builder(&mut current_job)
+        .build()
+        .expect("couldn't build JobExecutor")
+        .execute(|_| async move {
             let balances = user_trade_balances.fetch_all().await?;
             publisher
                 .publish(SynthUsdLiabilityPayload {
@@ -135,15 +106,11 @@ async fn publish_liability(
                     .expect("SynthCents should be negative"),
                 })
                 .await?;
-            if !job_completed {
-                current_job.complete().await?;
-            }
-            spawn_publish_liability(current_job.pool(), delay).await?;
             Ok(())
-        },
-    )
-    .instrument(span)
-    .await
+        })
+        .await;
+    spawn_publish_liability(current_job.pool(), delay).await?;
+    result
 }
 
 #[job(
@@ -157,69 +124,19 @@ async fn poll_galoy_transactions(
     galoy: GaloyClient,
     PollGaloyTransactionsDelay(delay): PollGaloyTransactionsDelay,
 ) -> Result<(), UserTradesError> {
-    let span = info_span!(
-        "execute_job",
-        job_id = %current_job.id(),
-        job_name = %current_job.name(),
-        error = tracing::field::Empty,
-        error.level = tracing::field::Empty,
-        error.message = tracing::field::Empty,
-    );
-    let tracker = current_tracker(&current_job);
-    shared::tracing::record_error(
-        if tracker.attempts >= 4 {
-            tracing::Level::ERROR
-        } else {
-            tracing::Level::WARN
-        },
-        || async move {
-            let mut job_completed = false;
-            if let Ok(tracker) = update_tracker(&mut current_job).await {
-                if tracker.attempts > 5 {
-                    Span::current().record("last_attempt", &true);
-                    current_job.complete().await?;
-                    job_completed = true;
-                }
-            }
-            let mut has_more = true;
-            let galoy_transactions = GaloyTransactions::new(current_job.pool().clone());
-            while has_more {
-                has_more =
-                    poll_galoy_transactions::execute(&user_trades, &galoy_transactions, &galoy)
-                        .await?;
-                if has_more {
-                    current_job.keep_alive(Duration::from_secs(5)).await?;
-                }
-            }
-            if !job_completed {
-                current_job.complete().await?;
-            }
-            spawn_poll_galoy_transactions(current_job.pool(), delay).await?;
-            Ok(())
-        },
-    )
-    .instrument(span)
-    .await
-}
-
-fn current_tracker(current_job: &CurrentJob) -> AttemptTracker {
-    if let Ok(Some(AttemptTracker { attempts })) = current_job.json::<AttemptTracker>() {
-        AttemptTracker {
-            attempts: attempts + 1,
-        }
+    let pool = current_job.pool().clone();
+    let has_more = JobExecutor::builder(&mut current_job)
+        .build()
+        .expect("couldn't build JobExecutor")
+        .execute(|_| async move {
+            let galoy_transactions = GaloyTransactions::new(pool);
+            poll_galoy_transactions::execute(&user_trades, &galoy_transactions, &galoy).await
+        })
+        .await;
+    if let Ok(true) = has_more {
+        spawn_poll_galoy_transactions(current_job.pool(), Duration::from_secs(0)).await?;
     } else {
-        AttemptTracker { attempts: 1 }
+        spawn_poll_galoy_transactions(current_job.pool(), delay).await?;
     }
-}
-
-async fn update_tracker(current_job: &mut CurrentJob) -> Result<AttemptTracker, UserTradesError> {
-    let mut checkpoint = sqlxmq::Checkpoint::new();
-    let tracker = current_tracker(current_job);
-    Span::current().record("attempt", &tracing::field::display(tracker.attempts));
-    checkpoint
-        .set_json(&tracker)
-        .expect("Couldn't update tracker");
-
-    current_job.checkpoint(&checkpoint).await?;
-    Ok(tracker)
+    Ok(())
 }

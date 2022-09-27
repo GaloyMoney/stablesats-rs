@@ -227,7 +227,7 @@ impl PriceService for Price {
         .await
     }
 
-    #[instrument(skip_all, fields(error, error.level, error.message) err)]
+    #[instrument(skip_all, fields(error, error.level, error.message), err)]
     async fn get_cents_per_sats_exchange_mid_rate(
         &self,
         request: Request<GetCentsPerSatsExchangeMidRateRequest>,
