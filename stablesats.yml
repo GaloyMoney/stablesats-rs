@@ -1,7 +1,8 @@
 ## This file documents the defaults:
 
 # pubsub:
-#   host: localhost
+  # host: localhost
+  # rate_limit_duration: 2
 
 # galoy:
 #   api: galoy-endpoint
