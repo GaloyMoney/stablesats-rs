@@ -10,15 +10,16 @@ use governor::{
     state::keyed::DefaultKeyedStateStore,
     NotUntil, Quota, RateLimiter,
 };
-use std::num::NonZeroU32;
+use std::{num::NonZeroU32, sync::Arc};
 
-lazy_static::lazy_static! {
-    static ref LIMITER: RateLimiter<&'static str, DefaultKeyedStateStore<&'static str>, DefaultClock>  = RateLimiter::keyed(Quota::per_minute(NonZeroU32::new(30).unwrap()));
-}
+/// 1 request every 5 second == 12 requests every minute
+const RATE_LIMIT: u32 = 12;
 
 #[derive(Clone)]
 pub struct Publisher {
     client: RedisClient,
+    rate_limiter:
+        Arc<RateLimiter<&'static str, DefaultKeyedStateStore<&'static str>, DefaultClock>>,
 }
 
 impl Publisher {
@@ -29,40 +30,40 @@ impl Publisher {
             .wait_for_connect()
             .await
             .map_err(PublisherError::InitialConnection)?;
-        Ok(Self { client })
+        Ok(Self {
+            client,
+            rate_limiter: Arc::new(RateLimiter::keyed(Quota::per_minute(
+                NonZeroU32::new(RATE_LIMIT).unwrap(),
+            ))),
+        })
     }
 
     pub fn rate_limit_publisher(
         &self,
         key: &'static str,
-    ) -> Result<&RedisClient, NotUntil<QuantaInstant>> {
-        LIMITER.check_key(&key)?;
-        Ok(&self.client)
+    ) -> Result<&Publisher, NotUntil<QuantaInstant>> {
+        self.rate_limiter.check_key(&key)?;
+        Ok(self)
     }
 
     /// Throttles the publishing of price ticks
     pub async fn throttle_publish<P: MessagePayload>(
         &self,
         payload: P,
-    ) -> Result<(), PublisherError> {
-        let msg = Envelope::new(payload);
-        let payload_str = serde_json::to_string(&msg)?;
-
-        match self.rate_limit_publisher(<P as MessagePayload>::channel()) {
-            Ok(client) => {
-                client
-                    .publish(<P as MessagePayload>::channel(), payload_str)
-                    .await?;
+    ) -> Result<bool, PublisherError> {
+        match self.rate_limit_publisher(<P as MessagePayload>::message_type()) {
+            Ok(publisher) => {
+                let publish_result = publisher.publish(payload).await;
+                match publish_result {
+                    Ok(_res) => Ok(true),
+                    Err(err) => Err(err),
+                }
             }
-            Err(err) => {
-                println!(
-                    "Error: {}. Negative rate limit outcome. Message dropped",
-                    err
-                );
+            Err(_) => {
+                // Negative rate-limit outcome. Message is dropped here
+                Ok(false)
             }
         }
-
-        Ok(())
     }
 
     #[instrument(skip_all, fields(correlation_id, payload_type, payload_json, error, error.message), err)]

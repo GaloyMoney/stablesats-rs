@@ -1,8 +1,9 @@
+use futures::future::abortable;
 use futures::stream::{self, StreamExt};
 use serde::*;
 use stablesats_shared::{payload, pubsub::*};
 use std::time::{Duration, Instant};
-use tokio::time;
+use tokio::{task::spawn, time};
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
 struct TestMessage {
@@ -49,32 +50,36 @@ async fn throttle_publishing() -> anyhow::Result<()> {
         test: "test".to_string(),
         value: u64::MAX,
     };
-    let mut price_feed_stream = stream::repeat(msg);
+    let price_feed_stream = stream::repeat(msg);
 
     let now = Instant::now();
-    let tp_jh = tokio::spawn(async move {
-        while let Some(msg) = price_feed_stream.next().await {
-            publisher
-                .throttle_publish(msg)
-                .await
-                .expect("Publisher error");
+    let (task, handle) = abortable(async move {
+        let msgs = price_feed_stream
+            .clone()
+            .take(1)
+            .collect::<Vec<TestMessage>>()
+            .await;
+        for msg in msgs {
+            let _ = publisher.throttle_publish(msg).await;
         }
     });
+    spawn(task);
 
     let thirty_seconds = Duration::from_secs(30);
     let _ = time::sleep(thirty_seconds).await;
     println!("{:?}", now.elapsed());
 
-    let _ = tp_jh.abort();
+    let _ = handle.abort();
     let mut count = 0_u32;
     if now.elapsed() >= thirty_seconds {
-        while let Some(_msg) = stream.next().await {
+        while let Some(msg) = stream.next().await {
+            println!("{:?}", msg);
             count = count + 1;
         }
     }
 
     println!("{}", count);
-    assert!(count <= 15);
+    assert!(count == 1);
 
     Ok(())
 }
