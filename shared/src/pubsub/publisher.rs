@@ -1,4 +1,5 @@
 use fred::prelude::*;
+use std::time::Duration;
 use tracing::instrument;
 
 use super::config::*;
@@ -12,8 +13,7 @@ use governor::{
 };
 use std::{num::NonZeroU32, sync::Arc};
 
-/// 1 request every 5 second == 12 requests every minute
-const RATE_LIMIT: u32 = 12;
+const MAX_BURST: u32 = 1;
 
 #[derive(Clone)]
 pub struct Publisher {
@@ -24,21 +24,26 @@ pub struct Publisher {
 
 impl Publisher {
     pub async fn new(config: PubSubConfig) -> Result<Self, PublisherError> {
-        let client = RedisClient::new(config.into());
+        let client = RedisClient::new(config.clone().into());
         let _ = client.connect(None);
         client
             .wait_for_connect()
             .await
             .map_err(PublisherError::InitialConnection)?;
+
         Ok(Self {
             client,
-            rate_limiter: Arc::new(RateLimiter::keyed(Quota::per_minute(
-                NonZeroU32::new(RATE_LIMIT).unwrap(),
-            ))),
+            rate_limiter: Arc::new(RateLimiter::keyed(
+                Quota::with_period(Duration::from_secs(
+                    config.rate_limit_duration.unwrap_or(0_u64),
+                ))
+                .unwrap()
+                .allow_burst(NonZeroU32::new(MAX_BURST).unwrap()),
+            )),
         })
     }
 
-    pub fn rate_limit_publisher(
+    fn rate_limit_publisher(
         &self,
         key: &'static str,
     ) -> Result<&Publisher, NotUntil<QuantaInstant>> {
@@ -46,23 +51,16 @@ impl Publisher {
         Ok(self)
     }
 
-    /// Throttles the publishing of price ticks
+    /// Throttles the publishing of messages
     pub async fn throttle_publish<P: MessagePayload>(
         &self,
         payload: P,
     ) -> Result<bool, PublisherError> {
-        match self.rate_limit_publisher(<P as MessagePayload>::message_type()) {
-            Ok(publisher) => {
-                let publish_result = publisher.publish(payload).await;
-                match publish_result {
-                    Ok(_res) => Ok(true),
-                    Err(err) => Err(err),
-                }
-            }
-            Err(_) => {
-                // Negative rate-limit outcome. Message is dropped here
-                Ok(false)
-            }
+        if let Ok(publisher) = self.rate_limit_publisher(<P as MessagePayload>::message_type()) {
+            publisher.publish(payload).await?;
+            Ok(true)
+        } else {
+            Ok(false)
         }
     }
 

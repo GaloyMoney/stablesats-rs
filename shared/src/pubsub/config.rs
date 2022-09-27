@@ -8,6 +8,7 @@ pub struct PubSubConfig {
     pub port: u16,
     pub password: Option<String>,
     pub sentinel: Option<SentinelConfig>,
+    pub rate_limit_duration: Option<u64>,
 }
 
 #[derive(Clone, Serialize, Deserialize, Debug)]
@@ -31,6 +32,7 @@ impl Default for PubSubConfig {
             port: default_port(),
             password: None,
             sentinel: None,
+            rate_limit_duration: Some(2),
         }
     }
 }

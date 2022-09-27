@@ -51,16 +51,11 @@ async fn throttle_publishing() -> anyhow::Result<()> {
         test: "test".to_string(),
         value: u64::MAX,
     };
-    let price_feed_stream = stream::repeat(msg);
+    let price_feed_stream = stream::iter(vec![msg; 20]);
 
     let now = Instant::now();
     let (task, handle) = abortable(async move {
-        let msgs = price_feed_stream
-            .clone()
-            .take(60)
-            .collect::<Vec<TestMessage>>()
-            .await;
-        for msg in msgs {
+        while let Some(msg) = price_feed_stream.clone().next().await {
             let _ = publisher.throttle_publish(msg).await;
         }
     });
