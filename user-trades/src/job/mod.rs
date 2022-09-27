@@ -2,7 +2,7 @@ mod poll_galoy_transactions;
 
 use rust_decimal_macros::dec;
 use sqlxmq::{job, CurrentJob, JobBuilder, JobRegistry, OwnedHandle};
-use tracing::{info_span, instrument, Instrument, Span};
+use tracing::instrument;
 use uuid::{uuid, Uuid};
 
 use galoy_client::GaloyClient;
