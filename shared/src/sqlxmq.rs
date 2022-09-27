@@ -68,10 +68,14 @@ impl<'a> JobExecutor<'a> {
     ) -> Result<bool, sqlx::Error> {
         let span = Span::current();
 
-        crate::tracing::inject_tracing_data(&span, &data.tracing_data);
+        if let Some(tracing_data) = data.job_meta.tracing_data.as_ref() {
+            crate::tracing::inject_tracing_data(&span, tracing_data);
+        } else {
+            crate::tracing::inject_tracing_data(&span, &data.tracing_data);
+        }
 
         data.job_meta.attempts += 1;
-        data.tracing_data = crate::tracing::extract_tracing_data();
+        data.job_meta.tracing_data = Some(crate::tracing::extract_tracing_data());
 
         span.record("job_id", &tracing::field::display(self.job.id()));
         span.record("job_name", &tracing::field::display(self.job.name()));
@@ -131,12 +135,14 @@ struct JobMeta {
     attempts: u32,
     #[serde_as(as = "serde_with::DurationSeconds<u64>")]
     wait_till_next_attempt: Duration,
+    tracing_data: Option<HashMap<String, String>>,
 }
 impl Default for JobMeta {
     fn default() -> Self {
         Self {
             attempts: 0,
             wait_till_next_attempt: Duration::from_secs(1),
+            tracing_data: None,
         }
     }
 }

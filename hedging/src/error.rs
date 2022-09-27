@@ -1,6 +1,9 @@
 use thiserror::Error;
 
-use shared::pubsub::{PublisherError, SubscriberError};
+use shared::{
+    pubsub::{PublisherError, SubscriberError},
+    sqlxmq::JobExecutionError,
+};
 
 #[allow(clippy::large_enum_variant)]
 #[derive(Error, Debug)]
@@ -18,3 +21,5 @@ pub enum HedgingError {
     #[error("HedgingError - OkexClient: {0}")]
     OkexClient(#[from] okex_client::OkexClientError),
 }
+
+impl JobExecutionError for HedgingError {}
