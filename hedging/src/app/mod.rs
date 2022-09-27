@@ -13,7 +13,7 @@ use shared::{
     pubsub::{CorrelationId, PubSubConfig, Publisher, Subscriber},
 };
 
-use crate::{adjustment_action, error::*, hedging_adjustments::*, job, synth_usd_liability::*};
+use crate::{adjustment_action, error::*, job, okex_orders::*, synth_usd_liability::*};
 
 pub use config::*;
 
@@ -37,12 +37,12 @@ impl HedgingApp {
             sqlx::migrate!().run(&pool).await?;
         }
         let synth_usd_liability = SynthUsdLiability::new(pool.clone());
-        let hedging_adjustments = HedgingAdjustments::new(pool.clone()).await?;
+        let okex_orders = OkexOrders::new(pool.clone()).await?;
         let job_runner = job::start_job_runner(
             pool.clone(),
             synth_usd_liability.clone(),
             OkexClient::new(okex_client_config).await?,
-            hedging_adjustments,
+            okex_orders,
             Publisher::new(pubsub_config.clone()).await?,
             okex_poll_delay,
         )

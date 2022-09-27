@@ -1,6 +1,8 @@
 use rust_decimal::Decimal;
 use serde::Deserialize;
 
+use super::primitives::ClientOrderId;
+
 #[derive(Deserialize, Debug)]
 pub struct OkexResponse<T> {
     pub code: String,
@@ -128,6 +130,19 @@ pub struct OrderData {
     pub tag: String,
     pub s_code: String,
     pub s_msg: String,
+}
+
+#[derive(Deserialize, Debug)]
+#[serde(rename_all = "camelCase")]
+pub struct OrderDetails {
+    pub cl_ord_id: ClientOrderId,
+    pub ord_id: String,
+    pub avg_px: Decimal,
+    pub fee: Decimal,
+    pub sz: Decimal,
+    pub state: String,
+    #[serde(skip)]
+    pub complete: bool,
 }
 
 #[derive(Deserialize, Debug)]

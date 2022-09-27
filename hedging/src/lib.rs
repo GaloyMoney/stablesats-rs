@@ -4,8 +4,8 @@
 mod adjustment_action;
 mod app;
 mod error;
-mod hedging_adjustments;
 mod job;
+mod okex_orders;
 mod synth_usd_liability;
 
 use okex_client::OkexClientConfig;

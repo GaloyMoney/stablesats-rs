@@ -129,8 +129,12 @@ async fn hedging() -> anyhow::Result<()> {
         expect_exposure_between(&mut stream, dec!(-21000), dec!(-19000)).await;
 
         if idx == 0 {
-            okex.place_order(OkexOrderSide::Sell, &BtcUsdSwapContracts::from(5))
-                .await?;
+            okex.place_order(
+                ClientOrderId::new(),
+                OkexOrderSide::Sell,
+                &BtcUsdSwapContracts::from(5),
+            )
+            .await?;
             expect_exposure_below(&mut stream, dec!(-50000)).await;
         }
     }

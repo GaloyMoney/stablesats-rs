@@ -1,6 +1,31 @@
 use rust_decimal::Decimal;
 use std::fmt::Display;
 
+#[derive(serde::Deserialize, Debug, Clone)]
+#[serde(transparent)]
+pub struct ClientOrderId(pub(super) String);
+impl ClientOrderId {
+    pub fn new() -> Self {
+        use rand::distributions::{Alphanumeric, DistString};
+        Self(Alphanumeric.sample_string(&mut rand::thread_rng(), 32))
+    }
+}
+impl From<String> for ClientOrderId {
+    fn from(s: String) -> Self {
+        Self(s)
+    }
+}
+impl From<ClientOrderId> for String {
+    fn from(id: ClientOrderId) -> Self {
+        id.0
+    }
+}
+impl Default for ClientOrderId {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 #[derive(Debug, PartialEq, Eq, Clone)]
 pub struct BtcUsdSwapContracts(pub(super) u32);
 impl From<u32> for BtcUsdSwapContracts {
@@ -165,5 +190,16 @@ impl Display for TradeCurrency {
             TradeCurrency::BTC => write!(f, "BTC"),
             TradeCurrency::USD => write!(f, "USD"),
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn client_order_id() {
+        let id = ClientOrderId::new();
+        assert_eq!(id.0.len(), 32);
     }
 }

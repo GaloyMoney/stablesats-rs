@@ -12,6 +12,8 @@ pub enum OkexClientError {
     UnexpectedResponse { msg: String, code: String },
     #[error("OkexClientError - ServiceUnavailable: {code:?} - {msg:?}")]
     ServiceUnavailable { msg: String, code: String },
+    #[error("OkexClientError - OrderDoesNotExist")]
+    OrderDoesNotExist,
     #[error("OkexClientError - DecimalConversion: {0}")]
     DecimalConversion(#[from] rust_decimal::Error),
     #[error("OkexClientError - MosconfiguredAccount: {0}")]
@@ -22,6 +24,7 @@ impl From<(String, String)> for OkexClientError {
     fn from((msg, code): (String, String)) -> Self {
         match code.as_str() {
             "50001" => OkexClientError::ServiceUnavailable { msg, code },
+            "51603" => OkexClientError::OrderDoesNotExist,
             _ => OkexClientError::UnexpectedResponse { msg, code },
         }
     }

@@ -15,6 +15,7 @@ use serde::{Deserialize, Serialize};
 use std::{collections::HashMap, time::Duration};
 
 pub use error::*;
+pub use okex_response::OrderDetails;
 use okex_response::*;
 pub use primitives::*;
 
@@ -312,11 +313,13 @@ impl OkexClient {
 
     pub async fn place_order(
         &self,
+        id: ClientOrderId,
         side: OkexOrderSide,
         contracts: &BtcUsdSwapContracts,
     ) -> Result<OrderId, OkexClientError> {
         let mut body: HashMap<String, String> = HashMap::new();
         body.insert("ccy".to_string(), TradeCurrency::BTC.to_string());
+        body.insert("clOrdId".to_string(), id.0);
         body.insert(
             "instId".to_string(),
             OkexInstrumentId::BtcUsdSwap.to_string(),
@@ -344,6 +347,26 @@ impl OkexClient {
         Ok(OrderId {
             value: order_data.ord_id,
         })
+    }
+
+    pub async fn order_details(&self, id: ClientOrderId) -> Result<OrderDetails, OkexClientError> {
+        let static_request_path = "/api/v5/trade/order?instId=BTC-USD-SWAP&clOrdId=";
+        let request_path = format!("{}{}", static_request_path, id.0);
+        let headers = self.get_request_headers(&request_path)?;
+
+        let response = self
+            .rate_limit_client(static_request_path)
+            .await
+            .get(Self::url_for_path(&request_path))
+            .headers(headers)
+            .send()
+            .await?;
+
+        let mut details = Self::extract_response_data::<OrderDetails>(response).await?;
+        if details.state == "filled" || details.state == "canceled" {
+            details.complete = true;
+        }
+        Ok(details)
     }
 
     pub async fn get_position_in_signed_usd_cents(&self) -> Result<PositionSize, OkexClientError> {
@@ -383,12 +406,13 @@ impl OkexClient {
         }
     }
 
-    pub async fn close_positions(&self) -> Result<(), OkexClientError> {
+    pub async fn close_positions(&self, id: ClientOrderId) -> Result<(), OkexClientError> {
         let mut body: HashMap<String, String> = HashMap::new();
         body.insert(
             "instId".to_string(),
             OkexInstrumentId::BtcUsdSwap.to_string(),
         );
+        body.insert("clOrdId".to_string(), id.0);
         body.insert("mgnMode".to_string(), OkexMarginMode::Cross.to_string());
         body.insert("posSide".to_string(), OkexPositionSide::Net.to_string());
         body.insert("ccy".to_string(), TradeCurrency::BTC.to_string());
@@ -429,7 +453,7 @@ impl OkexClient {
                 return Ok(first);
             }
         }
-        Err(OkexClientError::UnexpectedResponse { msg, code })
+        Err(OkexClientError::from((msg, code)))
     }
 
     async fn extract_optional_response_data<T: serde::de::DeserializeOwned>(

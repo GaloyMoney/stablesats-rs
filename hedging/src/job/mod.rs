@@ -1,4 +1,5 @@
 mod adjust_hedge;
+mod poll_okex;
 
 use serde::{Deserialize, Serialize};
 use sqlx::{Executor, Postgres};
@@ -8,16 +9,10 @@ use uuid::{uuid, Uuid};
 
 use std::collections::HashMap;
 
-use okex_client::{OkexClient, OkexClientError, PositionSize};
-use shared::{
-    payload::{
-        ExchangeIdRaw, InstrumentIdRaw, OkexBtcUsdSwapPositionPayload, SyntheticCentExposure,
-        OKEX_EXCHANGE_ID,
-    },
-    pubsub::{CorrelationId, Publisher},
-};
+use okex_client::{OkexClient, OkexClientError};
+use shared::pubsub::{CorrelationId, Publisher};
 
-use crate::{error::*, hedging_adjustments::HedgingAdjustments, synth_usd_liability::*};
+use crate::{error::*, okex_orders::OkexOrders, synth_usd_liability::*};
 
 const POLL_OKEX_ID: Uuid = uuid!("00000000-0000-0000-0000-000000000001");
 
@@ -33,7 +28,7 @@ pub async fn start_job_runner(
     pool: sqlx::PgPool,
     synth_usd_liability: SynthUsdLiability,
     okex: OkexClient,
-    hedging_adjustments: HedgingAdjustments,
+    okex_orders: OkexOrders,
     publisher: Publisher,
     delay: std::time::Duration,
 ) -> Result<OwnedHandle, HedgingError> {
@@ -42,7 +37,7 @@ pub async fn start_job_runner(
     registry.set_context(okex);
     registry.set_context(publisher);
     registry.set_context(OkexPollDelay(delay));
-    registry.set_context(hedging_adjustments);
+    registry.set_context(okex_orders);
 
     Ok(registry.runner(&pool).run().await?)
 }
@@ -103,6 +98,7 @@ async fn poll_okex(
     mut current_job: CurrentJob,
     OkexPollDelay(delay): OkexPollDelay,
     okex: OkexClient,
+    okex_orders: OkexOrders,
     publisher: Publisher,
 ) -> Result<(), HedgingError> {
     let span = info_span!(
@@ -131,17 +127,7 @@ async fn poll_okex(
                     job_completed = true;
                 }
             }
-            let PositionSize {
-                usd_cents,
-                instrument_id,
-            } = okex.get_position_in_signed_usd_cents().await?;
-            publisher
-                .publish(OkexBtcUsdSwapPositionPayload {
-                    exchange: ExchangeIdRaw::from(OKEX_EXCHANGE_ID),
-                    instrument_id: InstrumentIdRaw::from(instrument_id.to_string()),
-                    signed_usd_exposure: SyntheticCentExposure::from(usd_cents),
-                })
-                .await?;
+            poll_okex::execute(okex_orders, okex, publisher).await?;
             if !job_completed {
                 current_job.complete().await?;
             }
@@ -153,12 +139,12 @@ async fn poll_okex(
     .await
 }
 
-#[job(name = "adjust_hedge", channel_name = "hedging", retries = 20)]
+#[job(name = "adjust_hedge", channel_name = "hedging", ordered, retries = 20)]
 async fn adjust_hedge(
     mut current_job: CurrentJob,
     synth_usd_liability: SynthUsdLiability,
     okex: OkexClient,
-    hedging_adjustments: HedgingAdjustments,
+    okex_orders: OkexOrders,
 ) -> Result<(), HedgingError> {
     let AdjustHedgeData {
         tracing_data,
@@ -175,17 +161,13 @@ async fn adjust_hedge(
     );
     shared::tracing::inject_tracing_data(&span, &tracing_data);
     shared::tracing::record_error(tracing::Level::ERROR, || async move {
-        let result = match adjust_hedge::execute(
-            correlation_id,
-            synth_usd_liability,
-            okex,
-            hedging_adjustments,
-        )
-        .await
-        {
-            Err(HedgingError::OkexClient(OkexClientError::ServiceUnavailable { .. })) => Ok(()),
-            res => res,
-        };
+        let result =
+            match adjust_hedge::execute(correlation_id, synth_usd_liability, okex, okex_orders)
+                .await
+            {
+                Err(HedgingError::OkexClient(OkexClientError::ServiceUnavailable { .. })) => Ok(()),
+                res => res,
+            };
         current_job.complete().await?;
         result
     })

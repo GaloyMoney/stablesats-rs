@@ -1370,6 +1370,7 @@ dependencies = [
  "data-encoding",
  "governor",
  "lazy_static",
+ "rand",
  "reqwest",
  "ring",
  "rust_decimal",
