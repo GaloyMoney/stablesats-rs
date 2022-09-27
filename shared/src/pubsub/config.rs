@@ -1,6 +1,9 @@
 use fred::prelude::*;
 use serde::{Deserialize, Serialize};
 
+use std::time::Duration;
+
+#[serde_with::serde_as]
 #[derive(Clone, Serialize, Deserialize, Debug)]
 pub struct PubSubConfig {
     pub host: Option<String>,
@@ -8,7 +11,9 @@ pub struct PubSubConfig {
     pub port: u16,
     pub password: Option<String>,
     pub sentinel: Option<SentinelConfig>,
-    pub rate_limit_interval: Option<u64>,
+    #[serde_as(as = "serde_with::DurationSeconds<u64>")]
+    #[serde(default = "default_throttle")]
+    pub rate_limit_interval: Duration,
 }
 
 #[derive(Clone, Serialize, Deserialize, Debug)]
@@ -32,7 +37,7 @@ impl Default for PubSubConfig {
             port: default_port(),
             password: None,
             sentinel: None,
-            rate_limit_interval: Some(2),
+            rate_limit_interval: default_throttle(),
         }
     }
 }
@@ -43,6 +48,10 @@ fn default_port() -> u16 {
 
 fn default_sentinel_port() -> u16 {
     26379
+}
+
+fn default_throttle() -> Duration {
+    Duration::from_secs(2)
 }
 
 fn default_service_name() -> String {
