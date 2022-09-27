@@ -1,14 +1,22 @@
 mod instruments;
 
 use rust_decimal::Decimal;
-use sqlx::PgPool;
+use sqlx::{Executor, PgPool};
 use uuid::Uuid;
 
+use okex_client::ClientOrderId;
 use shared::pubsub::CorrelationId;
 
 use crate::{adjustment_action::AdjustmentAction, error::HedgingError};
 
 use instruments::*;
+
+pub struct Reservation<'a> {
+    pub correlation_id: CorrelationId,
+    pub action: &'a AdjustmentAction,
+    pub target_usd_value: Decimal,
+    pub usd_value_before_order: Decimal,
+}
 
 pub struct Adjustment {
     pub correlation_id: CorrelationId,
@@ -20,12 +28,12 @@ pub struct Adjustment {
 }
 
 #[derive(Clone)]
-pub struct HedgingAdjustments {
+pub struct OkexOrders {
     pool: PgPool,
     instruments: HedgingInstruments,
 }
 
-impl HedgingAdjustments {
+impl OkexOrders {
     pub async fn new(pool: PgPool) -> Result<Self, HedgingError> {
         Ok(Self {
             instruments: HedgingInstruments::load(&pool).await?,
@@ -64,5 +72,42 @@ impl HedgingAdjustments {
         .execute(&self.pool)
         .await?;
         Ok(())
+    }
+
+    pub async fn reserve_order_slot<'a>(
+        &self,
+        reservation: Reservation<'a>,
+    ) -> Result<Option<ClientOrderId>, HedgingError> {
+        let mut tx = self.pool.begin().await?;
+        tx.execute("SET TRANSACTION ISOLATION LEVEL SERIALIZABLE")
+            .await?;
+        let res =
+            sqlx::query!(r#"SELECT client_order_id FROM okex_orders WHERE completed = false"#)
+                .fetch_all(&mut tx)
+                .await?;
+
+        if !res.is_empty() {
+            return Ok(None);
+        }
+        let id = ClientOrderId::new();
+        sqlx::query!(
+            r#"INSERT INTO okex_orders (
+            client_order_id, correlation_id, instrument_id,
+            action, size, unit, size_usd_value, target_usd_value,
+            position_usd_value_before_order
+            ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)"#,
+            String::from(id),
+            Uuid::from(reservation.correlation_id),
+            self.instruments.get_id(HedgingInstrument::OkexBtcUsdSwap),
+            reservation.action.action_type(),
+            reservation.action.size().map(Decimal::from),
+            reservation.action.unit(),
+            reservation.action.size_in_usd(),
+            reservation.target_usd_value,
+            reservation.usd_value_before_order,
+        )
+        .execute(&mut tx)
+        .await?;
+        unimplemented!()
     }
 }

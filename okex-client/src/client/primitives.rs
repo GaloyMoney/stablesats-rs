@@ -10,6 +10,16 @@ impl ClientOrderId {
         Self(Alphanumeric.sample_string(&mut rand::thread_rng(), 32))
     }
 }
+impl From<String> for ClientOrderId {
+    fn from(s: String) -> Self {
+        Self(s)
+    }
+}
+impl From<ClientOrderId> for String {
+    fn from(id: ClientOrderId) -> Self {
+        id.0
+    }
+}
 
 #[derive(Debug, PartialEq, Eq, Clone)]
 pub struct BtcUsdSwapContracts(pub(super) u32);

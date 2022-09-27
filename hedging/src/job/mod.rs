@@ -17,7 +17,7 @@ use shared::{
     pubsub::{CorrelationId, Publisher},
 };
 
-use crate::{error::*, hedging_adjustments::HedgingAdjustments, synth_usd_liability::*};
+use crate::{error::*, okex_orders::OkexOrders, synth_usd_liability::*};
 
 const POLL_OKEX_ID: Uuid = uuid!("00000000-0000-0000-0000-000000000001");
 
@@ -33,7 +33,7 @@ pub async fn start_job_runner(
     pool: sqlx::PgPool,
     synth_usd_liability: SynthUsdLiability,
     okex: OkexClient,
-    hedging_adjustments: HedgingAdjustments,
+    okex_orders: OkexOrders,
     publisher: Publisher,
     delay: std::time::Duration,
 ) -> Result<OwnedHandle, HedgingError> {
@@ -42,7 +42,7 @@ pub async fn start_job_runner(
     registry.set_context(okex);
     registry.set_context(publisher);
     registry.set_context(OkexPollDelay(delay));
-    registry.set_context(hedging_adjustments);
+    registry.set_context(okex_orders);
 
     Ok(registry.runner(&pool).run().await?)
 }
@@ -158,7 +158,7 @@ async fn adjust_hedge(
     mut current_job: CurrentJob,
     synth_usd_liability: SynthUsdLiability,
     okex: OkexClient,
-    hedging_adjustments: HedgingAdjustments,
+    okex_orders: OkexOrders,
 ) -> Result<(), HedgingError> {
     let AdjustHedgeData {
         tracing_data,
@@ -175,17 +175,13 @@ async fn adjust_hedge(
     );
     shared::tracing::inject_tracing_data(&span, &tracing_data);
     shared::tracing::record_error(tracing::Level::ERROR, || async move {
-        let result = match adjust_hedge::execute(
-            correlation_id,
-            synth_usd_liability,
-            okex,
-            hedging_adjustments,
-        )
-        .await
-        {
-            Err(HedgingError::OkexClient(OkexClientError::ServiceUnavailable { .. })) => Ok(()),
-            res => res,
-        };
+        let result =
+            match adjust_hedge::execute(correlation_id, synth_usd_liability, okex, okex_orders)
+                .await
+            {
+                Err(HedgingError::OkexClient(OkexClientError::ServiceUnavailable { .. })) => Ok(()),
+                res => res,
+            };
         current_job.complete().await?;
         result
     })
