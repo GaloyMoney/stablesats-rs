@@ -105,7 +105,7 @@ async fn hedging() -> anyhow::Result<()> {
             HedgingAppConfig {
                 pg_con,
                 migrate_on_start: true,
-                okex_poll_frequency: std::time::Duration::from_secs(1),
+                okex_poll_frequency: std::time::Duration::from_secs(2),
             },
             okex_client_config(),
             pubsub_config,
