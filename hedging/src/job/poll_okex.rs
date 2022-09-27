@@ -4,7 +4,7 @@ use shared::{
         ExchangeIdRaw, InstrumentIdRaw, OkexBtcUsdSwapPositionPayload, SyntheticCentExposure,
         OKEX_EXCHANGE_ID,
     },
-    pubsub::{CorrelationId, Publisher},
+    pubsub::Publisher,
 };
 
 use crate::{error::HedgingError, okex_orders::*};

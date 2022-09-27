@@ -9,14 +9,8 @@ use uuid::{uuid, Uuid};
 
 use std::collections::HashMap;
 
-use okex_client::{OkexClient, OkexClientError, PositionSize};
-use shared::{
-    payload::{
-        ExchangeIdRaw, InstrumentIdRaw, OkexBtcUsdSwapPositionPayload, SyntheticCentExposure,
-        OKEX_EXCHANGE_ID,
-    },
-    pubsub::{CorrelationId, Publisher},
-};
+use okex_client::{OkexClient, OkexClientError};
+use shared::pubsub::{CorrelationId, Publisher};
 
 use crate::{error::*, okex_orders::OkexOrders, synth_usd_liability::*};
 

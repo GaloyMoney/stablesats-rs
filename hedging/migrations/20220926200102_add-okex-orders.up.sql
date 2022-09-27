@@ -1,5 +1,3 @@
--- Add up migration script here
-
 CREATE TABLE okex_orders (
   client_order_id VARCHAR(32) PRIMARY KEY,
   correlation_id UUID UNIQUE NOT NULL,
@@ -19,3 +17,7 @@ CREATE TABLE okex_orders (
   fee NUMERIC,
   state VARCHAR(20)
 );
+
+DROP TABLE hedging_adjustments;
+DROP TABLE hedging_instruments;
+DROP TABLE exchanges;

@@ -20,6 +20,11 @@ impl From<ClientOrderId> for String {
         id.0
     }
 }
+impl Default for ClientOrderId {
+    fn default() -> Self {
+        Self::new()
+    }
+}
 
 #[derive(Debug, PartialEq, Eq, Clone)]
 pub struct BtcUsdSwapContracts(pub(super) u32);

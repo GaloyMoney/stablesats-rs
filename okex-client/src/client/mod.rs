@@ -355,7 +355,7 @@ impl OkexClient {
         let headers = self.get_request_headers(&request_path)?;
 
         let response = self
-            .rate_limit_client(&static_request_path)
+            .rate_limit_client(static_request_path)
             .await
             .get(Self::url_for_path(&request_path))
             .headers(headers)
