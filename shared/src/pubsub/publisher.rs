@@ -34,11 +34,9 @@ impl Publisher {
         Ok(Self {
             client,
             rate_limiter: Arc::new(RateLimiter::keyed(
-                Quota::with_period(Duration::from_secs(
-                    config.rate_limit_duration.unwrap_or(0_u64),
-                ))
-                .unwrap()
-                .allow_burst(NonZeroU32::new(MAX_BURST).unwrap()),
+                Quota::with_period(Duration::from_secs(config.rate_limit_interval.unwrap()))
+                    .unwrap()
+                    .allow_burst(NonZeroU32::new(MAX_BURST).unwrap()),
             )),
         })
     }
