@@ -26,6 +26,7 @@ pub async fn execute(
         })
         .await?;
 
+    let mut execute_sweep = false;
     for id in okex_orders.open_orders().await? {
         match okex.order_details(id.clone()).await {
             Ok(details) => {
@@ -33,9 +34,14 @@ pub async fn execute(
             }
             Err(OkexClientError::OrderDoesNotExist) => {
                 okex_orders.mark_as_lost(id).await?;
+                execute_sweep = true;
             }
             Err(res) => return Err(res.into()),
         }
+    }
+
+    if execute_sweep {
+        okex_orders.sweep_lost_records().await?;
     }
     Ok(())
 }

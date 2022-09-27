@@ -123,5 +123,15 @@
       }
     },
     "query": "SELECT amount FROM synth_usd_liability ORDER BY idx DESC LIMIT 1"
+  },
+  "dc6913735a5493821cc85a6a069277431024ccdffbc76d09f11629e818f54df2": {
+    "describe": {
+      "columns": [],
+      "nullable": [],
+      "parameters": {
+        "Left": []
+      }
+    },
+    "query": "DELETE FROM okex_orders WHERE lost = true AND complete = false AND created_at < now() - interval '1 day'"
   }
 }
