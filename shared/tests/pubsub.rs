@@ -37,6 +37,7 @@ async fn pubsub() -> anyhow::Result<()> {
 }
 
 #[tokio::test]
+#[ignore = "long-running: subscriber stream never yields `None`"]
 async fn throttle_publishing() -> anyhow::Result<()> {
     let redis_host = std::env::var("REDIS_HOST").unwrap_or("localhost".to_string());
     let config = PubSubConfig {
@@ -56,7 +57,7 @@ async fn throttle_publishing() -> anyhow::Result<()> {
     let (task, handle) = abortable(async move {
         let msgs = price_feed_stream
             .clone()
-            .take(1)
+            .take(60)
             .collect::<Vec<TestMessage>>()
             .await;
         for msg in msgs {
@@ -79,7 +80,7 @@ async fn throttle_publishing() -> anyhow::Result<()> {
     }
 
     println!("{}", count);
-    assert!(count == 1);
+    assert!(count == 12);
 
     Ok(())
 }
