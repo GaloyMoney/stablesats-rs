@@ -14,6 +14,7 @@ fail-on-warnings = []
 [dependencies]
 # setting default-features = false to not include vulnerable time crate
 chrono = { version = "0.4", features = ["clock", "serde"], default-features = false }
+derive_builder = "0.11.2"
 fred = { version = "5.2.0", features = ["subscriber-client"] }
 futures = "0.3.24"
 opentelemetry = "0.18.0"
@@ -21,6 +22,9 @@ rust_decimal = "1.26.1"
 rust_decimal_macros = "1.26.1"
 serde = { version = "1.0.145", features = ["derive"] }
 serde_json = "1.0.85"
+serde_with = "2.0.1"
+sqlx = { version = "0.6", features = [ "offline", "runtime-tokio-rustls", "postgres", "decimal", "uuid", "chrono", "json" ] }
+sqlxmq = { version = "0.4.1", default-features = false, features = [ "runtime-tokio-rustls" ] }
 thiserror = "1.0.36"
 tokio = "1.20.1"
 tracing = "0.1.36"
@@ -28,7 +32,6 @@ tracing-opentelemetry = "0.18.0"
 uuid = { version = "1.1.2", features = ["v4", "serde"] }
 governor = "0.5.0"
 lazy_static = "1.4.0"
-serde_with = "2.0.1"
 
 [dev-dependencies]
 anyhow = "1.0.65"

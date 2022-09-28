@@ -1,6 +1,6 @@
 use thiserror::Error;
 
-use shared::pubsub::PublisherError;
+use shared::{pubsub::PublisherError, sqlxmq::JobExecutionError};
 
 #[allow(clippy::large_enum_variant)]
 #[derive(Error, Debug)]
@@ -14,3 +14,5 @@ pub enum UserTradesError {
     #[error("UserTradesError - GaloyClient: {0}")]
     GaloyClient(#[from] galoy_client::GaloyClientError),
 }
+
+impl JobExecutionError for UserTradesError {}

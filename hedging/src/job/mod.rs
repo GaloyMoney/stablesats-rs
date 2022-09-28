@@ -4,13 +4,16 @@ mod poll_okex;
 use serde::{Deserialize, Serialize};
 use sqlx::{Executor, Postgres};
 use sqlxmq::{job, CurrentJob, JobBuilder, JobRegistry, OwnedHandle};
-use tracing::{info_span, instrument, Instrument, Span};
+use tracing::instrument;
 use uuid::{uuid, Uuid};
 
 use std::collections::HashMap;
 
-use okex_client::{OkexClient, OkexClientError};
-use shared::pubsub::{CorrelationId, Publisher};
+use okex_client::OkexClient;
+use shared::{
+    pubsub::{CorrelationId, Publisher},
+    sqlxmq::JobExecutor,
+};
 
 use crate::{error::*, okex_orders::OkexOrders, synth_usd_liability::*};
 
@@ -18,11 +21,6 @@ const POLL_OKEX_ID: Uuid = uuid!("00000000-0000-0000-0000-000000000001");
 
 #[derive(Debug, Clone)]
 struct OkexPollDelay(std::time::Duration);
-
-#[derive(Serialize, Deserialize)]
-pub struct AttemptTracker {
-    pub attempts: u32,
-}
 
 pub async fn start_job_runner(
     pool: sqlx::PgPool,
@@ -49,8 +47,6 @@ pub async fn spawn_poll_okex(
 ) -> Result<(), HedgingError> {
     match JobBuilder::new_with_id(POLL_OKEX_ID, "poll_okex")
         .set_delay(duration)
-        .set_json(&AttemptTracker { attempts: 0 })
-        .expect("Couldn't set json")
         .spawn(pool)
         .await
     {
@@ -65,9 +61,9 @@ pub async fn spawn_poll_okex(
 
 #[derive(Serialize, Deserialize)]
 struct AdjustHedgeData {
+    correlation_id: CorrelationId,
     #[serde(flatten)]
     tracing_data: HashMap<String, String>,
-    correlation_id: CorrelationId,
 }
 
 #[instrument(skip_all, fields(error, error.message) err)]
@@ -93,7 +89,7 @@ pub async fn spawn_adjust_hedge<'a>(
     }
 }
 
-#[job(name = "poll_okex", channel_name = "hedging", retries = 10)]
+#[job(name = "poll_okex", channel_name = "hedging")]
 async fn poll_okex(
     mut current_job: CurrentJob,
     OkexPollDelay(delay): OkexPollDelay,
@@ -101,99 +97,31 @@ async fn poll_okex(
     okex_orders: OkexOrders,
     publisher: Publisher,
 ) -> Result<(), HedgingError> {
-    let span = info_span!(
-        "poll_okex",
-        job_id = %current_job.id(),
-        job_name = %current_job.name(),
-        attempt = tracing::field::Empty,
-        last_attempt = false,
-        error = tracing::field::Empty,
-        error.level = tracing::field::Empty,
-        error.message = tracing::field::Empty,
-    );
-    let tracker = current_tracker(&current_job);
-    shared::tracing::record_error(
-        if tracker.attempts >= 4 {
-            tracing::Level::ERROR
-        } else {
-            tracing::Level::WARN
-        },
-        || async move {
-            let mut job_completed = false;
-            if let Ok(tracker) = update_tracker(&mut current_job).await {
-                if tracker.attempts > 5 {
-                    Span::current().record("last_attempt", &true);
-                    current_job.complete().await?;
-                    job_completed = true;
-                }
-            }
-            poll_okex::execute(okex_orders, okex, publisher).await?;
-            if !job_completed {
-                current_job.complete().await?;
-            }
-            spawn_poll_okex(current_job.pool(), delay).await?;
-            Ok(())
-        },
-    )
-    .instrument(span)
-    .await
+    let result = JobExecutor::builder(&mut current_job)
+        .build()
+        .expect("couldn't build JobExecutor")
+        .execute(|_| async move { poll_okex::execute(okex_orders, okex, publisher).await })
+        .await;
+    spawn_poll_okex(current_job.pool(), delay).await?;
+    result
 }
 
-#[job(name = "adjust_hedge", channel_name = "hedging", ordered, retries = 20)]
+#[job(name = "adjust_hedge", channel_name = "hedging", ordered)]
 async fn adjust_hedge(
     mut current_job: CurrentJob,
     synth_usd_liability: SynthUsdLiability,
     okex: OkexClient,
     okex_orders: OkexOrders,
 ) -> Result<(), HedgingError> {
-    let AdjustHedgeData {
-        tracing_data,
-        correlation_id,
-    } = current_job.json()?.expect("adjust_hedge missing data");
-    let span = info_span!(
-        "execute_job",
-        correlation_id = %correlation_id,
-        job_id = %current_job.id(),
-        job_name = %current_job.name(),
-        error = tracing::field::Empty,
-        error.level = tracing::field::Empty,
-        error.message = tracing::field::Empty,
-    );
-    shared::tracing::inject_tracing_data(&span, &tracing_data);
-    shared::tracing::record_error(tracing::Level::ERROR, || async move {
-        let result =
-            match adjust_hedge::execute(correlation_id, synth_usd_liability, okex, okex_orders)
-                .await
-            {
-                Err(HedgingError::OkexClient(OkexClientError::ServiceUnavailable { .. })) => Ok(()),
-                res => res,
-            };
-        current_job.complete().await?;
-        result
-    })
-    .instrument(span)
-    .await?;
+    JobExecutor::builder(&mut current_job)
+        .build()
+        .expect("couldn't build JobExecutor")
+        .execute(|data| async move {
+            let data: AdjustHedgeData = data.expect("no AdjustHedgeData available");
+            adjust_hedge::execute(data.correlation_id, synth_usd_liability, okex, okex_orders)
+                .await?;
+            Ok::<_, HedgingError>(data)
+        })
+        .await?;
     Ok(())
-}
-
-fn current_tracker(current_job: &CurrentJob) -> AttemptTracker {
-    if let Ok(Some(AttemptTracker { attempts })) = current_job.json::<AttemptTracker>() {
-        AttemptTracker {
-            attempts: attempts + 1,
-        }
-    } else {
-        AttemptTracker { attempts: 1 }
-    }
-}
-
-async fn update_tracker(current_job: &mut CurrentJob) -> Result<AttemptTracker, HedgingError> {
-    let mut checkpoint = sqlxmq::Checkpoint::new();
-    let tracker = current_tracker(current_job);
-    Span::current().record("attempt", &tracing::field::display(tracker.attempts));
-    checkpoint
-        .set_json(&tracker)
-        .expect("Couldn't update tracker");
-
-    current_job.checkpoint(&checkpoint).await?;
-    Ok(tracker)
 }
