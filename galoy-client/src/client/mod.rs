@@ -1,11 +1,14 @@
 mod config;
 mod convert;
+mod galoy_tracing;
 mod queries;
 mod transaction;
 
+use galoy_tracing::*;
 use graphql_client::reqwest::post_graphql;
+use opentelemetry::propagation::Injector;
 use reqwest::{
-    header::{HeaderValue, AUTHORIZATION},
+    header::{self, HeaderValue, AUTHORIZATION},
     Client as ReqwestClient,
 };
 use rust_decimal::Decimal;
@@ -33,6 +36,7 @@ pub struct GaloyClient {
     client: ReqwestClient,
     config: GaloyClientConfig,
     btc_wallet_id: String,
+    jwt: String,
 }
 
 pub(crate) struct StablesatsAuthToken {
@@ -72,6 +76,7 @@ impl GaloyClient {
             client,
             config,
             btc_wallet_id,
+            jwt,
         })
     }
 
@@ -170,8 +175,25 @@ impl GaloyClient {
             last: Some(200),
             before: cursor.map(|cursor| cursor.0),
         };
+
+        // 1. create header with auth token and traceparent
+        // inject_tracing_data(span, tracing_data)
+        let mut header_wrapper = HeaderMapWrapper::new();
+        header_wrapper.set(
+            "traceparent",
+            "00-0af7651916cd43dd8448eb211c80319c-00f067aa0ba902b7-01".to_string(),
+        );
+        let mut headers = extract_tracing_data(header_wrapper);
+        headers.insert(header::AUTHORIZATION, HeaderValue::from_str(&self.jwt)?);
+
+        // 2. build client with the header
+        let trace_client = reqwest::Client::builder()
+            .default_headers(headers)
+            .build()?;
+
+        // 3. use client to send http request
         let response = post_graphql::<StablesatsTransactionsList, _>(
-            &self.client,
+            &trace_client,
             &self.config.api,
             variables,
         )

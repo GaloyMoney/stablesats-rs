@@ -794,6 +794,7 @@ dependencies = [
  "chrono",
  "futures",
  "graphql_client",
+ "opentelemetry",
  "reqwest",
  "rust_decimal",
  "rust_decimal_macros",
@@ -801,6 +802,7 @@ dependencies = [
  "thiserror",
  "tokio",
  "tracing",
+ "tracing-opentelemetry",
 ]
 
 [[package]]
