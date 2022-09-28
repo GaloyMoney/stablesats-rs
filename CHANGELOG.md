@@ -1,3 +1,10 @@
+# [stablesats release v0.3.7](https://github.com/GaloyMoney/stablesats/releases/tag/v0.3.7)
+
+
+### Bug Fixes
+
+- Declare checkpoint_json in execute_job trace
+
 # [stablesats release v0.3.6](https://github.com/GaloyMoney/stablesats/releases/tag/v0.3.6)
 
 
