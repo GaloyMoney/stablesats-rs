@@ -25,7 +25,8 @@ impl<'a> JobExecutor<'a> {
     }
 
     #[instrument(name = "execute_job", skip_all, fields(
-            job_id, job_name, error, error.level, error.message, attempt, last_attempt
+            job_id, job_name, checkpoint_json, attempt, last_attempt,
+            error, error.level, error.message
     ), err)]
     pub async fn execute<T, E, R, F>(mut self, func: F) -> Result<T, E>
     where
