@@ -18,7 +18,7 @@ chrono = { version = "0.4", features = ["clock", "serde"], default-features = fa
 prost = "0.11"
 tonic = "0.8"
 axum-core = "0.2.8"
-tokio = "1.20.1"
+tokio = "1.21.2"
 futures = "0.3.24"
 thiserror = "1.0.36"
 serde = "1.0.145"
