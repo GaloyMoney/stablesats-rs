@@ -1,9 +1,5 @@
 use fred::{clients::SubscriberClient, prelude::*};
-use futures::{
-    channel::{mpsc::*, oneshot},
-    stream::StreamExt,
-    SinkExt,
-};
+use futures::{channel::mpsc::*, stream::StreamExt, SinkExt};
 use std::sync::Arc;
 use tokio::sync::RwLock;
 
@@ -45,26 +41,18 @@ impl Subscriber {
         last_msg_timestamp.map(|ts| ts.duration_since())
     }
 
-    pub async fn report_health(
-        &self,
-        largest_msg_delay: chrono::Duration,
-        report: oneshot::Sender<HealthCheckResponse>,
-    ) {
+    pub async fn healthy(&self, largest_msg_delay: chrono::Duration) -> HealthCheckResponse {
         if let Some(time_since) = self.time_since_last_msg().await {
             if time_since <= largest_msg_delay {
-                report
-                    .send(Ok(()))
-                    .expect("Couldn't respond to health check");
+                Ok(())
             } else {
-                report
-                    .send(Err(format!(
-                        "No messages received in the last {} seconds",
-                        time_since.num_seconds()
-                    )))
-                    .expect("Couldn't respond to health check");
+                Err(format!(
+                    "No messages received in the last {} seconds",
+                    time_since.num_seconds()
+                ))
             }
         } else {
-            let _ = report.send(Err("No messages received".to_string()));
+            Err("No messages received".to_string())
         }
     }
 

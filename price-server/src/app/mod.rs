@@ -26,7 +26,9 @@ impl PriceApp {
         let mut stream = subscriber.subscribe::<OkexBtcUsdSwapPricePayload>().await?;
         tokio::spawn(async move {
             while let Some(check) = health_check_trigger.next().await {
-                subscriber.report_health(Duration::seconds(20), check).await;
+                check
+                    .send(subscriber.healthy(Duration::seconds(20)).await)
+                    .expect("Couldn't send response");
             }
         });
 

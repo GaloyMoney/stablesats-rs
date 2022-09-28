@@ -47,14 +47,13 @@ impl HedgingApp {
             okex_poll_delay,
         )
         .await?;
-        Self::spawn_synth_usd_listener(
-            health_check_trigger,
-            pubsub_config.clone(),
-            synth_usd_liability.clone(),
-        )
-        .await?;
-        Self::spawn_okex_position_listener(pubsub_config, pool.clone(), synth_usd_liability)
-            .await?;
+        let liability_sub =
+            Self::spawn_synth_usd_listener(pubsub_config.clone(), synth_usd_liability.clone())
+                .await?;
+        let position_sub =
+            Self::spawn_okex_position_listener(pubsub_config, pool.clone(), synth_usd_liability)
+                .await?;
+        Self::spawn_health_checker(health_check_trigger, liability_sub, position_sub).await;
         Self::spawn_okex_polling(pool, okex_poll_delay).await?;
         let app = HedgingApp {
             _runner: job_runner,
@@ -73,19 +72,11 @@ impl HedgingApp {
     }
 
     async fn spawn_synth_usd_listener(
-        mut health_check_trigger: HealthCheckTrigger,
         config: PubSubConfig,
         synth_usd_liability: SynthUsdLiability,
-    ) -> Result<(), HedgingError> {
+    ) -> Result<Subscriber, HedgingError> {
         let subscriber = Subscriber::new(config).await?;
         let mut stream = subscriber.subscribe::<SynthUsdLiabilityPayload>().await?;
-        tokio::spawn(async move {
-            while let Some(check) = health_check_trigger.next().await {
-                subscriber
-                    .report_health(chrono::Duration::seconds(20), check)
-                    .await;
-            }
-        });
         let _ = tokio::spawn(async move {
             let propagator = TraceContextPropagator::new();
 
@@ -107,14 +98,14 @@ impl HedgingApp {
                 .await;
             }
         });
-        Ok(())
+        Ok(subscriber)
     }
 
     async fn spawn_okex_position_listener(
         config: PubSubConfig,
         pool: sqlx::PgPool,
         synth_usd_liability: SynthUsdLiability,
-    ) -> Result<(), HedgingError> {
+    ) -> Result<Subscriber, HedgingError> {
         let subscriber = Subscriber::new(config).await?;
         let mut stream = subscriber
             .subscribe::<OkexBtcUsdSwapPositionPayload>()
@@ -141,7 +132,28 @@ impl HedgingApp {
                 .await;
             }
         });
-        Ok(())
+        Ok(subscriber)
+    }
+
+    async fn spawn_health_checker(
+        mut health_check_trigger: HealthCheckTrigger,
+        liability_sub: Subscriber,
+        position_sub: Subscriber,
+    ) {
+        tokio::spawn(async move {
+            while let Some(check) = health_check_trigger.next().await {
+                let duration = chrono::Duration::seconds(20);
+                match (
+                    liability_sub.healthy(duration).await,
+                    position_sub.healthy(duration).await,
+                ) {
+                    (Err(e), _) | (_, Err(e)) => {
+                        check.send(Err(e)).expect("Couldn't send response")
+                    }
+                    _ => check.send(Ok(())).expect("Couldn't send response"),
+                }
+            }
+        });
     }
 
     async fn handle_received_synth_usd_liability(
