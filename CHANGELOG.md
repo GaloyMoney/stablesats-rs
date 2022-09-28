@@ -1,3 +1,24 @@
+# [stablesats release v0.3.5](https://github.com/GaloyMoney/stablesats/releases/tag/v0.3.5)
+
+
+### Bug Fixes
+
+- Clippy
+- Identify okex service unavailable
+
+### Features
+
+- Throttle price tick publishing (#129)
+
+### Miscellaneous Tasks
+
+- Bump thiserror from 1.0.36 to 1.0.37 (#133)
+- Bump tokio from 1.21.1 to 1.21.2 (#132)
+- Shared JobExecutor (#131)
+- Persist okex orders (#130)
+- Bump governor from 0.4.2 to 0.5.0 (#120)
+- Bump thiserror from 1.0.35 to 1.0.36 (#128)
+
 # [stablesats release v0.3.4](https://github.com/GaloyMoney/stablesats/releases/tag/v0.3.4)
 
 
