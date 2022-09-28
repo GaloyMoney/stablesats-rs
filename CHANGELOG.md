@@ -1,3 +1,11 @@
+# [stablesats release v0.3.6](https://github.com/GaloyMoney/stablesats/releases/tag/v0.3.6)
+
+
+### Miscellaneous Tasks
+
+- Add position msg to health check
+- Better health check
+
 # [stablesats release v0.3.5](https://github.com/GaloyMoney/stablesats/releases/tag/v0.3.5)
 
 
