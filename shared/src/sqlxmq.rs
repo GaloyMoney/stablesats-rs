@@ -26,7 +26,7 @@ impl<'a> JobExecutor<'a> {
 
     #[instrument(name = "execute_job", skip_all, fields(
             job_id, job_name, error, error.level, error.message, attempt, last_attempt
-    ))]
+    ), err)]
     pub async fn execute<T, E, R, F>(mut self, func: F) -> Result<T, E>
     where
         T: DeserializeOwned + Serialize,
@@ -80,6 +80,10 @@ impl<'a> JobExecutor<'a> {
         span.record("job_id", &tracing::field::display(self.job.id()));
         span.record("job_name", &tracing::field::display(self.job.name()));
         span.record("attempt", &tracing::field::display(data.job_meta.attempts));
+        span.record(
+            "checkpoint_json",
+            &tracing::field::display(serde_json::to_string(&data).expect("Couldn't checkpoint")),
+        );
 
         let mut checkpoint =
             sqlxmq::Checkpoint::new_keep_alive(data.job_meta.wait_till_next_attempt);
