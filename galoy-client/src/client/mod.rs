@@ -6,7 +6,6 @@ mod transaction;
 
 use galoy_tracing::*;
 use graphql_client::reqwest::post_graphql;
-use opentelemetry::propagation::Injector;
 use reqwest::{
     header::{self, HeaderValue, AUTHORIZATION},
     Client as ReqwestClient,
@@ -177,14 +176,11 @@ impl GaloyClient {
         };
 
         // 1. create header with auth token and traceparent
-        // inject_tracing_data(span, tracing_data)
-        let mut header_wrapper = HeaderMapWrapper::new();
-        header_wrapper.set(
-            "traceparent",
-            "00-0af7651916cd43dd8448eb211c80319c-00f067aa0ba902b7-01".to_string(),
+        let mut headers = extract_tracing_data();
+        headers.insert(
+            header::AUTHORIZATION,
+            HeaderValue::from_str(&format!("Bearer {}", self.jwt))?,
         );
-        let mut headers = extract_tracing_data(header_wrapper);
-        headers.insert(header::AUTHORIZATION, HeaderValue::from_str(&self.jwt)?);
 
         // 2. build client with the header
         let trace_client = reqwest::Client::builder()
