@@ -11,7 +11,7 @@ use reqwest::{
     Client as ReqwestClient,
 };
 use rust_decimal::Decimal;
-use tracing::{info_span, instrument, Instrument};
+use tracing::instrument;
 
 use crate::error::*;
 use queries::*;
@@ -175,27 +175,20 @@ impl GaloyClient {
             before: cursor.map(|cursor| cursor.0),
         };
 
-        // 1. create header with auth token and traceparent
         let mut headers = inject_trace();
         headers.insert(
             header::AUTHORIZATION,
             HeaderValue::from_str(&format!("Bearer {}", self.jwt))?,
         );
-
-        // 2. build client with the header
         let trace_client = reqwest::Client::builder()
             .default_headers(headers.clone())
             .build()?;
 
-        // 3. use client to send http request
-        let gql_span = info_span!("graphql transaction list request");
-        propagate_trace(&gql_span, &HeaderMapWrapper { map: headers });
         let response = post_graphql::<StablesatsTransactionsList, _>(
             &trace_client,
             &self.config.api,
             variables,
         )
-        .instrument(gql_span)
         .await?;
         if let Some(error) = response.errors {
             return Err(GaloyClientError::GraphQLApi(error[0].clone().message));
