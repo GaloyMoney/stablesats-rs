@@ -27,7 +27,7 @@ pub fn init_tracer(config: TracingConfig) -> anyhow::Result<()> {
         .install_simple()?;
     let telemetry = tracing_opentelemetry::layer().with_tracer(tracer);
 
-    let fmt_layer = fmt::layer();
+    let fmt_layer = fmt::layer().json();
     let filter_layer = EnvFilter::try_from_default_env()
         .or_else(|_| EnvFilter::try_new("info"))
         .unwrap();
