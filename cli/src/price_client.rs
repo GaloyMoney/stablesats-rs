@@ -1,4 +1,4 @@
-use clap::ArgEnum;
+use clap::ValueEnum;
 use rust_decimal::Decimal;
 use tonic::transport::channel::Channel;
 use url::Url;
@@ -6,7 +6,7 @@ use url::Url;
 use ::price_server::proto;
 type ProtoClient = proto::price_service_client::PriceServiceClient<Channel>;
 
-#[derive(Debug, Copy, Clone, PartialEq, Eq, ArgEnum)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq, ValueEnum)]
 pub enum Direction {
     Buy,
     Sell,

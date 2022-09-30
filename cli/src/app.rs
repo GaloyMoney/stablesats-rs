@@ -13,7 +13,6 @@ struct Cli {
     #[clap(
         short,
         long,
-        parse(from_os_str),
         env = "STABLESATS_CONFIG",
         default_value = "stablesats.yml",
         value_name = "FILE"
@@ -55,7 +54,7 @@ enum Command {
         /// price server URL
         #[clap(short, long, action, value_parser, env = "PRICE_SERVER_URL")]
         url: Option<Url>,
-        #[clap(short, long, action, arg_enum, value_parser, default_value_t = Direction::Buy)]
+        #[clap(short, long, action, value_enum, value_parser, default_value_t = Direction::Buy)]
         direction: Direction,
         /// For option price expiry in seconds
         #[clap(short, long, action)]
