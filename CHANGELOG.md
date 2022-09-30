@@ -1,3 +1,12 @@
+# [stablesats release v0.3.8](https://github.com/GaloyMoney/stablesats/releases/tag/v0.3.8)
+
+
+### Miscellaneous Tasks
+
+- Breaking clap upgrade
+- Bump patches
+- Set output formatting to json (#140)
+
 # [stablesats release v0.3.7](https://github.com/GaloyMoney/stablesats/releases/tag/v0.3.7)
 
 
