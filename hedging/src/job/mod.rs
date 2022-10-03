@@ -97,13 +97,13 @@ async fn poll_okex(
     okex_orders: OkexOrders,
     publisher: Publisher,
 ) -> Result<(), HedgingError> {
-    let result = JobExecutor::builder(&mut current_job)
+    JobExecutor::builder(&mut current_job)
         .build()
         .expect("couldn't build JobExecutor")
         .execute(|_| async move { poll_okex::execute(okex_orders, okex, publisher).await })
-        .await;
+        .await?;
     spawn_poll_okex(current_job.pool(), delay).await?;
-    result
+    Ok(())
 }
 
 #[job(name = "adjust_hedge", channel_name = "hedging", ordered)]

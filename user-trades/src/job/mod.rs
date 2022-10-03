@@ -89,7 +89,7 @@ async fn publish_liability(
     user_trade_balances: UserTradeBalances,
     LiabilityPublishDelay(delay): LiabilityPublishDelay,
 ) -> Result<(), UserTradesError> {
-    let result = JobExecutor::builder(&mut current_job)
+    JobExecutor::builder(&mut current_job)
         .build()
         .expect("couldn't build JobExecutor")
         .execute(|_| async move {
@@ -106,18 +106,14 @@ async fn publish_liability(
                     .expect("SynthCents should be negative"),
                 })
                 .await?;
-            Ok(())
+            Ok::<_, UserTradesError>(())
         })
-        .await;
+        .await?;
     spawn_publish_liability(current_job.pool(), delay).await?;
-    result
+    Ok(())
 }
 
-#[job(
-    name = "poll_galoy_transactions",
-    channel_name = "user_trades",
-    retries = 10
-)]
+#[job(name = "poll_galoy_transactions", channel_name = "user_trades")]
 async fn poll_galoy_transactions(
     mut current_job: CurrentJob,
     user_trades: UserTrades,
@@ -132,8 +128,8 @@ async fn poll_galoy_transactions(
             let galoy_transactions = GaloyTransactions::new(pool);
             poll_galoy_transactions::execute(&user_trades, &galoy_transactions, &galoy).await
         })
-        .await;
-    if let Ok(true) = has_more {
+        .await?;
+    if has_more {
         spawn_poll_galoy_transactions(current_job.pool(), Duration::from_secs(0)).await?;
     } else {
         spawn_poll_galoy_transactions(current_job.pool(), delay).await?;
