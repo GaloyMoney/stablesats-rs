@@ -62,7 +62,7 @@ impl TryFrom<stablesats_user_login::ResponseData> for StablesatsAuthToken {
         let user_login = response.user_login;
         let (auth_token, errors) = (user_login.auth_token, user_login.errors);
 
-        if errors.len() > 0 {
+        if !errors.is_empty() {
             let mut errors_list = Vec::new();
             for error in errors {
                 let err = InnerError::from(error);
@@ -157,3 +157,6 @@ impl TryFrom<stablesats_on_chain_payment::ResponseData> for StablesatsPaymentSen
         Ok(onchain_payment_send)
     }
 }
+
+pub type StablesatsPaymentSendError =
+    stablesats_on_chain_payment::StablesatsOnChainPaymentOnChainPaymentSendErrors;

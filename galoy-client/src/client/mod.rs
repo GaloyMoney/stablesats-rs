@@ -45,14 +45,9 @@ pub struct OnchainAddress {
 impl GaloyClient {
     pub async fn connect(config: GaloyClientConfig) -> Result<Self, GaloyClientError> {
         let jwt = Self::login_jwt(config.clone()).await?;
-        let jwt = match jwt {
-            Some(jwt) => jwt,
-            None => {
-                return Err(GaloyClientError::Authentication(
-                    "Empty authentication token".to_string(),
-                ))
-            }
-        };
+        let jwt = jwt.ok_or_else(|| {
+            GaloyClientError::Authentication("Empty authentication token".to_string())
+        })?;
         let client = ReqwestClient::builder()
             .use_rustls_tls()
             .default_headers(
@@ -115,32 +110,15 @@ impl GaloyClient {
 
         if response.errors.is_some() {
             if let Some(errors) = response.errors {
-                let mut errors_list = Vec::new();
-                for error in errors {
-                    let err = TopLevelError::from(error);
-                    errors_list.push(err)
-                }
-
-                return Err(GaloyClientError::GraphQLApi(format!("{:#?}", errors_list)));
+                TopLevelError::create(errors)?;
             }
         }
 
-        let response_data = response.data;
-        if response_data.is_none() {
-            return Err(GaloyClientError::GraphQLApi(
-                "Empty `data` in response".to_string(),
-            ));
-        }
+        let response_data = response
+            .data
+            .ok_or_else(|| GaloyClientError::GraphQLApi("Empty `data` in response".to_string()))?;
 
-        let auth_token = match response_data {
-            Some(token) => StablesatsAuthToken::try_from(token)?,
-            None => {
-                return Err(GaloyClientError::GraphQLApi(format!(
-                    "Expected some response data, found {:?}",
-                    response_data
-                )))
-            }
-        };
+        let auth_token = StablesatsAuthToken::try_from(response_data)?;
 
         Ok(auth_token)
     }
@@ -158,12 +136,13 @@ impl GaloyClient {
         )
         .await?;
         if response.errors.is_some() {
-            if let Some(error) = response.errors {
-                return Err(GaloyClientError::GraphQLApi(error[0].clone().message));
+            if let Some(errors) = response.errors {
+                TopLevelError::create(errors)?;
             }
         }
 
-        let result = response.data.ok_or_else(|| {
+        let response_data = response.data;
+        let result = response_data.ok_or_else(|| {
             GaloyClientError::GraphQLApi("Empty `me` in response data".to_string())
         })?;
 
@@ -188,9 +167,8 @@ impl GaloyClient {
             variables,
         )
         .await?;
-
-        if let Some(error) = response.errors {
-            return Err(GaloyClientError::GraphQLApi(error[0].clone().message));
+        if let Some(errors) = response.errors {
+            TopLevelError::create(errors)?;
         }
 
         let result = response.data.ok_or_else(|| {
@@ -209,12 +187,13 @@ impl GaloyClient {
         )
         .await?;
         if response.errors.is_some() {
-            if let Some(error) = response.errors {
-                return Err(GaloyClientError::GraphQLApi(error[0].clone().message));
+            if let Some(errors) = response.errors {
+                TopLevelError::create(errors)?;
             }
         }
 
-        let response_data = response.data.ok_or_else(|| {
+        let response_data = response.data;
+        let result = response_data.ok_or_else(|| {
             GaloyClientError::GraphQLApi("Empty `me` in response data".to_string())
         })?;
 
@@ -235,18 +214,19 @@ impl GaloyClient {
         )
         .await?;
         if response.errors.is_some() {
-            if let Some(error) = response.errors {
-                return Err(GaloyClientError::GraphQLApi(error[0].clone().message));
+            if let Some(errors) = response.errors {
+                TopLevelError::create(errors)?;
             }
         }
 
-        let response_data = response.data.ok_or_else(|| {
+        let response_data = response.data;
+        let result = response_data.ok_or_else(|| {
             GaloyClientError::GraphQLApi(
                 "Empty `on chain address create` in response data".to_string(),
             )
         })?;
 
-        let onchain_address_create = StablesatsOnchainAddress::try_from(response_data)?;
+        let onchain_address_create = StablesatsOnchainAddress::try_from(result)?;
         let address = onchain_address_create.address.ok_or_else(|| {
             GaloyClientError::GraphQLApi("Empty `address` in response data".to_string())
         })?;
@@ -278,20 +258,23 @@ impl GaloyClient {
         )
         .await?;
         if response.errors.is_some() {
-            if let Some(error) = response.errors {
-                return Err(GaloyClientError::GraphQLApi(error[0].clone().message));
+            if let Some(errors) = response.errors {
+                TopLevelError::create(errors)?;
             }
         }
 
-        let response_data = response.data.ok_or_else(|| {
+        let response_data = response.data;
+        let result = response_data.ok_or_else(|| {
             GaloyClientError::GraphQLApi("Empty `onChainPaymentSend` in response data".to_string())
         })?;
 
         let onchain_payment_send = StablesatsPaymentSend::try_from(response_data)?;
         if !onchain_payment_send.errors.is_empty() {
-            return Err(GaloyClientError::GraphQLApi(
-                onchain_payment_send.errors[0].clone().message,
-            ));
+            let mut errors = Vec::new();
+            for error in onchain_payment_send.errors {
+                errors.push(InnerError::from(error))
+            }
+            return Err(GaloyClientError::GraphQLApi(format!("{:#?}", errors)));
         };
 
         let payment_status = onchain_payment_send.status;
@@ -322,8 +305,8 @@ impl GaloyClient {
         )
         .await?;
         if response.errors.is_some() {
-            if let Some(error) = response.errors {
-                return Err(GaloyClientError::GraphQLApi(error[0].clone().message));
+            if let Some(errors) = response.errors {
+                TopLevelError::create(errors)?;
             }
         }
 
