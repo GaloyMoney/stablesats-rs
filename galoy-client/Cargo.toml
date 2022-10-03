@@ -18,6 +18,9 @@ chrono = { version = "0.4", features = ["clock", "serde"], default-features = fa
 tracing = "0.1.36"
 rust_decimal = "1.26.1"
 rust_decimal_macros = "1.26.1"
+opentelemetry = "0.18.0"
+tracing-opentelemetry = "0.18.0"
+opentelemetry-http = "0.7.0"
 
 [dev-dependencies]
 anyhow = "1.0.65"

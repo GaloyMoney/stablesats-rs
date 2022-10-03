@@ -1,11 +1,13 @@
 mod config;
 mod convert;
+mod galoy_tracing;
 mod queries;
 mod transaction;
 
+use galoy_tracing::*;
 use graphql_client::reqwest::post_graphql;
 use reqwest::{
-    header::{HeaderValue, AUTHORIZATION},
+    header::{self, HeaderValue, AUTHORIZATION},
     Client as ReqwestClient,
 };
 use rust_decimal::Decimal;
@@ -33,6 +35,7 @@ pub struct GaloyClient {
     client: ReqwestClient,
     config: GaloyClientConfig,
     btc_wallet_id: String,
+    jwt: String,
 }
 
 pub(crate) struct StablesatsAuthToken {
@@ -72,6 +75,7 @@ impl GaloyClient {
             client,
             config,
             btc_wallet_id,
+            jwt,
         })
     }
 
@@ -170,8 +174,18 @@ impl GaloyClient {
             last: Some(200),
             before: cursor.map(|cursor| cursor.0),
         };
+
+        let mut headers = inject_trace();
+        headers.insert(
+            header::AUTHORIZATION,
+            HeaderValue::from_str(&format!("Bearer {}", self.jwt))?,
+        );
+        let trace_client = reqwest::Client::builder()
+            .default_headers(headers.clone())
+            .build()?;
+
         let response = post_graphql::<StablesatsTransactionsList, _>(
-            &self.client,
+            &trace_client,
             &self.config.api,
             variables,
         )
