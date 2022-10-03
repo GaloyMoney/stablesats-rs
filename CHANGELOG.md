@@ -1,3 +1,14 @@
+# [stablesats release v0.3.9](https://github.com/GaloyMoney/stablesats/releases/tag/v0.3.9)
+
+
+### Features
+
+- Inject tracing headers (#138)
+
+### Miscellaneous Tasks
+
+- Bump clap from 4.0.4 to 4.0.8 (#141)
+
 # [stablesats release v0.3.8](https://github.com/GaloyMoney/stablesats/releases/tag/v0.3.8)
 
 
