@@ -7,15 +7,10 @@ impl TryFrom<stablesats_wallets::ResponseData> for WalletBalances {
     type Error = GaloyClientError;
 
     fn try_from(response: stablesats_wallets::ResponseData) -> Result<Self, Self::Error> {
-        let me = response.me;
-        let me = match me {
-            Some(me) => me,
-            None => {
-                return Err(GaloyClientError::GraphQLApi(
-                    "Empty `me` in response data".to_string(),
-                ))
-            }
-        };
+        let me = response.me.ok_or_else(|| {
+            GaloyClientError::GraphQLApi("Empty `me` in response data".to_string())
+        })?;
+
         let default_account = me.default_account;
         let wallets = default_account.wallets;
 
@@ -51,15 +46,10 @@ impl TryFrom<stablesats_wallets::ResponseData> for WalletId {
     type Error = GaloyClientError;
 
     fn try_from(response: stablesats_wallets::ResponseData) -> Result<Self, Self::Error> {
-        let me = response.me;
-        let me = match me {
-            Some(me) => me,
-            None => {
-                return Err(GaloyClientError::GraphQLApi(
-                    "Empty `me` in response data".to_string(),
-                ))
-            }
-        };
+        let me = response.me.ok_or_else(|| {
+            GaloyClientError::GraphQLApi("Empty `me` in response data".to_string())
+        })?;
+
         let default_account = me.default_account;
         let wallets = default_account.wallets;
 
@@ -71,13 +61,11 @@ impl TryFrom<stablesats_wallets::ResponseData> for WalletId {
             }
         }
 
-        if let Some(btc_id) = btc_id {
-            Ok(btc_id)
-        } else {
-            Err(GaloyClientError::GraphQLApi(
-                "Missing `btc id` in response data".to_string(),
-            ))
-        }
+        let btc_id = btc_id.ok_or_else(|| {
+            GaloyClientError::GraphQLApi("Missing `btc id` in response data".to_string())
+        })?;
+
+        Ok(btc_id)
     }
 }
 
@@ -141,6 +129,15 @@ impl From<graphql_client::Error> for TopLevelError {
             path: err.path,
             location: err.locations,
             extensions: err.extensions,
+        }
+    }
+}
+
+impl From<StablesatsPaymentSendError> for InnerError {
+    fn from(err: StablesatsPaymentSendError) -> Self {
+        InnerError {
+            message: err.message,
+            path: err.path,
         }
     }
 }
