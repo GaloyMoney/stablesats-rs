@@ -31,3 +31,16 @@ pub struct TopLevelError {
     pub location: Option<Vec<Location>>,
     pub extensions: Option<HashMap<String, Value, RandomState>>,
 }
+
+impl TopLevelError {
+    pub fn create(errors: Vec<graphql_client::Error>) -> Result<Self, GaloyClientError> {
+        let mut errors_list = Vec::new();
+
+        for error in errors {
+            let err = Self::from(error);
+            errors_list.push(err)
+        }
+
+        Err(GaloyClientError::GraphQLApi(format!("{:#?}", errors_list)))
+    }
+}
