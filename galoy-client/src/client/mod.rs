@@ -5,10 +5,10 @@ mod queries;
 mod transaction;
 
 use galoy_tracing::*;
-use graphql_client::reqwest::post_graphql;
+use graphql_client::{GraphQLQuery, Response};
 use reqwest::{
-    header::{self, HeaderValue, AUTHORIZATION},
-    Client as ReqwestClient,
+    header::{HeaderValue, AUTHORIZATION},
+    Client as ReqwestClient, Method,
 };
 use rust_decimal::Decimal;
 use tracing::instrument;
@@ -35,7 +35,6 @@ pub struct GaloyClient {
     client: ReqwestClient,
     config: GaloyClientConfig,
     btc_wallet_id: String,
-    jwt: String,
 }
 
 pub(crate) struct StablesatsAuthToken {
@@ -50,14 +49,10 @@ pub struct OnchainAddress {
 impl GaloyClient {
     pub async fn connect(config: GaloyClientConfig) -> Result<Self, GaloyClientError> {
         let jwt = Self::login_jwt(config.clone()).await?;
-        let jwt = match jwt.inner {
-            Some(jwt) => jwt,
-            None => {
-                return Err(GaloyClientError::Authentication(
-                    "Empty authentication token".to_string(),
-                ))
-            }
-        };
+        let jwt = jwt.inner.ok_or_else(|| {
+            GaloyClientError::Authentication("Empty authentication token".to_string())
+        })?;
+
         let client = ReqwestClient::builder()
             .use_rustls_tls()
             .default_headers(
@@ -75,10 +70,10 @@ impl GaloyClient {
             client,
             config,
             btc_wallet_id,
-            jwt,
         })
     }
 
+    #[instrument(name = "galoy_authentication_code", err)]
     pub async fn authentication_code(
         &self,
     ) -> Result<StablesatsAuthenticationCode, GaloyClientError> {
@@ -87,19 +82,22 @@ impl GaloyClient {
                 phone: self.config.phone_number.clone(),
             },
         };
-        let response =
-            post_graphql::<StablesatsAuthCode, _>(&self.client, &self.config.api, phone_number)
-                .await?;
-        let response_data = response.data;
+        let response = GaloyClient::traced_gql_request::<StablesatsAuthCode, _>(
+            &self.client,
+            &self.config.api,
+            phone_number,
+        )
+        .await?;
+        let response_data = response.data.ok_or_else(|| {
+            GaloyClientError::GraphQLApi("Empty authentication code response data".to_string())
+        })?;
 
-        if let Some(response_data) = response_data {
-            StablesatsAuthenticationCode::try_from(response_data)?;
-        }
-        Err(GaloyClientError::GraphQLApi(
-            "Failed to parse response data".to_string(),
-        ))
+        let auth_code = StablesatsAuthenticationCode::try_from(response_data)?;
+
+        Ok(auth_code)
     }
 
+    #[instrument(name = "galoy_login_jwt", err)]
     async fn login_jwt(config: GaloyClientConfig) -> Result<StablesatsAuthToken, GaloyClientError> {
         let variables = stablesats_user_login::Variables {
             input: stablesats_user_login::UserLoginInput {
@@ -110,8 +108,11 @@ impl GaloyClient {
 
         let client = ReqwestClient::builder().use_rustls_tls().build()?;
 
-        let response =
-            post_graphql::<StablesatsUserLogin, _>(&client, config.api, variables).await?;
+        let response = GaloyClient::traced_gql_request::<StablesatsUserLogin, _>(
+            &client, config.api, variables,
+        )
+        .await?;
+
         if response.errors.is_some() {
             if let Some(error) = response.errors {
                 return Err(GaloyClientError::GraphQLApi(error[0].clone().message));
@@ -137,28 +138,27 @@ impl GaloyClient {
         Ok(StablesatsAuthToken { inner: auth_token })
     }
 
+    #[instrument(name = "galoy_wallet_ids", err)]
     async fn wallet_ids(
         client: ReqwestClient,
         config: GaloyClientConfig,
     ) -> Result<WalletId, GaloyClientError> {
         let variables = stablesats_wallets::Variables;
-        let response =
-            post_graphql::<StablesatsWallets, _>(&client, &config.api, variables).await?;
+        let response = GaloyClient::traced_gql_request::<StablesatsWallets, _>(
+            &client,
+            &config.api,
+            variables,
+        )
+        .await?;
         if response.errors.is_some() {
             if let Some(error) = response.errors {
                 return Err(GaloyClientError::GraphQLApi(error[0].clone().message));
             }
         }
 
-        let response_data = response.data;
-        let result = match response_data {
-            Some(result) => result,
-            None => {
-                return Err(GaloyClientError::GraphQLApi(
-                    "Empty `me` in response data".to_string(),
-                ))
-            }
-        };
+        let result = response.data.ok_or_else(|| {
+            GaloyClientError::GraphQLApi("Empty `me` in response data".to_string())
+        })?;
 
         let wallet_id = WalletId::try_from(result)?;
 
@@ -175,21 +175,13 @@ impl GaloyClient {
             before: cursor.map(|cursor| cursor.0),
         };
 
-        let mut headers = inject_trace();
-        headers.insert(
-            header::AUTHORIZATION,
-            HeaderValue::from_str(&format!("Bearer {}", self.jwt))?,
-        );
-        let trace_client = reqwest::Client::builder()
-            .default_headers(headers.clone())
-            .build()?;
-
-        let response = post_graphql::<StablesatsTransactionsList, _>(
-            &trace_client,
+        let response = GaloyClient::traced_gql_request::<StablesatsTransactionsList, _>(
+            &self.client,
             &self.config.api,
             variables,
         )
         .await?;
+
         if let Some(error) = response.errors {
             return Err(GaloyClientError::GraphQLApi(error[0].clone().message));
         }
@@ -200,67 +192,62 @@ impl GaloyClient {
         GaloyTransactions::try_from(result)
     }
 
+    #[instrument(name = "galoy_wallet_balances", skip(self), err)]
     pub async fn wallet_balances(&self) -> Result<WalletBalances, GaloyClientError> {
         let variables = stablesats_wallets::Variables;
-        let response =
-            post_graphql::<StablesatsWallets, _>(&self.client, &self.config.api, variables).await?;
+        let response = GaloyClient::traced_gql_request::<StablesatsWallets, _>(
+            &self.client,
+            &self.config.api,
+            variables,
+        )
+        .await?;
         if response.errors.is_some() {
             if let Some(error) = response.errors {
                 return Err(GaloyClientError::GraphQLApi(error[0].clone().message));
             }
         }
 
-        let response_data = response.data;
-        let result = match response_data {
-            Some(result) => result,
-            None => {
-                return Err(GaloyClientError::GraphQLApi(
-                    "Empty `me` in response data".to_string(),
-                ))
-            }
-        };
+        let response_data = response.data.ok_or_else(|| {
+            GaloyClientError::GraphQLApi("Empty `me` in response data".to_string())
+        })?;
 
-        WalletBalances::try_from(result)
+        WalletBalances::try_from(response_data)
     }
 
+    #[instrument(name = "galoy_onchain_address", skip(self), err)]
     pub async fn onchain_address(&self) -> Result<OnchainAddress, GaloyClientError> {
         let variables = stablesats_deposit_address::Variables {
             input: stablesats_deposit_address::OnChainAddressCurrentInput {
                 wallet_id: self.btc_wallet_id.clone(),
             },
         };
-        let response =
-            post_graphql::<StablesatsDepositAddress, _>(&self.client, &self.config.api, variables)
-                .await?;
+        let response = GaloyClient::traced_gql_request::<StablesatsDepositAddress, _>(
+            &self.client,
+            &self.config.api,
+            variables,
+        )
+        .await?;
         if response.errors.is_some() {
             if let Some(error) = response.errors {
                 return Err(GaloyClientError::GraphQLApi(error[0].clone().message));
             }
         }
 
-        let response_data = response.data;
-        let result = match response_data {
-            Some(data) => data,
-            None => {
-                return Err(GaloyClientError::GraphQLApi(
-                    "Empty `on chain address create` in response data".to_string(),
-                ))
-            }
-        };
+        let response_data = response.data.ok_or_else(|| {
+            GaloyClientError::GraphQLApi(
+                "Empty `on chain address create` in response data".to_string(),
+            )
+        })?;
 
-        let onchain_address_create = StablesatsOnchainAddress::try_from(result)?;
-        let address = match onchain_address_create.address {
-            Some(address) => address,
-            None => {
-                return Err(GaloyClientError::GraphQLApi(
-                    "Empty `address` in response data".to_string(),
-                ))
-            }
-        };
+        let onchain_address_create = StablesatsOnchainAddress::try_from(response_data)?;
+        let address = onchain_address_create.address.ok_or_else(|| {
+            GaloyClientError::GraphQLApi("Empty `address` in response data".to_string())
+        })?;
 
         Ok(OnchainAddress { address })
     }
 
+    #[instrument(name = "galoy_send_onchain_payment", skip(self), err)]
     pub async fn send_onchain_payment(
         &self,
         address: String,
@@ -277,26 +264,23 @@ impl GaloyClient {
                 wallet_id: self.btc_wallet_id.clone(),
             },
         };
-        let response =
-            post_graphql::<StablesatsOnChainPayment, _>(&self.client, &self.config.api, variables)
-                .await?;
+        let response = GaloyClient::traced_gql_request::<StablesatsOnChainPayment, _>(
+            &self.client,
+            &self.config.api,
+            variables,
+        )
+        .await?;
         if response.errors.is_some() {
             if let Some(error) = response.errors {
                 return Err(GaloyClientError::GraphQLApi(error[0].clone().message));
             }
         }
 
-        let response_data = response.data;
-        let result = match response_data {
-            Some(data) => data,
-            None => {
-                return Err(GaloyClientError::GraphQLApi(
-                    "Empty `onChainPaymentSend` in response data".to_string(),
-                ))
-            }
-        };
+        let response_data = response.data.ok_or_else(|| {
+            GaloyClientError::GraphQLApi("Empty `onChainPaymentSend` in response data".to_string())
+        })?;
 
-        let onchain_payment_send = StablesatsPaymentSend::try_from(result)?;
+        let onchain_payment_send = StablesatsPaymentSend::try_from(response_data)?;
         if !onchain_payment_send.errors.is_empty() {
             return Err(GaloyClientError::GraphQLApi(
                 onchain_payment_send.errors[0].clone().message,
@@ -304,18 +288,14 @@ impl GaloyClient {
         };
 
         let payment_status = onchain_payment_send.status;
-        let status = match payment_status {
-            Some(status) => status,
-            None => {
-                return Err(GaloyClientError::GraphQLApi(
-                    "Empty `status` in response data".to_string(),
-                ))
-            }
-        };
+        let status = payment_status.ok_or_else(|| {
+            GaloyClientError::GraphQLApi("Empty `status` in response data".to_string())
+        })?;
 
         Ok(status)
     }
 
+    #[instrument(name = "galoy_onchain_tx_fee", skip(self), err)]
     pub async fn onchain_tx_fee(
         &self,
         address: OnChainAddress,
@@ -328,9 +308,12 @@ impl GaloyClient {
             target_confirmations: Some(target_conf),
             wallet_id: self.btc_wallet_id.clone(),
         };
-        let response =
-            post_graphql::<StablesatsOnChainTxFee, _>(&self.client, &self.config.api, variables)
-                .await?;
+        let response = GaloyClient::traced_gql_request::<StablesatsOnChainTxFee, _>(
+            &self.client,
+            &self.config.api,
+            variables,
+        )
+        .await?;
         if response.errors.is_some() {
             if let Some(error) = response.errors {
                 return Err(GaloyClientError::GraphQLApi(error[0].clone().message));
@@ -338,17 +321,31 @@ impl GaloyClient {
         }
 
         let response_data = response.data;
-        let result = match response_data {
-            Some(data) => data,
-            None => {
-                return Err(GaloyClientError::GraphQLApi(
-                    "Empty `onChainTxFee` in response data".to_string(),
-                ))
-            }
-        };
+        let result = response_data.ok_or_else(|| {
+            GaloyClientError::GraphQLApi("Empty `onChainTxFee` in response data".to_string())
+        })?;
 
         let onchain_tx_fee = StablesatsTxFee::try_from(result)?;
 
         Ok(onchain_tx_fee)
+    }
+
+    async fn traced_gql_request<Q: GraphQLQuery, U: reqwest::IntoUrl>(
+        client: &ReqwestClient,
+        url: U,
+        variables: Q::Variables,
+    ) -> Result<Response<Q::ResponseData>, GaloyClientError> {
+        let trace_headers = inject_trace();
+        let body = Q::build_query(variables);
+        let response = client
+            .request(Method::POST, url)
+            .headers(trace_headers)
+            .json(&body)
+            .send()
+            .await?;
+
+        let response = response.json::<Response<Q::ResponseData>>().await?;
+
+        Ok(response)
     }
 }
