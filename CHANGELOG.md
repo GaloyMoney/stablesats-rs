@@ -1,3 +1,11 @@
+# [stablesats release v0.3.10](https://github.com/GaloyMoney/stablesats/releases/tag/v0.3.10)
+
+
+### Bug Fixes
+
+- Inject trace to all request & fix double request client (#145)
+- Poll_galoy_transactions job was not retrying
+
 # [stablesats release v0.3.9](https://github.com/GaloyMoney/stablesats/releases/tag/v0.3.9)
 
 
