@@ -24,6 +24,8 @@ pub use queries::{
 pub use config::*;
 pub use transaction::*;
 
+pub use self::convert::PathString;
+
 #[derive(Debug)]
 pub struct WalletBalances {
     pub btc: Decimal,
@@ -83,8 +85,11 @@ impl GaloyClient {
             phone_number,
         )
         .await?;
-        let response_data = response.data.ok_or_else(|| {
-            GaloyClientError::GraphQLApi("Empty authentication code response data".to_string())
+        let response_data = response.data.ok_or_else(|| GaloyClientError::GraphQLApi {
+            message: "Empty authentication code response data".to_string(),
+            path: PathString(None),
+            location: None,
+            extensions: None,
         })?;
 
         let auth_code = StablesatsAuthenticationCode::try_from(response_data)?;
@@ -110,13 +115,23 @@ impl GaloyClient {
 
         if response.errors.is_some() {
             if let Some(errors) = response.errors {
-                TopLevelError::create(errors)?;
+                let zeroth_error = errors[0].clone();
+
+                return Err(GaloyClientError::GraphQLApi {
+                    message: zeroth_error.message,
+                    path: zeroth_error.path.into(),
+                    location: zeroth_error.locations,
+                    extensions: zeroth_error.extensions,
+                });
             }
         }
 
-        let response_data = response
-            .data
-            .ok_or_else(|| GaloyClientError::GraphQLApi("Empty `data` in response".to_string()))?;
+        let response_data = response.data.ok_or_else(|| GaloyClientError::GraphQLApi {
+            message: "Empty `data` in response".to_string(),
+            path: PathString(None),
+            location: None,
+            extensions: None,
+        })?;
 
         let auth_token = StablesatsAuthToken::try_from(response_data)?;
 
@@ -137,13 +152,23 @@ impl GaloyClient {
         .await?;
         if response.errors.is_some() {
             if let Some(errors) = response.errors {
-                TopLevelError::create(errors)?;
+                let zeroth_error = errors[0].clone();
+
+                return Err(GaloyClientError::GraphQLApi {
+                    message: zeroth_error.message,
+                    path: zeroth_error.path.into(),
+                    location: zeroth_error.locations,
+                    extensions: zeroth_error.extensions,
+                });
             }
         }
 
         let response_data = response.data;
-        let result = response_data.ok_or_else(|| {
-            GaloyClientError::GraphQLApi("Empty `me` in response data".to_string())
+        let result = response_data.ok_or_else(|| GaloyClientError::GraphQLApi {
+            message: "Empty `me` in response data".to_string(),
+            path: PathString(None),
+            location: None,
+            extensions: None,
         })?;
 
         let wallet_id = WalletId::try_from(result)?;
@@ -168,11 +193,21 @@ impl GaloyClient {
         )
         .await?;
         if let Some(errors) = response.errors {
-            TopLevelError::create(errors)?;
+            let zeroth_error = errors[0].clone();
+
+            return Err(GaloyClientError::GraphQLApi {
+                message: zeroth_error.message,
+                path: zeroth_error.path.into(),
+                location: zeroth_error.locations,
+                extensions: zeroth_error.extensions,
+            });
         }
 
-        let result = response.data.ok_or_else(|| {
-            GaloyClientError::GraphQLApi("Empty `me` in response data".to_string())
+        let result = response.data.ok_or_else(|| GaloyClientError::GraphQLApi {
+            message: "Empty `me` in response data".to_string(),
+            path: PathString(None),
+            location: None,
+            extensions: None,
         })?;
         GaloyTransactions::try_from(result)
     }
@@ -188,16 +223,26 @@ impl GaloyClient {
         .await?;
         if response.errors.is_some() {
             if let Some(errors) = response.errors {
-                TopLevelError::create(errors)?;
+                let zeroth_error = errors[0].clone();
+
+                return Err(GaloyClientError::GraphQLApi {
+                    message: zeroth_error.message,
+                    path: zeroth_error.path.into(),
+                    location: zeroth_error.locations,
+                    extensions: zeroth_error.extensions,
+                });
             }
         }
 
         let response_data = response.data;
-        let result = response_data.ok_or_else(|| {
-            GaloyClientError::GraphQLApi("Empty `me` in response data".to_string())
+        let result = response_data.ok_or_else(|| GaloyClientError::GraphQLApi {
+            message: "Empty `me` in response data".to_string(),
+            path: PathString(None),
+            location: None,
+            extensions: None,
         })?;
 
-        WalletBalances::try_from(response_data)
+        WalletBalances::try_from(result)
     }
 
     #[instrument(name = "galoy_onchain_address", skip(self), err)]
@@ -215,21 +260,35 @@ impl GaloyClient {
         .await?;
         if response.errors.is_some() {
             if let Some(errors) = response.errors {
-                TopLevelError::create(errors)?;
+                let zeroth_error = errors[0].clone();
+
+                return Err(GaloyClientError::GraphQLApi {
+                    message: zeroth_error.message,
+                    path: zeroth_error.path.into(),
+                    location: zeroth_error.locations,
+                    extensions: zeroth_error.extensions,
+                });
             }
         }
 
         let response_data = response.data;
-        let result = response_data.ok_or_else(|| {
-            GaloyClientError::GraphQLApi(
-                "Empty `on chain address create` in response data".to_string(),
-            )
+        let result = response_data.ok_or_else(|| GaloyClientError::GraphQLApi {
+            message: "Empty `on chain address create` in response data".to_string(),
+            path: PathString(None),
+            location: None,
+            extensions: None,
         })?;
 
         let onchain_address_create = StablesatsOnchainAddress::try_from(result)?;
-        let address = onchain_address_create.address.ok_or_else(|| {
-            GaloyClientError::GraphQLApi("Empty `address` in response data".to_string())
-        })?;
+        let address =
+            onchain_address_create
+                .address
+                .ok_or_else(|| GaloyClientError::GraphQLApi {
+                    message: "Empty `address` in response data".to_string(),
+                    path: PathString(None),
+                    location: None,
+                    extensions: None,
+                })?;
 
         Ok(OnchainAddress { address })
     }
@@ -259,27 +318,42 @@ impl GaloyClient {
         .await?;
         if response.errors.is_some() {
             if let Some(errors) = response.errors {
-                TopLevelError::create(errors)?;
+                let zeroth_error = errors[0].clone();
+
+                return Err(GaloyClientError::GraphQLApi {
+                    message: zeroth_error.message,
+                    path: zeroth_error.path.into(),
+                    location: zeroth_error.locations,
+                    extensions: zeroth_error.extensions,
+                });
             }
         }
 
         let response_data = response.data;
-        let result = response_data.ok_or_else(|| {
-            GaloyClientError::GraphQLApi("Empty `onChainPaymentSend` in response data".to_string())
+        let result = response_data.ok_or_else(|| GaloyClientError::GraphQLApi {
+            message: "Empty `onChainPaymentSend` in response data".to_string(),
+            path: PathString(None),
+            location: None,
+            extensions: None,
         })?;
 
-        let onchain_payment_send = StablesatsPaymentSend::try_from(response_data)?;
+        let onchain_payment_send = StablesatsPaymentSend::try_from(result)?;
         if !onchain_payment_send.errors.is_empty() {
-            let mut errors = Vec::new();
-            for error in onchain_payment_send.errors {
-                errors.push(InnerError::from(error))
-            }
-            return Err(GaloyClientError::GraphQLApi(format!("{:#?}", errors)));
+            let zeroth_error = onchain_payment_send.errors[0].clone();
+            return Err(GaloyClientError::GraphQLApi {
+                message: zeroth_error.message,
+                path: PathString(zeroth_error.path),
+                location: None,
+                extensions: None,
+            });
         };
 
         let payment_status = onchain_payment_send.status;
-        let status = payment_status.ok_or_else(|| {
-            GaloyClientError::GraphQLApi("Empty `status` in response data".to_string())
+        let status = payment_status.ok_or_else(|| GaloyClientError::GraphQLApi {
+            message: "Empty `status` in response data".to_string(),
+            path: PathString(None),
+            location: None,
+            extensions: None,
         })?;
 
         Ok(status)
@@ -306,13 +380,23 @@ impl GaloyClient {
         .await?;
         if response.errors.is_some() {
             if let Some(errors) = response.errors {
-                TopLevelError::create(errors)?;
+                let zeroth_error = errors[0].clone();
+
+                return Err(GaloyClientError::GraphQLApi {
+                    message: zeroth_error.message,
+                    path: zeroth_error.path.into(),
+                    location: zeroth_error.locations,
+                    extensions: zeroth_error.extensions,
+                });
             }
         }
 
         let response_data = response.data;
-        let result = response_data.ok_or_else(|| {
-            GaloyClientError::GraphQLApi("Empty `onChainTxFee` in response data".to_string())
+        let result = response_data.ok_or_else(|| GaloyClientError::GraphQLApi {
+            message: "Empty `onChainTxFee` in response data".to_string(),
+            path: PathString(None),
+            location: None,
+            extensions: None,
         })?;
 
         let onchain_tx_fee = StablesatsTxFee::try_from(result)?;

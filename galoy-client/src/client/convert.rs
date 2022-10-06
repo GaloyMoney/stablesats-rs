@@ -1,3 +1,5 @@
+use graphql_client::PathFragment;
+
 use super::{
     queries::*, GaloyTransaction, GaloyTransactions, TxCursor, WalletBalances, WalletCurrency,
 };
@@ -7,8 +9,11 @@ impl TryFrom<stablesats_wallets::ResponseData> for WalletBalances {
     type Error = GaloyClientError;
 
     fn try_from(response: stablesats_wallets::ResponseData) -> Result<Self, Self::Error> {
-        let me = response.me.ok_or_else(|| {
-            GaloyClientError::GraphQLApi("Empty `me` in response data".to_string())
+        let me = response.me.ok_or_else(|| GaloyClientError::GraphQLApi {
+            message: "Empty `me` in response data".to_string(),
+            path: PathString(None),
+            location: None,
+            extensions: None,
         })?;
 
         let default_account = me.default_account;
@@ -35,9 +40,12 @@ impl TryFrom<stablesats_wallets::ResponseData> for WalletBalances {
         if let (Some(btc), Some(usd)) = (btc, usd) {
             Ok(Self { btc, usd })
         } else {
-            Err(GaloyClientError::GraphQLApi(
-                "Missing `btc` or `usd` in response data".to_string(),
-            ))
+            Err(GaloyClientError::GraphQLApi {
+                message: "Missing `btc` or `usd` in response data".to_string(),
+                path: PathString(None),
+                location: None,
+                extensions: None,
+            })
         }
     }
 }
@@ -46,8 +54,11 @@ impl TryFrom<stablesats_wallets::ResponseData> for WalletId {
     type Error = GaloyClientError;
 
     fn try_from(response: stablesats_wallets::ResponseData) -> Result<Self, Self::Error> {
-        let me = response.me.ok_or_else(|| {
-            GaloyClientError::GraphQLApi("Empty `me` in response data".to_string())
+        let me = response.me.ok_or_else(|| GaloyClientError::GraphQLApi {
+            message: "Empty `me` in response data".to_string(),
+            path: PathString(None),
+            location: None,
+            extensions: None,
         })?;
 
         let default_account = me.default_account;
@@ -61,8 +72,11 @@ impl TryFrom<stablesats_wallets::ResponseData> for WalletId {
             }
         }
 
-        let btc_id = btc_id.ok_or_else(|| {
-            GaloyClientError::GraphQLApi("Missing `btc id` in response data".to_string())
+        let btc_id = btc_id.ok_or_else(|| GaloyClientError::GraphQLApi {
+            message: "Missing `btc id` in response data".to_string(),
+            path: PathString(None),
+            location: None,
+            extensions: None,
         })?;
 
         Ok(btc_id)
@@ -73,17 +87,32 @@ impl TryFrom<stablesats_transactions_list::ResponseData> for GaloyTransactions {
     type Error = GaloyClientError;
 
     fn try_from(response: stablesats_transactions_list::ResponseData) -> Result<Self, Self::Error> {
-        let me = response.me.ok_or_else(|| {
-            GaloyClientError::GraphQLApi("Empty `me` in response data".to_string())
+        let me = response.me.ok_or_else(|| GaloyClientError::GraphQLApi {
+            message: "Empty `me` in response data".to_string(),
+            path: PathString(None),
+            location: None,
+            extensions: None,
         })?;
 
-        let transactions = me.default_account.transactions.ok_or_else(|| {
-            GaloyClientError::GraphQLApi("Empty `transactions` in response data".to_string())
-        })?;
+        let transactions =
+            me.default_account
+                .transactions
+                .ok_or_else(|| GaloyClientError::GraphQLApi {
+                    message: "Empty `transactions` in response data".to_string(),
+                    path: PathString(None),
+                    location: None,
+                    extensions: None,
+                })?;
+
         let page_info = transactions.page_info;
-        let edges = transactions.edges.ok_or_else(|| {
-            GaloyClientError::GraphQLApi("Empty `transaction edges` in response data".to_string())
-        })?;
+        let edges = transactions
+            .edges
+            .ok_or_else(|| GaloyClientError::GraphQLApi {
+                message: "Empty `transaction edges` in response data".to_string(),
+                path: PathString(None),
+                location: None,
+                extensions: None,
+            })?;
         let list = edges
             .into_iter()
             .map(|edge| {
@@ -113,31 +142,29 @@ impl TryFrom<stablesats_transactions_list::ResponseData> for GaloyTransactions {
     }
 }
 
-impl From<StablesatsLoginErrors> for InnerError {
-    fn from(err: StablesatsLoginErrors) -> Self {
-        InnerError {
-            message: err.message,
-            path: err.path,
-        }
-    }
-}
+#[derive(Debug)]
+pub struct PathString(pub Option<Vec<Option<String>>>);
+impl From<Option<Vec<PathFragment>>> for PathString {
+    fn from(path_frags: Option<Vec<PathFragment>>) -> Self {
+        let mut paths = Vec::new();
 
-impl From<graphql_client::Error> for TopLevelError {
-    fn from(err: graphql_client::Error) -> Self {
-        TopLevelError {
-            message: err.message,
-            path: err.path,
-            location: err.locations,
-            extensions: err.extensions,
+        match path_frags {
+            None => return Self(Some(paths)),
+            Some(frags) => {
+                for frag in frags {
+                    match frag {
+                        PathFragment::Key(key) => {
+                            if key.is_empty() {
+                                continue;
+                            }
+                            paths.push(Some(key))
+                        }
+                        PathFragment::Index(index) => paths.push(Some(index.to_string())),
+                    };
+                }
+            }
         }
-    }
-}
 
-impl From<StablesatsPaymentSendError> for InnerError {
-    fn from(err: StablesatsPaymentSendError) -> Self {
-        InnerError {
-            message: err.message,
-            path: err.path,
-        }
+        Self(Some(paths))
     }
 }

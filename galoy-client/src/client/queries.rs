@@ -6,7 +6,7 @@ use graphql_client::GraphQLQuery;
 use rust_decimal::Decimal;
 use serde::Deserialize;
 
-use crate::{GaloyClientError, InnerError};
+use crate::{GaloyClientError, PathString};
 
 pub(super) type SafeInt = Decimal;
 
@@ -52,7 +52,6 @@ impl TryFrom<stablesats_auth_code::ResponseData> for StablesatsAuthenticationCod
 pub struct StablesatsUserLogin;
 pub type AuthToken = String;
 pub type OneTimeAuthCode = String;
-pub type StablesatsLoginErrors = stablesats_user_login::StablesatsUserLoginUserLoginErrors;
 
 pub type StablesatsAuthToken = Option<String>;
 impl TryFrom<stablesats_user_login::ResponseData> for StablesatsAuthToken {
@@ -63,13 +62,14 @@ impl TryFrom<stablesats_user_login::ResponseData> for StablesatsAuthToken {
         let (auth_token, errors) = (user_login.auth_token, user_login.errors);
 
         if !errors.is_empty() {
-            let mut errors_list = Vec::new();
-            for error in errors {
-                let err = InnerError::from(error);
-                errors_list.push(err)
-            }
+            let error = errors[0].clone();
 
-            return Err(GaloyClientError::GraphQLApi(format!("{:#?}", errors_list)));
+            return Err(GaloyClientError::GraphQLApi {
+                message: error.message,
+                path: PathString(error.path),
+                location: None,
+                extensions: None,
+            });
         }
         Ok(auth_token)
     }
@@ -157,6 +157,3 @@ impl TryFrom<stablesats_on_chain_payment::ResponseData> for StablesatsPaymentSen
         Ok(onchain_payment_send)
     }
 }
-
-pub type StablesatsPaymentSendError =
-    stablesats_on_chain_payment::StablesatsOnChainPaymentOnChainPaymentSendErrors;
