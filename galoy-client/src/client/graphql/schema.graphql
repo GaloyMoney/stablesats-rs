@@ -59,6 +59,11 @@ type BTCWallet implements Wallet {
   id: ID!
 
   """
+  An unconfirmed incoming onchain balance.
+  """
+  pendingIncomingBalance: SignedAmount!
+
+  """
   A list of BTC transactions associated with this wallet.
   """
   transactions(
@@ -197,6 +202,7 @@ input DeviceNotificationTokenCreateInput {
 }
 
 interface Error {
+  code: String
   message: String!
   path: [String]
 }
@@ -219,10 +225,21 @@ type Globals {
   lightningAddressDomainAliases: [String!]!
 
   """
+  Which network (mainnet, testnet, regtest, signet) this instance is running on.
+  """
+  network: Network!
+
+  """
   A list of public keys for the running lightning nodes.
   This can be used to know if an invoice belongs to one of our nodes.
   """
   nodesIds: [String!]!
+}
+
+type GraphQLApplicationError implements Error {
+  code: String
+  message: String!
+  path: [String]
 }
 
 """
@@ -230,10 +247,7 @@ Hex-encoded string of 32 bytes
 """
 scalar Hex32Bytes
 
-union InitiationVia =
-    InitiationViaIntraLedger
-  | InitiationViaLn
-  | InitiationViaOnChain
+union InitiationVia = InitiationViaIntraLedger | InitiationViaLn | InitiationViaOnChain
 
 type InitiationViaIntraLedger {
   counterPartyUsername: Username
@@ -246,19 +260,6 @@ type InitiationViaLn {
 
 type InitiationViaOnChain {
   address: OnChainAddress!
-}
-
-type InputError implements Error {
-  code: InputErrorCode!
-  message: String!
-  path: [String]
-}
-
-enum InputErrorCode {
-  INVALID_INPUT
-  VALUE_NOT_ALLOWED
-  VALUE_TOO_LONG
-  VALUE_TOO_SHORT
 }
 
 input IntraLedgerPaymentSendInput {
@@ -572,18 +573,14 @@ type Mutation {
   not use onchain/lightning. Returns payment status (success,
   failed, pending, already_paid).
   """
-  intraLedgerPaymentSend(
-    input: IntraLedgerPaymentSendInput!
-  ): PaymentSendPayload!
+  intraLedgerPaymentSend(input: IntraLedgerPaymentSendInput!): PaymentSendPayload!
 
   """
   Actions a payment which is internal to the ledger e.g. it does
   not use onchain/lightning. Returns payment status (success,
   failed, pending, already_paid).
   """
-  intraLedgerUsdPaymentSend(
-    input: IntraLedgerUsdPaymentSendInput!
-  ): PaymentSendPayload!
+  intraLedgerUsdPaymentSend(input: IntraLedgerUsdPaymentSendInput!): PaymentSendPayload!
 
   """
   Returns a lightning invoice for an associated wallet.
@@ -614,9 +611,7 @@ type Mutation {
   Can be used to receive any supported currency value (currently USD or BTC).
   Expires after 24 hours.
   """
-  lnNoAmountInvoiceCreate(
-    input: LnNoAmountInvoiceCreateInput!
-  ): LnNoAmountInvoicePayload!
+  lnNoAmountInvoiceCreate(input: LnNoAmountInvoiceCreateInput!): LnNoAmountInvoicePayload!
 
   """
   Returns a lightning invoice for an associated wallet.
@@ -626,18 +621,14 @@ type Mutation {
   lnNoAmountInvoiceCreateOnBehalfOfRecipient(
     input: LnNoAmountInvoiceCreateOnBehalfOfRecipientInput!
   ): LnNoAmountInvoicePayload!
-  lnNoAmountInvoiceFeeProbe(
-    input: LnNoAmountInvoiceFeeProbeInput!
-  ): SatAmountPayload!
+  lnNoAmountInvoiceFeeProbe(input: LnNoAmountInvoiceFeeProbeInput!): SatAmountPayload!
 
   """
   Pay a lightning invoice using a balance from a wallet which is owned by the account of the current user.
   Provided wallet must be BTC and must have sufficient balance to cover amount specified in mutation request.
   Returns payment status (success, failed, pending, already_paid).
   """
-  lnNoAmountInvoicePaymentSend(
-    input: LnNoAmountInvoicePaymentInput!
-  ): PaymentSendPayload!
+  lnNoAmountInvoicePaymentSend(input: LnNoAmountInvoicePaymentInput!): PaymentSendPayload!
   lnNoAmountUsdInvoiceFeeProbe(
     input: LnNoAmountUsdInvoiceFeeProbeInput!
   ): CentAmountPayload!
@@ -669,12 +660,8 @@ type Mutation {
     input: LnUsdInvoiceCreateOnBehalfOfRecipientInput!
   ): LnInvoicePayload!
   lnUsdInvoiceFeeProbe(input: LnUsdInvoiceFeeProbeInput!): SatAmountPayload!
-  onChainAddressCreate(
-    input: OnChainAddressCreateInput!
-  ): OnChainAddressPayload!
-  onChainAddressCurrent(
-    input: OnChainAddressCurrentInput!
-  ): OnChainAddressPayload!
+  onChainAddressCreate(input: OnChainAddressCreateInput!): OnChainAddressPayload!
+  onChainAddressCurrent(input: OnChainAddressCurrentInput!): OnChainAddressPayload!
   onChainPaymentSend(input: OnChainPaymentSendInput!): PaymentSendPayload!
   onChainPaymentSendAll(input: OnChainPaymentSendAllInput!): PaymentSendPayload!
   twoFADelete(input: TwoFADeleteInput!): SuccessPayload!
@@ -682,19 +669,14 @@ type Mutation {
   twoFASave(input: TwoFASaveInput!): SuccessPayload!
   userContactUpdateAlias(
     input: UserContactUpdateAliasInput!
-  ): UserContactUpdateAliasPayload!
-    @deprecated(reason: "will be moved to AccountContact")
+  ): UserContactUpdateAliasPayload! @deprecated(reason: "will be moved to AccountContact")
   userLogin(input: UserLoginInput!): AuthTokenPayload!
   userQuizQuestionUpdateCompleted(
     input: UserQuizQuestionUpdateCompletedInput!
   ): UserQuizQuestionUpdateCompletedPayload!
   userRequestAuthCode(input: UserRequestAuthCodeInput!): SuccessPayload!
-  userUpdateLanguage(
-    input: UserUpdateLanguageInput!
-  ): UserUpdateLanguagePayload!
-  userUpdateUsername(
-    input: UserUpdateUsernameInput!
-  ): UserUpdateUsernamePayload!
+  userUpdateLanguage(input: UserUpdateLanguageInput!): UserUpdateLanguagePayload!
+  userUpdateUsername(input: UserUpdateUsernameInput!): UserUpdateUsernamePayload!
     @deprecated(
       reason: "Username will be moved to @Handle in Accounts. Also SetUsername should be used instead of UpdateUsername to reflect the idempotency of Handles"
     )
@@ -704,6 +686,13 @@ type MyUpdatesPayload {
   errors: [Error!]!
   me: User
   update: UserUpdate
+}
+
+enum Network {
+  mainnet
+  regtest
+  signet
+  testnet
 }
 
 """
@@ -785,21 +774,6 @@ type PageInfo {
   startCursor: String
 }
 
-type PaymentError implements Error {
-  code: PaymentErrorCode!
-  message: String!
-  path: [String]
-}
-
-enum PaymentErrorCode {
-  ACCOUNT_LOCKED
-  INSUFFICIENT_BALANCE
-  INVOICE_PAID
-  LIMIT_EXCEEDED
-  NO_LIQUIDITY
-  NO_ROUTE
-}
-
 scalar PaymentHash
 
 type PaymentSendPayload {
@@ -869,10 +843,7 @@ type PublicWallet {
 }
 
 type Query {
-  accountDefaultWallet(
-    username: Username!
-    walletCurrency: WalletCurrency
-  ): PublicWallet!
+  accountDefaultWallet(username: Username!, walletCurrency: WalletCurrency): PublicWallet!
   btcPrice: Price
   btcPriceList(range: PriceGraphRange!): [PricePoint]
   businessMapMarkers: [MapMarker]
@@ -917,10 +888,7 @@ type SatAmountPayload {
   errors: [Error!]!
 }
 
-union SettlementVia =
-    SettlementViaIntraLedger
-  | SettlementViaLn
-  | SettlementViaOnChain
+union SettlementVia = SettlementViaIntraLedger | SettlementViaLn | SettlementViaOnChain
 
 type SettlementViaIntraLedger {
   """
@@ -1087,6 +1055,11 @@ type UsdWallet implements Wallet {
   accountId: ID!
   balance: SignedAmount!
   id: ID!
+
+  """
+  An unconfirmed incoming onchain balance.
+  """
+  pendingIncomingBalance: SignedAmount!
   transactions(
     """
     Returns the items in the list that come after the specified cursor.
@@ -1168,15 +1141,13 @@ type User {
   """
   List the quiz questions the user may have completed.
   """
-  quizQuestions: [UserQuizQuestion!]!
-    @deprecated(reason: "will be moved to Accounts")
+  quizQuestions: [UserQuizQuestion!]! @deprecated(reason: "will be moved to Accounts")
   twoFAEnabled: Boolean
 
   """
   Optional immutable user friendly identifier.
   """
-  username: Username
-    @deprecated(reason: "will be moved to @Handle in Account and Wallet")
+  username: Username @deprecated(reason: "will be moved to @Handle in Account and Wallet")
 }
 
 type UserContact {
@@ -1284,6 +1255,7 @@ interface Wallet {
   accountId: ID!
   balance: SignedAmount!
   id: ID!
+  pendingIncomingBalance: SignedAmount!
 
   """
   Transactions are ordered anti-chronologically,

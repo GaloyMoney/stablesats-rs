@@ -6,7 +6,7 @@ use graphql_client::GraphQLQuery;
 use rust_decimal::Decimal;
 use serde::Deserialize;
 
-use crate::{GaloyClientError, PathString};
+use crate::GaloyClientError;
 
 pub(super) type SafeInt = Decimal;
 
@@ -64,11 +64,9 @@ impl TryFrom<stablesats_user_login::ResponseData> for StablesatsAuthToken {
         if !errors.is_empty() {
             let error = errors[0].clone();
 
-            return Err(GaloyClientError::GraphQLApi {
+            return Err(GaloyClientError::GraphQLNested {
                 message: error.message,
-                path: PathString(error.path),
-                location: None,
-                extensions: None,
+                path: error.path,
             });
         }
         Ok(auth_token)
