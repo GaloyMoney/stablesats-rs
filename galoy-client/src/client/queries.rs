@@ -52,13 +52,24 @@ impl TryFrom<stablesats_auth_code::ResponseData> for StablesatsAuthenticationCod
 pub struct StablesatsUserLogin;
 pub type AuthToken = String;
 pub type OneTimeAuthCode = String;
-pub type StablesatsLogin = stablesats_user_login::StablesatsUserLoginUserLogin;
-impl TryFrom<stablesats_user_login::ResponseData> for StablesatsLogin {
+
+pub type StablesatsAuthToken = Option<String>;
+impl TryFrom<stablesats_user_login::ResponseData> for StablesatsAuthToken {
     type Error = GaloyClientError;
 
     fn try_from(response: stablesats_user_login::ResponseData) -> Result<Self, Self::Error> {
         let user_login = response.user_login;
-        Ok(user_login)
+        let (auth_token, errors) = (user_login.auth_token, user_login.errors);
+
+        if !errors.is_empty() {
+            let error = errors[0].clone();
+
+            return Err(GaloyClientError::GraphQLNested {
+                message: error.message,
+                path: error.path,
+            });
+        }
+        Ok(auth_token)
     }
 }
 
