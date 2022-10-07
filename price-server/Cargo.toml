@@ -23,7 +23,7 @@ futures = "0.3.24"
 thiserror = "1.0.37"
 serde = "1.0.145"
 rust_decimal = "1.25.0"
-tracing = "0.1.36"
+tracing = "0.1.37"
 opentelemetry = { version = "0.18.0", features = ["trace"] }
 tracing-opentelemetry = "0.18.0"
 rust_decimal_macros = "1.26.1"
