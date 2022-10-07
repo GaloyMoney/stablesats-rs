@@ -1,3 +1,16 @@
+# [stablesats release v0.3.11](https://github.com/GaloyMoney/stablesats/releases/tag/v0.3.11)
+
+
+### Bug Fixes
+
+- Galoy client error return (#142)
+
+### Miscellaneous Tasks
+
+- Bump tracing from 0.1.36 to 0.1.37 (#149)
+- Bump tracing-subscriber from 0.3.15 to 0.3.16 (#150)
+- Bump clap from 4.0.8 to 4.0.10 (#148)
+
 # [stablesats release v0.3.10](https://github.com/GaloyMoney/stablesats/releases/tag/v0.3.10)
 
 
