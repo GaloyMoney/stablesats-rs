@@ -7,7 +7,7 @@ RUN mkdir stablesats && cd stablesats \
   && tar --strip-components=1 -xf stablesats.tar.gz \
   && mv stablesats /usr/local/bin && cd ../ && rm -rf ./stablesats
 
-FROM scratch
+FROM gcr.io/distroless/static
   COPY --from=load /usr/local/bin/stablesats /bin/stablesats
   USER 1000
   ARG VERSION
