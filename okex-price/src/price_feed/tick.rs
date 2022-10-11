@@ -3,12 +3,7 @@ use serde::Deserialize;
 
 use shared::time::*;
 
-#[derive(Clone, Deserialize, Debug, PartialEq, Eq)]
-#[serde(rename_all = "camelCase")]
-pub struct ChannelArgs {
-    pub channel: String,
-    pub inst_id: String,
-}
+use crate::ChannelArgs;
 
 #[derive(Clone, Deserialize, Debug)]
 #[serde(rename_all = "camelCase")]

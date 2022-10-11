@@ -1,6 +1,8 @@
 use chrono::Duration;
 use futures::StreamExt;
-use okex_price::{subscribe_btc_usd_swap, ChannelArgs, PriceFeedConfig};
+use okex_price::{
+    subscribe_btc_usd_swap, subscribe_order_book, ChannelArgs, OrderBookAction, PriceFeedConfig,
+};
 use std::fs;
 use url::Url;
 
@@ -64,6 +66,32 @@ async fn publishes_to_redis() -> anyhow::Result<()> {
     let payload = &load_fixture()?.payloads[0];
     assert_eq!(received.payload.exchange, payload.exchange);
     assert_eq!(received.payload.instrument_id, payload.instrument_id);
+
+    Ok(())
+}
+
+#[tokio::test]
+async fn subscribe_to_order_book_channel() -> anyhow::Result<()> {
+    let config = PriceFeedConfig::default();
+    let mut received_order_book = subscribe_order_book(config)
+        .await
+        .expect("subscribe_order_book failed");
+    let order_book = received_order_book
+        .next()
+        .await
+        .expect("expected order book");
+
+    assert_eq!(
+        order_book.arg,
+        ChannelArgs {
+            channel: "books".to_string(),
+            inst_id: "BTC-USD-SWAP".to_string(),
+        }
+    );
+    assert_eq!(order_book.data.len(), 1);
+    assert_eq!(order_book.data[0].asks.len(), 400);
+    assert_eq!(order_book.data[0].bids.len(), 400);
+    assert_eq!(order_book.action, OrderBookAction::Snapshot);
 
     Ok(())
 }

@@ -16,4 +16,6 @@ pub enum PriceFeedError {
     SerializationError(#[from] SerdeError),
     #[error("PriceFeedError - PublisherError: {0}")]
     PublisherError(#[from] PublisherError),
+    #[error("PriceFeedError - UnknownOrderBookAction: {0}")]
+    UnknownOrderBookAction(String),
 }
