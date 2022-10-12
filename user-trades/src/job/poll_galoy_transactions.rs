@@ -13,7 +13,7 @@ use crate::{
     name = "poll_galoy_transactions",
     skip_all,
     err,
-    fields(n_galoy_txs, n_unpaired_txs, n_user_trades)
+    fields(n_galoy_txs, n_unpaired_txs, n_user_trades, has_more)
 )]
 pub(super) async fn execute(
     user_trades: &UserTrades,
@@ -38,6 +38,7 @@ async fn import_galoy_transactions(
         "n_galoy_txs",
         &tracing::field::display(transactions.list.len()),
     );
+    tracing::Span::current().record("has_more", &tracing::field::display(transactions.has_more));
     if !transactions.list.is_empty() {
         galoy_transactions
             .persist_all(latest_cursor, transactions.list)

@@ -42,8 +42,7 @@ impl<'a> JobExecutor<'a> {
         let result = func(data.data).await;
         if let Err(ref e) = result {
             self.handle_error(data.job_meta, e).await;
-        }
-        if !completed {
+        } else if !completed {
             self.job.complete().await?;
         }
         result
