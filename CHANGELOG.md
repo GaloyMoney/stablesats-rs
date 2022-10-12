@@ -1,3 +1,10 @@
+# [stablesats release v0.3.13](https://github.com/GaloyMoney/stablesats/releases/tag/v0.3.13)
+
+
+### Bug Fixes
+
+- Only complete job when it did not error
+
 # [stablesats release v0.3.12](https://github.com/GaloyMoney/stablesats/releases/tag/v0.3.12)
 
 
