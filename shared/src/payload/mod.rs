@@ -20,6 +20,14 @@ pub struct PriceMessagePayload {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct OrderBookPayload {
+    pub asks: Vec<OrderBookRaw>,
+    pub bids: Vec<OrderBookRaw>,
+    pub timestamp: TimeStamp,
+    pub checksum: CheckSumRaw,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(transparent)]
 pub struct OkexBtcUsdSwapPricePayload(pub PriceMessagePayload);
 impl From<OkexBtcUsdSwapPricePayload> for PriceMessagePayload {
@@ -31,6 +39,12 @@ impl std::ops::Deref for OkexBtcUsdSwapPricePayload {
     type Target = PriceMessagePayload;
     fn deref(&self) -> &Self::Target {
         &self.0
+    }
+}
+pub struct OkexBtcUsdSwapOrderBookPayload(pub OrderBookPayload);
+impl From<OkexBtcUsdSwapOrderBookPayload> for OrderBookPayload {
+    fn from(payload: OkexBtcUsdSwapOrderBookPayload) -> Self {
+        payload.0
     }
 }
 

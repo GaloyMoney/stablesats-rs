@@ -1,6 +1,6 @@
 use anyhow;
 use futures::StreamExt;
-use okex_order_book::*;
+use okex_price::order_book::{ChannelArgs, *};
 use url::Url;
 
 #[tokio::test]

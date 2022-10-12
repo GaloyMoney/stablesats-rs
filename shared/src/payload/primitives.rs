@@ -43,6 +43,16 @@ impl PriceRatioRaw {
     }
 }
 
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct CheckSumRaw(i64);
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct OrderBookRaw {
+    price: Decimal,
+    quantity: u32,
+    orders: u32,
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

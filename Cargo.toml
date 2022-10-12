@@ -8,6 +8,5 @@ members = [
   "user-trades",
   "okex-price",
   "okex-client",
-  "okex-order-book",
   "galoy-client",
 ]

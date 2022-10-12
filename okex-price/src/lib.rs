@@ -2,11 +2,13 @@
 #![cfg_attr(feature = "fail-on-warnings", deny(clippy::all))]
 
 mod convert;
-mod price_feed;
+pub mod order_book;
+pub mod price_feed;
 
 use futures::StreamExt;
 use shared::{payload::*, pubsub::*};
 
+pub use order_book::*;
 pub use price_feed::*;
 
 pub async fn run(

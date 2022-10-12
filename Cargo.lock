@@ -1416,21 +1416,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "okex-order-book"
-version = "0.1.0"
-dependencies = [
- "anyhow",
- "futures",
- "serde",
- "serde_json",
- "stablesats-shared",
- "thiserror",
- "tokio",
- "tokio-tungstenite",
- "url",
-]
-
-[[package]]
 name = "okex-price"
 version = "0.3.15-dev"
 dependencies = [
