@@ -1,13 +1,7 @@
+use crate::okex_shared::ChannelArgs;
 use rust_decimal::Decimal;
 use serde::Deserialize;
 use shared::time::TimeStampMilliStr;
-
-#[derive(Debug, Deserialize, Eq, PartialEq)]
-#[serde(rename_all = "camelCase")]
-pub struct ChannelArgs {
-    pub channel: String,
-    pub inst_id: String,
-}
 
 #[derive(Debug, Deserialize, PartialEq, Eq)]
 #[serde(rename_all = "lowercase")]

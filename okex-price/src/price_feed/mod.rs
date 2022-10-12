@@ -1,11 +1,10 @@
-mod config;
 mod error;
 mod tick;
 
 use futures::{SinkExt, Stream, StreamExt};
 use tokio_tungstenite::{connect_async, tungstenite::Message};
 
-pub use config::*;
+pub use crate::config::*;
 pub use tick::*;
 
 pub use error::PriceFeedError;

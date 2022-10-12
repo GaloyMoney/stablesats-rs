@@ -1,6 +1,6 @@
 use chrono::Duration;
 use futures::StreamExt;
-use okex_price::{price_feed::ChannelArgs, subscribe_btc_usd_swap, PriceFeedConfig};
+use okex_price::{okex_shared::ChannelArgs, subscribe_btc_usd_swap, PriceFeedConfig};
 use std::fs;
 use url::Url;
 

@@ -1,13 +1,17 @@
 #![cfg_attr(feature = "fail-on-warnings", deny(warnings))]
 #![cfg_attr(feature = "fail-on-warnings", deny(clippy::all))]
 
+pub mod config;
 mod convert;
+pub mod okex_shared;
 pub mod order_book;
 pub mod price_feed;
 
 use futures::StreamExt;
 use shared::{payload::*, pubsub::*};
 
+pub use config::*;
+pub use okex_shared::*;
 pub use order_book::*;
 pub use price_feed::*;
 

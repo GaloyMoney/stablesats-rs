@@ -1,11 +1,11 @@
 use anyhow;
 use futures::StreamExt;
-use okex_price::order_book::{ChannelArgs, *};
+use okex_price::{order_book::*, ChannelArgs, PriceFeedConfig};
 use url::Url;
 
 #[tokio::test]
 async fn subscribe_to_order_book_channel() -> anyhow::Result<()> {
-    let config = OrderBookConfig {
+    let config = PriceFeedConfig {
         url: Url::parse("wss://ws.okx.com:8443/ws/v5/public").unwrap(),
     };
     let mut order_book_stream = OrderBook::subscribe(config)
