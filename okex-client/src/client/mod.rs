@@ -191,10 +191,11 @@ impl OkexClient {
             .await?;
 
         let funding_balance = Self::extract_response_data::<FundingBalanceData>(response).await?;
-        let balance = Decimal::from_str_exact(&funding_balance.avail_bal)?;
 
         Ok(AvailableBalance {
-            amt_in_btc: balance,
+            free_amt_in_btc: funding_balance.avail_bal,
+            used_amt_in_btc: funding_balance.frozen_bal,
+            total_amt_in_btc: funding_balance.bal,
         })
     }
 
@@ -214,7 +215,9 @@ impl OkexClient {
         let trading_balance = Self::extract_response_data::<TradingBalanceData>(response).await?;
 
         Ok(AvailableBalance {
-            amt_in_btc: trading_balance.details[0].cash_bal,
+            free_amt_in_btc: trading_balance.details[0].avail_eq,
+            used_amt_in_btc: trading_balance.details[0].frozen_bal,
+            total_amt_in_btc: trading_balance.details[0].eq,
         })
     }
 

@@ -56,7 +56,9 @@ pub struct TransferId {
 
 #[derive(Debug)]
 pub struct AvailableBalance {
-    pub amt_in_btc: Decimal,
+    pub free_amt_in_btc: Decimal,
+    pub used_amt_in_btc: Decimal,
+    pub total_amt_in_btc: Decimal,
 }
 
 #[derive(Debug)]

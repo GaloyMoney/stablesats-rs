@@ -48,10 +48,10 @@ pub struct TransferData {
 #[derive(Deserialize, Debug)]
 #[serde(rename_all = "camelCase")]
 pub struct FundingBalanceData {
-    pub avail_bal: String,
-    pub bal: String,
+    pub avail_bal: Decimal,
+    pub bal: Decimal,
     pub ccy: String,
-    pub frozen_bal: String,
+    pub frozen_bal: Decimal,
 }
 
 #[derive(Deserialize, Debug, Clone)]
@@ -73,14 +73,14 @@ pub struct TradingBalanceData {
 #[serde(rename_all = "camelCase")]
 pub struct TradingBalanceDetails {
     pub avail_bal: String,
-    pub avail_eq: String,
-    pub cash_bal: Decimal,
+    pub avail_eq: Decimal,
+    pub cash_bal: String,
     pub ccy: String,
     pub cross_liab: String,
     pub dis_eq: String,
-    pub eq: String,
+    pub eq: Decimal,
     pub eq_usd: String,
-    pub frozen_bal: String,
+    pub frozen_bal: Decimal,
     pub interest: String,
     pub iso_eq: String,
     pub iso_liab: String,

@@ -56,7 +56,7 @@ async fn client_is_missing_header() -> anyhow::Result<()> {
 async fn funding_account_balance() -> anyhow::Result<()> {
     let client = configured_okex_client().await?;
     let avail_balance = client.funding_account_balance().await?;
-    let balance = avail_balance.amt_in_btc;
+    let balance = avail_balance.total_amt_in_btc;
     let minimum_balance = dec!(0);
     assert!(balance >= minimum_balance);
 
@@ -68,8 +68,7 @@ async fn trading_account_balance() -> anyhow::Result<()> {
     let client = configured_okex_client().await?;
     let avail_balance = client.trading_account_balance().await?;
     let minimum_balance = dec!(0);
-
-    assert!(avail_balance.amt_in_btc >= minimum_balance);
+    assert!(avail_balance.total_amt_in_btc >= minimum_balance);
 
     Ok(())
 }
