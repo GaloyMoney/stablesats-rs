@@ -10,6 +10,8 @@ pub enum PriceFeedError {
     OkexWsError(#[from] TungsteniteError),
     #[error("PriceFeedError - EmptyPriceData: OkexPriceTick.data was empty")]
     EmptyPriceData,
+    #[error("PriceFeedError - EmptyOrderBookData: OkexOrderBook.data was empty")]
+    EmptyOrderBookData,
     #[error("PriceFeedError - InvalidTimestamp: {0}")]
     InvalidTimestamp(#[from] std::num::ParseIntError),
     #[error("PriceFeedError - SerdeError: {0}")]

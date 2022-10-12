@@ -25,6 +25,7 @@ pub struct OrderBookPayload {
     pub bids: Vec<OrderBookRaw>,
     pub timestamp: TimeStamp,
     pub checksum: CheckSumRaw,
+    pub action: OrderBookActionRaw,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

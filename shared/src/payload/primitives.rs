@@ -45,12 +45,33 @@ impl PriceRatioRaw {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct CheckSumRaw(i64);
+impl From<&i64> for CheckSumRaw {
+    fn from(cs: &i64) -> Self {
+        Self(*cs)
+    }
+}
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct OrderBookRaw {
     price: Decimal,
-    quantity: u32,
-    orders: u32,
+    quantity: Decimal,
+}
+impl OrderBookRaw {
+    pub fn from_order_book(price_quantity: Vec<(Decimal, Decimal)>) -> Vec<Self> {
+        price_quantity
+            .iter()
+            .map(|item| Self {
+                price: item.0,
+                quantity: item.1,
+            })
+            .collect::<Vec<Self>>()
+    }
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub enum OrderBookActionRaw {
+    Snapshot,
+    Update,
 }
 
 #[cfg(test)]
