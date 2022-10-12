@@ -15,6 +15,8 @@ pub struct JobExecutor<'a> {
     warn_retries: u32,
     #[builder(default = "5")]
     max_attempts: u32,
+    #[builder(default = "Duration::from_secs(1)")]
+    initial_retry_delay: Duration,
     #[builder(default = "Duration::from_secs(60)")]
     max_retry_delay: Duration,
 }
@@ -73,6 +75,9 @@ impl<'a> JobExecutor<'a> {
             crate::tracing::inject_tracing_data(&span, tracing_data);
         } else {
             crate::tracing::inject_tracing_data(&span, &data.tracing_data);
+        }
+        if data.job_meta.attempts == 0 {
+            data.job_meta.wait_till_next_attempt = self.initial_retry_delay;
         }
 
         data.job_meta.attempts += 1;

@@ -113,7 +113,11 @@ async fn publish_liability(
     Ok(())
 }
 
-#[job(name = "poll_galoy_transactions", channel_name = "user_trades")]
+#[job(
+    name = "poll_galoy_transactions",
+    channel_name = "user_trades",
+    backoff_secs = 5
+)]
 async fn poll_galoy_transactions(
     mut current_job: CurrentJob,
     user_trades: UserTrades,
@@ -122,6 +126,7 @@ async fn poll_galoy_transactions(
 ) -> Result<(), UserTradesError> {
     let pool = current_job.pool().clone();
     let has_more = JobExecutor::builder(&mut current_job)
+        .initial_retry_delay(Duration::from_secs(5))
         .build()
         .expect("couldn't build JobExecutor")
         .execute(|_| async move {
