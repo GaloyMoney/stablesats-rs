@@ -1,3 +1,20 @@
+# [stablesats release v0.3.12](https://github.com/GaloyMoney/stablesats/releases/tag/v0.3.12)
+
+
+### Bug Fixes
+
+- Okex client balance data fields (#157)
+- Set min retry to 5s after polling galoy txs
+
+### Miscellaneous Tasks
+
+- Bump clap from 4.0.12 to 4.0.13 (#156)
+- Bump uuid from 1.1.2 to 1.2.1 (#152)
+- Bump clap from 4.0.11 to 4.0.12 (#155)
+- Use recomended distroless base image
+- Bump clap from 4.0.10 to 4.0.11 (#151)
+- Bump serde_json from 1.0.85 to 1.0.86 (#153)
+
 # [stablesats release v0.3.11](https://github.com/GaloyMoney/stablesats/releases/tag/v0.3.11)
 
 
