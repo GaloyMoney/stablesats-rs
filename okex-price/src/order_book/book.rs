@@ -48,3 +48,22 @@ pub struct OkexOrderBook {
     pub action: OrderBookAction,
     pub data: Vec<OrderBookChannelData>,
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn deserialize_pricequantityraw() {
+        let raw_data = r#"
+                ["8476.98", "415", "0", "13"]
+            "#;
+
+        let price_qty_raw = serde_json::from_str::<PriceQuantityRaw>(raw_data)
+            .expect("Failed to serialize to PriceQuantityRaw");
+
+        let price_qty = PriceQuantity::from(price_qty_raw);
+        assert_eq!(price_qty.price.to_string(), "8476.98".to_string());
+        assert_eq!(price_qty.quantity.to_string(), "415".to_string());
+    }
+}
