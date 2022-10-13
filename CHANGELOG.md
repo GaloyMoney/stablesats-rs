@@ -1,3 +1,14 @@
+# [stablesats release v0.3.14](https://github.com/GaloyMoney/stablesats/releases/tag/v0.3.14)
+
+
+### Bug Fixes
+
+- No need for optimistic concurrency when fetching galoy txs
+
+### Miscellaneous Tasks
+
+- Bump clap from 4.0.13 to 4.0.14 (#158)
+
 # [stablesats release v0.3.13](https://github.com/GaloyMoney/stablesats/releases/tag/v0.3.13)
 
 
