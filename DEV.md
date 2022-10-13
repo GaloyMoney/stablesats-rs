@@ -3,17 +3,12 @@
     - [Tools](#tools)
 - [Getting started](#getting-started)
     - [Local Development Mode](#local-development-mode)
-    - [Staging Development Mode](#staging-development-mode)
 - [How to run stablesats](#how-to-run-stablesats)
 - [Testing](#testing)
 - [Check code](#check-code)
 - [Contributing](#contributing)
 
-In its current implementation, `stablesats` is coupled to and dependent on the [galoy](https://github.com/GaloyMoney/galoy) backend to fetch user transactions on a bitcoin-based banking client, e.g. Bitcoin Beach Wallet. To get it running locally, you have one of two options:
-- Set up a local galoy backend. 
-- Use the staging deployment of galoy backend.
-
-Both of these options will be explained in this document.
+In its current implementation, `stablesats` is coupled to and dependent on the [galoy](https://github.com/GaloyMoney/galoy) backend to fetch user transactions on a bitcoin-based banking client, e.g. Bitcoin Beach Wallet. To get it running locally, you have to, among other dependencies, set up a local `galoy` backend as well. This document will walk you through the set up.
 
 ## Dependencies
 Last tested with the following tools and application:
@@ -82,9 +77,6 @@ $ make build
 ```
 8. Run `stablesats`: See the section on [how to run](#how-to-run-stablesats) the application
 
-### Staging Development Mode
-Work in progress
-
 ## How to run `stablesats`
 The stablesats command line interface (CLI) is an application that allows users to get price quotes, and runs configured processes.
 To view the CLI commands and options, run
@@ -93,8 +85,8 @@ $ stablesats
 ```
 
 To run the configured processes:
-- Make a copy of the [stablesats](stablesats.yml) configuration file and rename the file. Ensure that this new configuration is not committed if contributing to the project.
-- Uncomment the file and update the `galoy.api` and `galoy.phone_number` config values to values contained [here](https://github.com/GaloyMoney/galoy/blob/main/src/graphql/docs/README.md). Change the `okex.simulated` value to `true`.
+- Make a copy of the [stablesats](stablesats.yml) configuration file and rename the file. Ensure that this new configuration is not committed (add to global `.gitignore`) if contributing to the project.
+- Uncomment the file and update the `galoy.api` and `galoy.phone_number` config values with values contained [here](https://github.com/GaloyMoney/galoy/blob/main/src/graphql/docs/README.md). Change the `okex.simulated` value to `true`.
 - Run the CLI
 ```
 $ stablesats -c $NEW_CONFIGURATION_FILE run
