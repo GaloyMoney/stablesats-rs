@@ -3,6 +3,7 @@
 
 pub mod config;
 mod convert;
+pub mod error;
 pub mod okex_shared;
 pub mod order_book;
 pub mod price_feed;
@@ -10,10 +11,11 @@ pub mod price_feed;
 use std::pin::Pin;
 
 use anyhow::Context;
-use futures::{channel::mpsc::unbounded, Stream, StreamExt};
+use futures::{Stream, StreamExt};
 use shared::{payload::*, pubsub::*};
 
 pub use config::*;
+pub use error::*;
 pub use okex_shared::*;
 pub use order_book::*;
 pub use price_feed::*;
@@ -43,7 +45,7 @@ pub async fn run(
 pub async fn run_book(
     price_feed_config: PriceFeedConfig,
     pubsub_cfg: PubSubConfig,
-) -> Result<(), OrderBookError> {
+) -> Result<(), PriceFeedError> {
     let publisher = Publisher::new(pubsub_cfg).await?;
     let mut stream = OrderBook::subscribe(price_feed_config).await?;
     let (sender, mut receiver) = tokio::sync::mpsc::channel(1);
@@ -106,7 +108,7 @@ async fn merge_update(
 async fn okex_snapshot_received(
     publisher: &Publisher,
     snapshot: OkexBtcUsdSwapOrderBookPayload,
-) -> Result<(), OrderBookError> {
+) -> Result<(), PriceFeedError> {
     unimplemented!()
 }
 
@@ -114,15 +116,18 @@ async fn okex_snapshot_received(
 fn same_price(
     update: OkexOrderBook,
     snapshot: &OkexOrderBook,
-) -> Result<Vec<PriceMatch>, OrderBookError> {
+) -> Result<Vec<PriceMatch>, PriceFeedError> {
     let price_matches = Vec::new();
 
     let (update_data, snapshot_data) = (
-        update.data.first().ok_or(OrderBookError::EmptyOrderBook)?,
+        update
+            .data
+            .first()
+            .ok_or(PriceFeedError::EmptyOrderBookData)?,
         snapshot
             .data
             .first()
-            .ok_or(OrderBookError::EmptyOrderBook)?,
+            .ok_or(PriceFeedError::EmptyOrderBookData)?,
     );
 
     for (incr_idx, incr_price_quantity) in update_data.asks.iter().enumerate() {

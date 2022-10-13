@@ -1,19 +1,17 @@
 mod book;
-mod error;
 
 use futures::{SinkExt, Stream, StreamExt};
 use std::pin::Pin;
 use tokio_tungstenite::{connect_async, tungstenite::Message};
 
-use super::config::*;
+use super::{config::*, error::*};
 pub use book::*;
-pub use error::*;
 
 pub struct OrderBook {}
 impl OrderBook {
     pub async fn subscribe(
         PriceFeedConfig { url }: PriceFeedConfig,
-    ) -> Result<Pin<Box<dyn Stream<Item = OkexOrderBook> + Send>>, OrderBookError> {
+    ) -> Result<Pin<Box<dyn Stream<Item = OkexOrderBook> + Send>>, PriceFeedError> {
         let (ws_stream, _ws_sink) = connect_async(url).await?;
         let (mut sender, receiver) = ws_stream.split();
 
