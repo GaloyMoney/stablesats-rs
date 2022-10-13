@@ -10,7 +10,7 @@ pub enum OrderBookAction {
     Update,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Eq, PartialEq)]
 #[serde(from = "PriceQuantityRaw")]
 pub struct PriceQuantity {
     pub price: Decimal,

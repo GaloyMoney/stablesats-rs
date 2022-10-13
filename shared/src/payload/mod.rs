@@ -20,15 +20,6 @@ pub struct PriceMessagePayload {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct OrderBookPayload {
-    pub asks: Vec<OrderBookRaw>,
-    pub bids: Vec<OrderBookRaw>,
-    pub timestamp: TimeStamp,
-    pub checksum: CheckSumRaw,
-    pub action: OrderBookActionRaw,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(transparent)]
 pub struct OkexBtcUsdSwapPricePayload(pub PriceMessagePayload);
 impl From<OkexBtcUsdSwapPricePayload> for PriceMessagePayload {
@@ -42,6 +33,20 @@ impl std::ops::Deref for OkexBtcUsdSwapPricePayload {
         &self.0
     }
 }
+
+/// Payload of snapshot of an order book
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct OrderBookPayload {
+    pub asks: Vec<OrderBookRaw>,
+    pub bids: Vec<OrderBookRaw>,
+    pub timestamp: TimeStamp,
+    pub checksum: CheckSumRaw,
+    pub action: OrderBookActionRaw,
+}
+
+/// Message to transmit order book payload
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(transparent)]
 pub struct OkexBtcUsdSwapOrderBookPayload(pub OrderBookPayload);
 impl From<OkexBtcUsdSwapOrderBookPayload> for OrderBookPayload {
     fn from(payload: OkexBtcUsdSwapOrderBookPayload) -> Self {
@@ -50,6 +55,7 @@ impl From<OkexBtcUsdSwapOrderBookPayload> for OrderBookPayload {
 }
 
 crate::payload! { OkexBtcUsdSwapPricePayload, "price.okex.btc-usd-swap" }
+crate::payload! { OkexBtcUsdSwapOrderBookPayload, "snapshot.okex.btc-usd-swap" }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct SynthUsdLiabilityPayload {
