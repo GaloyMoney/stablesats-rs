@@ -1,19 +1,10 @@
 use rust_decimal::Decimal;
-use sqlx::{Executor, PgPool, Postgres, QueryBuilder, Transaction};
+use sqlx::{PgPool, Postgres, QueryBuilder, Transaction};
 
 use crate::error::UserTradesError;
 use galoy_client::{GaloyTransaction, SettlementCurrency};
 
-pub struct LatestCursor<'a> {
-    id: Option<String>,
-    cursor: Option<String>,
-    tx: Transaction<'a, Postgres>,
-}
-impl<'a> LatestCursor<'a> {
-    pub fn take(&mut self) -> Option<String> {
-        self.cursor.take()
-    }
-}
+pub struct LatestCursor(pub String);
 
 #[derive(Debug, Clone)]
 pub struct UnpairedTransaction {
@@ -38,30 +29,16 @@ impl GaloyTransactions {
         Self { pool }
     }
 
-    pub async fn persist_all<'a>(
+    pub async fn persist_all(
         &self,
-        LatestCursor {
-            id: latest_id,
-            mut tx,
-            ..
-        }: LatestCursor<'a>,
         transactions: Vec<GaloyTransaction>,
     ) -> Result<(), UserTradesError> {
         if transactions.is_empty() {
             return Ok(());
         }
-        if let Some(latest_id) = latest_id {
-            sqlx::query!(
-                "UPDATE galoy_transactions SET is_latest_cursor = NULL WHERE id = $1",
-                latest_id
-            )
-            .execute(&mut tx)
-            .await?;
-        }
         let mut query_builder: QueryBuilder<Postgres> = QueryBuilder::new(
-            "INSERT INTO galoy_transactions (id, is_latest_cursor, cursor, is_paired, settlement_amount, settlement_currency, settlement_method, cents_per_unit, amount_in_usd_cents, created_at)"
+            "INSERT INTO galoy_transactions (id, cursor, is_paired, settlement_amount, settlement_currency, settlement_method, cents_per_unit, amount_in_usd_cents, created_at)"
         );
-        let latest_cursor = transactions.first().unwrap().cursor.clone();
         query_builder.push_values(
             transactions,
             |mut builder,
@@ -77,11 +54,6 @@ impl GaloyTransactions {
                  status: _,
              }| {
                 builder.push_bind(id);
-                builder.push_bind(if latest_cursor == cursor {
-                    Some(true)
-                } else {
-                    None
-                });
                 builder.push_bind(String::from(cursor));
                 builder.push_bind(false);
                 builder.push_bind(settlement_amount);
@@ -94,35 +66,20 @@ impl GaloyTransactions {
         );
         query_builder.push("ON CONFLICT DO NOTHING");
         let query = query_builder.build();
-        query.execute(&mut tx).await?;
-        tx.commit().await?;
+        query.execute(&self.pool).await?;
         Ok(())
     }
 
-    /// Uses optimistic locking as described
-    /// https://stackoverflow.com/questions/71987836/postgresql-select-for-update-lock-new-rows/71988854#71988854
-    pub async fn get_latest_cursor(&self) -> Result<LatestCursor, UserTradesError> {
-        let mut tx = self.pool.begin().await?;
-        tx.execute("SET TRANSACTION ISOLATION LEVEL REPEATABLE READ")
-            .await?;
-        let res = sqlx::query!(
-            "SELECT id, cursor FROM galoy_transactions WHERE is_latest_cursor = 'true'"
-        )
-        .fetch_all(&mut tx)
-        .await?;
+    pub async fn get_latest_cursor(&self) -> Result<Option<LatestCursor>, UserTradesError> {
+        let res =
+            sqlx::query!("SELECT cursor FROM galoy_transactions ORDER BY created_at DESC LIMIT 1")
+                .fetch_all(&self.pool)
+                .await?;
 
         if let Some(res) = res.into_iter().next() {
-            Ok(LatestCursor {
-                id: Some(res.id),
-                cursor: Some(res.cursor),
-                tx,
-            })
+            Ok(Some(LatestCursor(res.cursor)))
         } else {
-            Ok(LatestCursor {
-                id: None,
-                cursor: None,
-                tx,
-            })
+            Ok(None)
         }
     }
 

@@ -30,9 +30,9 @@ async fn import_galoy_transactions(
     galoy_transactions: &GaloyTransactions,
     galoy: GaloyClient,
 ) -> Result<bool, UserTradesError> {
-    let mut latest_cursor = galoy_transactions.get_latest_cursor().await?;
+    let latest_cursor = galoy_transactions.get_latest_cursor().await?;
     let transactions = galoy
-        .transactions_list(latest_cursor.take().map(TxCursor::from))
+        .transactions_list(latest_cursor.map(|c| TxCursor::from(c.0)))
         .await?;
     tracing::Span::current().record(
         "n_galoy_txs",
@@ -40,9 +40,7 @@ async fn import_galoy_transactions(
     );
     tracing::Span::current().record("has_more", &tracing::field::display(transactions.has_more));
     if !transactions.list.is_empty() {
-        galoy_transactions
-            .persist_all(latest_cursor, transactions.list)
-            .await?;
+        galoy_transactions.persist_all(transactions.list).await?;
     }
     Ok(transactions.has_more)
 }
