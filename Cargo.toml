@@ -4,6 +4,7 @@ members = [
   "shared",
   "price-server",
   "cli",
+  "funding",
   "hedging",
   "user-trades",
   "okex-price",
