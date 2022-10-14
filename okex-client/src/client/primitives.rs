@@ -71,6 +71,16 @@ pub struct AvailableBalance {
     pub total_amt_in_btc: Decimal,
 }
 
+impl Display for AvailableBalance {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "free_amt_in_btc={}, used_amt_in_btc={}, total_amt_in_btc={},",
+            self.free_amt_in_btc, self.used_amt_in_btc, self.total_amt_in_btc
+        )
+    }
+}
+
 #[derive(Debug)]
 pub struct TransferState {
     pub value: String,
@@ -95,6 +105,7 @@ pub struct OrderId {
 pub struct PositionSize {
     pub instrument_id: OkexInstrumentId,
     pub usd_cents: Decimal,
+    pub last_price_in_usd_cents: Decimal,
 }
 
 #[derive(Debug, Clone)]
