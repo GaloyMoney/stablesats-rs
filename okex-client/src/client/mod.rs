@@ -428,15 +428,26 @@ impl OkexClient {
             .await?;
 
         if let Some(PositionData {
-            notional_usd, pos, ..
+            notional_usd,
+            pos,
+            last,
+            ..
         }) = Self::extract_optional_response_data::<PositionData>(response).await?
         {
             let direction = pos.parse::<Decimal>().unwrap_or(Decimal::ZERO);
             let notional_usd = notional_usd.parse::<Decimal>().unwrap_or(Decimal::ZERO);
+            let last = last.parse::<Decimal>().unwrap_or(Decimal::ZERO);
 
             Ok(PositionSize {
                 instrument_id: OkexInstrumentId::BtcUsdSwap,
                 usd_cents: notional_usd
+                    * Decimal::ONE_HUNDRED
+                    * if direction > Decimal::ZERO {
+                        Decimal::ONE
+                    } else {
+                        Decimal::NEGATIVE_ONE
+                    },
+                last_price_in_usd_cents: last
                     * Decimal::ONE_HUNDRED
                     * if direction > Decimal::ZERO {
                         Decimal::ONE
@@ -448,6 +459,7 @@ impl OkexClient {
             Ok(PositionSize {
                 instrument_id: OkexInstrumentId::BtcUsdSwap,
                 usd_cents: Decimal::ZERO,
+                last_price_in_usd_cents: Decimal::ZERO,
             })
         }
     }

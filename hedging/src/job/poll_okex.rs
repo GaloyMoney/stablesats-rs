@@ -17,6 +17,7 @@ pub async fn execute(
     let PositionSize {
         usd_cents,
         instrument_id,
+        ..
     } = okex.get_position_in_signed_usd_cents().await?;
     publisher
         .publish(OkexBtcUsdSwapPositionPayload {
