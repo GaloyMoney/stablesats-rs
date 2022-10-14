@@ -18,4 +18,6 @@ pub enum PriceFeedError {
     SerializationError(#[from] SerdeError),
     #[error("PriceFeedError - PublisherError: {0}")]
     PublisherError(#[from] PublisherError),
+    #[error("PriceFeedError - OrderBookConversion: {0}")]
+    OrderBookConversion(#[from] anyhow::Error),
 }
