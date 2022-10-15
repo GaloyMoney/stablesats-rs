@@ -1,9 +1,12 @@
 mod constants;
 mod primitives;
 
+use std::collections::BTreeMap;
 use std::collections::HashMap;
 
 use lazy_static::*;
+use rust_decimal::Decimal;
+use rust_decimal_macros::dec;
 use serde::{Deserialize, Serialize};
 use tokio::sync::RwLock;
 
@@ -19,14 +22,10 @@ lazy_static! {
         RwLock::new(HashMap::new());
 }
 
-pub struct PriceMatch {
-    pub snap: OrderBookRaw,
-    pub incr: OrderBookRaw,
-}
-
+#[derive(Debug, Clone)]
 pub struct PriceMatches {
-    pub asks: Vec<PriceMatch>,
-    pub bids: Vec<PriceMatch>,
+    pub asks: BTreeMap<OrderBookPriceRaw, OrderBookQuantityRaw>,
+    pub bids: BTreeMap<OrderBookPriceRaw, OrderBookQuantityRaw>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -57,8 +56,8 @@ impl std::ops::Deref for OkexBtcUsdSwapPricePayload {
 /// Payload of snapshot of an order book
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct OrderBookPayload {
-    pub asks: Vec<OrderBookRaw>,
-    pub bids: Vec<OrderBookRaw>,
+    pub asks: OrderBookRaw,
+    pub bids: OrderBookRaw,
     pub timestamp: TimeStamp,
     pub checksum: CheckSumRaw,
     pub action: OrderBookActionRaw,
@@ -77,6 +76,11 @@ impl std::ops::Deref for OkexBtcUsdSwapOrderBookPayload {
     type Target = OrderBookPayload;
     fn deref(&self) -> &Self::Target {
         &self.0
+    }
+}
+impl std::ops::DerefMut for OkexBtcUsdSwapOrderBookPayload {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.0
     }
 }
 
@@ -100,21 +104,25 @@ impl OkexBtcUsdSwapOrderBookPayload {
         let read_guard = SNAP_CACHE.read().await;
         let snapshot = read_guard.get("snapshot").expect("Empty snapshot");
 
-        let price_matches = Self::same_price(snapshot, incr);
+        let price_matches = Self::same_price(snapshot, &incr);
+        let (asks, bids) = (price_matches.clone().asks, price_matches.clone().bids);
 
-        // if price_matches.len() > 0 {
-        //     if Self::size_is_zero(price_matches).len() > 0 {
-        //         // Delete incr depth data
-        //         todo!()
-        //     }
+        if asks.len() > 0 || bids.len() > 0 {
+            // if price_matches.len() > 0 {
+            //    1. [x] delete_empty_depth_data
 
-        //     if Self::size_differs(price_matches) {
-        //         // 1. Replace original with incr
-        //         // 2. Validate checksum
-        //         // 3. Update snap_cache
-        //         // 4. return cached snapshot
-        //         todo!()
-        //     }
+            let updated_price_matches = Self::delete_empty_depth_data(price_matches);
+
+            //     update_snapshot_with_incr if quantity differs {
+            //         // 1. [x] Replace original with incr
+            //         // 2. [ ] Validate checksum
+            //         // 3. [x] Update snap_cache
+            //         // 4. [x] return cached snapshot
+            //     }
+            let updated_snap = Self::update_snapshot_with_incr(updated_price_matches).await;
+            return updated_snap;
+        }
+
         // } else {
         //     // 1. price sort
         //     // 2. insert depth info
@@ -127,21 +135,64 @@ impl OkexBtcUsdSwapOrderBookPayload {
         unimplemented!()
     }
 
-    fn same_price(local_snapshot: &Self, update: Self) -> Vec<PriceMatch> {
-        let asks = local_snapshot
-            .asks
-            .iter()
-            .cmp_by(other, cmp)
-        unimplemented!()
+    fn same_price(local_snapshot: &Self, update: &Self) -> PriceMatches {
+        let mut asks_map: BTreeMap<OrderBookPriceRaw, OrderBookQuantityRaw> = BTreeMap::new();
+        for (price_u, qty_u) in update.asks.iter() {
+            if local_snapshot.asks.contains_key(&price_u) {
+                asks_map.insert(*price_u, *qty_u);
+            }
+        }
+
+        let mut bids_map: BTreeMap<OrderBookPriceRaw, OrderBookQuantityRaw> = BTreeMap::new();
+        for (price_u, qty_u) in update.asks.iter() {
+            if local_snapshot.asks.contains_key(&price_u) {
+                bids_map.insert(*price_u, *qty_u);
+            }
+        }
+
+        PriceMatches {
+            asks: asks_map,
+            bids: bids_map,
+        }
     }
 
-    // fn size_is_zero(price_matches: Vec<String>) -> Vec<String> {
-    //     unimplemented!()
-    // }
+    fn delete_empty_depth_data(price_matches: PriceMatches) -> PriceMatches {
+        let (mut asks, mut bids) = (price_matches.asks, price_matches.bids);
+        asks.retain(|x, y| *y != dec!(0));
+        bids.retain(|x, y| *y != dec!(0));
 
-    // fn size_differs(price_matches: Vec<String>) -> Vec<String> {
-    //     unimplemented!()
-    // }
+        PriceMatches { asks, bids }
+    }
+
+    async fn update_snapshot_with_incr(price_matches: PriceMatches) -> Self {
+        let (asks, bids) = (price_matches.asks, price_matches.bids);
+        let mut write_guard = SNAP_CACHE.write().await;
+        let snapshot = write_guard.get_mut("snapshot").expect("Empty snapshot");
+
+        asks.iter().for_each(|(ask_price, ask_qty)| {
+            let snap_match = snapshot
+                .asks
+                .get_mut(&ask_price)
+                .expect("Empty order book depth data ");
+
+            if ask_qty != snap_match {
+                *snap_match = *ask_qty;
+            }
+        });
+
+        bids.iter().for_each(|(bid_price, bid_qty)| {
+            let snap_match = snapshot
+                .bids
+                .get_mut(&bid_price)
+                .expect("Empty order book depth data ");
+
+            if bid_qty != snap_match {
+                *snap_match = *bid_qty;
+            }
+        });
+
+        snapshot.clone()
+    }
 }
 
 crate::payload! { OkexBtcUsdSwapPricePayload, "price.okex.btc-usd-swap" }
@@ -171,14 +222,14 @@ mod tests {
         payload_data: Vec<[Decimal; 2]>,
         action: OrderBookActionRaw,
     ) -> OkexBtcUsdSwapOrderBookPayload {
-        let mut asks = Vec::new();
+        let mut asks = BTreeMap::new();
         for pq in payload_data.clone() {
-            asks.push(OrderBookRaw::from_pq(pq[0], pq[1]));
+            asks.insert(OrderBookPriceRaw(pq[0]), OrderBookQuantityRaw(pq[1]));
         }
 
-        let mut bids = Vec::new();
+        let mut bids = BTreeMap::new();
         for pq in payload_data {
-            bids.push(OrderBookRaw::from_pq(pq[0], pq[1]));
+            bids.insert(OrderBookPriceRaw(pq[0]), OrderBookQuantityRaw(pq[1]));
         }
 
         let payload = OrderBookPayload {
@@ -186,7 +237,7 @@ mod tests {
             bids,
             timestamp: TimeStamp::now(),
             checksum: CheckSumRaw::from(-855196043_i64),
-            action: action,
+            action,
         };
 
         let order_book_payload = OkexBtcUsdSwapOrderBookPayload(payload);
@@ -245,5 +296,55 @@ mod tests {
         // 3. Assert
         println!("Test");
         assert_eq!(update_merge_res.0.asks.len(), 5_usize);
+    }
+
+    #[test]
+    fn same_price() {
+        // 1. Arrange
+        let full_snapshot_price_qty = vec![
+            [dec!(8476.98), dec!(415)],
+            [dec!(8477), dec!(7)],
+            [dec!(8477.34), dec!(85)],
+            [dec!(8477.56), dec!(1)],
+            [dec!(8505.84), dec!(8)],
+        ];
+        let incremental_price_qty = vec![[dec!(8477.98), dec!(425)], [dec!(8477), dec!(0)]];
+
+        let initial_snapshot =
+            generate_payload(full_snapshot_price_qty, OrderBookActionRaw::Snapshot);
+        let update = generate_payload(incremental_price_qty, OrderBookActionRaw::Update);
+
+        // 2. Act
+        let res = OkexBtcUsdSwapOrderBookPayload::same_price(&initial_snapshot, &update);
+
+        // 3. Assert
+        assert_eq!(res.asks.len(), 1);
+        assert_eq!(res.bids.len(), 1);
+    }
+
+    #[test]
+    fn delete_empty_depth_data() {
+        // 1. Arrange
+        let full_snapshot_price_qty = vec![
+            [dec!(8476.98), dec!(415)],
+            [dec!(8477), dec!(7)],
+            [dec!(8477.34), dec!(85)],
+            [dec!(8477.56), dec!(1)],
+            [dec!(8505.84), dec!(8)],
+        ];
+        let incremental_price_qty = vec![[dec!(8477.98), dec!(425)], [dec!(8477), dec!(0)]];
+
+        let initial_snapshot =
+            generate_payload(full_snapshot_price_qty, OrderBookActionRaw::Snapshot);
+        let update = generate_payload(incremental_price_qty, OrderBookActionRaw::Update);
+
+        // 2. Act
+        let price_matches = OkexBtcUsdSwapOrderBookPayload::same_price(&initial_snapshot, &update);
+        let updated_price_matches =
+            OkexBtcUsdSwapOrderBookPayload::delete_empty_depth_data(price_matches);
+
+        // 3. Assert
+        assert_eq!(updated_price_matches.asks.len(), 0);
+        assert_eq!(updated_price_matches.bids.len(), 0);
     }
 }

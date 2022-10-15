@@ -1,3 +1,5 @@
+use std::collections::BTreeMap;
+
 use rust_decimal::prelude::*;
 use rust_decimal_macros::dec;
 use serde::{Deserialize, Serialize};
@@ -8,6 +10,8 @@ crate::string_wrapper! { CurrencyRaw }
 
 crate::abs_decimal_wrapper! { SyntheticCentLiability }
 crate::decimal_wrapper! { SyntheticCentExposure }
+crate::decimal_wrapper! { OrderBookPriceRaw }
+crate::decimal_wrapper! { OrderBookQuantityRaw }
 
 pub const USD_CENT_UNIT_NAME: &str = "USD_CENT";
 pub const SATOSHI_UNIT_NAME: &str = "SATOSHI";
@@ -52,23 +56,30 @@ impl From<i64> for CheckSumRaw {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct OrderBookRaw {
-    pub price: Decimal,
-    pub quantity: Decimal,
+pub struct OrderBookRaw(pub BTreeMap<OrderBookPriceRaw, OrderBookQuantityRaw>);
+impl std::ops::Deref for OrderBookRaw {
+    type Target = BTreeMap<OrderBookPriceRaw, OrderBookQuantityRaw>;
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
 }
+
 impl OrderBookRaw {
     pub fn from_order_book(price_quantity: Vec<(Decimal, Decimal)>) -> Vec<Self> {
+        let mut order_book = BTreeMap::new();
         price_quantity
             .iter()
-            .map(|item| Self {
-                price: item.0,
-                quantity: item.1,
+            .map(|(price, qty)| {
+                order_book.insert(OrderBookPriceRaw(*price), OrderBookQuantityRaw(*qty));
+                Self(order_book.clone())
             })
             .collect::<Vec<Self>>()
     }
 
     pub fn from_pq(price: Decimal, quantity: Decimal) -> Self {
-        Self { price, quantity }
+        let mut order_book = BTreeMap::new();
+        order_book.insert(OrderBookPriceRaw(price), OrderBookQuantityRaw(quantity));
+        Self(order_book)
     }
 }
 
