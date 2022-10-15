@@ -5,7 +5,6 @@ use std::collections::BTreeMap;
 use std::collections::HashMap;
 
 use lazy_static::*;
-use rust_decimal::Decimal;
 use rust_decimal_macros::dec;
 use serde::{Deserialize, Serialize};
 use tokio::sync::RwLock;
@@ -107,7 +106,7 @@ impl OkexBtcUsdSwapOrderBookPayload {
         let price_matches = Self::same_price(snapshot, &incr);
         let (asks, bids) = (price_matches.clone().asks, price_matches.clone().bids);
 
-        if asks.len() > 0 || bids.len() > 0 {
+        if !asks.is_empty() || !bids.is_empty() {
             // if price_matches.len() > 0 {
             //    1. [x] delete_empty_depth_data
 
@@ -138,14 +137,14 @@ impl OkexBtcUsdSwapOrderBookPayload {
     fn same_price(local_snapshot: &Self, update: &Self) -> PriceMatches {
         let mut asks_map: BTreeMap<OrderBookPriceRaw, OrderBookQuantityRaw> = BTreeMap::new();
         for (price_u, qty_u) in update.asks.iter() {
-            if local_snapshot.asks.contains_key(&price_u) {
+            if local_snapshot.asks.contains_key(price_u) {
                 asks_map.insert(*price_u, *qty_u);
             }
         }
 
         let mut bids_map: BTreeMap<OrderBookPriceRaw, OrderBookQuantityRaw> = BTreeMap::new();
         for (price_u, qty_u) in update.asks.iter() {
-            if local_snapshot.asks.contains_key(&price_u) {
+            if local_snapshot.asks.contains_key(price_u) {
                 bids_map.insert(*price_u, *qty_u);
             }
         }
@@ -158,8 +157,8 @@ impl OkexBtcUsdSwapOrderBookPayload {
 
     fn delete_empty_depth_data(price_matches: PriceMatches) -> PriceMatches {
         let (mut asks, mut bids) = (price_matches.asks, price_matches.bids);
-        asks.retain(|x, y| *y != dec!(0));
-        bids.retain(|x, y| *y != dec!(0));
+        asks.retain(|_x, y| *y != dec!(0));
+        bids.retain(|_x, y| *y != dec!(0));
 
         PriceMatches { asks, bids }
     }
@@ -172,7 +171,7 @@ impl OkexBtcUsdSwapOrderBookPayload {
         asks.iter().for_each(|(ask_price, ask_qty)| {
             let snap_match = snapshot
                 .asks
-                .get_mut(&ask_price)
+                .get_mut(ask_price)
                 .expect("Empty order book depth data ");
 
             if ask_qty != snap_match {
@@ -183,7 +182,7 @@ impl OkexBtcUsdSwapOrderBookPayload {
         bids.iter().for_each(|(bid_price, bid_qty)| {
             let snap_match = snapshot
                 .bids
-                .get_mut(&bid_price)
+                .get_mut(bid_price)
                 .expect("Empty order book depth data ");
 
             if bid_qty != snap_match {
@@ -222,15 +221,25 @@ mod tests {
         payload_data: Vec<[Decimal; 2]>,
         action: OrderBookActionRaw,
     ) -> OkexBtcUsdSwapOrderBookPayload {
-        let mut asks = BTreeMap::new();
-        for pq in payload_data.clone() {
-            asks.insert(OrderBookPriceRaw(pq[0]), OrderBookQuantityRaw(pq[1]));
-        }
+        let mut asks_map = BTreeMap::new();
 
-        let mut bids = BTreeMap::new();
-        for pq in payload_data {
-            bids.insert(OrderBookPriceRaw(pq[0]), OrderBookQuantityRaw(pq[1]));
+        for pq in payload_data.clone() {
+            asks_map.insert(
+                OrderBookPriceRaw::from(pq[0]),
+                OrderBookQuantityRaw::from(pq[1]),
+            );
         }
+        let asks = OrderBookRaw(asks_map);
+
+        let mut bids_map = BTreeMap::new();
+
+        for pq in payload_data.clone() {
+            bids_map.insert(
+                OrderBookPriceRaw::from(pq[0]),
+                OrderBookQuantityRaw::from(pq[1]),
+            );
+        }
+        let bids = OrderBookRaw(bids_map);
 
         let payload = OrderBookPayload {
             asks,

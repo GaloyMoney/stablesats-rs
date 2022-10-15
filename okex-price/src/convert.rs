@@ -55,8 +55,8 @@ impl TryFrom<OkexOrderBook> for OkexBtcUsdSwapOrderBookPayload {
             .collect::<Vec<(_, _)>>();
 
         Ok(OkexBtcUsdSwapOrderBookPayload(OrderBookPayload {
-            asks: OrderBookRaw::from_order_book(asks_tups),
-            bids: OrderBookRaw::from_order_book(bids_tups),
+            asks: OrderBookRaw::from_okex_order_book(asks_tups),
+            bids: OrderBookRaw::from_okex_order_book(bids_tups),
             timestamp: TimeStamp::try_from(ts)?,
             checksum: CheckSumRaw::from(*checksum),
             action: OrderBookActionRaw::from(action),
