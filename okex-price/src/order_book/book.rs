@@ -39,7 +39,7 @@ pub struct OrderBookChannelData {
     pub asks: Vec<PriceQuantity>,
     pub bids: Vec<PriceQuantity>,
     pub ts: TimeStampMilliStr,
-    pub checksum: i64,
+    pub checksum: i32,
 }
 
 #[derive(Debug, Deserialize)]

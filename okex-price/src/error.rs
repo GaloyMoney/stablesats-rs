@@ -2,7 +2,7 @@ use serde_json::Error as SerdeError;
 use thiserror::Error;
 use tokio_tungstenite::tungstenite::error::Error as TungsteniteError;
 
-use shared::pubsub::PublisherError;
+use shared::{payload::PayloadError, pubsub::PublisherError};
 
 #[derive(Error, Debug)]
 pub enum PriceFeedError {
@@ -20,4 +20,6 @@ pub enum PriceFeedError {
     PublisherError(#[from] PublisherError),
     #[error("PriceFeedError - OrderBookConversion: {0}")]
     OrderBookConversion(#[from] anyhow::Error),
+    #[error("PriceFeedError - DepthValidation: {0}")]
+    DepthValidation(#[from] PayloadError),
 }

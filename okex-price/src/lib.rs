@@ -47,7 +47,7 @@ pub async fn run_book(
     while let Some(payload) = receiver.recv().await {
         let update_payload = payload;
 
-        let snapshot = OkexBtcUsdSwapOrderBookPayload::merge(update_payload).await;
+        let snapshot = OkexBtcUsdSwapOrderBookPayload::merge(update_payload).await?;
         let _ = publisher.throttle_publish(snapshot);
     }
 

@@ -48,14 +48,14 @@ impl PriceRatioRaw {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
-pub struct CheckSumRaw(i64);
-impl From<i64> for CheckSumRaw {
-    fn from(cs: i64) -> Self {
+pub struct CheckSumRaw(i32);
+impl From<i32> for CheckSumRaw {
+    fn from(cs: i32) -> Self {
         Self(cs)
     }
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 pub struct OrderBookRaw(pub BTreeMap<OrderBookPriceRaw, OrderBookQuantityRaw>);
 impl std::ops::Deref for OrderBookRaw {
     type Target = BTreeMap<OrderBookPriceRaw, OrderBookQuantityRaw>;
