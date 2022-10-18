@@ -1,0 +1,16 @@
+# Stablesats
+export PATH=${PATH}:./target/debug
+
+# OKX Exchange
+export OKEX_API_KEY="OKX trading API key"
+export OKEX_SECRET_KEY="OKX trading secret key"
+export OKEX_PASSPHRASE="OKX trading API passphrase"
+
+# Galoy Backend
+export GALOY_PHONE_NUMBER="Galoy phone number"
+export GALOY_PHONE_CODE="Galoy phone code"
+export GALOY_API="Galoy graphql API"
+
+# Opentelemetry with Honeycomb
+export HONEYCOMB_API_KEY="Honeycomb API key"
+export HONEYCOMB_DATASET="Name of honeycomb dataset"
