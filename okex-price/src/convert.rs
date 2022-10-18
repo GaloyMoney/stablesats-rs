@@ -1,7 +1,7 @@
 use crate::*;
 use shared::{payload::*, time::*};
 
-use super::price_feed::{OkexPriceTick, PriceFeedError};
+use super::price_tick::{OkexPriceTick, PriceFeedError};
 
 impl TryFrom<OkexPriceTick> for OkexBtcUsdSwapPricePayload {
     type Error = PriceFeedError;

@@ -6,7 +6,7 @@ mod convert;
 pub mod error;
 pub mod okex_shared;
 pub mod order_book;
-pub mod price_feed;
+pub mod price_tick;
 
 use std::pin::Pin;
 
@@ -17,7 +17,7 @@ pub use config::*;
 pub use error::*;
 pub use okex_shared::*;
 pub use order_book::*;
-pub use price_feed::*;
+pub use price_tick::*;
 use tokio::sync::mpsc::Sender;
 
 pub async fn run(
