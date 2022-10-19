@@ -10,8 +10,8 @@ crate::string_wrapper! { CurrencyRaw }
 
 crate::abs_decimal_wrapper! { SyntheticCentLiability }
 crate::decimal_wrapper! { SyntheticCentExposure }
-crate::decimal_wrapper! { OrderBookPriceRaw }
-crate::decimal_wrapper! { OrderBookQuantityRaw }
+crate::decimal_wrapper! { PriceRaw }
+crate::decimal_wrapper! { QuantityRaw }
 
 pub const USD_CENT_UNIT_NAME: &str = "USD_CENT";
 pub const SATOSHI_UNIT_NAME: &str = "SATOSHI";
@@ -56,35 +56,16 @@ impl From<i32> for CheckSumRaw {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
-pub struct OrderBookRaw(pub BTreeMap<OrderBookPriceRaw, OrderBookQuantityRaw>);
-impl std::ops::Deref for OrderBookRaw {
-    type Target = BTreeMap<OrderBookPriceRaw, OrderBookQuantityRaw>;
+pub struct PriceQtyMapRaw(pub BTreeMap<PriceRaw, QuantityRaw>);
+impl std::ops::Deref for PriceQtyMapRaw {
+    type Target = BTreeMap<PriceRaw, QuantityRaw>;
     fn deref(&self) -> &Self::Target {
         &self.0
     }
 }
-impl std::ops::DerefMut for OrderBookRaw {
+impl std::ops::DerefMut for PriceQtyMapRaw {
     fn deref_mut(&mut self) -> &mut Self::Target {
         &mut self.0
-    }
-}
-
-impl OrderBookRaw {
-    pub fn from_okex_order_book(price_quantity: Vec<(Decimal, Decimal)>) -> Self {
-        let order_book = BTreeMap::from_iter(
-            price_quantity
-                .iter()
-                .map(|(price, qty)| (OrderBookPriceRaw(*price), OrderBookQuantityRaw(*qty)))
-                .collect::<Vec<_>>(),
-        );
-
-        Self(order_book)
-    }
-
-    pub fn from_pq(price: Decimal, quantity: Decimal) -> Self {
-        let mut order_book = BTreeMap::new();
-        order_book.insert(OrderBookPriceRaw(price), OrderBookQuantityRaw(quantity));
-        Self(order_book)
     }
 }
 
@@ -140,49 +121,5 @@ mod tests {
         assert_eq!(&ratio.numerator_amount().to_string(), "0.00999999");
 
         Ok(())
-    }
-
-    #[test]
-    fn from_okex_order_book() {
-        let okex_order_book = vec![
-            (dec!(2012.1), dec!(12)),
-            (dec!(1875.5), dec!(2)),
-            (dec!(19785.97), dec!(1)),
-            (dec!(13.20), dec!(0)),
-            (dec!(7.8), dec!(9)),
-        ];
-
-        let domain_order_book = OrderBookRaw::from_okex_order_book(okex_order_book);
-
-        assert_eq!(
-            *domain_order_book
-                .get(&OrderBookPriceRaw::from(dec!(2012.1)))
-                .expect("no matching key"),
-            dec!(12)
-        );
-        assert_eq!(
-            *domain_order_book
-                .get(&OrderBookPriceRaw::from(dec!(1875.5)))
-                .expect("no matching key"),
-            dec!(2)
-        );
-        assert_eq!(
-            *domain_order_book
-                .get(&OrderBookPriceRaw::from(dec!(19785.97)))
-                .expect("no matching key"),
-            dec!(1)
-        );
-        assert_eq!(
-            *domain_order_book
-                .get(&OrderBookPriceRaw::from(dec!(13.20)))
-                .expect("no matching key"),
-            dec!(0)
-        );
-        assert_eq!(
-            *domain_order_book
-                .get(&OrderBookPriceRaw::from(dec!(7.8)))
-                .expect("no matching key"),
-            dec!(9)
-        );
     }
 }

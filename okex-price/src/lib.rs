@@ -8,9 +8,7 @@ pub mod okex_shared;
 pub mod order_book;
 pub mod price_tick;
 
-use std::pin::Pin;
-
-use futures::{Stream, StreamExt};
+use futures::StreamExt;
 use shared::{payload::*, pubsub::*};
 
 pub use config::*;
@@ -18,7 +16,6 @@ pub use error::*;
 pub use okex_shared::*;
 pub use order_book::*;
 pub use price_tick::*;
-use tokio::sync::mpsc::Sender;
 
 pub async fn run(
     price_feed_config: PriceFeedConfig,
@@ -39,16 +36,18 @@ pub async fn run_book(
     pubsub_cfg: PubSubConfig,
 ) -> Result<(), PriceFeedError> {
     let publisher = Publisher::new(pubsub_cfg).await?;
-    let stream = OrderBook::subscribe(price_feed_config).await?;
-    let (sender, mut receiver) = tokio::sync::mpsc::channel(1);
+    let mut stream = subscribe_btc_usd_swap_order_book(price_feed_config).await?;
 
-    tokio::spawn(convert_to_payload(sender.clone(), stream));
+    let full_load = stream.next().await.ok_or(PriceFeedError::InitialFullLoad)?;
 
-    while let Some(payload) = receiver.recv().await {
-        let update_payload = payload;
+    let snapshot = CurrentSnapshot::new(full_load.try_into()?).await;
+    while let Some(payload) = stream.next().await {
+        let incr: CurrentSnapshotInner = payload.try_into()?;
 
-        let snapshot = OkexBtcUsdSwapOrderBookPayload::merge(update_payload).await?;
-        let _ = publisher.throttle_publish(snapshot);
+        snapshot.merge(incr).await;
+        let _ = publisher.throttle_publish::<OkexBtcUsdSwapOrderBookPayload>(
+            snapshot.latest_snapshot().await.into(),
+        );
     }
 
     Ok(())
@@ -61,18 +60,5 @@ async fn okex_price_tick_received(
     if let Ok(payload) = OkexBtcUsdSwapPricePayload::try_from(tick) {
         publisher.throttle_publish(payload).await?;
     }
-    Ok(())
-}
-
-/// Convert OkexOrderBook to OkexBtcUsdSwapOrderBookPayload and send to channel
-async fn convert_to_payload(
-    sender: Sender<OkexBtcUsdSwapOrderBookPayload>,
-    mut stream: Pin<Box<dyn Stream<Item = OkexOrderBook> + Send>>,
-) -> Result<(), PriceFeedError> {
-    while let Some(book) = stream.next().await {
-        let payload = OkexBtcUsdSwapOrderBookPayload::try_from(book)?;
-        let _ = sender.try_send(payload);
-    }
-
     Ok(())
 }

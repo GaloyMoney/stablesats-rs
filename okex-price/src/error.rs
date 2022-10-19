@@ -2,7 +2,7 @@ use serde_json::Error as SerdeError;
 use thiserror::Error;
 use tokio_tungstenite::tungstenite::error::Error as TungsteniteError;
 
-use shared::{payload::PayloadError, pubsub::PublisherError};
+use shared::pubsub::PublisherError;
 
 #[derive(Error, Debug)]
 pub enum PriceFeedError {
@@ -21,5 +21,9 @@ pub enum PriceFeedError {
     #[error("PriceFeedError - OrderBookConversion: {0}")]
     OrderBookConversion(#[from] anyhow::Error),
     #[error("PriceFeedError - DepthValidation: {0}")]
-    DepthValidation(#[from] PayloadError),
+    DepthValidation(String),
+    #[error("PriceFeedError - InitialFullLoad: inital full load was empty")]
+    InitialFullLoad,
+    #[error("PayloadError: CheckSumValidation - Can't validate accuracy of depth data")]
+    CheckSumValidation,
 }

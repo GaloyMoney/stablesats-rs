@@ -8,7 +8,7 @@ async fn subscribe_to_order_book_channel() -> anyhow::Result<()> {
     let config = PriceFeedConfig {
         url: Url::parse("wss://ws.okx.com:8443/ws/v5/public").unwrap(),
     };
-    let mut order_book_stream = OrderBook::subscribe(config)
+    let mut order_book_stream = subscribe_btc_usd_swap_order_book(config)
         .await
         .expect("subscribe to order book channel");
     let order_book = order_book_stream.next().await.expect("order book");
