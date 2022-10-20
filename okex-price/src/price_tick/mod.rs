@@ -6,7 +6,7 @@ use tokio_tungstenite::{connect_async, tungstenite::Message};
 pub use crate::{config::*, error::*};
 pub use tick::*;
 
-pub async fn subscribe_btc_usd_swap(
+pub async fn subscribe_btc_usd_swap_price_tick(
     config: PriceFeedConfig,
 ) -> Result<std::pin::Pin<Box<dyn Stream<Item = OkexPriceTick> + Send>>, PriceFeedError> {
     let (ws_stream, _) = connect_async(config.url).await?;

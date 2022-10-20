@@ -22,8 +22,8 @@ pub enum PriceFeedError {
     OrderBookConversion(#[from] anyhow::Error),
     #[error("PriceFeedError - DepthValidation: {0}")]
     DepthValidation(String),
-    #[error("PriceFeedError - InitialFullLoad: inital full load was empty")]
+    #[error("PriceFeedError - InitialFullLoad: initial full load empty")]
     InitialFullLoad,
-    #[error("PayloadError: CheckSumValidation - Can't validate accuracy of depth data")]
+    #[error("PriceFeedError: CheckSumValidation - Can't validate accuracy of depth data")]
     CheckSumValidation,
 }

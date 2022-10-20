@@ -49,17 +49,19 @@ impl TryFrom<OkexOrderBook> for CurrentSnapshotInner {
             &snapshot.checksum,
         );
 
-        if !is_checksum_valid(asks, bids, *checksum) {
-            return Err(PriceFeedError::CheckSumValidation);
-        }
+        // TODO: Checksum validation
+        // if !is_checksum_valid(asks, bids, *checksum) {
+        //     return Err(PriceFeedError::CheckSumValidation);
+        // }
 
-        Ok(CurrentSnapshotInner {
+        let inner = CurrentSnapshotInner {
             asks: PriceQtyMap::from(asks),
             bids: PriceQtyMap::from(bids),
             timestamp: TimeStamp::try_from(ts)?,
             checksum: CheckSum::from(*checksum),
             action,
-        })
+        };
+        Ok(inner)
     }
 }
 
@@ -119,39 +121,31 @@ impl From<PriceQtyMap> for PriceQtyMapRaw {
 }
 
 /// Checks the validity of received order book data
-fn is_checksum_valid(asks: &[PriceQuantity], bids: &[PriceQuantity], checksum: i32) -> bool {
-    // 0. [x] Convert vector of asks and bids to BTreeMap
-    // 1. [x] Get the key-value pairs from each BTreeMap entry, form a string separated by ':' and push string to vector
-    // 2. [x] Do 1 above for asks and bids (in reverse)
-    // 3. [x] Use itertools to interleave the vectors into a new collection (string)
-    // 4. [x] CRC32 the resulting string
-    let mut asks_map = BTreeMap::new();
-    for entry in asks {
-        asks_map.insert(entry.price, entry.quantity);
-    }
-    let mut bids_map = BTreeMap::new();
-    for entry in bids {
-        bids_map.insert(entry.price, entry.quantity);
-    }
+fn _is_checksum_valid(asks: &[PriceQuantity], bids: &[PriceQuantity], checksum: i32) -> bool {
+    // 1. [x] Get the first 25 elements (if asks.len() > 25 and bids.len() > 25) or all elements
+    // 2. [x] Create a vector of strings with price:quantity pair for both asks and bids
+    // 2. [x] Use itertools to interleave the vectors into a new collection (string)
+    // 3. [x] CRC32 the resulting string
 
-    let asks_list = asks_map
+    let asks_25_or_less = (*asks)
+        // .clone()
         .iter()
         .enumerate()
-        .filter(|(idx, _pq)| *idx <= OKEX_CHECKSUM_LIMIT)
-        .map(|(_idx, val)| format!("{}:{}", val.0, val.1))
-        .collect::<Vec<String>>();
-
-    let crc_col = bids_map
+        .filter(|(idx, _)| idx < &OKEX_CHECKSUM_LIMIT)
+        .map(|(_, val)| format!("{}:{}", val.price, val.quantity))
+        .collect::<Vec<_>>();
+    let crc_collection = (*bids)
+        // .clone()
         .iter()
-        .rev()
         .enumerate()
-        .filter(|(idx, _pq)| idx <= &OKEX_CHECKSUM_LIMIT)
-        .map(|(_idx, val)| format!("{}:{}", val.0, val.1))
-        .interleave(asks_list);
+        .filter(|(idx, _)| idx < &OKEX_CHECKSUM_LIMIT)
+        .map(|(_, val)| format!("{}:{}", val.price, val.quantity))
+        .interleave(asks_25_or_less);
 
-    let crc = Itertools::intersperse(crc_col, ":".to_string()).collect::<String>();
-    let cs = crc32fast::hash(crc.as_bytes());
-    let calc_cs = cs as i32;
+    // let crc_collection = bids_25_or_less.into_iter().interleave(asks_25_or_less);
+    let crc = Itertools::intersperse(crc_collection, ":".to_string()).collect::<String>();
+    let checksum_val = crc32fast::hash(crc.as_bytes());
+    let calc_cs = checksum_val as i32;
 
     if calc_cs != checksum {
         return false;
@@ -171,31 +165,67 @@ mod tests {
         // 1. Arrange
         let asks_raw = vec![
             PriceQuantity {
-                price: dec!(8476.98),
-                quantity: dec!(415),
+                price: dec!(19162.8),
+                quantity: dec!(113),
             },
             PriceQuantity {
-                price: dec!(8477),
-                quantity: dec!(7),
+                price: dec!(19163.3),
+                quantity: dec!(0),
+            },
+            PriceQuantity {
+                price: dec!(19164.9),
+                quantity: dec!(30),
+            },
+            PriceQuantity {
+                price: dec!(19165.7),
+                quantity: dec!(220),
+            },
+            PriceQuantity {
+                price: dec!(19166.2),
+                quantity: dec!(0),
+            },
+            PriceQuantity {
+                price: dec!(19168.2),
+                quantity: dec!(120),
+            },
+            PriceQuantity {
+                price: dec!(19168.8),
+                quantity: dec!(0),
+            },
+            PriceQuantity {
+                price: dec!(19172),
+                quantity: dec!(169),
+            },
+            PriceQuantity {
+                price: dec!(19172.4),
+                quantity: dec!(0),
+            },
+            PriceQuantity {
+                price: dec!(19833),
+                quantity: dec!(20),
+            },
+            PriceQuantity {
+                price: dec!(19848),
+                quantity: dec!(59),
+            },
+            PriceQuantity {
+                price: dec!(19850),
+                quantity: dec!(422),
             },
         ];
         let bids_raw = vec![
             PriceQuantity {
-                price: dec!(8476.97),
-                quantity: dec!(256),
+                price: dec!(19151.8),
+                quantity: dec!(12),
             },
             PriceQuantity {
-                price: dec!(8475.55),
-                quantity: dec!(101),
-            },
-            PriceQuantity {
-                price: dec!(8475.54),
-                quantity: dec!(100),
+                price: dec!(19152.4),
+                quantity: dec!(321),
             },
         ];
 
         // 2. Act
-        let is_valid = is_checksum_valid(&asks_raw, &bids_raw, -1404728636);
+        let is_valid = _is_checksum_valid(&asks_raw, &bids_raw, 1009924713);
 
         // 3. Assert
         assert!(is_valid);

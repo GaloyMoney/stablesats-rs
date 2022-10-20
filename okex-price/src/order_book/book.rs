@@ -1,7 +1,7 @@
 use std::{collections::BTreeMap, sync::Arc};
 use tokio::sync::RwLock;
 
-use crate::okex_shared::ChannelArgs;
+use crate::*;
 use rust_decimal::Decimal;
 use rust_decimal_macros::dec;
 use serde::Deserialize;
@@ -109,17 +109,18 @@ pub struct CurrentSnapshot {
 }
 
 impl CurrentSnapshot {
-    /// Create new order book snapshot
+    /// Create new order book snapshot with initial full load
     pub async fn new(snapshot: CurrentSnapshotInner) -> Self {
         Self::initial_snapshot(snapshot)
     }
 
     /// Update snapshot with incremental updates
-    pub async fn merge(&self, update: CurrentSnapshotInner) {
+    pub async fn merge(&self, update: CurrentSnapshotInner) -> Self {
         if update.action == OrderBookAction::Snapshot {
-            Self::initial_snapshot(update);
+            Self::initial_snapshot(update)
         } else {
-            self.current.write().await.update_snapshot(update);
+            let _update = self.current.write().await.update_snapshot(update);
+            self.clone()
         }
     }
 
@@ -147,23 +148,11 @@ impl CurrentSnapshotInner {
         let price_matches = self.same_price(&update);
         let (asks, bids) = (price_matches.clone().asks, price_matches.clone().bids);
         if !asks.is_empty() || !bids.is_empty() {
-            // if price_matches.len() > 0 {
-            //    1. [x] delete_empty_depth_data
             let updated_price_matches = self.delete_empty_depth_data(price_matches);
-
-            // update_snapshot_with_incr if quantity differs {
-            //   1. [x] Replace original with incr
-            //   2. [ ] Validate checksum
-            //   3. [x] Update snap_cache
-            //   4. [x] return cached snapshot
-            // }
             self.update_same_price(updated_price_matches);
+            self.checksum = update.checksum;
             self.clone()
         } else {
-            // 1. [x] price sort (already sorted in BTreeMap)
-            // 2. [x] insert depth info into snap_cache
-            // 3. [ ] validate checksum
-            // 4. [x ]return cached snapshot
             self.update_diff_price(&update);
             self.clone()
         }
@@ -233,6 +222,8 @@ impl CurrentSnapshotInner {
         incr_bids.iter().for_each(|(price, qty)| {
             self.bids.insert(price.clone(), qty.clone());
         });
+
+        self.checksum = update.checksum.clone();
     }
 }
 
