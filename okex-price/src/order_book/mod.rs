@@ -1,3 +1,4 @@
+mod alt_book;
 mod book;
 
 use futures::{SinkExt, Stream, StreamExt};
