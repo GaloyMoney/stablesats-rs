@@ -7,12 +7,12 @@ use rust_decimal_macros::dec;
 use serde::Deserialize;
 use shared::time::{TimeStamp, TimeStampMilliStr};
 
-#[derive(Debug, Deserialize, PartialEq, Eq, Clone)]
-#[serde(rename_all = "lowercase")]
-pub enum OrderBookAction {
-    Snapshot,
-    Update,
-}
+// #[derive(Debug, Deserialize, PartialEq, Eq, Clone)]
+// #[serde(rename_all = "lowercase")]
+// pub enum OrderBookAction {
+//     Snapshot,
+//     Update,
+// }
 
 #[derive(Debug, Deserialize, Eq, PartialEq)]
 #[serde(from = "PriceQuantityRaw")]

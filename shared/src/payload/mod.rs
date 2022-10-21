@@ -44,8 +44,8 @@ impl std::ops::Deref for OkexBtcUsdSwapPricePayload {
 /// Payload of snapshot of an order book
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct OrderBookPayload {
-    pub asks: PriceQtyMapRaw,
-    pub bids: PriceQtyMapRaw,
+    pub asks: BTreeMap<PriceRaw, QuantityRaw>,
+    pub bids: BTreeMap<PriceRaw, QuantityRaw>,
     pub timestamp: TimeStamp,
     pub exchange: ExchangeIdRaw,
     // pub checksum: CheckSumRaw,

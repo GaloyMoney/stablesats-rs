@@ -1,5 +1,3 @@
-use std::collections::BTreeMap;
-
 use rust_decimal::prelude::*;
 use rust_decimal_macros::dec;
 use serde::{Deserialize, Serialize};
@@ -52,20 +50,6 @@ pub struct CheckSumRaw(i32);
 impl From<i32> for CheckSumRaw {
     fn from(cs: i32) -> Self {
         Self(cs)
-    }
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
-pub struct PriceQtyMapRaw(pub BTreeMap<PriceRaw, QuantityRaw>);
-impl std::ops::Deref for PriceQtyMapRaw {
-    type Target = BTreeMap<PriceRaw, QuantityRaw>;
-    fn deref(&self) -> &Self::Target {
-        &self.0
-    }
-}
-impl std::ops::DerefMut for PriceQtyMapRaw {
-    fn deref_mut(&mut self) -> &mut Self::Target {
-        &mut self.0
     }
 }
 
