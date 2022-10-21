@@ -17,7 +17,7 @@ shared = { path = "../shared", package = "stablesats-shared" }
 chrono = { version = "0.4", features = ["clock", "serde"], default-features = false }
 prost = "0.11"
 tonic = "0.8"
-axum-core = "0.2.8"
+axum-core = "0.2.9"
 tokio = "1.21.2"
 futures = "0.3.24"
 thiserror = "1.0.37"
