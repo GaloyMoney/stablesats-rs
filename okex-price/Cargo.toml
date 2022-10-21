@@ -10,7 +10,7 @@ description = "Publishes okex price feed to redis"
 [dependencies]
 shared = { path = "../shared", package = "stablesats-shared" }
 
-futures = "0.3.24"
+futures = "0.3.25"
 serde = { version = "1.0.145", features = ["derive"] }
 serde_json = "1.0.87"
 thiserror = "1.0.37"
