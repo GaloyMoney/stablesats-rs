@@ -8,7 +8,9 @@ pub mod okex_shared;
 pub mod order_book;
 pub mod price_tick;
 
-use futures::{stream::SplitStream, SinkExt, Stream, StreamExt};
+use std::pin::Pin;
+
+use futures::{SinkExt, Stream, StreamExt};
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
 use shared::{payload::*, pubsub::*};
 
@@ -17,16 +19,13 @@ pub use error::*;
 pub use okex_shared::*;
 pub use order_book::*;
 pub use price_tick::*;
-use tokio::{
-    net::TcpStream,
-    sync::mpsc::{channel, Receiver},
-};
-use tokio_tungstenite::{connect_async, tungstenite::Message, MaybeTlsStream, WebSocketStream};
+use tokio_tungstenite::{connect_async, tungstenite::Message};
 
-#[derive(Debug)]
-pub enum Price {
+#[derive(Deserialize, Clone)]
+// #[serde(untagged)]
+pub enum OkexPriceData {
     Tick(OkexPriceTick),
-    Book(OrderBookIncrement),
+    Book(OkexOrderBook),
 }
 
 #[derive(Debug, Serialize)]
@@ -35,15 +34,15 @@ struct SubscibeArgs {
     args: Vec<ChannelArgs>,
 }
 
-async fn subscribe_to_okex<T>(
+pub async fn subscribe_to_okex<T>(
     channels: Vec<ChannelArgs>,
     config: PriceFeedConfig,
-) -> Result<Receiver<T>, PriceFeedError>
+) -> Result<Pin<Box<dyn Stream<Item = T> + Send>>, PriceFeedError>
 where
-    T: DeserializeOwned + Clone + Send + 'static,
+    T: DeserializeOwned + Sized + Clone + Send + 'static,
 {
     let (ws_stream, _) = connect_async(config.url).await?;
-    let (mut sender, mut receiver) = ws_stream.split();
+    let (mut sender, receiver) = ws_stream.split();
 
     let subscribe_args = SubscibeArgs {
         op: "subscribe".to_string(),
@@ -54,21 +53,16 @@ where
     let item = Message::Text(subscribe_args);
     sender.send(item).await?;
 
-    let (tx1, rx1) = tokio::sync::mpsc::channel(100);
-
-    let _jh = tokio::spawn(async move {
-        while let Some(msg) = receiver.next().await {
-            if let Ok(msg) = msg {
-                if let Ok(msg_text) = msg.into_text() {
-                    if let Ok(msg) = serde_json::from_str::<T>(&msg_text) {
-                        let _send = tx1.send(msg).await;
-                    }
+    Ok(Box::pin(receiver.filter_map(|message| async {
+        if let Ok(msg) = message {
+            if let Ok(msg_str) = msg.into_text() {
+                if let Ok(book) = serde_json::from_str::<T>(&msg_str) {
+                    return Some(book);
                 }
             }
         }
-    });
-
-    Ok(rx1)
+        None
+    })))
 }
 
 pub async fn run(

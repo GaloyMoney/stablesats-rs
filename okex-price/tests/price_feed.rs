@@ -2,7 +2,6 @@ use chrono::Duration;
 use futures::StreamExt;
 use okex_price::*;
 use std::fs;
-use tokio::sync::mpsc::channel;
 use url::Url;
 
 use shared::{payload::*, pubsub::*, time::*};
@@ -19,7 +18,7 @@ fn load_fixture() -> anyhow::Result<Fixture> {
 }
 
 #[tokio::test]
-async fn subscribes_to_okex() -> anyhow::Result<()> {
+async fn subscribes_to_tickers_channel() -> anyhow::Result<()> {
     let config = PriceFeedConfig {
         url: Url::parse("wss://ws.okx.com:8443/ws/v5/public").unwrap(),
     };
@@ -71,7 +70,6 @@ async fn subscribe_to_order_book_channel() -> anyhow::Result<()> {
 }
 
 #[tokio::test]
-#[ignore = "order book publishing is blocking"]
 async fn publishes_to_redis() -> anyhow::Result<()> {
     let redis_host = std::env::var("REDIS_HOST").unwrap_or("localhost".to_string());
     let pubsub_config = PubSubConfig {
@@ -101,41 +99,45 @@ async fn publishes_to_redis() -> anyhow::Result<()> {
     Ok(())
 }
 
-// #[tokio::test]
-// async fn publish_order_book() -> anyhow::Result<()> {
-//     let redis_host = std::env::var("REDIS_HOST").unwrap_or("localhost".to_string());
-//     let pubsub_config = PubSubConfig {
-//         host: Some(redis_host),
-//         ..PubSubConfig::default()
-//     };
-//     let config = PriceFeedConfig {
-//         url: Url::parse("wss://ws.okx.com:8443/ws/v5/public").unwrap(),
-//     };
+#[tokio::test]
+async fn single_websocket() -> anyhow::Result<()> {
+    let config = PriceFeedConfig {
+        url: Url::parse("wss://ws.okx.com:8443/ws/v5/public").unwrap(),
+    };
+    let channels = vec![
+        ChannelArgs {
+            channel: "tickers".to_string(),
+            inst_id: "BTC-USD-SWAP".to_string(),
+        },
+        ChannelArgs {
+            channel: "books".to_string(),
+            inst_id: "BTC-USD-SWAP".to_string(),
+        },
+    ];
+    let redis_host = std::env::var("REDIS_HOST").unwrap_or("localhost".to_string());
+    let pubsub_config = PubSubConfig {
+        host: Some(redis_host),
+        ..PubSubConfig::default()
+    };
+    let subscriber = Subscriber::new(pubsub_config.clone()).await?;
 
-//     let publisher = Publisher::new(pubsub_config).await?;
-//     // let (tx, mut rx) = channel(100);
+    let _ = tokio::spawn(async move {
+        let _ = okex_price::run(PriceFeedConfig::default(), pubsub_config).await;
+    });
 
-//     let mut order_book_stream = subscribe_btc_usd_swap_order_book(config)
-//         .await
-//         .expect("subscribe to order book channel");
-//     let order_book = order_book_stream.next().await.expect("order book");
-//     let mut cache = OrderBookCache::new(
-//         CompleteOrderBook::try_from(OrderBookIncrement::try_from(order_book).unwrap()).unwrap(),
-//     );
+    let mut tick_stream = subscriber.subscribe::<OkexBtcUsdSwapPricePayload>().await?;
+    let mut book_stream = subscriber
+        .subscribe::<OkexBtcUsdSwapOrderBookPayload>()
+        .await?;
 
-//     // tokio::spawn(async move {
-//     //     while let Some(book) = order_book_stream.next().await {
-//     //         let _ = cache.update_order_book(book.try_into().unwrap());
-//     //         let _ = tx.send(cache.latest());
-//     //     }
-//     // });
+    let received_tick = tick_stream.next().await.expect("expected price tick");
+    let received_book = book_stream.next().await.expect("expected price snapshot");
 
-//     // while let Some(book) = rx.recv().await {
-//     //     let _ = publisher.throttle_publish::<OkexBtcUsdSwapOrderBookPayload>(book.into());
-//     // }
-//     let res = publisher
-//         .throttle_publish::<OkexBtcUsdSwapOrderBookPayload>(cache.latest().into())
-//         .await;
+    let payload = &load_fixture()?.payloads[0];
+    assert_eq!(received_tick.payload.exchange, payload.exchange);
+    assert_eq!(received_tick.payload.instrument_id, payload.instrument_id);
+    assert_eq!(received_book.payload.exchange, payload.exchange);
+    assert!(received_book.payload.asks.len() >= 400);
 
-//     Ok(())
-// }
+    Ok(())
+}
