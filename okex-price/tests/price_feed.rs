@@ -79,7 +79,7 @@ async fn publishes_to_redis() -> anyhow::Result<()> {
     let subscriber = Subscriber::new(pubsub_config.clone()).await?;
 
     let _ = tokio::spawn(async move {
-        let _ = okex_price::run(PriceFeedConfig::default(), pubsub_config).await;
+        let _res = okex_price::run(PriceFeedConfig::default(), pubsub_config).await;
     });
 
     let mut tick_stream = subscriber.subscribe::<OkexBtcUsdSwapPricePayload>().await?;
@@ -100,44 +100,16 @@ async fn publishes_to_redis() -> anyhow::Result<()> {
 }
 
 #[tokio::test]
-async fn single_websocket() -> anyhow::Result<()> {
+async fn unsubscribe_order_book_channel() {
     let config = PriceFeedConfig {
         url: Url::parse("wss://ws.okx.com:8443/ws/v5/public").unwrap(),
     };
-    let channels = vec![
-        ChannelArgs {
-            channel: "tickers".to_string(),
-            inst_id: "BTC-USD-SWAP".to_string(),
-        },
-        ChannelArgs {
-            channel: "books".to_string(),
-            inst_id: "BTC-USD-SWAP".to_string(),
-        },
-    ];
-    let redis_host = std::env::var("REDIS_HOST").unwrap_or("localhost".to_string());
-    let pubsub_config = PubSubConfig {
-        host: Some(redis_host),
-        ..PubSubConfig::default()
-    };
-    let subscriber = Subscriber::new(pubsub_config.clone()).await?;
+    let mut unsubscribe_resp = unsubscribe_btc_usd_swap_order_book(config)
+        .await
+        .expect("unsubscribe from books channel");
+    let res = unsubscribe_resp.next().await.expect("unsubscribe");
 
-    let _ = tokio::spawn(async move {
-        let _ = okex_price::run(PriceFeedConfig::default(), pubsub_config).await;
-    });
-
-    let mut tick_stream = subscriber.subscribe::<OkexBtcUsdSwapPricePayload>().await?;
-    let mut book_stream = subscriber
-        .subscribe::<OkexBtcUsdSwapOrderBookPayload>()
-        .await?;
-
-    let received_tick = tick_stream.next().await.expect("expected price tick");
-    let received_book = book_stream.next().await.expect("expected price snapshot");
-
-    let payload = &load_fixture()?.payloads[0];
-    assert_eq!(received_tick.payload.exchange, payload.exchange);
-    assert_eq!(received_tick.payload.instrument_id, payload.instrument_id);
-    assert_eq!(received_book.payload.exchange, payload.exchange);
-    assert!(received_book.payload.asks.len() >= 400);
-
-    Ok(())
+    assert_eq!(res.event, "unsubscribe".to_string());
+    assert_eq!(res.arg.channel, "books".to_string());
+    assert_eq!(res.arg.inst_id, "BTC-USD-SWAP".to_string());
 }

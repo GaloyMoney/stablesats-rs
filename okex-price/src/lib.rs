@@ -82,20 +82,44 @@ pub async fn run(
         }
     }));
 
-    let mut stream = subscribe_btc_usd_swap_order_book(price_feed_config).await?;
+    let mut stream = subscribe_btc_usd_swap_order_book(price_feed_config.clone()).await?;
     let full_load = stream.next().await.ok_or(PriceFeedError::InitialFullLoad)?;
     let full_incr = OrderBookIncrement::try_from(full_load)?;
     let cache = OrderBookCache::new(full_incr.try_into()?);
 
     handles.push(tokio::spawn(async move {
         while let Some(book) = stream.next().await {
-            let _res = okex_order_book_received(&publisher, book, cache.clone()).await;
+            let res = okex_order_book_received(&publisher, book, cache.clone()).await;
+            match res {
+                Ok(_) => (),
+                Err(e) => {
+                    match e {
+                        PriceFeedError::CheckSumValidation => {
+                            let config = price_feed_config.clone();
+
+                            // unsubscribe from channel
+                            while let Ok(mut unsub) =
+                                unsubscribe_btc_usd_swap_order_book(config).await
+                            {
+                                if let Some(res) = unsub.next().await {
+                                    assert_eq!(res.arg.channel, "books".to_string());
+                                    // resubscribe to OKEX
+                                    let mut stream =
+                                        subscribe_btc_usd_swap_order_book(price_feed_config).await;
+                                }
+                            }
+                        }
+                        _ => (),
+                    }
+                }
+            }
         }
     }));
 
     for handle in handles {
         let _res = handle.await;
     }
+
     Ok(())
 }
 
