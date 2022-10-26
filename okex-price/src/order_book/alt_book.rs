@@ -1,11 +1,12 @@
 use itertools::Itertools;
 use rust_decimal::Decimal;
-use rust_decimal_macros::dec;
 use serde::{Deserialize, Serialize};
 use shared::{payload::*, time::*};
 use std::collections::BTreeMap;
 
 use crate::{ChannelArgs, PriceFeedError};
+
+const CHECKSUM_DEPTH_LIMIT: usize = 25;
 
 #[derive(Debug, Deserialize, PartialEq, Eq, Clone, Serialize)]
 #[serde(rename_all = "lowercase")]
@@ -101,55 +102,31 @@ impl CompleteOrderBook {
         Ok(())
     }
 
-    fn try_merge(&self, mut increment: OrderBookIncrement) -> Result<Self, PriceFeedError> {
+    fn try_merge(&self, increment: OrderBookIncrement) -> Result<Self, PriceFeedError> {
         let new_book = match increment.action {
             OrderBookAction::Snapshot => CompleteOrderBook::try_from(increment.clone())?,
             OrderBookAction::Update => {
-                // 1. For same prices
-                //      1.1 Delete depth info if size == 0
-                //      1.2 Replace depth info if size differs
+                let mut new_book = CompleteOrderBook {
+                    timestamp: increment.timestamp,
+                    checksum: increment.new_checksum,
+                    ..self.clone()
+                };
 
-                let mut new_book = self.clone();
-                let _asks_update = increment.asks.retain(|_x, y| y != &mut dec!(0));
-                let _bids_update = increment.bids.retain(|_x, y| y != &mut dec!(0));
-
-                for (ask_price, ask_qty) in increment.asks.iter_mut() {
-                    if new_book.asks.contains_key(&ask_price) {
-                        if let Some(val) = new_book.asks.get(&ask_price) {
-                            if val != ask_qty {
-                                new_book.asks.insert(ask_price.clone(), *ask_qty);
-                            }
-                        }
-                    }
-                }
-
-                for (bid_price, bid_qty) in increment.bids.iter_mut() {
-                    if new_book.bids.contains_key(&bid_price) {
-                        if let Some(val) = new_book.bids.get(&bid_price) {
-                            if val != bid_qty {
-                                new_book.bids.insert(bid_price.clone(), *bid_qty);
-                            }
-                        }
-                    }
-                }
-
-                // 2. For different prices
-                //      2.1 sort asks ascendingly and insert asks
-                //      2.2 sort bids descendingly and insert bids
                 for (ask_price, ask_qty) in increment.asks {
-                    if !new_book.asks.contains_key(&ask_price) {
+                    if ask_qty == Decimal::ZERO {
+                        new_book.asks.remove(&ask_price);
+                    } else {
                         new_book.asks.insert(ask_price, ask_qty);
                     }
                 }
 
                 for (bid_price, bid_qty) in increment.bids {
-                    if !new_book.bids.contains_key(&bid_price) {
+                    if bid_qty == Decimal::ZERO {
+                        new_book.bids.remove(&bid_price);
+                    } else {
                         new_book.bids.insert(bid_price, bid_qty);
                     }
                 }
-
-                new_book.timestamp = increment.timestamp;
-                new_book.checksum = increment.new_checksum;
 
                 new_book
             }
@@ -165,7 +142,7 @@ impl CompleteOrderBook {
             .asks
             .iter()
             .enumerate()
-            .filter(|(index, _)| index < &OKEX_CHECKSUM_LIMIT)
+            .filter(|(index, _)| index < &CHECKSUM_DEPTH_LIMIT)
             .map(|(_, (price, qty))| format!("{}:{}", price.0, qty))
             .collect::<Vec<String>>();
 
@@ -174,17 +151,15 @@ impl CompleteOrderBook {
             .iter()
             .rev()
             .enumerate()
-            .filter(|(index, _)| index < &OKEX_CHECKSUM_LIMIT)
+            .take_while(|(index, _)| index < &CHECKSUM_DEPTH_LIMIT)
             .map(|(_, (price, qty))| format!("{}:{}", price.0, qty))
             .collect::<Vec<String>>();
 
         let crc =
             Itertools::intersperse(bids_list.into_iter().interleave(asks_list), ":".to_string())
                 .collect::<String>();
-        let checksum_val = crc32fast::hash(crc.as_bytes());
-        let calc_cs = checksum_val as i32;
 
-        calc_cs
+        crc32fast::hash(crc.as_bytes()) as i32
     }
 }
 
@@ -253,8 +228,7 @@ mod tests {
         let mut cache = OrderBookCache::new(order_book_incr.try_into()?);
 
         let incr_1 = OrderBookIncrement::try_from(update_1)?;
-        let _merge_1 = cache.update_order_book(incr_1.clone());
-
+        assert!(cache.update_order_book(incr_1.clone()).is_ok());
         assert_eq!(cache.latest().checksum, incr_1.new_checksum);
 
         Ok(())
