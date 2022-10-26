@@ -1,20 +1,20 @@
 use itertools::Itertools;
 use rust_decimal::Decimal;
 use rust_decimal_macros::dec;
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 use shared::{payload::*, time::*};
 use std::collections::BTreeMap;
 
 use crate::{ChannelArgs, PriceFeedError};
 
-#[derive(Debug, Deserialize, PartialEq, Eq, Clone)]
+#[derive(Debug, Deserialize, PartialEq, Eq, Clone, Serialize)]
 #[serde(rename_all = "lowercase")]
 pub enum OrderBookAction {
     Snapshot,
     Update,
 }
 
-#[derive(Debug, Deserialize, Eq, PartialEq, Clone)]
+#[derive(Debug, Deserialize, Eq, PartialEq, Clone, Serialize)]
 #[serde(from = "PriceQuantityRaw")]
 pub struct PriceQuantity {
     pub price: Decimal,
@@ -38,7 +38,7 @@ impl From<PriceQuantityRaw> for PriceQuantity {
     }
 }
 
-#[derive(Debug, Deserialize, Clone)]
+#[derive(Debug, Deserialize, Clone, Serialize)]
 pub struct OrderBookChannelData {
     pub asks: Vec<PriceQuantity>,
     pub bids: Vec<PriceQuantity>,
@@ -46,7 +46,7 @@ pub struct OrderBookChannelData {
     pub checksum: i32,
 }
 
-#[derive(Debug, Deserialize, Clone)]
+#[derive(Debug, Deserialize, Clone, Serialize)]
 pub struct OkexOrderBook {
     pub arg: ChannelArgs,
     pub action: OrderBookAction,
@@ -62,11 +62,6 @@ impl From<Decimal> for OrderPrice {
     }
 }
 
-pub struct IncrementPrices {
-    matches: OrderBookIncrement,
-    diffs: OrderBookIncrement,
-}
-
 #[derive(Debug, Deserialize, Clone)]
 pub struct OrderBookIncrement {
     pub asks: BTreeMap<OrderPrice, Decimal>,
@@ -74,17 +69,6 @@ pub struct OrderBookIncrement {
     pub timestamp: TimeStamp,
     pub new_checksum: i32,
     pub action: OrderBookAction,
-}
-
-impl OrderBookIncrement {
-    /// Delete entries with empty size/quantity
-    fn delete_empty_qty(&self) -> Self {
-        let mut incr = self.clone();
-        incr.asks.retain(|_a, qty| qty != &mut dec!(0));
-        incr.bids.retain(|_c, qty| qty != &mut dec!(0));
-
-        incr
-    }
 }
 
 #[derive(Clone, PartialEq, Eq, Debug)]
@@ -111,119 +95,72 @@ impl TryFrom<OrderBookIncrement> for CompleteOrderBook {
 impl CompleteOrderBook {
     fn verify_checksum(&self) -> Result<(), PriceFeedError> {
         let cs_res = self.calculate_checksum();
-        if !cs_res {
+        if cs_res != self.checksum {
             return Err(PriceFeedError::CheckSumValidation);
         }
         Ok(())
     }
 
-    fn try_merge(&self, increment: OrderBookIncrement) -> Result<Self, PriceFeedError> {
+    fn try_merge(&self, mut increment: OrderBookIncrement) -> Result<Self, PriceFeedError> {
         let new_book = match increment.action {
-            OrderBookAction::Snapshot => CompleteOrderBook::try_from(increment)?,
+            OrderBookAction::Snapshot => CompleteOrderBook::try_from(increment.clone())?,
             OrderBookAction::Update => {
-                let new_book = self.clone();
-                new_book.execute_merge(increment)
+                // 1. For same prices
+                //      1.1 Delete depth info if size == 0
+                //      1.2 Replace depth info if size differs
+
+                let mut new_book = self.clone();
+                let _asks_update = increment.asks.retain(|_x, y| y != &mut dec!(0));
+                let _bids_update = increment.bids.retain(|_x, y| y != &mut dec!(0));
+
+                for (ask_price, ask_qty) in increment.asks.iter_mut() {
+                    if new_book.asks.contains_key(&ask_price) {
+                        if let Some(val) = new_book.asks.get(&ask_price) {
+                            if val != ask_qty {
+                                new_book.asks.insert(ask_price.clone(), *ask_qty);
+                            }
+                        }
+                    }
+                }
+
+                for (bid_price, bid_qty) in increment.bids.iter_mut() {
+                    if new_book.bids.contains_key(&bid_price) {
+                        if let Some(val) = new_book.bids.get(&bid_price) {
+                            if val != bid_qty {
+                                new_book.bids.insert(bid_price.clone(), *bid_qty);
+                            }
+                        }
+                    }
+                }
+
+                // 2. For different prices
+                //      2.1 sort asks ascendingly and insert asks
+                //      2.2 sort bids descendingly and insert bids
+                for (ask_price, ask_qty) in increment.asks {
+                    if !new_book.asks.contains_key(&ask_price) {
+                        new_book.asks.insert(ask_price, ask_qty);
+                    }
+                }
+
+                for (bid_price, bid_qty) in increment.bids {
+                    if !new_book.bids.contains_key(&bid_price) {
+                        new_book.bids.insert(bid_price, bid_qty);
+                    }
+                }
+
+                new_book.timestamp = increment.timestamp;
+                new_book.checksum = increment.new_checksum;
+
+                new_book
             }
         };
 
-        if !new_book.calculate_checksum() {
-            // 1. Re-subscribe to order book channel
-            return Err(PriceFeedError::CheckSumValidation);
-        }
+        new_book.verify_checksum()?;
 
         Ok(new_book)
     }
 
-    fn execute_merge(&self, increment: OrderBookIncrement) -> Self {
-        let mut incr_prices = self.categorize_by_price(&increment);
-        let new_book = self.merge_to_order_book(&mut incr_prices.matches, &incr_prices.diffs);
-
-        new_book
-    }
-
-    fn categorize_by_price(&self, incr: &OrderBookIncrement) -> IncrementPrices {
-        // 1. Find matching price
-        let matches = self.same_price(incr);
-        let diffs = self.diff_price(incr);
-
-        IncrementPrices { matches, diffs }
-    }
-
-    fn merge_to_order_book(
-        &self,
-        matching_incr: &mut OrderBookIncrement,
-        diff_incr: &OrderBookIncrement,
-    ) -> Self {
-        let book = self.clone();
-        let new_book = book.replace(matching_incr);
-        let new_book = new_book.insert(diff_incr);
-
-        new_book
-    }
-
-    fn replace(&self, matches: &mut OrderBookIncrement) -> Self {
-        let non_empty_depth = matches.delete_empty_qty();
-        let book = self.clone();
-        let new_book = book.find_and_replace(&non_empty_depth);
-
-        new_book
-    }
-
-    fn insert(&self, increment: &OrderBookIncrement) -> Self {
-        let mut new_book = self.clone();
-
-        for (price, qty) in increment.asks.clone() {
-            let _ = new_book.asks.insert(price, qty);
-        }
-
-        for (price, qty) in increment.bids.clone() {
-            let _ = new_book.bids.insert(price, qty);
-        }
-
-        new_book.checksum = increment.new_checksum;
-        new_book.timestamp = increment.timestamp;
-
-        Self {
-            asks: new_book.asks.clone(),
-            bids: new_book.bids.clone(),
-            timestamp: new_book.timestamp,
-            checksum: new_book.checksum,
-        }
-    }
-
-    fn find_and_replace(&self, increment: &OrderBookIncrement) -> Self {
-        let mut new_book = self.clone();
-
-        let mut asks = new_book.asks;
-        for (price, qty) in increment.asks.clone() {
-            if let Some(val) = asks.get(&price) {
-                if *val != qty {
-                    let _ = asks.insert(price, qty);
-                }
-            }
-        }
-
-        let mut bids = new_book.bids;
-        for (price, qty) in increment.bids.clone() {
-            if let Some(val) = bids.get(&price) {
-                if *val != qty {
-                    let _ = bids.insert(price, qty);
-                }
-            }
-        }
-
-        new_book.timestamp = increment.timestamp;
-        new_book.checksum = increment.new_checksum;
-
-        CompleteOrderBook {
-            asks,
-            bids,
-            timestamp: increment.timestamp,
-            checksum: increment.new_checksum,
-        }
-    }
-
-    fn calculate_checksum(&self) -> bool {
+    fn calculate_checksum(&self) -> i32 {
         let asks_list = self
             .asks
             .iter()
@@ -247,59 +184,7 @@ impl CompleteOrderBook {
         let checksum_val = crc32fast::hash(crc.as_bytes());
         let calc_cs = checksum_val as i32;
 
-        if calc_cs != self.checksum {
-            return false;
-        }
-
-        true
-    }
-
-    fn diff_price(&self, increment: &OrderBookIncrement) -> OrderBookIncrement {
-        let mut asks = BTreeMap::new();
-        for (incr_price, incr_qty) in increment.asks.iter() {
-            if !self.asks.contains_key(incr_price) {
-                let _ = asks.insert(incr_price.clone(), *incr_qty);
-            }
-        }
-
-        let mut bids = BTreeMap::new();
-        for (incr_price, incr_qty) in increment.bids.iter() {
-            if !self.bids.contains_key(incr_price) {
-                let _ = bids.insert(incr_price.clone(), *incr_qty);
-            }
-        }
-
-        OrderBookIncrement {
-            asks,
-            bids,
-            timestamp: increment.timestamp,
-            new_checksum: increment.clone().new_checksum,
-            action: increment.clone().action,
-        }
-    }
-
-    fn same_price(&self, increment: &OrderBookIncrement) -> OrderBookIncrement {
-        let mut asks = BTreeMap::new();
-        for (incr_price, incr_qty) in increment.asks.iter() {
-            if self.asks.contains_key(incr_price) {
-                let _ = asks.insert(incr_price.clone(), *incr_qty);
-            }
-        }
-
-        let mut bids = BTreeMap::new();
-        for (incr_price, incr_qty) in increment.bids.iter() {
-            if self.bids.contains_key(incr_price) {
-                let _ = bids.insert(incr_price.clone(), *incr_qty);
-            }
-        }
-
-        OrderBookIncrement {
-            asks,
-            bids,
-            timestamp: increment.timestamp,
-            new_checksum: increment.clone().new_checksum,
-            action: increment.clone().action,
-        }
+        calc_cs
     }
 }
 
@@ -347,131 +232,34 @@ impl OrderBookCache {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use rust_decimal_macros::dec;
+    use std::fs;
 
-    fn order_book_cache() -> OrderBookCache {
-        let mut ask_map = BTreeMap::new();
-        ask_map.insert(OrderPrice(dec!(8476.98)), dec!(415));
-        ask_map.insert(OrderPrice(dec!(8477)), dec!(7));
-        ask_map.insert(OrderPrice(dec!(8477.34)), dec!(85));
-        ask_map.insert(OrderPrice(dec!(8477.56)), dec!(1));
-        ask_map.insert(OrderPrice(dec!(8505.84)), dec!(8));
-        ask_map.insert(OrderPrice(dec!(8506.37)), dec!(85));
-        ask_map.insert(OrderPrice(dec!(8506.49)), dec!(2));
-        ask_map.insert(OrderPrice(dec!(8506.96)), dec!(100));
+    fn load_order_book(filename: &str) -> anyhow::Result<OkexOrderBook> {
+        let contents = fs::read_to_string(format!(
+            "okex-price/src/order_book/fixtures/{}.json",
+            filename
+        ))
+        .expect("Couldn't load fixtures");
 
-        let mut bid_map = BTreeMap::new();
-        bid_map.insert(OrderPrice(dec!(8476.97)), dec!(256));
-        bid_map.insert(OrderPrice(dec!(8475.55)), dec!(101));
-        bid_map.insert(OrderPrice(dec!(8475.54)), dec!(100));
-        bid_map.insert(OrderPrice(dec!(8475.3)), dec!(1));
-        bid_map.insert(OrderPrice(dec!(8447.32)), dec!(6));
-        bid_map.insert(OrderPrice(dec!(8447.02)), dec!(246));
-        bid_map.insert(OrderPrice(dec!(8446.83)), dec!(24));
-        bid_map.insert(OrderPrice(dec!(8446)), dec!(95));
-
-        let full = OrderBookIncrement {
-            asks: ask_map,
-            bids: bid_map,
-            timestamp: TimeStamp::now(),
-            new_checksum: -2102840145,
-            action: OrderBookAction::Snapshot,
-        };
-        let order_book = CompleteOrderBook::try_from(full.clone()).expect("Complete order book");
-        let cache = OrderBookCache::new(order_book);
-        cache
+        let res = serde_json::from_str::<OkexOrderBook>(&contents)?;
+        Ok(res)
     }
 
     #[test]
-    fn initial_full_load() {
-        let cache = order_book_cache();
+    fn merge() -> anyhow::Result<()> {
+        let snapshot = load_order_book("snapshot")?;
+        let update_1 = load_order_book("update_1")?;
+        let _update_2 = load_order_book("update_2")?;
+        let _update_3 = load_order_book("update_3")?;
 
-        assert_eq!(cache.latest().asks.len(), 8);
-        assert_eq!(cache.latest().bids.len(), 8);
-    }
+        let order_book_incr = OrderBookIncrement::try_from(snapshot)?;
+        let mut cache = OrderBookCache::new(order_book_incr.try_into()?);
 
-    #[test]
-    fn update_same_price_same_qty() {
-        let mut cache = order_book_cache();
+        let incr_1 = OrderBookIncrement::try_from(update_1)?;
+        let _merge_1 = cache.update_order_book(incr_1.clone());
 
-        let mut ask_map = BTreeMap::new();
-        ask_map.insert(OrderPrice(dec!(8476.98)), dec!(415));
-        ask_map.insert(OrderPrice(dec!(8477)), dec!(7));
+        assert_eq!(cache.latest().checksum, incr_1.new_checksum);
 
-        let mut bid_map = BTreeMap::new();
-        bid_map.insert(OrderPrice(dec!(8476.97)), dec!(256));
-        bid_map.insert(OrderPrice(dec!(8475.55)), dec!(101));
-        bid_map.insert(OrderPrice(dec!(8475.54)), dec!(100));
-
-        let incr = OrderBookIncrement {
-            asks: ask_map,
-            bids: bid_map,
-            timestamp: TimeStamp::now(),
-            new_checksum: -2102840145,
-            action: OrderBookAction::Update,
-        };
-
-        let _update = cache.update_order_book(incr);
-
-        assert_eq!(cache.latest().asks.len(), 8);
-        assert_eq!(cache.latest().bids.len(), 8);
-    }
-
-    #[test]
-    fn update_same_price_diff_qty() {
-        let mut cache = order_book_cache();
-
-        let mut ask_map = BTreeMap::new();
-        ask_map.insert(OrderPrice(dec!(8476.98)), dec!(416));
-        ask_map.insert(OrderPrice(dec!(8477)), dec!(8));
-
-        let mut bid_map = BTreeMap::new();
-        bid_map.insert(OrderPrice(dec!(8476.97)), dec!(257));
-        bid_map.insert(OrderPrice(dec!(8475.55)), dec!(102));
-        bid_map.insert(OrderPrice(dec!(8475.54)), dec!(101));
-
-        let incr = OrderBookIncrement {
-            asks: ask_map,
-            bids: bid_map,
-            timestamp: TimeStamp::now(),
-            new_checksum: 1213749428,
-            action: OrderBookAction::Update,
-        };
-
-        let _update = cache.update_order_book(incr);
-
-        assert_eq!(cache.latest().asks.len(), 8);
-        assert_eq!(cache.latest().bids.len(), 8);
-        assert_eq!(
-            cache.latest().asks.get(&OrderPrice(dec!(8476.98))).unwrap(),
-            &dec!(416)
-        );
-    }
-
-    #[test]
-    fn update_diff_prices() {
-        let mut cache = order_book_cache();
-
-        let mut ask_map = BTreeMap::new();
-        ask_map.insert(OrderPrice(dec!(8477.98)), dec!(416));
-        ask_map.insert(OrderPrice(dec!(8478)), dec!(8));
-
-        let mut bid_map = BTreeMap::new();
-        bid_map.insert(OrderPrice(dec!(8477.97)), dec!(257));
-        bid_map.insert(OrderPrice(dec!(8476.55)), dec!(102));
-        bid_map.insert(OrderPrice(dec!(8476.54)), dec!(101));
-
-        let incr = OrderBookIncrement {
-            asks: ask_map,
-            bids: bid_map,
-            timestamp: TimeStamp::now(),
-            new_checksum: 978115032,
-            action: OrderBookAction::Update,
-        };
-
-        let _update = cache.update_order_book(incr);
-
-        assert_eq!(cache.latest().asks.len(), 10);
-        assert_eq!(cache.latest().bids.len(), 11);
+        Ok(())
     }
 }

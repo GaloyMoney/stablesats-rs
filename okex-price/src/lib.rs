@@ -89,30 +89,9 @@ pub async fn run(
 
     handles.push(tokio::spawn(async move {
         while let Some(book) = stream.next().await {
-            let res = okex_order_book_received(&publisher, book, cache.clone()).await;
-            match res {
-                Ok(_) => (),
-                Err(e) => {
-                    match e {
-                        PriceFeedError::CheckSumValidation => {
-                            let config = price_feed_config.clone();
+            // std::fs::write("incr.json", serde_json::to_string_pretty(&book).unwrap()).unwrap();
 
-                            // unsubscribe from channel
-                            while let Ok(mut unsub) =
-                                unsubscribe_btc_usd_swap_order_book(config).await
-                            {
-                                if let Some(res) = unsub.next().await {
-                                    assert_eq!(res.arg.channel, "books".to_string());
-                                    // resubscribe to OKEX
-                                    let mut stream =
-                                        subscribe_btc_usd_swap_order_book(price_feed_config).await;
-                                }
-                            }
-                        }
-                        _ => (),
-                    }
-                }
-            }
+            let _res = okex_order_book_received(&publisher, book, cache.clone()).await;
         }
     }));
 
