@@ -235,11 +235,8 @@ mod tests {
     use std::fs;
 
     fn load_order_book(filename: &str) -> anyhow::Result<OkexOrderBook> {
-        let contents = fs::read_to_string(format!(
-            "okex-price/src/order_book/fixtures/{}.json",
-            filename
-        ))
-        .expect("Couldn't load fixtures");
+        let contents = fs::read_to_string(format!("./src/order_book/fixtures/{}.json", filename))
+            .expect("Couldn't load fixtures");
 
         let res = serde_json::from_str::<OkexOrderBook>(&contents)?;
         Ok(res)
