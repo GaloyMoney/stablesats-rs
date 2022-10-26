@@ -210,8 +210,8 @@ mod tests {
     use std::fs;
 
     fn load_order_book(filename: &str) -> anyhow::Result<OkexOrderBook> {
-        let contents = fs::read_to_string(format!("./src/order_book/fixtures/{}.json", filename))
-            .expect("Couldn't load fixtures");
+        let contents = fs::read_to_string(format!("./tests/fixtures/order-book-{}.json", filename))
+            .expect(&format!("Couldn't load fixture {}", filename));
 
         let res = serde_json::from_str::<OkexOrderBook>(&contents)?;
         Ok(res)
@@ -220,16 +220,24 @@ mod tests {
     #[test]
     fn merge() -> anyhow::Result<()> {
         let snapshot = load_order_book("snapshot")?;
-        let update_1 = load_order_book("update_1")?;
-        let _update_2 = load_order_book("update_2")?;
-        let _update_3 = load_order_book("update_3")?;
 
         let order_book_incr = OrderBookIncrement::try_from(snapshot)?;
         let mut cache = OrderBookCache::new(order_book_incr.try_into()?);
 
+        let update_1 = load_order_book("update-1")?;
         let incr_1 = OrderBookIncrement::try_from(update_1)?;
         assert!(cache.update_order_book(incr_1.clone()).is_ok());
         assert_eq!(cache.latest().checksum, incr_1.new_checksum);
+
+        let update_2 = load_order_book("update-2")?;
+        let incr_2 = OrderBookIncrement::try_from(update_2)?;
+        assert!(cache.update_order_book(incr_2.clone()).is_ok());
+        assert_eq!(cache.latest().checksum, incr_2.new_checksum);
+
+        let update_3 = load_order_book("update-3")?;
+        let incr_3 = OrderBookIncrement::try_from(update_3)?;
+        assert!(cache.update_order_book(incr_3.clone()).is_ok());
+        assert_eq!(cache.latest().checksum, incr_3.new_checksum);
 
         Ok(())
     }
