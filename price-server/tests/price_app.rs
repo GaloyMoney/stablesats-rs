@@ -148,3 +148,8 @@ async fn price_app() -> anyhow::Result<()> {
 
     Ok(())
 }
+
+#[tokio::test]
+async fn price_app_price_discovery() -> anyhow::Result<()> {
+    Ok(())
+}

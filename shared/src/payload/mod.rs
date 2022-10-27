@@ -48,8 +48,6 @@ pub struct OrderBookPayload {
     pub bids: BTreeMap<PriceRaw, QuantityRaw>,
     pub timestamp: TimeStamp,
     pub exchange: ExchangeIdRaw,
-    // pub checksum: CheckSumRaw,
-    // pub action: OrderBookActionRaw,
 }
 
 /// Message to transmit order book payload
