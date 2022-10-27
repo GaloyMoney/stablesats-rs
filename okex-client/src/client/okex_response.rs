@@ -23,6 +23,17 @@ pub struct DepositAddressData {
 
 #[derive(Deserialize, Debug)]
 #[serde(rename_all = "camelCase")]
+pub struct OnchainFeesData {
+    pub ccy: String,
+    pub chain: String,
+    pub min_fee: Decimal,
+    pub max_fee: Decimal,
+    pub min_wd: Decimal,
+    pub max_wd: Decimal,
+}
+
+#[derive(Deserialize, Debug)]
+#[serde(rename_all = "camelCase")]
 pub struct TransferStateData {
     pub amt: String,
     pub ccy: String,

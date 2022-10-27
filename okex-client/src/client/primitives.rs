@@ -49,6 +49,16 @@ pub struct DepositAddress {
     pub value: String,
 }
 
+#[derive(Debug, PartialEq, Eq)]
+pub struct OnchainFees {
+    pub ccy: String,
+    pub chain: String,
+    pub min_fee: Decimal,
+    pub max_fee: Decimal,
+    pub min_withdraw: Decimal,
+    pub max_withdraw: Decimal,
+}
+
 #[derive(Debug)]
 pub struct TransferId {
     pub value: String,
