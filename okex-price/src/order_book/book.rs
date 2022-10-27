@@ -104,7 +104,7 @@ impl CompleteOrderBook {
 
     fn try_merge(&self, increment: OrderBookIncrement) -> Result<Self, PriceFeedError> {
         let new_book = match increment.action {
-            OrderBookAction::Snapshot => CompleteOrderBook::try_from(increment.clone())?,
+            OrderBookAction::Snapshot => CompleteOrderBook::try_from(increment)?,
             OrderBookAction::Update => {
                 let mut new_book = CompleteOrderBook {
                     timestamp: increment.timestamp,
@@ -157,12 +157,10 @@ impl CompleteOrderBook {
             .rev()
             .enumerate()
             .take_while(|(index, _)| index < &CHECKSUM_DEPTH_LIMIT)
-            .map(|(_, (price, qty))| format!("{}:{}", price.0, qty))
-            .collect::<Vec<String>>();
+            .map(|(_, (price, qty))| format!("{}:{}", price.0, qty));
 
-        let crc =
-            Itertools::intersperse(bids_list.into_iter().interleave(asks_list), ":".to_string())
-                .collect::<String>();
+        let crc = Itertools::intersperse(bids_list.interleave(asks_list), ":".to_string())
+            .collect::<String>();
 
         crc32fast::hash(crc.as_bytes()) as i32
     }
