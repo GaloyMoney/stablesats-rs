@@ -8,62 +8,15 @@ pub mod okex_shared;
 pub mod order_book;
 pub mod price_tick;
 
-use std::pin::Pin;
-
-use futures::{SinkExt, Stream, StreamExt};
-use serde::{de::DeserializeOwned, Deserialize, Serialize};
+use futures::StreamExt;
 use shared::{payload::*, pubsub::*};
+use tokio::{join, time::Duration};
 
 pub use config::*;
 pub use error::*;
 pub use okex_shared::*;
 pub use order_book::*;
 pub use price_tick::*;
-use tokio_tungstenite::{connect_async, tungstenite::Message};
-
-#[derive(Deserialize, Clone)]
-// #[serde(untagged)]
-pub enum OkexPriceData {
-    Tick(OkexPriceTick),
-    Book(OkexOrderBook),
-}
-
-#[derive(Debug, Serialize)]
-struct SubscibeArgs {
-    op: String,
-    args: Vec<ChannelArgs>,
-}
-
-pub async fn subscribe_to_okex<T>(
-    channels: Vec<ChannelArgs>,
-    config: PriceFeedConfig,
-) -> Result<Pin<Box<dyn Stream<Item = T> + Send>>, PriceFeedError>
-where
-    T: DeserializeOwned + Sized + Clone + Send + 'static,
-{
-    let (ws_stream, _) = connect_async(config.url).await?;
-    let (mut sender, receiver) = ws_stream.split();
-
-    let subscribe_args = SubscibeArgs {
-        op: "subscribe".to_string(),
-        args: channels,
-    };
-    let subscribe_args = serde_json::to_string(&subscribe_args)?;
-
-    let item = Message::Text(subscribe_args);
-    sender.send(item).await?;
-
-    Ok(Box::pin(receiver.filter_map(|message| async {
-        if let Ok(msg) = message {
-            if let Ok(msg_str) = msg.into_text() {
-                if let Ok(book) = serde_json::from_str::<T>(&msg_str) {
-                    return Some(book);
-                }
-            }
-        }
-        None
-    })))
-}
 
 pub async fn run(
     price_feed_config: PriceFeedConfig,
@@ -75,30 +28,45 @@ pub async fn run(
     let pf_config = price_feed_config.clone();
     let mut stream = subscribe_btc_usd_swap_price_tick(pf_config).await?;
 
-    let mut handles = Vec::new();
-    handles.push(tokio::spawn(async move {
+    let tick_task = tokio::spawn(async move {
         while let Some(tick) = stream.next().await {
             let _res = okex_price_tick_received(&ticks_publisher, tick).await;
         }
-    }));
+    });
 
-    let mut stream = subscribe_btc_usd_swap_order_book(price_feed_config.clone()).await?;
+    let order_book_task = tokio::spawn(async move {
+        loop {
+            let _res = order_book_subscription(publisher.clone(), &price_feed_config).await;
+            tokio::time::sleep(Duration::from_secs(5_u64)).await;
+        }
+    });
+
+    let _ = join!(tick_task, order_book_task);
+
+    Ok(())
+}
+
+async fn order_book_subscription(
+    publisher: Publisher,
+    config: &PriceFeedConfig,
+) -> Result<(), PriceFeedError> {
+    let mut stream = subscribe_btc_usd_swap_order_book(config.clone()).await?;
     let full_load = stream.next().await.ok_or(PriceFeedError::InitialFullLoad)?;
     let full_incr = OrderBookIncrement::try_from(full_load)?;
     let cache = OrderBookCache::new(full_incr.try_into()?);
 
-    handles.push(tokio::spawn(async move {
+    let (send, recv) = tokio::sync::oneshot::channel();
+    tokio::spawn(async move {
         while let Some(book) = stream.next().await {
-            // std::fs::write("incr.json", serde_json::to_string_pretty(&book).unwrap()).unwrap();
-
-            let _res = okex_order_book_received(&publisher, book, cache.clone()).await;
+            let res = okex_order_book_received(&publisher, book, cache.clone()).await;
+            if res.is_err() {
+                let _ = send.send(());
+                break;
+            }
         }
-    }));
+    });
 
-    for handle in handles {
-        let _res = handle.await;
-    }
-
+    let _receiver = recv.await;
     Ok(())
 }
 
