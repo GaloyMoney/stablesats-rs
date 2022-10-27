@@ -29,14 +29,14 @@ impl std::fmt::Display for RebalanceAction {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             RebalanceAction::DoNothing => write!(f, "DoNothing"),
-            RebalanceAction::WithdrawAll(amount_in_usd_cents) => {
-                write!(f, "WithdrawAll({})", amount_in_usd_cents)
+            RebalanceAction::WithdrawAll(amount_in_btc) => {
+                write!(f, "WithdrawAll({})", amount_in_btc)
             }
-            RebalanceAction::Deposit(amount_in_usd_cents) => {
-                write!(f, "Deposit({})", amount_in_usd_cents)
+            RebalanceAction::Deposit(amount_in_btc) => {
+                write!(f, "Deposit({})", amount_in_btc)
             }
-            RebalanceAction::Withdraw(amount_in_usd_cents) => {
-                write!(f, "Withdraw({})", amount_in_usd_cents)
+            RebalanceAction::Withdraw(amount_in_btc) => {
+                write!(f, "Withdraw({})", amount_in_btc)
             }
         }
     }
@@ -63,11 +63,7 @@ impl RebalanceAction {
     }
 
     pub fn unit(&self) -> &'static str {
-        "usd-cents"
-    }
-
-    pub fn size_in_usd(&self) -> Option<Decimal> {
-        self.size().map(|size| Decimal::ONE_HUNDRED * size)
+        "btc"
     }
 }
 
