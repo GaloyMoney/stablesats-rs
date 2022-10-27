@@ -14,6 +14,6 @@ Like this we can run multiple copies of the processes to achieve high-availabili
 
 The main modules that can be run via the cli are:
 - `okex-price`: Module that streams price information from okex onto the pubsub
-- `price-server`: Module that exposes a grpc endpoint for clients to get up-to-date price information (cached from the pubsub messages comming from `okex-price`).
+- `price-server`: Module that exposes a grpc endpoint for clients to get up-to-date price information (cached from the pubsub messages coming from `okex-price`).
 - `user_trades`: Module that identifies how much the total usd liability exists in the galoy accounting ledger. It publishes the `SynthUsdLiabilityPayload` message for downstream trading modules to pick up.
-- `hedging`: Module that executes trades on okex to match the traget liability received from the pubsub.
+- `hedging`: Module that executes trades on okex to match the target liability received from the pubsub.
