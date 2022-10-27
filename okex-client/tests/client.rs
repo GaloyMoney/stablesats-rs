@@ -32,6 +32,20 @@ async fn get_deposit_address_data() -> anyhow::Result<()> {
 }
 
 #[tokio::test]
+async fn get_onchain_fees_data() -> anyhow::Result<()> {
+    let client = configured_okex_client().await?;
+    let fees = client.get_onchain_fees().await?;
+    assert_eq!(fees.ccy, "BTC".to_string());
+    assert_eq!(fees.chain, "BTC-Bitcoin".to_string());
+    assert!(fees.min_fee >= Decimal::ZERO);
+    assert!(fees.max_fee >= Decimal::ZERO);
+    assert!(fees.min_withdraw >= Decimal::ZERO);
+    assert!(fees.min_withdraw >= Decimal::ZERO);
+
+    Ok(())
+}
+
+#[tokio::test]
 async fn client_is_missing_header() -> anyhow::Result<()> {
     let client = OkexClient::new(OkexClientConfig {
         api_key: "".to_string(),
