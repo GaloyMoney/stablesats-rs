@@ -26,6 +26,31 @@ impl Default for ClientOrderId {
     }
 }
 
+#[derive(serde::Deserialize, Debug, Clone)]
+#[serde(transparent)]
+pub struct ClientTransferId(pub(super) String);
+impl ClientTransferId {
+    pub fn new() -> Self {
+        use rand::distributions::{Alphanumeric, DistString};
+        Self(Alphanumeric.sample_string(&mut rand::thread_rng(), 32))
+    }
+}
+impl From<String> for ClientTransferId {
+    fn from(s: String) -> Self {
+        Self(s)
+    }
+}
+impl From<ClientTransferId> for String {
+    fn from(id: ClientTransferId) -> Self {
+        id.0
+    }
+}
+impl Default for ClientTransferId {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 #[derive(Debug, PartialEq, Eq, Clone)]
 pub struct BtcUsdSwapContracts(pub(super) u32);
 impl From<u32> for BtcUsdSwapContracts {
@@ -83,7 +108,9 @@ impl Display for AvailableBalance {
 
 #[derive(Debug)]
 pub struct TransferState {
-    pub value: String,
+    pub state: String,
+    pub transfer_id: String,
+    pub client_id: String,
 }
 
 #[derive(Debug)]
@@ -223,6 +250,12 @@ mod tests {
     #[test]
     fn client_order_id() {
         let id = ClientOrderId::new();
+        assert_eq!(id.0.len(), 32);
+    }
+
+    #[test]
+    fn client_transfer_id() {
+        let id = ClientTransferId::new();
         assert_eq!(id.0.len(), 32);
     }
 }

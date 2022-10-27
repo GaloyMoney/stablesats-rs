@@ -17,6 +17,7 @@ use std::{collections::HashMap, time::Duration};
 
 pub use error::*;
 pub use okex_response::OrderDetails;
+pub use okex_response::TransferStateData;
 use okex_response::*;
 pub use primitives::*;
 
@@ -148,6 +149,7 @@ impl OkexClient {
     #[instrument(skip(self), err)]
     pub async fn transfer_funding_to_trading(
         &self,
+        client_id: ClientTransferId,
         amt: Decimal,
     ) -> Result<TransferId, OkexClientError> {
         let mut body: HashMap<String, String> = HashMap::new();
@@ -155,6 +157,7 @@ impl OkexClient {
         body.insert("amt".to_string(), amt.to_string());
         body.insert("from".to_string(), "6".to_string());
         body.insert("to".to_string(), "18".to_string());
+        body.insert("clientId".to_string(), client_id.0);
         let request_body = serde_json::to_string(&body)?;
 
         let request_path = "/api/v5/asset/transfer";
@@ -178,6 +181,7 @@ impl OkexClient {
     #[instrument(skip(self), err)]
     pub async fn transfer_trading_to_funding(
         &self,
+        client_id: ClientTransferId,
         amt: Decimal,
     ) -> Result<TransferId, OkexClientError> {
         let mut body: HashMap<String, String> = HashMap::new();
@@ -185,6 +189,7 @@ impl OkexClient {
         body.insert("amt".to_string(), amt.to_string());
         body.insert("from".to_string(), "18".to_string());
         body.insert("to".to_string(), "6".to_string());
+        body.insert("clientId".to_string(), client_id.0);
         let request_body = serde_json::to_string(&body)?;
 
         let request_path = "/api/v5/asset/transfer";
@@ -273,13 +278,42 @@ impl OkexClient {
         let state_data = Self::extract_response_data::<TransferStateData>(response).await?;
 
         Ok(TransferState {
-            value: state_data.state,
+            state: state_data.state,
+            transfer_id: state_data.trans_id,
+            client_id: state_data.client_id,
+        })
+    }
+
+    pub async fn transfer_state_by_client_id(
+        &self,
+        client_id: ClientTransferId,
+    ) -> Result<TransferState, OkexClientError> {
+        let static_request_path = "/api/v5/asset/transfer-state?ccy=BTC&clientId=";
+        let request_path = format!("{}{}", static_request_path, client_id.0);
+
+        let headers = self.get_request_headers(&request_path)?;
+
+        let response = self
+            .rate_limit_client(static_request_path)
+            .await
+            .get(Self::url_for_path(&request_path))
+            .headers(headers)
+            .send()
+            .await?;
+
+        let state_data = Self::extract_response_data::<TransferStateData>(response).await?;
+
+        Ok(TransferState {
+            state: state_data.state,
+            transfer_id: state_data.trans_id,
+            client_id: state_data.client_id,
         })
     }
 
     #[instrument(skip(self), err)]
     pub async fn withdraw_btc_onchain(
         &self,
+        client_id: ClientTransferId,
         amt: Decimal,
         fee: Decimal,
         btc_address: String,
@@ -291,6 +325,7 @@ impl OkexClient {
         body.insert("fee".to_string(), fee.to_string());
         body.insert("chain".to_string(), "BTC-Bitcoin".to_string());
         body.insert("toAddr".to_string(), btc_address);
+        body.insert("clientId".to_string(), client_id.0);
         let request_body = serde_json::to_string(&body)?;
 
         let request_path = "/api/v5/asset/withdrawal";
