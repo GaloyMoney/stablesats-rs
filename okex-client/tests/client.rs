@@ -15,7 +15,7 @@ async fn configured_okex_client() -> anyhow::Result<OkexClient> {
         api_key,
         passphrase,
         secret_key,
-        simulated: true,
+        simulated: false,
     })
     .await?;
 
@@ -131,7 +131,7 @@ async fn withdraw_to_onchain_address() -> anyhow::Result<()> {
     if let Ok(onchain_address) = env::var("ONCHAIN_BTC_WITHDRAWAL_ADDRESS") {
         let client = configured_okex_client().await?;
         let withdraw_id = client
-            .withdraw_btc_onchain(amount, fee, onchain_address)
+            .withdraw_btc_onchain(ClientTransferId::new(), amount, fee, onchain_address)
             .await?;
 
         assert!(withdraw_id.value.len() == 8);
@@ -144,7 +144,9 @@ async fn withdraw_to_onchain_address() -> anyhow::Result<()> {
 async fn transfer_trading_to_funding() -> anyhow::Result<()> {
     let client = configured_okex_client().await?;
     let amount = dec!(0.00001);
-    let transfer_id = client.transfer_trading_to_funding(amount).await?;
+    let transfer_id = client
+        .transfer_trading_to_funding(ClientTransferId::new(), amount)
+        .await?;
 
     assert!(transfer_id.value.len() == 9);
 
@@ -156,11 +158,38 @@ async fn transfer_trading_to_funding() -> anyhow::Result<()> {
 async fn transfer_state() -> anyhow::Result<()> {
     let client = configured_okex_client().await?;
     let amount = dec!(0.00001);
-    let transfer_id = client.transfer_funding_to_trading(amount).await?;
+    let client_id = ClientTransferId::new();
+    let client_id_val: String = client_id.clone().into();
+    let transfer_id = client
+        .transfer_funding_to_trading(client_id, amount)
+        .await?;
 
+    let transfer_id_val = transfer_id.value.clone();
     let transfer_state = client.transfer_state(transfer_id).await?;
 
-    assert_eq!(transfer_state.value, "success".to_string());
+    assert_eq!(transfer_state.client_id, client_id_val);
+    assert_eq!(transfer_state.transfer_id, transfer_id_val);
+    assert_eq!(transfer_state.state, "success".to_string());
+
+    Ok(())
+}
+
+#[tokio::test]
+#[ignore = "transfer call is rate limited"]
+async fn transfer_state_by_client_id() -> anyhow::Result<()> {
+    let client = configured_okex_client().await?;
+    let amount = dec!(0.00001);
+    let client_id = ClientTransferId::new();
+    let client_id_val: String = client_id.clone().into();
+    let transfer_id = client
+        .transfer_funding_to_trading(client_id.clone(), amount)
+        .await?;
+
+    let transfer_state = client.transfer_state_by_client_id(client_id).await?;
+
+    assert_eq!(transfer_state.client_id, client_id_val);
+    assert_eq!(transfer_state.transfer_id, transfer_id.value);
+    assert_eq!(transfer_state.state, "success".to_string());
 
     Ok(())
 }
