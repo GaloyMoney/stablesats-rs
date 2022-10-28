@@ -1198,6 +1198,8 @@ dependencies = [
 name = "kollider-price"
 version = "0.1.0"
 dependencies = [
+ "anyhow",
+ "chrono",
  "futures",
  "rust_decimal",
  "serde",

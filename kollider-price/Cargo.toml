@@ -14,3 +14,11 @@ tokio-tungstenite = { version = "0.17.2", features = [
 shared = { path = "../shared", package = "stablesats-shared" }
 thiserror = "1.0.37"
 rust_decimal = "1.26.1"
+
+
+[dev-dependencies]
+anyhow = "1.0.66"
+chrono = { version = "0.4", features = [
+    "clock",
+    "serde",
+], default-features = false }

@@ -1,0 +1,21 @@
+{
+  "payloads": [
+    {
+      "exchange": "Kollider",
+      "instrumentId": "BTC-USD-SWAP",
+      "timestamp": 1,
+      "bidPrice": {
+        "numeratorUnit": "USD_CENT",
+        "denominatorUnit": "BTC_SAT",
+        "offset": 12,
+        "base": "8888880000"
+      },
+      "askPrice": {
+        "numeratorUnit": "USD_CENT",
+        "denominatorUnit": "BTC_SAT",
+        "offset": 12,
+        "base": "9999990000"
+      }
+    }
+  ]
+}
