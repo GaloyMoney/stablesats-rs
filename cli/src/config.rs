@@ -30,6 +30,8 @@ pub struct Config {
     pub okex: OkexClientConfig,
     #[serde(default)]
     pub hedging: HedgingConfigWrapper,
+    #[serde(default)]
+    pub kollider_price_feed: KolliderPriceFeedConfigWrapper,
 }
 
 pub struct EnvOverride {
@@ -102,6 +104,17 @@ impl Default for PriceFeedConfigWrapper {
             enabled: true,
             config: PriceFeedConfig::default(),
         }
+    }
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct KolliderPriceFeedConfigWrapper {
+    #[serde(default = "bool_true")]
+    pub enabled: bool,
+}
+impl Default for KolliderPriceFeedConfigWrapper {
+    fn default() -> Self {
+        Self { enabled: true }
     }
 }
 

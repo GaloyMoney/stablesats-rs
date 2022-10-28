@@ -1199,8 +1199,11 @@ name = "kollider-price"
 version = "0.1.0"
 dependencies = [
  "futures",
+ "rust_decimal",
  "serde",
  "serde_json",
+ "stablesats-shared",
+ "thiserror",
  "tokio",
  "tokio-tungstenite",
 ]
@@ -2526,6 +2529,7 @@ dependencies = [
  "futures",
  "galoy-client",
  "hedging",
+ "kollider-price",
  "okex-client",
  "okex-price",
  "opentelemetry",

@@ -11,3 +11,6 @@ tokio = { version = "1.21.2", features = ["full"] }
 tokio-tungstenite = { version = "0.17.2", features = [
     "rustls-tls-webpki-roots",
 ] }
+shared = { path = "../shared", package = "stablesats-shared" }
+thiserror = "1.0.37"
+rust_decimal = "1.26.1"

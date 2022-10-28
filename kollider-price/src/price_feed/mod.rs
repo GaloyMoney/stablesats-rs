@@ -1,14 +1,19 @@
-use futures::{SinkExt, StreamExt};
+use futures::{SinkExt, Stream, StreamExt};
 
 use tokio_tungstenite::{connect_async, tungstenite::Message};
 
 mod tick;
 pub use tick::*;
 
-pub async fn poll_price() {
+pub mod error;
+use error::KolliderPriceFeedError;
+
+pub async fn subscribe_price_feed(
+) -> Result<std::pin::Pin<Box<dyn Stream<Item = KolliderPriceTicker> + Send>>, KolliderPriceFeedError>
+{
     let (ws_stream, _) = connect_async("wss://testnet.kollider.xyz/v1/ws/")
         .await
-        .unwrap();
+        .unwrap(); // FIXME
 
     let (mut sender, receiver) = ws_stream.split();
 
@@ -22,26 +27,17 @@ pub async fn poll_price() {
 
     sender.send(item).await.unwrap();
 
-    receiver
-        .for_each(|message| async {
-            let msg = message.unwrap();
+    Ok(Box::pin(receiver.filter_map(|msg| async {
+        let msg = msg.unwrap();
+        if let Message::Text(txt) = msg {
+            println!("tick raw: {}", txt);
 
-            if let Message::Text(txt) = msg {
-                println!("tick raw: {}", txt);
-
-                // connected msg:
-                // {"data":"Subscribed to channel \"ticker:BTCUSD.PERP\" successfully.","type":"success"}
-
-                // ticker msg:
-                // {"data":{"best_ask":"20738.0","best_bid":"20733.0","last_price":"20738.5","last_quantity":14,"last_side":"Bid","mid":"20735.5","symbol":"BTCUSD.PERP"},"seq":1,"type":"ticker"}
-
-                if !txt.contains("success") {
-                    let ticker: KolliderPriceTickerRoot = serde_json::from_str(&txt).unwrap();
-                    println!("tick: {:?}", ticker.data);
-                } else {
-                    println!("connect: {:?}", txt);
-                }
+            if !txt.contains("success") {
+                let ticker: KolliderPriceTickerRoot = serde_json::from_str(&txt).unwrap();
+                println!("tick: {:?}", ticker.data);
+                return Some(ticker.data);
             }
-        })
-        .await;
+        }
+        None
+    })))
 }

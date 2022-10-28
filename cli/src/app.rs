@@ -117,6 +117,7 @@ async fn run_cmd(
         galoy,
         okex,
         hedging,
+        kollider_price_feed,
     }: Config,
 ) -> anyhow::Result<()> {
     println!("Starting server process");
@@ -156,6 +157,21 @@ async fn run_cmd(
             );
         }));
     }
+
+    if kollider_price_feed.enabled {
+        println!("Starting Kollider price feed");
+
+        let kollider_send = send.clone();
+        let pubsub = pubsub.clone();
+        handles.push(tokio::spawn(async move {
+            let _ = kollider_send.try_send(
+                kollider_price::run(pubsub)
+                    .await
+                    .context("Kollider Price Feed error"),
+            );
+        }));
+    }
+
     if hedging.enabled {
         println!("Starting hedging process");
         let hedging_send = send.clone();
