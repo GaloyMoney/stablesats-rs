@@ -118,6 +118,30 @@ impl OkexClient {
         })
     }
 
+    pub async fn get_onchain_fees(&self) -> Result<OnchainFees, OkexClientError> {
+        let request_path = "/api/v5/asset/currencies?ccy=BTC";
+
+        let headers = self.get_request_headers(request_path)?;
+
+        let response = self
+            .rate_limit_client(request_path)
+            .await
+            .get(Self::url_for_path(request_path))
+            .headers(headers)
+            .send()
+            .await?;
+
+        let fees_data = Self::extract_response_data::<OnchainFeesData>(response).await?;
+        Ok(OnchainFees {
+            ccy: fees_data.ccy,
+            chain: fees_data.chain,
+            min_fee: fees_data.min_fee,
+            max_fee: fees_data.max_fee,
+            min_withdraw: fees_data.min_wd,
+            max_withdraw: fees_data.max_wd,
+        })
+    }
+
     pub async fn transfer_funding_to_trading(
         &self,
         amt: Decimal,
