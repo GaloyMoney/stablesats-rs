@@ -1,4 +1,5 @@
 use anyhow::Context;
+use kollider_price::config::KolliderPriceFeedConfig;
 use serde::{Deserialize, Serialize};
 use std::path::Path;
 
@@ -119,7 +120,7 @@ impl Default for KolliderPriceFeedConfigWrapper {
     fn default() -> Self {
         Self {
             enabled: true,
-            config: PriceFeedConfig::default,
+            config: KolliderPriceFeedConfig::default(),
         }
     }
 }
