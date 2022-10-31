@@ -165,7 +165,7 @@ async fn run_cmd(
         let pubsub = pubsub.clone();
         handles.push(tokio::spawn(async move {
             let _ = kollider_send.try_send(
-                kollider_price::run(pubsub)
+                kollider_price::run(kollider_price_feed.config, pubsub)
                     .await
                     .context("Kollider Price Feed error"),
             );

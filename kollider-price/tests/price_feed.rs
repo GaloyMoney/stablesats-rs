@@ -1,4 +1,5 @@
 use futures::StreamExt;
+use kollider_price::config::KolliderPriceFeedConfig;
 use std::fs;
 
 use shared::{payload::*, pubsub::*};
@@ -24,7 +25,8 @@ async fn publishes_to_redis() -> anyhow::Result<()> {
     let subscriber = Subscriber::new(pubsub_config.clone()).await?;
 
     let _ = tokio::spawn(async move {
-        let _ = kollider_price::run(pubsub_config).await;
+        let config = KolliderPriceFeedConfig::default();
+        let _ = kollider_price::run(config, pubsub_config).await;
     });
 
     let mut stream = subscriber

@@ -6,14 +6,17 @@ mod tick;
 pub use tick::*;
 
 pub mod error;
+
+pub mod config;
+
+use config::KolliderPriceFeedConfig;
 use error::KolliderPriceFeedError;
 
 pub async fn subscribe_price_feed(
+    config: KolliderPriceFeedConfig,
 ) -> Result<std::pin::Pin<Box<dyn Stream<Item = KolliderPriceTicker> + Send>>, KolliderPriceFeedError>
 {
-    let (ws_stream, _) = connect_async("wss://testnet.kollider.xyz/v1/ws/")
-        .await
-        .unwrap(); // FIXME
+    let (ws_stream, _) = connect_async(config.url).await.unwrap(); // FIXME
 
     let (mut sender, receiver) = ws_stream.split();
 
