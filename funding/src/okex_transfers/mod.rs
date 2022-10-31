@@ -95,7 +95,7 @@ impl OkexTransfers {
         Ok(Some(id))
     }
 
-    pub async fn _open_transfers(&self) -> Result<Vec<ClientTransferId>, FundingError> {
+    pub async fn open_transfers(&self) -> Result<Vec<ClientTransferId>, FundingError> {
         let res =
             sqlx::query!(r#"SELECT client_transfer_id FROM okex_transfers WHERE complete = false"#)
                 .fetch_all(&self.pool)
@@ -106,7 +106,7 @@ impl OkexTransfers {
             .collect())
     }
 
-    pub async fn _update_transfer(&self, details: TransferState) -> Result<(), FundingError> {
+    pub async fn update_transfer(&self, details: TransferState) -> Result<(), FundingError> {
         sqlx::query!(
             r#"UPDATE okex_transfers SET lost = false, transfer_id = $1, state = $2 WHERE client_transfer_id = $3"#,
             details.transfer_id,
@@ -118,7 +118,7 @@ impl OkexTransfers {
         Ok(())
     }
 
-    pub async fn _mark_as_lost(&self, id: ClientTransferId) -> Result<(), FundingError> {
+    pub async fn mark_as_lost(&self, id: ClientTransferId) -> Result<(), FundingError> {
         sqlx::query!(
             r#"UPDATE okex_transfers SET lost = true WHERE client_transfer_id = $1"#,
             String::from(id),
@@ -128,7 +128,7 @@ impl OkexTransfers {
         Ok(())
     }
 
-    pub async fn _sweep_lost_records(&self) -> Result<(), FundingError> {
+    pub async fn sweep_lost_records(&self) -> Result<(), FundingError> {
         sqlx::query!(
             r#"DELETE FROM okex_transfers WHERE lost = true AND complete = false AND created_at < now() - interval '1 day'"#
         )

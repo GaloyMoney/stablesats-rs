@@ -18,7 +18,7 @@ use shared::{
 
 use crate::{error::*, okex_transfers::OkexTransfers, synth_usd_liability::*};
 
-const _POLL_TRANSFER_ID: Uuid = uuid!("00000000-0000-0000-0000-000000000002");
+const POLL_TRANSFER_ID: Uuid = uuid!("00000000-0000-0000-0000-000000000002");
 
 #[derive(Debug, Clone)]
 struct OkexPollDelay(std::time::Duration);
@@ -32,7 +32,7 @@ pub async fn start_job_runner(
     publisher: Publisher,
     delay: std::time::Duration,
 ) -> Result<OwnedHandle, FundingError> {
-    let mut registry = JobRegistry::new(&[adjust_funding]);
+    let mut registry = JobRegistry::new(&[adjust_funding, poll_transfers]);
     registry.set_context(synth_usd_liability);
     registry.set_context(okex);
     registry.set_context(publisher);
@@ -48,7 +48,7 @@ pub async fn spawn_poll_transfers(
     pool: &sqlx::PgPool,
     duration: std::time::Duration,
 ) -> Result<(), FundingError> {
-    match JobBuilder::new_with_id(_POLL_TRANSFER_ID, "poll_transfers")
+    match JobBuilder::new_with_id(POLL_TRANSFER_ID, "poll_transfers")
         .set_delay(duration)
         .spawn(pool)
         .await
@@ -93,7 +93,7 @@ pub async fn spawn_adjust_funding<'a>(
 }
 
 #[job(name = "poll_transfers", channel_name = "funding")]
-async fn poll_okex(
+async fn poll_transfers(
     mut current_job: CurrentJob,
     OkexPollDelay(delay): OkexPollDelay,
     okex: OkexClient,
@@ -102,7 +102,7 @@ async fn poll_okex(
     JobExecutor::builder(&mut current_job)
         .build()
         .expect("couldn't build JobExecutor")
-        .execute(|_| async move { poll_transfers::_execute(okex_transfers, okex).await })
+        .execute(|_| async move { poll_transfers::execute(okex_transfers, okex).await })
         .await?;
     spawn_poll_transfers(current_job.pool(), delay).await?;
     Ok(())
