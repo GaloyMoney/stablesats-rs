@@ -1,5 +1,3 @@
-use std::io::Error;
-
 use futures::StreamExt;
 mod price_feed;
 use price_feed::config::KolliderPriceFeedConfig;
@@ -9,19 +7,21 @@ use shared::{
     pubsub::{PubSubConfig, Publisher},
 };
 
+pub use price_feed::error::KolliderPriceFeedError;
+
 mod convert;
 
 pub async fn run(
     price_feed_config: KolliderPriceFeedConfig,
     pubsub_cfg: PubSubConfig,
-) -> Result<(), Error> {
-    let publisher = Publisher::new(pubsub_cfg).await.unwrap(); //FIXME
+) -> Result<(), KolliderPriceFeedError> {
+    let publisher = Publisher::new(pubsub_cfg).await?;
 
-    let mut stream = subscribe_price_feed(price_feed_config).await.unwrap(); // FIXME
+    let mut stream = subscribe_price_feed(price_feed_config).await?;
     while let Some(tick) = stream.next().await {
         println!("publish payload {:?}", tick);
         if let Ok(payload) = KolliderBtcUsdSwapPricePayload::try_from(tick) {
-            publisher.throttle_publish(payload).await.unwrap();
+            publisher.throttle_publish(payload).await?;
         }
     }
 
@@ -37,13 +37,12 @@ mod tests {
     async fn test_get_price() {
         let config = KolliderPriceFeedConfig::default();
         let mut stream = subscribe_price_feed(config).await.unwrap();
-        while let Some(tick) = stream.next().await {
-            println!("result: {:?}", tick);
+        if let Some(tick) = stream.next().await {
+            println!("first tick connect: {:?}", tick);
         }
-    }
 
-    #[tokio::test]
-    async fn test_it() {
-        println!("hhmm");
+        if let Some(tick) = stream.next().await {
+            println!("second tick price_feed: {:?}", tick);
+        }
     }
 }

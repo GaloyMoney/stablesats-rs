@@ -1,22 +1,19 @@
 use futures::{SinkExt, Stream, StreamExt};
 
-use tokio_tungstenite::{connect_async, tungstenite::Message};
-
-mod tick;
-pub use tick::*;
-
-pub mod error;
-
-pub mod config;
-
 use config::KolliderPriceFeedConfig;
 use error::KolliderPriceFeedError;
+pub use tick::*;
+use tokio_tungstenite::{connect_async, tungstenite::Message};
+
+pub mod config;
+pub mod error;
+mod tick;
 
 pub async fn subscribe_price_feed(
     config: KolliderPriceFeedConfig,
 ) -> Result<std::pin::Pin<Box<dyn Stream<Item = KolliderPriceTicker> + Send>>, KolliderPriceFeedError>
 {
-    let (ws_stream, _) = connect_async(config.url).await.unwrap(); // FIXME
+    let (ws_stream, _) = connect_async(config.url).await?;
 
     let (mut sender, receiver) = ws_stream.split();
 
