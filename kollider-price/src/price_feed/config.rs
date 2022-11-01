@@ -9,7 +9,7 @@ pub struct KolliderPriceFeedConfig {
 impl Default for KolliderPriceFeedConfig {
     fn default() -> Self {
         Self {
-            url: Url::parse("wss://testnet.kollider.xyz/v1/ws/").unwrap(),
+            url: Url::parse("wss://kollider.xyz/v1/ws/").unwrap(),
         }
     }
 }

@@ -1,6 +1,7 @@
 use futures::StreamExt;
 use kollider_price::config::KolliderPriceFeedConfig;
 use std::fs;
+use url::Url;
 
 use shared::{payload::*, pubsub::*};
 
@@ -25,7 +26,9 @@ async fn publishes_to_redis() -> anyhow::Result<()> {
     let subscriber = Subscriber::new(pubsub_config.clone()).await?;
 
     let _ = tokio::spawn(async move {
-        let config = KolliderPriceFeedConfig::default();
+        let config = KolliderPriceFeedConfig {
+            url: Url::parse("wss://testnet.kollider.xyz/v1/ws/").unwrap(),
+        };
         let _ = kollider_price::run(config, pubsub_config).await;
     });
 

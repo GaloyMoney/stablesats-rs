@@ -32,17 +32,17 @@ pub async fn run(
 mod tests {
     use crate::{config::KolliderPriceFeedConfig, price_feed::subscribe_price_feed};
     use futures::StreamExt;
+    use url::Url;
 
     #[tokio::test]
-    async fn test_get_price() {
-        let config = KolliderPriceFeedConfig::default();
-        let mut stream = subscribe_price_feed(config).await.unwrap();
+    async fn test_get_price() -> anyhow::Result<()> {
+        let config = KolliderPriceFeedConfig {
+            url: Url::parse("wss://testnet.kollider.xyz/v1/ws/")?,
+        };
+        let mut stream = subscribe_price_feed(config).await?;
         if let Some(tick) = stream.next().await {
             println!("first tick connect: {:?}", tick);
         }
-
-        if let Some(tick) = stream.next().await {
-            println!("second tick price_feed: {:?}", tick);
-        }
+        Ok(())
     }
 }
