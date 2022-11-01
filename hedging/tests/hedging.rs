@@ -1,4 +1,5 @@
 use futures::{stream::StreamExt, Stream};
+use galoy_client::GaloyClientConfig;
 use rust_decimal::Decimal;
 use rust_decimal_macros::dec;
 use serial_test::serial;
@@ -30,6 +31,20 @@ fn okex_client_config() -> OkexClientConfig {
         secret_key,
         simulated: true,
     }
+}
+
+fn galoy_client_config() -> GaloyClientConfig {
+    let api = env::var("GALOY_GRAPHQL_URI").expect("GALOY_GRAPHQL_URI not set");
+    let phone_number = env::var("PHONE_NUMBER").expect("PHONE_NUMBER not set");
+    let code = env::var("AUTH_CODE").expect("AUTH_CODE not set");
+
+    let config = GaloyClientConfig {
+        api,
+        phone_number,
+        auth_code: code,
+    };
+
+    config
 }
 
 async fn expect_exposure_between(
@@ -108,6 +123,7 @@ async fn hedging() -> anyhow::Result<()> {
                 ..Default::default()
             },
             okex_client_config(),
+            galoy_client_config(),
             pubsub_config.clone(),
         )
         .await

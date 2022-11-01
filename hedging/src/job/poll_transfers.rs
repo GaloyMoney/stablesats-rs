@@ -1,8 +1,8 @@
 use okex_client::{OkexClient, OkexClientError};
 
-use crate::{error::FundingError, okex_transfers::*};
+use crate::{error::HedgingError, okex_transfers::*};
 
-pub async fn execute(okex_transfers: OkexTransfers, okex: OkexClient) -> Result<(), FundingError> {
+pub async fn execute(okex_transfers: OkexTransfers, okex: OkexClient) -> Result<(), HedgingError> {
     let mut execute_sweep = false;
     for id in okex_transfers.open_transfers().await? {
         match okex.transfer_state_by_client_id(id.clone()).await {

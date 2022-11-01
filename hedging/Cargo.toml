@@ -12,6 +12,7 @@ fail-on-warnings = []
 [dependencies]
 shared = { path = "../shared", package = "stablesats-shared" }
 okex-client = { path = "../okex-client" }
+galoy-client = { path = "../galoy-client" }
 
 rust_decimal_macros = "1.26.1"
 serde = "1.0.150"

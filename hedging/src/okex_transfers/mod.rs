@@ -5,7 +5,7 @@ use uuid::Uuid;
 use okex_client::{ClientTransferId, TransferState};
 use shared::pubsub::CorrelationId;
 
-use crate::error::FundingError;
+use crate::error::HedgingError;
 
 pub struct ReservationSharedData {
     pub correlation_id: CorrelationId,
@@ -34,14 +34,14 @@ pub struct OkexTransfers {
 }
 
 impl OkexTransfers {
-    pub async fn new(pool: PgPool) -> Result<Self, FundingError> {
+    pub async fn new(pool: PgPool) -> Result<Self, HedgingError> {
         Ok(Self { pool })
     }
 
     pub async fn reserve_transfer_slot<'a>(
         &self,
         reservation: Reservation<'a>,
-    ) -> Result<Option<ClientTransferId>, FundingError> {
+    ) -> Result<Option<ClientTransferId>, HedgingError> {
         let mut tx = self.pool.begin().await?;
         tx.execute("SET TRANSACTION ISOLATION LEVEL SERIALIZABLE")
             .await?;
@@ -95,7 +95,7 @@ impl OkexTransfers {
         Ok(Some(id))
     }
 
-    pub async fn open_transfers(&self) -> Result<Vec<ClientTransferId>, FundingError> {
+    pub async fn open_transfers(&self) -> Result<Vec<ClientTransferId>, HedgingError> {
         let res =
             sqlx::query!(r#"SELECT client_transfer_id FROM okex_transfers WHERE complete = false"#)
                 .fetch_all(&self.pool)
@@ -106,7 +106,7 @@ impl OkexTransfers {
             .collect())
     }
 
-    pub async fn update_transfer(&self, details: TransferState) -> Result<(), FundingError> {
+    pub async fn update_transfer(&self, details: TransferState) -> Result<(), HedgingError> {
         sqlx::query!(
             r#"UPDATE okex_transfers SET lost = false, transfer_id = $1, state = $2 WHERE client_transfer_id = $3"#,
             details.transfer_id,
@@ -118,7 +118,7 @@ impl OkexTransfers {
         Ok(())
     }
 
-    pub async fn mark_as_lost(&self, id: ClientTransferId) -> Result<(), FundingError> {
+    pub async fn mark_as_lost(&self, id: ClientTransferId) -> Result<(), HedgingError> {
         sqlx::query!(
             r#"UPDATE okex_transfers SET lost = true WHERE client_transfer_id = $1"#,
             String::from(id),
@@ -128,7 +128,7 @@ impl OkexTransfers {
         Ok(())
     }
 
-    pub async fn sweep_lost_records(&self) -> Result<(), FundingError> {
+    pub async fn sweep_lost_records(&self) -> Result<(), HedgingError> {
         sqlx::query!(
             r#"DELETE FROM okex_transfers WHERE lost = true AND complete = false AND created_at < now() - interval '1 day'"#
         )

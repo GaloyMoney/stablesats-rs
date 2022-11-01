@@ -1,4 +1,5 @@
 use rust_decimal::{Decimal};
+use rust_decimal_macros::dec;
 use tracing::instrument;
 
 use galoy_client::*;
@@ -6,6 +7,8 @@ use okex_client::*;
 use shared::pubsub::CorrelationId;
 
 use crate::{error::*, okex_transfers::*, rebalance_action::*, synth_usd_liability::*};
+
+const SATS_PER_BTC: Decimal = dec!(100_000_000);
 
 #[instrument(name = "adjust_funding", skip_all, fields(correlation_id = %correlation_id,
         target_liability, current_position, last_price_in_usd_cents, funding_available_balance, 
@@ -17,13 +20,13 @@ pub(super) async fn execute(
     okex: OkexClient,
     okex_transfers: OkexTransfers,
     galoy: GaloyClient,
-) -> Result<(), FundingError> {
+) -> Result<(), HedgingError> {
     let span = tracing::Span::current();
 
-    let target_liability = synth_usd_liability.get_latest_liability().await? ;
+    let target_liability_in_cents = synth_usd_liability.get_latest_liability().await? ;
     span.record(
         "target_liability",
-        &tracing::field::display(target_liability),
+        &tracing::field::display(target_liability_in_cents),
     );
 
     let current_position = okex.get_position_in_signed_usd_cents().await?;
@@ -55,7 +58,7 @@ pub(super) async fn execute(
     );
 
     let action = determine_action(
-        target_liability,
+        target_liability_in_cents,
         current_position.usd_cents.into(),
         trading_available_balance.used_amt_in_btc,
         trading_available_balance.total_amt_in_btc,
@@ -67,7 +70,7 @@ pub(super) async fn execute(
         correlation_id,
         action_type: action.action_type().to_string(),
         action_unit: action.unit().to_string(),
-        target_usd_exposure: target_liability.into(),
+        target_usd_exposure: target_liability_in_cents.into(),
         current_usd_exposure: current_position.usd_cents,
         trading_btc_used_balance: trading_available_balance.used_amt_in_btc,
         trading_btc_total_balance: trading_available_balance.total_amt_in_btc,
@@ -155,9 +158,10 @@ pub(super) async fn execute(
                                 &tracing::field::display(String::from(client_id)),
                             );
 
-                            let memo: String = format!("deposit of {external_transfer_amount} btc to OKX");
+                            let external_transfer_amount_in_sats = external_transfer_amount * SATS_PER_BTC;
+                            let memo: String = format!("deposit of {external_transfer_amount_in_sats} sats to OKX");
                             let _deposit_transfer_id = galoy
-                                .send_onchain_payment(deposit_address, external_transfer_amount, Some(memo), 1)
+                                .send_onchain_payment(deposit_address, external_transfer_amount_in_sats, Some(memo), 1)
                                 .await?;
                         }
                     }
