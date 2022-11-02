@@ -170,12 +170,18 @@ impl From<CompleteOrderBook> for OrderBookPayload {
     fn from(book: CompleteOrderBook) -> Self {
         let mut asks_map = BTreeMap::new();
         for (ask_price, ask_qty) in book.asks {
-            let _ = asks_map.insert(PriceRaw::from(ask_price.0), QuantityRaw::from(ask_qty));
+            let _ = asks_map.insert(
+                PriceRaw::from_one_btc_in_usd_price(ask_price.0),
+                QuantityRaw::from(ask_qty),
+            );
         }
 
         let mut bids_map = BTreeMap::new();
         for (bid_price, bid_qty) in book.bids {
-            let _ = bids_map.insert(PriceRaw::from(bid_price.0), QuantityRaw::from(bid_qty));
+            let _ = bids_map.insert(
+                PriceRaw::from_one_btc_in_usd_price(bid_price.0),
+                QuantityRaw::from(bid_qty),
+            );
         }
 
         Self {

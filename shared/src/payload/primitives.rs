@@ -8,7 +8,6 @@ crate::string_wrapper! { CurrencyRaw }
 
 crate::abs_decimal_wrapper! { SyntheticCentLiability }
 crate::decimal_wrapper! { SyntheticCentExposure }
-crate::decimal_wrapper! { PriceRaw }
 crate::decimal_wrapper! { QuantityRaw }
 
 pub const USD_CENT_UNIT_NAME: &str = "USD_CENT";
@@ -57,6 +56,18 @@ impl From<i32> for CheckSumRaw {
 pub enum OrderBookActionRaw {
     Snapshot,
     Update,
+}
+
+crate::decimal_wrapper! { PriceRaw }
+impl PriceRaw {
+    pub fn from_one_btc_in_usd_price(price: Decimal) -> Self {
+        let price_in_cents = price * dec!(100);
+        let price_with_precision =
+            price_in_cents * Decimal::from(10_u64.pow(PRICE_IN_CENTS_PRECISION));
+        let base = price_with_precision / dec!(100_000_000);
+
+        Self(base.round())
+    }
 }
 
 #[cfg(test)]
