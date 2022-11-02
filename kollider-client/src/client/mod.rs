@@ -11,6 +11,7 @@ use serde_derive::Deserialize;
 use serde_derive::Serialize;
 
 use self::error::KolliderClientError;
+use self::primitives::PaymentRequest;
 use self::primitives::UserBalances;
 
 mod error;
@@ -71,6 +72,17 @@ impl KolliderClient {
         Self::create_headers(self, &timestamp, &sig)
     }
 
+    fn create_post_headers(
+        &self,
+        path: &str,
+        body: &str,
+    ) -> Result<HeaderMap, KolliderClientError> {
+        let timestamp = Utc::now().to_rfc3339_opts(SecondsFormat::Millis, true);
+        let pre_hash = format!("{}{}{}{}", timestamp, "POST", path, body);
+        let sig = Self::generate_signature(&self.config.secret, &pre_hash)?;
+        Self::create_headers(self, &timestamp, &sig)
+    }
+
     pub async fn get_user_balances(&self) -> Result<UserBalances, KolliderClientError> {
         let path = "/user/balances";
         let res = self
@@ -90,6 +102,49 @@ impl KolliderClient {
             .send()
             .await?;
 
+        Ok(res.text().await?)
+    }
+
+    pub async fn make_deposit(&self, sats: i32) -> Result<PaymentRequest, KolliderClientError> {
+        let path = "/wallet/deposit";
+
+        let request_body = serde_json::json!({
+            "type": "Ln",
+            "amount": sats,
+        })
+        .to_string();
+
+        let res = self
+            .client
+            .post(format!("{}{}", self.config.url, path))
+            .headers(Self::create_post_headers(self, path, &request_body)?)
+            .body(request_body)
+            .send()
+            .await?;
+        Ok(res.json::<PaymentRequest>().await?)
+    }
+
+    pub async fn make_withdrawal(
+        &self,
+        amount: i32,
+        payment_request: &str,
+    ) -> Result<String, KolliderClientError> {
+        let path = "/wallet/withdrawal";
+
+        let request_body = serde_json::json!({
+            "type": "Ln",
+            "payment_request": payment_request,
+            "amount": amount,
+        })
+        .to_string();
+
+        let res = self
+            .client
+            .post(format!("{}{}", self.config.url, path))
+            .headers(Self::create_post_headers(self, path, &request_body)?)
+            .body(request_body)
+            .send()
+            .await?;
         Ok(res.text().await?)
     }
 }

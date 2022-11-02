@@ -17,3 +17,8 @@ pub struct Cash {
 
 #[derive(Default, Debug, Clone, Serialize, Deserialize)]
 pub struct IsolatedMargin {}
+
+#[derive(Default, Debug, Clone, Serialize, Deserialize)]
+pub struct PaymentRequest {
+    pub payment_request: String,
+}
