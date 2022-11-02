@@ -26,3 +26,12 @@ async fn get_user_balances() -> anyhow::Result<()> {
     }
     Ok(())
 }
+
+#[tokio::test]
+async fn place_order() -> anyhow::Result<()> {
+    if let Ok(client) = create_test_client() {
+        let order = client.place_order(10, 1200).await?;
+        println!("order: {:?}", order);
+    }
+    Ok(())
+}

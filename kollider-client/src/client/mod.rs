@@ -11,8 +11,7 @@ use serde_derive::Deserialize;
 use serde_derive::Serialize;
 
 use self::error::KolliderClientError;
-use self::primitives::PaymentRequest;
-use self::primitives::UserBalances;
+use self::primitives::*;
 
 mod error;
 mod primitives;
@@ -146,5 +145,36 @@ impl KolliderClient {
             .send()
             .await?;
         Ok(res.text().await?)
+    }
+
+    pub async fn place_order(
+        &self,
+        amount_usd: i32,
+        leverage_percent: i32,
+    ) -> Result<PlaceOrderResult, KolliderClientError> {
+        let path = "/orders";
+
+        let request_body = serde_json::json!({
+            "price": 20399,
+            "order_type": "Market",
+            "side": KolliderOrderSide::Ask.to_string(),
+            "quantity": amount_usd,
+            "symbol": "BTCUSD.PERP",
+            "leverage": leverage_percent,
+            "margin_type": "Isolated",
+            "settlement_type": "Delayed"
+        })
+        .to_string();
+
+        let res = self
+            .client
+            .post(format!("{}{}", self.config.url, path))
+            .headers(Self::create_post_headers(self, path, &request_body)?)
+            .body(request_body)
+            .send()
+            .await?;
+
+        let result = res.json::<PlaceOrderResult>().await?;
+        Ok(result)
     }
 }
