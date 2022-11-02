@@ -125,7 +125,7 @@ impl PriceApp {
             .await?
             .buy_usd()
             .sats_from_cents(cents);
-        Ok(self.fee_calculator.increase_by_immediate_fee(sats))
+        Ok(self.fee_calculator.increase_by_immediate_fee(sats).ceil())
     }
 
     #[instrument(skip_all, fields(correlation_id, amount = %cents.amount()), ret, err)]
