@@ -11,7 +11,7 @@ use std::{collections::BTreeMap, sync::Arc};
 use thiserror::Error;
 use tokio::sync::RwLock;
 
-use crate::{currency::UsdCents, PriceConverter};
+use crate::PriceConverter;
 
 #[derive(Debug, Error)]
 pub enum SnapshotCacheError {
@@ -23,6 +23,7 @@ pub enum SnapshotCacheError {
     NoSnapshotAvailable,
 }
 
+#[derive(Debug, Clone)]
 pub struct SnapshotCache {
     inner: Arc<RwLock<SnapshotInner>>,
 }
@@ -36,7 +37,14 @@ impl SnapshotCache {
     pub async fn apply_update(&self, snapshot: Envelope<OkexBtcUsdSwapOrderBookPayload>) {
         self.inner.write().await.update_snapshot(snapshot);
     }
+
+    pub async fn latest_snapshot(&self) -> Result<MOBSnapshot, SnapshotCacheError> {
+        let snap = self.inner.read().await.latest_snapshot()?;
+        Ok(snap)
+    }
 }
+
+#[derive(Debug, Clone)]
 struct SnapshotInner {
     stale_after: Duration,
     snapshot: Option<MOBSnapshot>,
@@ -78,13 +86,11 @@ impl SnapshotInner {
 
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Deserialize)]
 pub struct QuotePrice(Decimal);
-impl TryFrom<PriceRaw> for QuotePrice {
-    type Error = SnapshotCacheError;
+impl From<PriceRaw> for QuotePrice {
+    fn from(price: PriceRaw) -> Self {
+        let price = price.into();
 
-    fn try_from(value: PriceRaw) -> Result<Self, Self::Error> {
-        let price: Decimal = value.into();
-
-        Ok(QuotePrice(price))
+        QuotePrice(price)
     }
 }
 impl QuotePrice {
@@ -100,30 +106,28 @@ pub struct MOBSnapshot {
     pub bids: BTreeMap<QuotePrice, Decimal>,
     pub timestamp: TimeStamp,
 }
-impl TryFrom<OrderBookPayload> for MOBSnapshot {
-    type Error = SnapshotCacheError;
-
-    fn try_from(value: OrderBookPayload) -> Result<Self, Self::Error> {
+impl From<OrderBookPayload> for MOBSnapshot {
+    fn from(value: OrderBookPayload) -> Self {
         let mut asks = BTreeMap::new();
         for (raw_price, raw_qty) in value.asks {
-            let price = QuotePrice::try_from(raw_price)?;
+            let price = QuotePrice::from(raw_price);
             let quantity: Decimal = raw_qty.into();
 
             asks.insert(price, quantity);
         }
         let mut bids = BTreeMap::new();
         for (raw_price, raw_qty) in value.bids {
-            let price = QuotePrice::try_from(raw_price)?;
+            let price = QuotePrice::from(raw_price);
             let quantity: Decimal = raw_qty.into();
 
             bids.insert(price, quantity);
         }
 
-        Ok(Self {
+        Self {
             asks,
             bids,
             timestamp: value.timestamp,
-        })
+        }
     }
 }
 
@@ -183,8 +187,11 @@ mod tests {
     }
 
     fn load_order_book(filename: &str) -> anyhow::Result<SnapshotFixture> {
-        let contents = fs::read_to_string(format!("./tests/fixtures/order-book-{}.json", filename))
-            .expect(&format!("Couldn't load fixture {}", filename));
+        let contents = fs::read_to_string(format!(
+            "./price-server/tests/fixtures/order-book-{}.json",
+            filename
+        ))
+        .expect(&format!("Couldn't load fixture {}", filename));
 
         let res = serde_json::from_str::<SnapshotFixture>(&contents)?;
         Ok(res)
@@ -212,16 +219,61 @@ mod tests {
     }
 
     #[test]
-    fn weighted_prices() -> anyhow::Result<()> {
+    fn weighted_prices_from_snapshot_fixture() -> anyhow::Result<()> {
         let latest_snapshot = load_order_book("payload")?.payload;
         let weighted_ask_price = latest_snapshot.ask_price_of_one_sat();
         let weighted_bid_price = latest_snapshot.bid_price_of_one_sat();
 
-        println!("Ask price: {:?}", weighted_ask_price);
-        println!("Bid price: {:?}", weighted_bid_price);
+        assert_eq!(weighted_ask_price, dec!(0.0205761869636376921016098785));
+        assert_eq!(weighted_bid_price, dec!(0.0202002976499512272808711405));
 
-        assert_eq!(weighted_ask_price, dec!(20707.61052158230361132239747));
-        assert_eq!(weighted_bid_price, dec!(20322.030289209742111903698213));
+        Ok(())
+    }
+
+    #[test]
+    fn mid_price() {
+        let mut asks = BTreeMap::new();
+        asks.insert(QuotePrice(dec!(10000)), dec!(10));
+        asks.insert(QuotePrice(dec!(10000)), dec!(10));
+
+        let mut bids = BTreeMap::new();
+        bids.insert(QuotePrice(dec!(5000)), dec!(10));
+        bids.insert(QuotePrice(dec!(5000)), dec!(10));
+
+        let snapshot = MOBSnapshot {
+            asks,
+            bids,
+            timestamp: TimeStamp::now(),
+        };
+        let mid_price = snapshot.mid_price_of_one_sat();
+
+        assert_eq!(mid_price, dec!(7500));
+    }
+
+    #[test]
+    fn weighted_prices_from_constructed_snapshot() -> anyhow::Result<()> {
+        let mut asks = BTreeMap::new();
+        asks.insert(QuotePrice(dec!(100)), dec!(10));
+        asks.insert(QuotePrice(dec!(110)), dec!(11));
+        asks.insert(QuotePrice(dec!(120)), dec!(12));
+        asks.insert(QuotePrice(dec!(130)), dec!(13));
+
+        let mut bids = BTreeMap::new();
+        bids.insert(QuotePrice(dec!(100)), dec!(10));
+        bids.insert(QuotePrice(dec!(110)), dec!(11));
+        bids.insert(QuotePrice(dec!(120)), dec!(12));
+        bids.insert(QuotePrice(dec!(130)), dec!(13));
+
+        let snapshot = MOBSnapshot {
+            asks,
+            bids,
+            timestamp: TimeStamp::now(),
+        };
+        let weighted_ask_price = snapshot.ask_price_of_one_sat();
+        let weighted_bid_price = snapshot.bid_price_of_one_sat();
+
+        assert_eq!(weighted_ask_price.round(), dec!(116));
+        assert_eq!(weighted_bid_price.round(), dec!(116));
 
         Ok(())
     }

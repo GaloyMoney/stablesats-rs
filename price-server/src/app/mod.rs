@@ -4,15 +4,20 @@ use chrono::Duration;
 use futures::stream::StreamExt;
 use tracing::{info_span, instrument, Instrument};
 
-use shared::{health::HealthCheckTrigger, payload::OkexBtcUsdSwapPricePayload, pubsub::*};
+use shared::{
+    health::HealthCheckTrigger,
+    payload::{OkexBtcUsdSwapOrderBookPayload, OkexBtcUsdSwapPricePayload},
+    pubsub::*,
+};
 
 use super::exchange_price_cache::ExchangePriceCache;
 
+use crate::SnapshotCache;
 pub use crate::{currency::*, fee_calculator::*};
 pub use error::*;
 
 pub struct PriceApp {
-    price_cache: ExchangePriceCache,
+    price_cache: SnapshotCache,
     fee_calculator: FeeCalculator,
 }
 
@@ -23,7 +28,9 @@ impl PriceApp {
         pubsub_cfg: PubSubConfig,
     ) -> Result<Self, PriceAppError> {
         let subscriber = Subscriber::new(pubsub_cfg).await?;
-        let mut stream = subscriber.subscribe::<OkexBtcUsdSwapPricePayload>().await?;
+        let mut stream = subscriber
+            .subscribe::<OkexBtcUsdSwapOrderBookPayload>()
+            .await?;
         tokio::spawn(async move {
             while let Some(check) = health_check_trigger.next().await {
                 check
@@ -32,7 +39,7 @@ impl PriceApp {
             }
         });
 
-        let price_cache = ExchangePriceCache::new(Duration::seconds(30));
+        let price_cache = SnapshotCache::new(Duration::seconds(30));
         let fee_calculator = FeeCalculator::new(fee_calc_cfg);
         let app = Self {
             price_cache: price_cache.clone(),
@@ -65,7 +72,7 @@ impl PriceApp {
     ) -> Result<UsdCents, PriceAppError> {
         let cents = self
             .price_cache
-            .latest_tick()
+            .latest_snapshot()
             .await?
             .buy_usd()
             .cents_from_sats(sats);
@@ -79,7 +86,7 @@ impl PriceApp {
     ) -> Result<UsdCents, PriceAppError> {
         let cents = self
             .price_cache
-            .latest_tick()
+            .latest_snapshot()
             .await?
             .sell_usd()
             .cents_from_sats(sats);
@@ -93,7 +100,7 @@ impl PriceApp {
     ) -> Result<UsdCents, PriceAppError> {
         let cents = self
             .price_cache
-            .latest_tick()
+            .latest_snapshot()
             .await?
             .buy_usd()
             .cents_from_sats(sats);
@@ -107,7 +114,7 @@ impl PriceApp {
     ) -> Result<UsdCents, PriceAppError> {
         let cents = self
             .price_cache
-            .latest_tick()
+            .latest_snapshot()
             .await?
             .sell_usd()
             .cents_from_sats(sats);
@@ -121,7 +128,7 @@ impl PriceApp {
     ) -> Result<Sats, PriceAppError> {
         let sats = self
             .price_cache
-            .latest_tick()
+            .latest_snapshot()
             .await?
             .buy_usd()
             .sats_from_cents(cents);
@@ -135,7 +142,7 @@ impl PriceApp {
     ) -> Result<Sats, PriceAppError> {
         let sats = self
             .price_cache
-            .latest_tick()
+            .latest_snapshot()
             .await?
             .sell_usd()
             .sats_from_cents(cents);
@@ -149,7 +156,7 @@ impl PriceApp {
     ) -> Result<Sats, PriceAppError> {
         let sats = self
             .price_cache
-            .latest_tick()
+            .latest_snapshot()
             .await?
             .buy_usd()
             .sats_from_cents(cents);
@@ -163,7 +170,7 @@ impl PriceApp {
     ) -> Result<Sats, PriceAppError> {
         let sats = self
             .price_cache
-            .latest_tick()
+            .latest_snapshot()
             .await?
             .sell_usd()
             .sats_from_cents(cents);
@@ -172,7 +179,11 @@ impl PriceApp {
 
     #[instrument(skip_all, fields(correlation_id), ret, err)]
     pub async fn get_cents_per_sat_exchange_mid_rate(&self) -> Result<f64, PriceAppError> {
-        let cents_per_sat = self.price_cache.latest_tick().await?.mid_price_of_one_sat();
+        let cents_per_sat = self
+            .price_cache
+            .latest_snapshot()
+            .await?
+            .mid_price_of_one_sat();
         Ok(f64::try_from(cents_per_sat)?)
     }
 }

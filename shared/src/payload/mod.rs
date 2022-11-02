@@ -10,12 +10,6 @@ use super::time::*;
 pub use constants::*;
 pub use primitives::*;
 
-#[derive(Debug, Clone)]
-pub struct PriceMatches {
-    pub asks: BTreeMap<PriceRaw, QuantityRaw>,
-    pub bids: BTreeMap<PriceRaw, QuantityRaw>,
-}
-
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct PriceMessagePayload {
