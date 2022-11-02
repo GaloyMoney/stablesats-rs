@@ -105,7 +105,7 @@ async fn price_app() -> anyhow::Result<()> {
     let future_buy = app
         .get_cents_from_sats_for_future_sell(Sats::from_major(100_000_000))
         .await?;
-    assert_eq!(future_buy, UsdCents::from_major(1011000));
+    assert_eq!(future_buy, UsdCents::from_major(1101000));
     let future_buy = app
         .get_cents_from_sats_for_future_sell(Sats::from_major(1))
         .await?;
