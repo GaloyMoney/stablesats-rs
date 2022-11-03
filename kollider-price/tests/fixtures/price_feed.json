@@ -1,8 +1,8 @@
 {
   "payloads": [
     {
-      "exchange": "Kollider",
-      "instrumentId": "BTC-USD-SWAP",
+      "exchange": "kollider",
+      "instrumentId": "BTCUSD.PERP",
       "timestamp": 1,
       "bidPrice": {
         "numeratorUnit": "USD_CENT",
