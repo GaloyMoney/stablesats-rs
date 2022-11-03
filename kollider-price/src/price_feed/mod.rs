@@ -25,17 +25,16 @@ pub async fn subscribe_price_feed(
     .to_string();
     let item = Message::Text(subscribe_args);
 
-    sender.send(item).await.unwrap();
+    sender.send(item).await?;
 
     Ok(Box::pin(receiver.filter_map(|msg| async {
-        let msg = msg.unwrap();
-        if let Message::Text(txt) = msg {
-            println!("tick raw: {}", txt);
-
-            if !txt.contains("success") {
-                let ticker: KolliderPriceTickerRoot = serde_json::from_str(&txt).unwrap();
-                println!("tick: {:?}", ticker.data);
-                return Some(ticker.data);
+        if let Ok(msg) = msg {
+            if let Ok(txt) = msg.into_text() {
+                if !txt.contains("success") {
+                    if let Ok(ticker) = serde_json::from_str::<KolliderPriceTickerRoot>(&txt) {
+                        return Some(ticker.data);
+                    }
+                }
             }
         }
         None
