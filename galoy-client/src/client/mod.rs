@@ -97,7 +97,7 @@ impl GaloyClient {
         Ok(auth_code)
     }
 
-    #[instrument(name = "galoy_login_jwt", err)]
+    #[instrument(name = "galoy_login_jwt", skip_all, err)]
     async fn login_jwt(config: GaloyClientConfig) -> Result<StablesatsAuthToken, GaloyClientError> {
         let variables = stablesats_user_login::Variables {
             input: stablesats_user_login::UserLoginInput {
@@ -138,7 +138,7 @@ impl GaloyClient {
         Ok(auth_token)
     }
 
-    #[instrument(name = "galoy_wallet_ids", err)]
+    #[instrument(name = "galoy_wallet_ids", skip_all, err)]
     async fn wallet_ids(
         client: ReqwestClient,
         config: GaloyClientConfig,
