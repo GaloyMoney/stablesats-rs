@@ -108,21 +108,13 @@ impl Default for PriceFeedConfigWrapper {
     }
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub struct KolliderPriceFeedConfigWrapper {
-    #[serde(default = "bool_true")]
+    #[serde(default)]
     pub enabled: bool,
 
     #[serde(default)]
     pub config: KolliderPriceFeedConfig,
-}
-impl Default for KolliderPriceFeedConfigWrapper {
-    fn default() -> Self {
-        Self {
-            enabled: true,
-            config: KolliderPriceFeedConfig::default(),
-        }
-    }
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

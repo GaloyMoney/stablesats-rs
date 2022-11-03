@@ -39,7 +39,7 @@
   #   url: "wss://ws.okx.com:8443/ws/v5/public"
 
   # kollider_price_feed:
-  # enabled: true
+  # enabled: false
   # config:
   #   url: "wss://testnet.kollider.xyz/v1/ws/"
 
