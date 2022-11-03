@@ -19,7 +19,6 @@ pub async fn run(
 
     let mut stream = subscribe_price_feed(price_feed_config).await?;
     while let Some(tick) = stream.next().await {
-        println!("publish payload {:?}", tick);
         if let Ok(payload) = KolliderBtcUsdSwapPricePayload::try_from(tick) {
             publisher.throttle_publish(payload).await?;
         }
