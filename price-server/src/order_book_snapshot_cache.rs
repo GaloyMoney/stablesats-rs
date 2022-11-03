@@ -187,11 +187,8 @@ mod tests {
     }
 
     fn load_order_book(filename: &str) -> anyhow::Result<SnapshotFixture> {
-        let contents = fs::read_to_string(format!(
-            "./price-server/tests/fixtures/order-book-{}.json",
-            filename
-        ))
-        .expect(&format!("Couldn't load fixture {}", filename));
+        let contents = fs::read_to_string(format!("./tests/fixtures/order-book-{}.json", filename))
+            .expect(&format!("Couldn't load fixture {}", filename));
 
         let res = serde_json::from_str::<SnapshotFixture>(&contents)?;
         Ok(res)
