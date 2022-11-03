@@ -3,7 +3,6 @@
 
 pub mod app;
 pub mod currency;
-mod exchange_price_cache;
 mod fee_calculator;
 mod order_book_snapshot_cache;
 mod price_converter;
@@ -12,7 +11,6 @@ mod server;
 use shared::{health::HealthCheckTrigger, pubsub::PubSubConfig};
 
 use app::PriceApp;
-pub use exchange_price_cache::ExchangePriceCacheError;
 pub use fee_calculator::FeeCalculatorConfig;
 pub use order_book_snapshot_cache::*;
 pub use price_converter::*;

@@ -4,13 +4,7 @@ use chrono::Duration;
 use futures::stream::StreamExt;
 use tracing::{info_span, instrument, Instrument};
 
-use shared::{
-    health::HealthCheckTrigger,
-    payload::{OkexBtcUsdSwapOrderBookPayload, OkexBtcUsdSwapPricePayload},
-    pubsub::*,
-};
-
-use super::exchange_price_cache::ExchangePriceCache;
+use shared::{health::HealthCheckTrigger, payload::OkexBtcUsdSwapOrderBookPayload, pubsub::*};
 
 use crate::SnapshotCache;
 pub use crate::{currency::*, fee_calculator::*};

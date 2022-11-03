@@ -153,9 +153,7 @@ impl MOBSnapshot {
             .iter()
             .fold(dec!(0), |acc, (_, quantity)| acc + quantity);
 
-        let weighted_average_price = acc_price_by_size / acc_size;
-
-        weighted_average_price
+        acc_price_by_size / acc_size
     }
 
     pub fn ask_price_of_one_sat(&self) -> Decimal {
@@ -167,9 +165,7 @@ impl MOBSnapshot {
             .iter()
             .fold(dec!(0), |acc, (_, quantity)| acc + quantity);
 
-        let weighted_average_price = acc_price_by_size / acc_size;
-
-        weighted_average_price
+        acc_price_by_size / acc_size
     }
 }
 
