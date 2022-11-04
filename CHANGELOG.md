@@ -1,3 +1,30 @@
+# [stablesats release v0.3.15](https://github.com/GaloyMoney/stablesats/releases/tag/v0.3.15)
+
+
+### Bug Fixes
+
+- Use 'delayed' fee for get_cents_from_sats_for_future_sell (#174)
+
+### Documentation
+
+- Update readme
+- Stablesats developer documentation (#154)
+
+### Miscellaneous Tasks
+
+- Skip reporting config in trace
+- Bump serde_yaml from 0.9.13 to 0.9.14 (#169)
+- Bump axum from 0.5.16 to 0.5.17 (#170)
+- Bump serde from 1.0.145 to 1.0.147 (#171)
+- Bump futures from 0.3.24 to 0.3.25 (#165)
+- Bump clap from 4.0.17 to 4.0.18 (#166)
+- Bump axum-core from 0.2.8 to 0.2.9 (#167)
+- Bump anyhow from 1.0.65 to 1.0.66 (#168)
+- Bump serde_json from 1.0.86 to 1.0.87 (#164)
+- Bump clap from 4.0.16 to 4.0.17 (#163)
+- Bump clap from 4.0.15 to 4.0.16 (#162)
+- Bump clap from 4.0.14 to 4.0.15 (#160)
+
 # [stablesats release v0.3.14](https://github.com/GaloyMoney/stablesats/releases/tag/v0.3.14)
 
 
