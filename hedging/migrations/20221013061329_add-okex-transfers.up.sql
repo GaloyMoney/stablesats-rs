@@ -21,11 +21,11 @@ CREATE TABLE okex_transfers (
   current_usd_btc_price NUMERIC NOT NULL,
   funding_btc_total_balance NUMERIC NOT NULL,
 
-  complete BOOLEAN NOT NULL DEFAULT FALSE,
+  complete BOOLEAN NOT NULL GENERATED ALWAYS AS (CASE WHEN state = 'pending' THEN FALSE ELSE TRUE END) STORED,
   lost BOOLEAN NOT NULL DEFAULT FALSE,
 
   transfer_id VARCHAR(20),
-  state VARCHAR(20) NOT NULL CHECK (state in ('success', 'pending, failed')),
+  state VARCHAR(20) NOT NULL CHECK (state in ('success', 'pending', 'failed')),
 
   created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()
 );

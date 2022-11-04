@@ -71,8 +71,9 @@ impl OkexTransfers {
                 trading_btc_used_balance,
                 trading_btc_total_balance,
                 current_usd_btc_price,
-                funding_btc_total_balance
-            ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)"#,
+                funding_btc_total_balance,
+                state
+            ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16)"#,
             String::from(id.clone()),
             Uuid::from(reservation.shared.correlation_id),
             reservation.shared.action_type,
@@ -87,7 +88,8 @@ impl OkexTransfers {
             reservation.shared.trading_btc_used_balance,
             reservation.shared.trading_btc_total_balance,
             reservation.shared.current_usd_btc_price,
-            reservation.shared.funding_btc_total_balance
+            reservation.shared.funding_btc_total_balance,
+            "pending"
         )
         .execute(&mut tx)
         .await?;
