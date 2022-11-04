@@ -183,8 +183,11 @@ mod tests {
     }
 
     fn load_order_book(filename: &str) -> anyhow::Result<SnapshotFixture> {
-        let contents = fs::read_to_string(format!("./tests/fixtures/order-book-{}.json", filename))
-            .expect(&format!("Couldn't load fixture {}", filename));
+        let contents = fs::read_to_string(format!(
+            "./tests/fixtures/order-book-payload-{}.json",
+            filename
+        ))
+        .expect(&format!("Couldn't load fixture {}", filename));
 
         let res = serde_json::from_str::<SnapshotFixture>(&contents)?;
         Ok(res)
@@ -213,7 +216,7 @@ mod tests {
 
     #[test]
     fn weighted_prices_from_snapshot_fixture() -> anyhow::Result<()> {
-        let latest_snapshot = load_order_book("payload")?.payload;
+        let latest_snapshot = load_order_book("real")?.payload;
         let weighted_ask_price = latest_snapshot.ask_price_of_one_sat();
         let weighted_bid_price = latest_snapshot.bid_price_of_one_sat();
 
