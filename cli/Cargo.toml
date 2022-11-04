@@ -15,9 +15,10 @@ galoy-client = { path = "../galoy-client" }
 okex-client = { path = "../okex-client" }
 hedging = { path = "../hedging" }
 okex-price = { path = "../okex-price" }
+kollider-price = { path = "../kollider-price" }
 
 anyhow = "1.0.66"
-clap = { version =  "4.0", features = ["derive", "env"] }
+clap = { version = "4.0", features = ["derive", "env"] }
 serde = { version = "1.0.147", features = ["derive"] }
 serde_yaml = "0.9.14"
 tokio = "1.21.2"

@@ -1195,6 +1195,23 @@ dependencies = [
 ]
 
 [[package]]
+name = "kollider-price"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "chrono",
+ "futures",
+ "rust_decimal",
+ "serde",
+ "serde_json",
+ "stablesats-shared",
+ "thiserror",
+ "tokio",
+ "tokio-tungstenite",
+ "url",
+]
+
+[[package]]
 name = "lazy_static"
 version = "1.4.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2515,6 +2532,7 @@ dependencies = [
  "futures",
  "galoy-client",
  "hedging",
+ "kollider-price",
  "okex-client",
  "okex-price",
  "opentelemetry",
