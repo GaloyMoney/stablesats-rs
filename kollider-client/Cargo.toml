@@ -16,6 +16,8 @@ serde_derive = "1.0.147"
 serde_json = "1.0.87"
 thiserror = "1.0.37"
 tokio = { version = "1.21.2", features = ["full"] }
+governor = "0.5.0"
+lazy_static = "1.4.0"
 
 [dev-dependencies]
 anyhow = "1.0.66"

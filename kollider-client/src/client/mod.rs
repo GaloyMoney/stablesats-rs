@@ -1,3 +1,6 @@
+use std::num::NonZeroU32;
+use std::time::Duration;
+
 use chrono::SecondsFormat;
 use chrono::Utc;
 use data_encoding::BASE64;
@@ -15,6 +18,14 @@ use self::primitives::*;
 
 mod error;
 mod primitives;
+
+use governor::{
+    clock::DefaultClock, state::keyed::DefaultKeyedStateStore, Jitter, Quota, RateLimiter,
+};
+
+lazy_static::lazy_static! {
+    static ref LIMITER: RateLimiter<&'static str, DefaultKeyedStateStore<&'static str>, DefaultClock>  = RateLimiter::keyed(Quota::per_second(NonZeroU32::new(1).unwrap()));
+}
 
 #[derive(Default, Debug, Clone, Serialize, Deserialize)]
 pub struct KolliderClientConfig {
@@ -36,6 +47,12 @@ impl KolliderClient {
             client: reqwest::Client::new(),
             config: cfg,
         }
+    }
+
+    pub async fn rate_limit_client(&self, key: &'static str) -> &Client {
+        let jitter = Jitter::new(Duration::from_secs(1), Duration::from_secs(1));
+        LIMITER.until_key_ready_with_jitter(&key, jitter).await;
+        &self.client
     }
 
     fn create_headers(
@@ -85,7 +102,8 @@ impl KolliderClient {
     pub async fn get_user_balances(&self) -> Result<UserBalances, KolliderClientError> {
         let path = "/user/balances";
         let res = self
-            .client
+            .rate_limit_client(path)
+            .await
             .get(format!("{}{}", &self.config.url, path))
             .headers(Self::create_get_headers(self, path)?)
             .send()
@@ -96,7 +114,8 @@ impl KolliderClient {
     pub async fn get_products(&self) -> Result<String, KolliderClientError> {
         let path = "/market/products";
         let res = self
-            .client
+            .rate_limit_client(path)
+            .await
             .get(format!("{}{}", &self.config.url, path))
             .send()
             .await?;
@@ -114,7 +133,8 @@ impl KolliderClient {
         .to_string();
 
         let res = self
-            .client
+            .rate_limit_client(path)
+            .await
             .post(format!("{}{}", self.config.url, path))
             .headers(Self::create_post_headers(self, path, &request_body)?)
             .body(request_body)
@@ -138,7 +158,8 @@ impl KolliderClient {
         .to_string();
 
         let res = self
-            .client
+            .rate_limit_client(path)
+            .await
             .post(format!("{}{}", self.config.url, path))
             .headers(Self::create_post_headers(self, path, &request_body)?)
             .body(request_body)
@@ -167,7 +188,8 @@ impl KolliderClient {
         .to_string();
 
         let res = self
-            .client
+            .rate_limit_client(path)
+            .await
             .post(format!("{}{}", self.config.url, path))
             .headers(Self::create_post_headers(self, path, &request_body)?)
             .body(request_body)
