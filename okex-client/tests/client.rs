@@ -15,7 +15,7 @@ async fn configured_okex_client() -> anyhow::Result<OkexClient> {
         api_key,
         passphrase,
         secret_key,
-        simulated: false,
+        simulated: true,
     })
     .await?;
 
