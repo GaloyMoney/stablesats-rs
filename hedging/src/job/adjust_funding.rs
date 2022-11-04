@@ -34,9 +34,15 @@ pub(super) async fn execute(
         "current_position",
         &tracing::field::display(current_position.usd_cents),
     );
+
+    let mut last_price_in_usd_cents = current_position.last_price_in_usd_cents;
+    if last_price_in_usd_cents.is_zero() {
+        last_price_in_usd_cents = okex.get_last_price_in_usd_cents().await?.usd_cents;
+    }
+
     span.record(
         "last_price_in_usd_cents",
-        &tracing::field::display(current_position.last_price_in_usd_cents),
+        &tracing::field::display(last_price_in_usd_cents),
     );
 
     let funding_available_balance = okex.funding_account_balance().await?;
@@ -59,7 +65,7 @@ pub(super) async fn execute(
         current_position.usd_cents.into(),
         trading_available_balance.used_amt_in_btc,
         trading_available_balance.total_amt_in_btc,
-        current_position.last_price_in_usd_cents,
+        last_price_in_usd_cents,
     );
     span.record("action", &tracing::field::display(&action));
 
@@ -71,7 +77,7 @@ pub(super) async fn execute(
         current_usd_exposure: current_position.usd_cents,
         trading_btc_used_balance: trading_available_balance.used_amt_in_btc,
         trading_btc_total_balance: trading_available_balance.total_amt_in_btc,
-        current_usd_btc_price: current_position.last_price_in_usd_cents,
+        current_usd_btc_price: last_price_in_usd_cents,
         funding_btc_total_balance: funding_available_balance.total_amt_in_btc,
     };
 
