@@ -250,10 +250,20 @@ impl OkexClient {
 
         let trading_balance = Self::extract_response_data::<TradingBalanceData>(response).await?;
 
+        let mut free_amt_in_btc = Decimal::ZERO;
+        let mut used_amt_in_btc = Decimal::ZERO;
+        let mut total_amt_in_btc = Decimal::ZERO;
+
+        if !trading_balance.details.is_empty() {
+            free_amt_in_btc = trading_balance.details[0].avail_eq;
+            used_amt_in_btc = trading_balance.details[0].frozen_bal;
+            total_amt_in_btc = trading_balance.details[0].eq;
+        }
+
         Ok(AvailableBalance {
-            free_amt_in_btc: trading_balance.details[0].avail_eq,
-            used_amt_in_btc: trading_balance.details[0].frozen_bal,
-            total_amt_in_btc: trading_balance.details[0].eq,
+            free_amt_in_btc,
+            used_amt_in_btc,
+            total_amt_in_btc,
         })
     }
 

@@ -106,6 +106,7 @@ pub struct TradingBalanceDetails {
     pub upl: String,
     pub upl_liab: String,
     pub stgy_eq: String,
+    pub spot_in_use_amt: String,
 }
 
 #[derive(Deserialize, Debug)]
