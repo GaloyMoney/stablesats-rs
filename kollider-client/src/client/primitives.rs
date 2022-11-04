@@ -2,31 +2,30 @@ use std::fmt::Debug;
 use std::fmt::Display;
 
 use serde_derive::Deserialize;
-use serde_derive::Serialize;
 
-#[derive(Default, Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Deserialize)]
 pub struct UserBalances {
     pub cash: Cash,
     pub cross_margin: String,
     pub isolated_margin: IsolatedMargin,
 }
 
-#[derive(Default, Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Deserialize)]
 #[serde(rename_all = "UPPERCASE")]
 pub struct Cash {
     pub kkp: String,
     pub sat: String,
 }
 
-#[derive(Default, Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Deserialize)]
 pub struct IsolatedMargin {}
 
-#[derive(Default, Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Deserialize)]
 pub struct PaymentRequest {
     pub payment_request: String,
 }
 
-#[derive(Default, Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Deserialize)]
 pub struct PlaceOrderResult {
     pub timestamp: i64,
     pub order_id: i64,
@@ -39,7 +38,7 @@ pub struct PlaceOrderResult {
     pub leverage: i64,
 }
 
-#[derive(Default, Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Deserialize)]
 pub struct Products {
     #[serde(rename = "ETHUSD.PERP")]
     pub ethusd_perp: Product,
@@ -49,7 +48,7 @@ pub struct Products {
     pub btceur_perp: Product,
 }
 
-#[derive(Default, Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Deserialize)]
 pub struct Product {
     pub symbol: String,
     pub contract_size: String,
@@ -62,6 +61,26 @@ pub struct Product {
     pub last_price: String,
     pub tick_size: String,
     pub risk_limit: String,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct OpenPositions {
+    #[serde(rename = "BTCUSD.PERP")]
+    pub btcusd_perp: Option<BtcusdPerp>,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct BtcusdPerp {
+    pub uid: i64,
+    pub timestamp: i64,
+    pub symbol: String,
+    pub upnl: String,
+    pub leverage: String,
+    pub entry_price: String,
+    pub side: String,
+    pub quantity: String,
+    pub liq_price: String,
+    pub open_order_ids: Vec<i32>,
 }
 
 #[derive(Debug, Clone)]
