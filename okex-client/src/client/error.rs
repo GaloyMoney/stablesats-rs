@@ -18,6 +18,8 @@ pub enum OkexClientError {
     ParameterClientIdError,
     #[error("OkexClientError - WithdrawalIdDoesNotExist")]
     WithdrawalIdDoesNotExist,
+    #[error("OkexClientError - NoLastPriceAvailable")]
+    NoLastPriceAvailable,
     #[error("OkexClientError - DecimalConversion: {0}")]
     DecimalConversion(#[from] rust_decimal::Error),
     #[error("OkexClientError - MisconfiguredAccount: {0}")]

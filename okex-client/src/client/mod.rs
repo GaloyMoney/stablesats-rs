@@ -449,6 +449,29 @@ impl OkexClient {
         Ok(details)
     }
 
+    pub async fn get_last_price_in_usd_cents(&self) -> Result<LastPrice, OkexClientError> {
+        let request_path = "/api/v5/market/ticker?instId=BTC-USD-SWAP";
+        let headers = self.get_request_headers(request_path)?;
+
+        let response = self
+            .rate_limit_client(request_path)
+            .await
+            .get(Self::url_for_path(request_path))
+            .headers(headers)
+            .send()
+            .await?;
+
+        if let Some(LastPriceData { last, .. }) =
+            Self::extract_optional_response_data::<LastPriceData>(response).await?
+        {
+            Ok(LastPrice {
+                usd_cents: last * Decimal::ONE_HUNDRED,
+            })
+        } else {
+            Err(OkexClientError::NoLastPriceAvailable)
+        }
+    }
+
     #[instrument(skip_all, err)]
     pub async fn get_position_in_signed_usd_cents(&self) -> Result<PositionSize, OkexClientError> {
         let request_path = "/api/v5/account/positions?instId=BTC-USD-SWAP";
@@ -482,13 +505,7 @@ impl OkexClient {
                     } else {
                         Decimal::NEGATIVE_ONE
                     },
-                last_price_in_usd_cents: last
-                    * Decimal::ONE_HUNDRED
-                    * if direction > Decimal::ZERO {
-                        Decimal::ONE
-                    } else {
-                        Decimal::NEGATIVE_ONE
-                    },
+                last_price_in_usd_cents: last * Decimal::ONE_HUNDRED,
             })
         } else {
             Ok(PositionSize {

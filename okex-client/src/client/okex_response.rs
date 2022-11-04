@@ -158,6 +158,19 @@ pub struct OrderDetails {
 
 #[derive(Deserialize, Debug)]
 #[serde(rename_all = "camelCase")]
+pub struct LastPriceData {
+    pub inst_type: String,
+    pub inst_id: String,
+    pub last: Decimal,
+    pub last_sz: Decimal,
+    pub ask: Decimal,
+    pub ask_sz: Decimal,
+    pub bid: Decimal,
+    pub bid_sz: Decimal,
+}
+
+#[derive(Deserialize, Debug)]
+#[serde(rename_all = "camelCase")]
 pub struct PositionData {
     pub adl: String,
     pub avail_pos: String,

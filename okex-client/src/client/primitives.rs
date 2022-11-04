@@ -129,6 +129,11 @@ pub struct OrderId {
 }
 
 #[derive(Debug)]
+pub struct LastPrice {
+    pub usd_cents: Decimal,
+}
+
+#[derive(Debug)]
 pub struct PositionSize {
     pub instrument_id: OkexInstrumentId,
     pub usd_cents: Decimal,

@@ -218,3 +218,16 @@ async fn open_close_position() -> anyhow::Result<()> {
 
     Ok(())
 }
+
+#[tokio::test]
+#[serial]
+async fn last_price() -> anyhow::Result<()> {
+    let client = configured_okex_client().await?;
+
+    let last_price = client.get_last_price_in_usd_cents().await?;
+
+    assert!(!last_price.usd_cents.is_zero());
+    assert!(last_price.usd_cents.is_sign_positive());
+
+    Ok(())
+}
