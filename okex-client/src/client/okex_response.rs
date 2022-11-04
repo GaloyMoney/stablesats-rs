@@ -163,9 +163,9 @@ pub struct LastPriceData {
     pub inst_id: String,
     pub last: Decimal,
     pub last_sz: Decimal,
-    pub ask: Decimal,
+    pub ask_px: Decimal,
     pub ask_sz: Decimal,
-    pub bid: Decimal,
+    pub bid_px: Decimal,
     pub bid_sz: Decimal,
 }
 
