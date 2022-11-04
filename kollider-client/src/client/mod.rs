@@ -111,7 +111,7 @@ impl KolliderClient {
         Ok(res.json::<UserBalances>().await?)
     }
 
-    pub async fn get_products(&self) -> Result<String, KolliderClientError> {
+    pub async fn get_products(&self) -> Result<Products, KolliderClientError> {
         let path = "/market/products";
         let res = self
             .rate_limit_client(path)
@@ -120,7 +120,7 @@ impl KolliderClient {
             .send()
             .await?;
 
-        Ok(res.text().await?)
+        Ok(res.json::<Products>().await?)
     }
 
     pub async fn make_deposit(&self, sats: i32) -> Result<PaymentRequest, KolliderClientError> {

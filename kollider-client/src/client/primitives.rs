@@ -39,6 +39,31 @@ pub struct PlaceOrderResult {
     pub leverage: i64,
 }
 
+#[derive(Default, Debug, Clone, Serialize, Deserialize)]
+pub struct Products {
+    #[serde(rename = "ETHUSD.PERP")]
+    pub ethusd_perp: Product,
+    #[serde(rename = "BTCUSD.PERP")]
+    pub btcusd_perp: Product,
+    #[serde(rename = "BTCEUR.PERP")]
+    pub btceur_perp: Product,
+}
+
+#[derive(Default, Debug, Clone, Serialize, Deserialize)]
+pub struct Product {
+    pub symbol: String,
+    pub contract_size: String,
+    pub max_leverage: String,
+    pub base_margin: String,
+    pub maintenance_margin: String,
+    pub is_inverse_priced: bool,
+    pub price_dp: i64,
+    pub underlying_symbol: String,
+    pub last_price: String,
+    pub tick_size: String,
+    pub risk_limit: String,
+}
+
 #[derive(Debug, Clone)]
 pub enum KolliderOrderSide {
     Bid,

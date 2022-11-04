@@ -14,7 +14,8 @@ fn create_test_client() -> anyhow::Result<KolliderClient> {
 async fn get_products() {
     if let Ok(client) = create_test_client() {
         let products = client.get_products().await.unwrap();
-        println!("products: {}", products);
+        assert_eq!("BTCUSD.PERP", products.btcusd_perp.symbol);
+        println!("products: {:?}", products.btcusd_perp);
     }
 }
 
