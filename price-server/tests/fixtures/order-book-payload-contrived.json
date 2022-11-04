@@ -1,0 +1,17 @@
+{
+    "meta": {
+        "publishedAt": 1667454785,
+        "correlationId": "97b37536-e953-4c5b-821f-8058ae986080"
+    },
+    "payloadType": "OkexBtcUsdSwapOrderBookPayload",
+    "payload": {
+        "asks": {
+            "0.0100000": "10"
+        },
+        "bids": {
+            "0.0100000": "10"
+        },
+        "timestamp": 1667454784,
+        "exchange": "okex"
+    }
+}
