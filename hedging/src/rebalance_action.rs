@@ -69,12 +69,12 @@ impl RebalanceAction {
 
 fn round_btc(amount_in_btc: Decimal) -> Decimal {
     let amount_in_sats = amount_in_btc * SATS_PER_BTC;
-    amount_in_sats.round() / amount_in_sats
+    amount_in_sats.round() / SATS_PER_BTC
 }
 
 fn floor_btc(amount_in_btc: Decimal) -> Decimal {
     let amount_in_sats = amount_in_btc * SATS_PER_BTC;
-    amount_in_sats.floor() / amount_in_sats
+    amount_in_sats.floor() / SATS_PER_BTC
 }
 
 pub fn determine_action(
@@ -88,7 +88,7 @@ pub fn determine_action(
     let abs_exposure_in_btc = Decimal::from(signed_exposure_in_cents).abs() / btc_price_in_cents;
     if abs_exposure_in_btc.is_zero()
         && total_collateral_in_btc.is_zero()
-        && abs_liability_in_cents < MIN_LIABILITY_THRESHOLD_CENTS
+        && abs_liability_in_cents > MIN_LIABILITY_THRESHOLD_CENTS
     {
         let new_collateral_in_btc = abs_liability_in_btc / HIGH_SAFEBOUND_RATIO_LEVERAGE;
         let transfer_size_in_btc = round_btc(new_collateral_in_btc - total_collateral_in_btc);
@@ -155,7 +155,7 @@ mod tests {
         let used_collateral: Decimal = dec!(0);
         let total_collateral: Decimal = dec!(0);
         let btc_price: Decimal = dec!(1);
-        let expected_transfer: Decimal = liability / HIGH_SAFEBOUND_RATIO_LEVERAGE;
+        let expected_transfer: Decimal = round_btc(liability / HIGH_SAFEBOUND_RATIO_LEVERAGE);
         let adjustment = determine_action(
             liability,
             exposure,
@@ -174,7 +174,7 @@ mod tests {
         let total_collateral: Decimal = liability / dec!(2);
         let used_collateral: Decimal = total_collateral / LOW_SAFEBOUND_RATIO_LEVERAGE;
         let btc_price: Decimal = dec!(1);
-        let expected_transfer: Decimal = total_collateral;
+        let expected_transfer: Decimal = floor_btc(total_collateral);
         let adjustment = determine_action(
             liability,
             exposure,
@@ -193,7 +193,7 @@ mod tests {
         let used_collateral: Decimal = total_collateral / LOW_SAFEBOUND_RATIO_LEVERAGE;
         let btc_price: Decimal = dec!(1);
         let expected_transfer: Decimal =
-            liability / HIGH_SAFEBOUND_RATIO_LEVERAGE - total_collateral;
+            round_btc(liability / HIGH_SAFEBOUND_RATIO_LEVERAGE - total_collateral);
         let adjustment = determine_action(
             liability,
             exposure,
@@ -207,14 +207,16 @@ mod tests {
     #[test]
     fn counterparty_risk_avoidance() {
         let liability = SyntheticCentLiability::try_from(dec!(10_000)).unwrap();
-        let exposure = SyntheticCentExposure::from(dec!(-10_000));
-        let total_collateral: Decimal = exposure.into();
+        let exposure = dec!(10_000);
+        let signed_exposure = SyntheticCentExposure::from(-exposure);
+        let total_collateral: Decimal = dec!(10_000);
         let used_collateral: Decimal = exposure / LOW_SAFEBOUND_RATIO_LEVERAGE;
         let btc_price: Decimal = dec!(1);
-        let expected_transfer: Decimal = total_collateral - exposure / LOW_SAFEBOUND_RATIO_LEVERAGE;
+        let expected_transfer: Decimal =
+            floor_btc(total_collateral - exposure / LOW_SAFEBOUND_RATIO_LEVERAGE);
         let adjustment = determine_action(
             liability,
-            exposure,
+            signed_exposure,
             used_collateral,
             total_collateral,
             btc_price,
@@ -225,15 +227,16 @@ mod tests {
     #[test]
     fn liquidation_risk_avoidance() {
         let liability = SyntheticCentLiability::try_from(dec!(10_000)).unwrap();
-        let exposure = SyntheticCentExposure::from(dec!(-10_000));
-        let total_collateral: Decimal = exposure / dec!(4);
+        let exposure = dec!(10_100);
+        let signed_exposure = SyntheticCentExposure::from(-exposure);
+        let total_collateral: Decimal = exposure / dec!(3.01);
         let used_collateral: Decimal = exposure / LOW_SAFEBOUND_RATIO_LEVERAGE;
         let btc_price: Decimal = dec!(1);
         let expected_transfer: Decimal =
-            exposure / HIGH_SAFEBOUND_RATIO_LEVERAGE - total_collateral;
+            round_btc(exposure / HIGH_SAFEBOUND_RATIO_LEVERAGE - total_collateral);
         let adjustment = determine_action(
             liability,
-            exposure,
+            signed_exposure,
             used_collateral,
             total_collateral,
             btc_price,
@@ -244,19 +247,52 @@ mod tests {
     #[test]
     fn market_activity_tracking() {
         let liability = SyntheticCentLiability::try_from(dec!(10000)).unwrap();
-        let exposure = SyntheticCentExposure::from(dec!(-10000));
+        let exposure = dec!(10_000);
+        let signed_exposure = SyntheticCentExposure::from(-exposure);
         let total_collateral: Decimal = exposure / dec!(2);
         let used_collateral: Decimal = total_collateral;
         let btc_price: Decimal = dec!(1);
         let expected_transfer: Decimal =
-            LOW_SAFEBOUND_RATIO_LEVERAGE * used_collateral - total_collateral;
+            round_btc(LOW_SAFEBOUND_RATIO_LEVERAGE * used_collateral - total_collateral);
         let adjustment = determine_action(
             liability,
-            exposure,
+            signed_exposure,
             used_collateral,
             total_collateral,
             btc_price,
         );
         assert_eq!(adjustment, RebalanceAction::Deposit(expected_transfer));
+    }
+
+    #[test]
+    fn btc_round_down() {
+        let expected_btc = dec!(100_000_000.0) / dec!(100_000_000);
+        let unrounded_btc = dec!(100_000_000.4) / dec!(100_000_000);
+        let rounded_btc = round_btc(unrounded_btc);
+        assert_eq!(rounded_btc, expected_btc);
+    }
+
+    #[test]
+    fn btc_round_up() {
+        let expected_btc = dec!(100_000_001.0) / dec!(100_000_000);
+        let unrounded_btc = dec!(100_000_000.6) / dec!(100_000_000);
+        let rounded_btc = round_btc(unrounded_btc);
+        assert_eq!(rounded_btc, expected_btc);
+    }
+
+    #[test]
+    fn btc_floor_down() {
+        let expected_btc = dec!(100_000_000.0) / dec!(100_000_000);
+        let unfloored_btc = dec!(100_000_000.4) / dec!(100_000_000);
+        let floored_btc = floor_btc(unfloored_btc);
+        assert_eq!(floored_btc, expected_btc);
+    }
+
+    #[test]
+    fn btc_floor_up() {
+        let expected_btc = dec!(100_000_000.0) / dec!(100_000_000);
+        let unfloored_btc = dec!(100_000_000.6) / dec!(100_000_000);
+        let floored_btc = floor_btc(unfloored_btc);
+        assert_eq!(floored_btc, expected_btc);
     }
 }
