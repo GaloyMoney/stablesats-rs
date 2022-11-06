@@ -16,7 +16,7 @@ pub enum OkexClientError {
     OrderDoesNotExist,
     #[error("OkexClientError - DecimalConversion: {0}")]
     DecimalConversion(#[from] rust_decimal::Error),
-    #[error("OkexClientError - MosconfiguredAccount: {0}")]
+    #[error("OkexClientError - MisconfiguredAccount: {0}")]
     MisconfiguredAccount(String),
 }
 
