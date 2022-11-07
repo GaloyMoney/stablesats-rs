@@ -204,8 +204,8 @@ impl OrderBookCache {
         Ok(())
     }
 
-    pub fn latest(&self) -> CompleteOrderBook {
-        self.current.clone()
+    pub fn latest(&self) -> &CompleteOrderBook {
+        &self.current
     }
 }
 
