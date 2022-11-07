@@ -1,14 +1,8 @@
 use rust_decimal::Decimal;
 use serde::Deserialize;
 
+use crate::okex_shared::*;
 use shared::time::*;
-
-#[derive(Clone, Deserialize, Debug, PartialEq, Eq)]
-#[serde(rename_all = "camelCase")]
-pub struct ChannelArgs {
-    pub channel: String,
-    pub inst_id: String,
-}
 
 #[derive(Clone, Deserialize, Debug)]
 #[serde(rename_all = "camelCase")]

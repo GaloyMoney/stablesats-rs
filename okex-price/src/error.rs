@@ -10,10 +10,20 @@ pub enum PriceFeedError {
     OkexWsError(#[from] TungsteniteError),
     #[error("PriceFeedError - EmptyPriceData: OkexPriceTick.data was empty")]
     EmptyPriceData,
+    #[error("PriceFeedError - EmptyOrderBookData: OkexOrderBook.data was empty")]
+    EmptyOrderBookData,
     #[error("PriceFeedError - InvalidTimestamp: {0}")]
     InvalidTimestamp(#[from] std::num::ParseIntError),
     #[error("PriceFeedError - SerdeError: {0}")]
     SerializationError(#[from] SerdeError),
     #[error("PriceFeedError - PublisherError: {0}")]
     PublisherError(#[from] PublisherError),
+    #[error("PriceFeedError - OrderBookConversion: {0}")]
+    OrderBookConversion(#[from] anyhow::Error),
+    #[error("PriceFeedError - DepthValidation: {0}")]
+    DepthValidation(String),
+    #[error("PriceFeedError - InitialFullLoad: initial full load empty")]
+    InitialFullLoad,
+    #[error("PriceFeedError: CheckSumValidation - Can't validate accuracy of depth data")]
+    CheckSumValidation,
 }
