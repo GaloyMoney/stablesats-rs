@@ -21,15 +21,6 @@ impl TryFrom<OkexPriceTick> for OkexBtcUsdSwapPricePayload {
     }
 }
 
-impl From<OrderBookAction> for OrderBookActionRaw {
-    fn from(action: OrderBookAction) -> Self {
-        match action {
-            OrderBookAction::Snapshot => Self::Snapshot,
-            OrderBookAction::Update => Self::Update,
-        }
-    }
-}
-
 impl TryFrom<OkexOrderBook> for OrderBookIncrement {
     type Error = PriceFeedError;
 

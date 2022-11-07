@@ -53,12 +53,6 @@ impl From<i32> for CheckSumRaw {
     }
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
-pub enum OrderBookActionRaw {
-    Snapshot,
-    Update,
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;

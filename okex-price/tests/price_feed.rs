@@ -98,18 +98,3 @@ async fn publishes_to_redis() -> anyhow::Result<()> {
 
     Ok(())
 }
-
-#[tokio::test]
-async fn unsubscribe_order_book_channel() {
-    let config = PriceFeedConfig {
-        url: Url::parse("wss://ws.okx.com:8443/ws/v5/public").unwrap(),
-    };
-    let mut unsubscribe_resp = unsubscribe_btc_usd_swap_order_book(config)
-        .await
-        .expect("unsubscribe from books channel");
-    let res = unsubscribe_resp.next().await.expect("unsubscribe");
-
-    assert_eq!(res.event, "unsubscribe".to_string());
-    assert_eq!(res.arg.channel, "books".to_string());
-    assert_eq!(res.arg.inst_id, "BTC-USD-SWAP".to_string());
-}
