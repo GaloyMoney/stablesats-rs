@@ -17,6 +17,7 @@ fn load_fixture() -> anyhow::Result<Fixture> {
 }
 
 #[tokio::test]
+#[ignore = "currently kolider testnet is flaky"]
 async fn publishes_to_redis() -> anyhow::Result<()> {
     let redis_host = std::env::var("REDIS_HOST").unwrap_or("localhost".to_string());
     let pubsub_config = PubSubConfig {
