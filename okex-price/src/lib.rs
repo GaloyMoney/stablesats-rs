@@ -17,7 +17,6 @@ pub use error::*;
 pub use okex_shared::*;
 pub use order_book::*;
 pub use price_feed::*;
-use tracing::{info_span, Instrument};
 
 pub async fn run(
     price_feed_config: PriceFeedConfig,
@@ -56,45 +55,16 @@ async fn order_book_subscription(
     let full_incr = OrderBookIncrement::try_from(full_load)?;
     let cache = OrderBookCache::new(full_incr.try_into()?);
 
-    let span = info_span!(
-        "subscribe_to_okex_order_book",
-        error = tracing::field::Empty,
-        error.level = tracing::field::Empty,
-        error.message = tracing::field::Empty
-    );
-
     let (send, recv) = tokio::sync::oneshot::channel();
 
-    shared::tracing::record_error::<(), PriceFeedError, _, _>(
-        tracing::Level::ERROR,
-        || async move {
-            tokio::spawn(async move {
-                while let Some(book) = stream.next().await {
-                    let span = info_span!(
-                        "order_book_received",
-                        error = tracing::field::Empty,
-                        error.level = tracing::field::Empty,
-                        error.message = tracing::field::Empty,
-                    );
-
-                    if let Err(e) = shared::tracing::record_error(tracing::Level::WARN, || async {
-                        okex_order_book_received(&publisher, book, cache.clone()).await
-                    })
-                    .instrument(span)
-                    .await
-                    {
-                        let _ = send.send(e);
-                        break;
-                    }
-                }
-            });
-
-            Ok(())
-        },
-    )
-    .instrument(span)
-    .await?;
-
+    tokio::spawn(async move {
+        while let Some(book) = stream.next().await {
+            if let Err(e) = okex_order_book_received(&publisher, book, cache.clone()).await {
+                let _ = send.send(e);
+                break;
+            }
+        }
+    });
     let _receiver = recv.await;
     Ok(())
 }
