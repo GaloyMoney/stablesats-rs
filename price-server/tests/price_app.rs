@@ -36,6 +36,7 @@ async fn price_app() -> anyhow::Result<()> {
             delayed_fee_rate: dec!(0.1),
         },
         config,
+        PriceServerAppConfig::default(),
     )
     .await?;
 

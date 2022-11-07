@@ -1,10 +1,17 @@
+mod config;
 mod error;
 
 use chrono::Duration;
 use futures::stream::StreamExt;
 use tracing::{info_span, instrument, Instrument};
 
-use shared::{health::HealthCheckTrigger, payload::OkexBtcUsdSwapPricePayload, pubsub::*};
+use shared::{
+    health::HealthCheckTrigger,
+    payload::{KolliderBtcUsdSwapPricePayload, OkexBtcUsdSwapPricePayload},
+    pubsub::*,
+};
+
+pub use self::config::PriceServerAppConfig;
 
 use super::exchange_price_cache::ExchangePriceCache;
 
@@ -18,43 +25,63 @@ pub struct PriceApp {
 
 impl PriceApp {
     pub async fn run(
-        mut health_check_trigger: HealthCheckTrigger,
+        health_check_trigger: HealthCheckTrigger,
         fee_calc_cfg: FeeCalculatorConfig,
         pubsub_cfg: PubSubConfig,
+        app_cfg: PriceServerAppConfig,
     ) -> Result<Self, PriceAppError> {
-        let subscriber = Subscriber::new(pubsub_cfg).await?;
-        let mut stream = subscriber.subscribe::<OkexBtcUsdSwapPricePayload>().await?;
-        tokio::spawn(async move {
-            while let Some(check) = health_check_trigger.next().await {
-                check
-                    .send(subscriber.healthy(Duration::seconds(20)).await)
-                    .expect("Couldn't send response");
-            }
-        });
-
         let price_cache = ExchangePriceCache::new(Duration::seconds(30));
         let fee_calculator = FeeCalculator::new(fee_calc_cfg);
         let app = Self {
             price_cache: price_cache.clone(),
             fee_calculator,
         };
+        let subscriber = Subscriber::new(pubsub_cfg).await?;
 
-        let _ = tokio::spawn(async move {
-            while let Some(msg) = stream.next().await {
-                let span = info_span!(
-                    "price_tick_received",
-                    message_type = %msg.payload_type,
-                    correlation_id = %msg.meta.correlation_id
-                );
-                shared::tracing::inject_tracing_data(&span, &msg.meta.tracing_data);
+        if app_cfg.use_okex {
+            let mut stream = subscriber.subscribe::<OkexBtcUsdSwapPricePayload>().await?;
+            subscribe_to_healthcheck(health_check_trigger, subscriber);
 
-                async {
-                    price_cache.apply_update(msg).await;
+            let _ = tokio::spawn(async move {
+                while let Some(msg) = stream.next().await {
+                    let span = info_span!(
+                        "price_tick_received",
+                        message_type = %msg.payload_type,
+                        correlation_id = %msg.meta.correlation_id
+                    );
+                    shared::tracing::inject_tracing_data(&span, &msg.meta.tracing_data);
+
+                    async {
+                        price_cache.apply_update_okex(msg).await;
+                    }
+                    .instrument(span)
+                    .await;
                 }
-                .instrument(span)
-                .await;
-            }
-        });
+            });
+        } else {
+            let mut stream = subscriber
+                .subscribe::<KolliderBtcUsdSwapPricePayload>()
+                .await?;
+            subscribe_to_healthcheck(health_check_trigger, subscriber);
+
+            let _ = tokio::spawn(async move {
+                while let Some(msg) = stream.next().await {
+                    let span = info_span!(
+                        "price_tick_received",
+                        message_type = %msg.payload_type,
+                        correlation_id = %msg.meta.correlation_id
+                    );
+                    shared::tracing::inject_tracing_data(&span, &msg.meta.tracing_data);
+
+                    async {
+                        price_cache.apply_update_kollider(msg).await;
+                    }
+                    .instrument(span)
+                    .await;
+                }
+            });
+        }
+
         Ok(app)
     }
 
@@ -175,4 +202,14 @@ impl PriceApp {
         let cents_per_sat = self.price_cache.latest_tick().await?.mid_price_of_one_sat();
         Ok(f64::try_from(cents_per_sat)?)
     }
+}
+
+fn subscribe_to_healthcheck(mut health_check_trigger: HealthCheckTrigger, subscriber: Subscriber) {
+    tokio::spawn(async move {
+        while let Some(check) = health_check_trigger.next().await {
+            check
+                .send(subscriber.healthy(Duration::seconds(20)).await)
+                .expect("Couldn't send response");
+        }
+    });
 }

@@ -138,9 +138,15 @@ async fn run_cmd(
         checkers.insert("price", snd);
         handles.push(tokio::spawn(async move {
             let _ = price_send.try_send(
-                price_server::run(recv, price_server.server, price_server.fees, pubsub)
-                    .await
-                    .context("Price Server error"),
+                price_server::run(
+                    recv,
+                    price_server.server,
+                    price_server.fees,
+                    pubsub,
+                    price_server.app,
+                )
+                .await
+                .context("Price Server error"),
             );
         }));
     }

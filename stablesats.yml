@@ -26,6 +26,8 @@
 
 # price_server:
   # enabled: true
+  # app:
+  #   use_okex: true
   # server:
   #   listen_port: 3325
   # fees:
