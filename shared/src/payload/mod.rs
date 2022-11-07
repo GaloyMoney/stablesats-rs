@@ -77,7 +77,6 @@ pub struct OrderBookPayload {
     pub exchange: ExchangeIdRaw,
 }
 
-/// Message to transmit order book payload
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(transparent)]
 pub struct OkexBtcUsdSwapOrderBookPayload(pub OrderBookPayload);
