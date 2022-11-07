@@ -41,7 +41,7 @@ macro_rules! string_wrapper {
 macro_rules! decimal_wrapper {
     ($name:ident) => {
         #[derive(
-            Clone, Copy, Debug, PartialOrd, PartialEq, Eq, serde::Serialize, serde::Deserialize,
+            Clone, Copy, Debug, PartialOrd, Ord, PartialEq, Eq, serde::Serialize, serde::Deserialize,
         )]
         #[serde(transparent)]
         pub struct $name(rust_decimal::Decimal);

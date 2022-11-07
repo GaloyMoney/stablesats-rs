@@ -5,6 +5,8 @@ use serde::{Deserialize, Serialize};
 crate::string_wrapper! { ExchangeIdRaw }
 crate::string_wrapper! { InstrumentIdRaw }
 crate::string_wrapper! { CurrencyRaw }
+crate::decimal_wrapper! { QuantityRaw }
+crate::decimal_wrapper! { PriceRaw }
 
 crate::abs_decimal_wrapper! { SyntheticCentLiability }
 crate::decimal_wrapper! { SyntheticCentExposure }
@@ -40,6 +42,14 @@ impl PriceRatioRaw {
         let mut ret = self.base;
         ret.set_scale(self.offset).expect("failed to set scale");
         ret.normalize()
+    }
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+pub struct CheckSumRaw(i32);
+impl From<i32> for CheckSumRaw {
+    fn from(cs: i32) -> Self {
+        Self(cs)
     }
 }
 
