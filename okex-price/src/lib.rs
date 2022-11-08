@@ -52,8 +52,8 @@ async fn order_book_subscription(
 ) -> Result<(), PriceFeedError> {
     let mut stream = subscribe_btc_usd_swap_order_book(config.clone()).await?;
     let full_load = stream.next().await.ok_or(PriceFeedError::InitialFullLoad)?;
-    let full_incr = OrderBookIncrement::try_from(full_load)?;
-    let cache = OrderBookCache::new(full_incr.try_into()?);
+    let order_book = CompleteOrderBook::try_from(OrderBookIncrement::try_from(full_load)?)?;
+    let cache = OrderBookCache::new(order_book);
 
     let (send, recv) = tokio::sync::oneshot::channel();
 
@@ -86,10 +86,10 @@ async fn okex_order_book_received(
 ) -> Result<(), PriceFeedError> {
     if let Ok(increment) = OrderBookIncrement::try_from(book) {
         cache.update_order_book(increment)?;
-        if let Ok(complete_order_book) = OkexBtcUsdSwapOrderBookPayload::try_from(cache.latest()) {
-            publisher
-                .throttle_publish::<OkexBtcUsdSwapOrderBookPayload>(complete_order_book)
-                .await?;
+        if let Ok(complete_order_book) =
+            OkexBtcUsdSwapOrderBookPayload::try_from(cache.latest().clone())
+        {
+            publisher.throttle_publish(complete_order_book).await?;
         }
     }
 
