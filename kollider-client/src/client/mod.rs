@@ -178,10 +178,10 @@ impl KolliderClient {
 
         let request_body = serde_json::json!({
             "price": 0,
-            "order_type": "Market",
+            "order_type": KolliderOrderType::Market.to_string(),
             "side": order_side.to_string(),
             "quantity": amount_usd,
-            "symbol": "BTCUSD.PERP",
+            "symbol": KolliderInstrumentId::BtcUsdSwap.to_string(),
             "leverage": leverage_percent,
             "margin_type": "Isolated",
             "settlement_type": "Delayed"

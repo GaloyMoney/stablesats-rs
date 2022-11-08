@@ -83,17 +83,44 @@ pub struct BtcusdPerp {
     pub open_order_ids: Vec<i32>,
 }
 
+#[derive(Debug, Clone, Deserialize)]
+pub enum KolliderOrderType {
+    Market,
+    Limit,
+}
+impl Display for KolliderOrderType {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            KolliderOrderType::Market => write!(f, "Market"),
+            KolliderOrderType::Limit => write!(f, "Limit"),
+        }
+    }
+}
+
+#[derive(Debug, Clone, Deserialize)]
+pub enum KolliderInstrumentId {
+    BtcUsdSwap,
+}
+
+impl Display for KolliderInstrumentId {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            KolliderInstrumentId::BtcUsdSwap => write!(f, "BTCUSD.PERP"),
+        }
+    }
+}
+
 #[derive(Debug, Clone)]
 pub enum KolliderOrderSide {
-    Bid,
-    Ask,
+    Buy,
+    Sell,
 }
 
 impl Display for KolliderOrderSide {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            KolliderOrderSide::Bid => write!(f, "Bid"),
-            KolliderOrderSide::Ask => write!(f, "Ask"),
+            KolliderOrderSide::Buy => write!(f, "Bid"),
+            KolliderOrderSide::Sell => write!(f, "Ask"),
         }
     }
 }
