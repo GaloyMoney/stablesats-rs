@@ -165,7 +165,9 @@ pub(super) async fn execute(
 
                     let external_transfer_amount = amount_in_btc - internal_transfer_amount;
                     let deposit_address = okex.get_funding_deposit_address().await?.value;
-                    if external_transfer_amount.is_sign_positive() {
+                    if !external_transfer_amount.is_zero()
+                        && external_transfer_amount.is_sign_positive()
+                    {
                         let external_reservation = Reservation {
                             shared: &shared,
                             action_size: Some(external_transfer_amount),
