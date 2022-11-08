@@ -18,7 +18,10 @@ pub struct Cash {
 }
 
 #[derive(Debug, Deserialize)]
-pub struct IsolatedMargin {}
+pub struct IsolatedMargin {
+    #[serde(rename = "BTCUSD.PERP")]
+    pub btc_usd: String,
+}
 
 #[derive(Debug, Deserialize)]
 pub struct PaymentRequest {
@@ -40,8 +43,6 @@ pub struct PlaceOrderResult {
 
 #[derive(Debug, Deserialize)]
 pub struct Products {
-    #[serde(rename = "ETHUSD.PERP")]
-    pub ethusd_perp: Product,
     #[serde(rename = "BTCUSD.PERP")]
     pub btcusd_perp: Product,
     #[serde(rename = "BTCEUR.PERP")]
