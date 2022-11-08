@@ -39,10 +39,10 @@ async fn get_onchain_fees_data() -> anyhow::Result<()> {
     let fees = client.get_onchain_fees().await?;
     assert_eq!(fees.ccy, "BTC".to_string());
     assert_eq!(fees.chain, "BTC-Bitcoin".to_string());
-    assert!(fees.min_fee >= Decimal::ZERO);
-    assert!(fees.max_fee >= Decimal::ZERO);
-    assert!(fees.min_withdraw >= Decimal::ZERO);
-    assert!(fees.min_withdraw >= Decimal::ZERO);
+    assert!(fees.min_fee >= Decimal::ZERO && fees.min_fee < Decimal::ONE);
+    assert!(fees.max_fee >= Decimal::ZERO && fees.max_fee < Decimal::ONE);
+    assert!(fees.min_withdraw >= Decimal::ZERO && fees.min_withdraw < Decimal::ONE);
+    assert!(fees.max_withdraw >= Decimal::ZERO && fees.max_withdraw > Decimal::ONE);
 
     Ok(())
 }
@@ -125,8 +125,8 @@ async fn deposit_status() -> anyhow::Result<()> {
 #[tokio::test]
 #[ignore = "only works against real okex client"]
 async fn withdraw_to_onchain_address() -> anyhow::Result<()> {
-    let amount = Decimal::from_str_exact(OKEX_MINIMUM_WITHDRAWAL_AMOUNT)?;
-    let fee = Decimal::from_str_exact(OKEX_MINIMUM_WITHDRAWAL_FEE)?;
+    let amount = OKEX_MINIMUM_WITHDRAWAL_AMOUNT;
+    let fee = OKEX_MINIMUM_WITHDRAWAL_FEE;
     if let Ok(onchain_address) = env::var("ONCHAIN_BTC_WITHDRAWAL_ADDRESS") {
         let client = configured_okex_client().await?;
         let withdraw_id = client

@@ -10,6 +10,7 @@ use reqwest::{
 };
 use ring::hmac;
 use rust_decimal::Decimal;
+use rust_decimal_macros::dec;
 use serde::{Deserialize, Serialize};
 use tracing::instrument;
 
@@ -32,8 +33,10 @@ lazy_static::lazy_static! {
 
 const TESTNET_BURNER_ADDRESS: &str = "tb1qfqh7ksqcrhjgq35clnf06l5d9s6tk2ke46ecrj";
 const OKEX_API_URL: &str = "https://www.okex.com";
-pub const OKEX_MINIMUM_WITHDRAWAL_AMOUNT: &str = "0.001";
-pub const OKEX_MINIMUM_WITHDRAWAL_FEE: &str = "0.0002";
+pub const OKEX_MINIMUM_WITHDRAWAL_FEE: Decimal = dec!(0.0002);
+pub const OKEX_MAXIMUM_WITHDRAWAL_FEE: Decimal = dec!(0.0004);
+pub const OKEX_MINIMUM_WITHDRAWAL_AMOUNT: Decimal = dec!(0.001);
+pub const OKEX_MAXIMUM_WITHDRAWAL_AMOUNT: Decimal = dec!(500);
 
 #[derive(Clone, Debug, Default, Deserialize, Serialize)]
 pub struct OkexClientConfig {
@@ -136,13 +139,14 @@ impl OkexClient {
             .await?;
 
         let fees_data = Self::extract_response_data::<OnchainFeesData>(response).await?;
+
         Ok(OnchainFees {
             ccy: fees_data.ccy,
             chain: fees_data.chain,
-            min_fee: fees_data.min_fee,
-            max_fee: fees_data.max_fee,
-            min_withdraw: fees_data.min_wd,
-            max_withdraw: fees_data.max_wd,
+            min_fee: std::cmp::min(fees_data.min_fee, OKEX_MINIMUM_WITHDRAWAL_FEE),
+            max_fee: std::cmp::min(fees_data.max_fee, OKEX_MAXIMUM_WITHDRAWAL_FEE),
+            min_withdraw: std::cmp::min(fees_data.min_wd, OKEX_MINIMUM_WITHDRAWAL_AMOUNT),
+            max_withdraw: std::cmp::min(fees_data.max_wd, OKEX_MAXIMUM_WITHDRAWAL_AMOUNT),
         })
     }
 
