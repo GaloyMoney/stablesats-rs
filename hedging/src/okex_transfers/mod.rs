@@ -46,7 +46,9 @@ impl OkexTransfers {
         tx.execute("SET TRANSACTION ISOLATION LEVEL SERIALIZABLE")
             .await?;
         let res = sqlx::query!(
-            r#"SELECT client_transfer_id FROM okex_transfers WHERE complete = false AND lost = false"#
+            r#"SELECT client_transfer_id FROM okex_transfers WHERE complete = false AND lost = false AND correlation_id = $1 AND transfer_type = $2"#,
+            Uuid::from(reservation.shared.correlation_id),
+            reservation.transfer_type,
         )
         .fetch_all(&mut tx)
         .await?;

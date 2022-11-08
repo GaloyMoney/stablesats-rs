@@ -2,7 +2,7 @@
 CREATE TABLE okex_transfers (
   
   client_transfer_id VARCHAR(32) PRIMARY KEY,
-  correlation_id UUID UNIQUE NOT NULL,
+  correlation_id UUID NOT NULL,
   
   action VARCHAR(20) NOT NULL,
   transfer_type VARCHAR(20) NOT NULL CHECK (transfer_type in ('internal', 'external')),
