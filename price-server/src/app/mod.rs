@@ -12,12 +12,13 @@ use shared::{
     exchanges_config::ExchangeConfigAll,
     health::HealthCheckTrigger,
     payload::{
-        KolliderBtcUsdSwapPricePayload, OkexBtcUsdSwapPricePayload, KOLLIDER_EXCHANGE_ID,
-        OKEX_EXCHANGE_ID,
+        KolliderBtcUsdSwapPricePayload, OkexBtcUsdSwapOrderBookPayload, OkexBtcUsdSwapPricePayload,
+        KOLLIDER_EXCHANGE_ID, OKEX_EXCHANGE_ID,
     },
     pubsub::*,
 };
 
+use crate::OrderBookCache;
 pub use crate::{currency::*, fee_calculator::*};
 use crate::{
     exchange_tick_cache::ExchangeTickCache,
@@ -27,6 +28,7 @@ pub use error::*;
 
 pub struct PriceApp {
     price_mixer: PriceMixer,
+    order_book_cache: OrderBookCache,
     fee_calculator: FeeCalculator,
 }
 
@@ -38,9 +40,9 @@ impl PriceApp {
         exchanges_cfg: ExchangeConfigAll,
     ) -> Result<Self, PriceAppError> {
         let health_check_trigger = Arc::new(RwLock::new(health_check_trigger));
-
         let mut providers: HashMap<String, (Box<dyn PriceProvider + Sync + Send>, Decimal)> =
             HashMap::new();
+        let order_book_cache = OrderBookCache::new(Duration::seconds(30));
 
         if let Some(config) = exchanges_cfg.kollider.as_ref() {
             let kollider_price_cache = ExchangeTickCache::new(Duration::seconds(30));
@@ -70,9 +72,17 @@ impl PriceApp {
             );
         }
 
+        let _ = Self::subscribe_okex_order_book(
+            pubsub_cfg,
+            health_check_trigger,
+            order_book_cache.clone(),
+        )
+        .await;
+
         let fee_calculator = FeeCalculator::new(fee_calc_cfg);
         let app = Self {
             price_mixer: PriceMixer::new(providers),
+            order_book_cache,
             fee_calculator,
         };
 
@@ -107,6 +117,43 @@ impl PriceApp {
                     price_cache
                         .apply_update(msg.payload.0, msg.meta.correlation_id)
                         .await;
+                }
+                .instrument(span)
+                .await;
+            }
+        });
+
+        Ok(())
+    }
+
+    async fn subscribe_okex_order_book(
+        pubsub_cfg: PubSubConfig,
+        health_check_trigger: Arc<RwLock<HealthCheckTrigger>>,
+        order_book_cache: OrderBookCache,
+    ) -> Result<(), PriceAppError> {
+        let subscriber = Subscriber::new(pubsub_cfg).await?;
+        let mut stream = subscriber
+            .subscribe::<OkexBtcUsdSwapOrderBookPayload>()
+            .await?;
+        tokio::spawn(async move {
+            while let Some(check) = health_check_trigger.write().await.next().await {
+                check
+                    .send(subscriber.healthy(Duration::seconds(20)).await)
+                    .expect("Couldn't send response");
+            }
+        });
+
+        let _ = tokio::spawn(async move {
+            while let Some(msg) = stream.next().await {
+                let span = info_span!(
+                    "order_book_received",
+                    message_type = %msg.payload_type,
+                    correlation_id = %msg.meta.correlation_id
+                );
+                shared::tracing::inject_tracing_data(&span, &msg.meta.tracing_data);
+
+                async {
+                    order_book_cache.apply_update(msg).await;
                 }
                 .instrument(span)
                 .await;

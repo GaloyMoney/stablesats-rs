@@ -6,10 +6,13 @@ impl From<PriceAppError> for tonic::Status {
         match err {
             CurrencyError(err) => tonic::Status::new(tonic::Code::Unknown, format!("{}", err)),
             SubscriberError(err) => tonic::Status::new(tonic::Code::Unknown, format!("{}", err)),
-            ExchangePriceCacheError(err) => {
+            FloatingPointConversion(err) => {
                 tonic::Status::new(tonic::Code::Unknown, format!("{}", err))
             }
-            DecimalError(err) => tonic::Status::new(tonic::Code::Unknown, format!("{}", err)),
+            OrderBookCacheError(err) => {
+                tonic::Status::new(tonic::Code::Unknown, format!("{}", err))
+            }
+            ExchangePriceCacheError(_) => todo!(), // DecimalError(err) => tonic::Status::new(tonic::Code::Unknown, format!("{}", err)),
         }
     }
 }
