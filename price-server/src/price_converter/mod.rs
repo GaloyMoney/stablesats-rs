@@ -28,7 +28,6 @@ impl VolumeBasedPriceConverter {
 
     fn weighted_price_of_volume(&self, mut volume: Decimal) -> Decimal {
         let mut price_volume_pair = Vec::new();
-        // let mut volume = sats.amount().to_owned();
 
         let side_collection = if self.reverse {
             self.side.iter().rev().collect::<Vec<_>>()
