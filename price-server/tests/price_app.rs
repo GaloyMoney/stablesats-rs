@@ -20,7 +20,7 @@ fn load_fixture(dataname: &str) -> anyhow::Result<Fixture> {
 }
 
 #[tokio::test]
-async fn price_app_with_real_data() -> anyhow::Result<()> {
+async fn price_app_with_order_book_cache() -> anyhow::Result<()> {
     let redis_host = std::env::var("REDIS_HOST").unwrap_or("localhost".to_string());
     let config = PubSubConfig {
         host: Some(redis_host),
@@ -116,12 +116,12 @@ async fn price_app_with_real_data() -> anyhow::Result<()> {
     let sats = app
         .get_sats_from_cents_for_immediate_buy(UsdCents::from_major(1000))
         .await?;
-    assert_eq!(sats, Sats::from_major(50049));
+    assert_eq!(sats, Sats::from_major(49616));
 
     let sats = app
         .get_sats_from_cents_for_immediate_sell(UsdCents::from_major(1000))
         .await?;
-    assert_eq!(sats, Sats::from_major(48065));
+    assert_eq!(sats, Sats::from_major(48533));
     let sats = app
         .get_sats_from_cents_for_immediate_sell(UsdCents::from_major(1))
         .await?;
@@ -130,7 +130,7 @@ async fn price_app_with_real_data() -> anyhow::Result<()> {
     let sats = app
         .get_sats_from_cents_for_future_buy(UsdCents::from_major(1000))
         .await?;
-    assert_eq!(sats, Sats::from_major(54505));
+    assert_eq!(sats, Sats::from_major(54032));
     let sats = app
         .get_sats_from_cents_for_future_buy(UsdCents::from_major(1))
         .await?;
@@ -139,14 +139,14 @@ async fn price_app_with_real_data() -> anyhow::Result<()> {
     let sats = app
         .get_sats_from_cents_for_future_sell(UsdCents::from_major(1000))
         .await?;
-    assert_eq!(sats, Sats::from_major(43691));
+    assert_eq!(sats, Sats::from_major(44116));
     let sats = app
         .get_sats_from_cents_for_future_sell(UsdCents::from_major(1))
         .await?;
-    assert_eq!(sats, Sats::from_major(43));
+    assert_eq!(sats, Sats::from_major(44));
 
     let ratio = app.get_cents_per_sat_exchange_mid_rate().await?;
-    assert_eq!(ratio, 0.020388242306794459);
+    assert_eq!(ratio, 0.02015385);
 
     Ok(())
 }

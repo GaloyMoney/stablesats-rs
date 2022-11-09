@@ -19,9 +19,7 @@ impl VolumeBasedPriceConverter {
     }
 
     pub fn cents_from_sats(&self, sats: Sats) -> UsdCents {
-        UsdCents::from_decimal(
-            sats.clone().amount() * self.weighted_price_of_volume(*sats.amount()),
-        )
+        UsdCents::from_decimal(sats.amount() * self.weighted_price_of_volume(*sats.amount()))
     }
 
     pub fn sats_from_cents(&self, cents: UsdCents) -> Sats {
@@ -30,7 +28,6 @@ impl VolumeBasedPriceConverter {
 
     fn weighted_price_of_volume(&self, mut volume: Decimal) -> Decimal {
         let mut price_volume_pair = Vec::new();
-        // let mut volume = sats.amount().to_owned();
 
         let side_collection = if self.reverse {
             self.side.iter().rev().collect::<Vec<_>>()
