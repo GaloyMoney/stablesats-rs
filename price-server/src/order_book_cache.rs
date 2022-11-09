@@ -129,12 +129,20 @@ impl From<OrderBookPayload> for OrderBookView {
 }
 
 impl OrderBookView {
-    pub fn sell_usd(&self) -> VolumeBasedPriceConverter {
-        VolumeBasedPriceConverter::new(self.asks.to_owned(), false)
+    pub fn sell_usd<'a>(
+        &'a self,
+    ) -> VolumeBasedPriceConverter<
+        std::collections::btree_map::Iter<'a, QuotePrice, rust_decimal::Decimal>,
+    > {
+        VolumeBasedPriceConverter::new(self.asks.iter())
     }
 
-    pub fn buy_usd(&self) -> VolumeBasedPriceConverter {
-        VolumeBasedPriceConverter::new(self.bids.to_owned(), true)
+    pub fn buy_usd<'a>(
+        &'a self,
+    ) -> VolumeBasedPriceConverter<
+        std::iter::Rev<std::collections::btree_map::Iter<'a, QuotePrice, rust_decimal::Decimal>>,
+    > {
+        VolumeBasedPriceConverter::new(self.asks.iter().rev())
     }
 
     pub fn mid_price_of_one_sat(&self) -> Result<Decimal, OrderBookCacheError> {
