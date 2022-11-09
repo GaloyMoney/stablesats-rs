@@ -9,6 +9,7 @@ use crate::{currency::*, price_mixer::*};
 use shared::{payload::*, pubsub::CorrelationId, time::*};
 
 #[derive(Clone)]
+// <<<<<<< HEAD:price-server/src/exchange_tick_cache.rs
 pub struct ExchangeTickCache {
     inner: Arc<RwLock<ExchangePriceCacheInner>>,
 }
@@ -42,6 +43,7 @@ impl ExchangeTickCache {
 }
 
 #[derive(Clone, Debug)]
+#[allow(dead_code)]
 pub struct BtcSatTick {
     timestamp: TimeStamp,
     correlation_id: CorrelationId,
