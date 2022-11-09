@@ -88,6 +88,17 @@ impl KolliderClient {
         Self::create_headers(self, &timestamp, &sig)
     }
 
+    fn create_get_headers_with_body(
+        &self,
+        path: &str,
+        auth_body: &str,
+    ) -> Result<HeaderMap, KolliderClientError> {
+        let timestamp = Utc::now().to_rfc3339_opts(SecondsFormat::Millis, true);
+        let pre_hash = format!("{}{}{}{}", timestamp, "GET", path, auth_body);
+        let sig = Self::generate_signature(&self.config.secret, &pre_hash)?;
+        Self::create_headers(self, &timestamp, &sig)
+    }
+
     fn create_post_headers(
         &self,
         path: &str,
@@ -183,7 +194,7 @@ impl KolliderClient {
             "quantity": amount_usd,
             "symbol": KolliderInstrumentId::BtcUsdSwap.to_string(),
             "leverage": leverage_percent,
-            "margin_type": "Isolated",
+            "margin_type": KolliderMarginType::Cross.to_string(),
             "settlement_type": "Delayed"
         })
         .to_string();
@@ -210,5 +221,38 @@ impl KolliderClient {
             .send()
             .await?;
         Ok(res.json::<OpenPositions>().await?)
+    }
+
+    pub async fn get_orders(&self) -> Result<String, KolliderClientError> {
+        let path = "/user/fills";
+
+        let symbol = "BTCUSD.PERP";
+        let start = 1667741718;
+        let end = 1667918120;
+        let auth_body = serde_json::json!({
+            "symbol": symbol,
+            "start": start,
+            "end": end,
+            "limit": 3
+        })
+        .to_string();
+
+        let url = format!(
+            "{}{}?symbol={}&start={}&end={}&limit=3",
+            self.config.url, path, symbol, start, end
+        );
+
+        println!(">> {}", url);
+
+        let res = self
+            .rate_limit_client(path)
+            .await
+            .get(url)
+            .headers(Self::create_get_headers_with_body(self, path, &auth_body)?)
+            .send()
+            .await?;
+        let st = res.status();
+        println!("st {}", st);
+        Ok(res.text().await?)
     }
 }
