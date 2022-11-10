@@ -62,7 +62,7 @@ async fn price_app_with_order_book_cache() -> anyhow::Result<()> {
     tokio::time::sleep(std::time::Duration::from_millis(100)).await;
 
     let err = app
-        .get_cents_from_sats_for_immediate_buy(Sats::from_major(100_000_000))
+        .get_cents_from_sats_for_immediate_buy(Sats::from_major(100))
         .await;
     if let Err(PriceAppError::OrderBookCacheError(OrderBookCacheError::OutdatedSnapshot(_))) = err {
         assert!(true)
@@ -78,75 +78,75 @@ async fn price_app_with_order_book_cache() -> anyhow::Result<()> {
     tokio::time::sleep(std::time::Duration::from_millis(100)).await;
 
     let cents = app
-        .get_cents_from_sats_for_immediate_buy(Sats::from_major(1100))
+        .get_cents_from_sats_for_immediate_buy(Sats::from_major(100))
         .await?;
-    assert_eq!(cents, UsdCents::from_major(315));
+    assert_eq!(cents, UsdCents::from_major(15));
     let cents = app
         .get_cents_from_sats_for_immediate_buy(Sats::from_major(1))
         .await?;
     assert_eq!(cents, UsdCents::from_major(0));
 
     let cents = app
-        .get_cents_from_sats_for_immediate_sell(Sats::from_major(1100))
+        .get_cents_from_sats_for_immediate_sell(Sats::from_major(100))
         .await?;
-    assert_eq!(cents, UsdCents::from_major(323));
+    assert_eq!(cents, UsdCents::from_major(20));
     let cents = app
         .get_cents_from_sats_for_immediate_sell(Sats::from_major(1))
         .await?;
     assert_eq!(cents, UsdCents::from_major(1));
 
     let cents = app
-        .get_cents_from_sats_for_future_buy(Sats::from_major(1100))
+        .get_cents_from_sats_for_future_buy(Sats::from_major(100))
         .await?;
-    assert_eq!(cents, UsdCents::from_major(286));
+    assert_eq!(cents, UsdCents::from_major(13));
     let cents = app
         .get_cents_from_sats_for_future_buy(Sats::from_major(1))
         .await?;
     assert_eq!(cents, UsdCents::from_major(0));
 
     let future_buy = app
-        .get_cents_from_sats_for_future_sell(Sats::from_major(1100))
+        .get_cents_from_sats_for_future_sell(Sats::from_major(100))
         .await?;
-    assert_eq!(future_buy, UsdCents::from_major(352));
+    assert_eq!(future_buy, UsdCents::from_major(21));
     let future_buy = app
         .get_cents_from_sats_for_future_sell(Sats::from_major(1))
         .await?;
     assert_eq!(future_buy, UsdCents::from_major(1));
 
     let sats = app
-        .get_sats_from_cents_for_immediate_buy(UsdCents::from_major(1000))
+        .get_sats_from_cents_for_immediate_buy(UsdCents::from_major(10))
         .await?;
-    assert_eq!(sats, Sats::from_major(3370));
+    assert_eq!(sats, Sats::from_major(51));
 
     let sats = app
-        .get_sats_from_cents_for_immediate_sell(UsdCents::from_major(1000))
+        .get_sats_from_cents_for_immediate_sell(UsdCents::from_major(10))
         .await?;
-    assert_eq!(sats, Sats::from_major(3422));
+    assert_eq!(sats, Sats::from_major(98));
     let sats = app
         .get_sats_from_cents_for_immediate_sell(UsdCents::from_major(1))
         .await?;
     assert_eq!(sats, Sats::from_major(9));
 
     let sats = app
-        .get_sats_from_cents_for_future_buy(UsdCents::from_major(1000))
+        .get_sats_from_cents_for_future_buy(UsdCents::from_major(10))
         .await?;
-    assert_eq!(sats, Sats::from_major(3670));
+    assert_eq!(sats, Sats::from_major(56));
     let sats = app
         .get_sats_from_cents_for_future_buy(UsdCents::from_major(1))
         .await?;
-    assert_eq!(sats, Sats::from_major(4));
+    assert_eq!(sats, Sats::from_major(6));
 
     let sats = app
-        .get_sats_from_cents_for_future_sell(UsdCents::from_major(1000))
+        .get_sats_from_cents_for_future_sell(UsdCents::from_major(10))
         .await?;
-    assert_eq!(sats, Sats::from_major(3110));
+    assert_eq!(sats, Sats::from_major(89));
     let sats = app
         .get_sats_from_cents_for_future_sell(UsdCents::from_major(1))
         .await?;
     assert_eq!(sats, Sats::from_major(8));
 
     let ratio = app.get_cents_per_sat_exchange_mid_rate().await?;
-    assert_eq!(ratio, 0.06);
+    assert_eq!(ratio, 0.15);
 
     Ok(())
 }
