@@ -129,18 +129,18 @@ impl From<OrderBookPayload> for OrderBookView {
 }
 
 impl OrderBookView {
-    pub fn sell_usd<'a>(
-        &'a self,
+    pub fn sell_usd(
+        &self,
     ) -> VolumeBasedPriceConverter<
-        std::collections::btree_map::Iter<'a, QuotePrice, rust_decimal::Decimal>,
+        std::collections::btree_map::Iter<QuotePrice, rust_decimal::Decimal>,
     > {
         VolumeBasedPriceConverter::new(self.asks.iter())
     }
 
-    pub fn buy_usd<'a>(
-        &'a self,
+    pub fn buy_usd(
+        &self,
     ) -> VolumeBasedPriceConverter<
-        std::iter::Rev<std::collections::btree_map::Iter<'a, QuotePrice, rust_decimal::Decimal>>,
+        std::iter::Rev<std::collections::btree_map::Iter<QuotePrice, rust_decimal::Decimal>>,
     > {
         VolumeBasedPriceConverter::new(self.asks.iter().rev())
     }
