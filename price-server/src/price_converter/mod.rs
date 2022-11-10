@@ -28,8 +28,8 @@ impl<'a, I: Iterator<Item = (&'a QuotePrice, &'a Decimal)> + Clone>
         let mut price_acc = Decimal::ZERO;
         let mut volume_acc = Decimal::ZERO;
 
-        let mut pairs = self.pairs.clone();
-        while let Some((price, qty)) = pairs.next() {
+        let pairs = self.pairs.clone();
+        for (price, qty) in pairs {
             if (volume_acc + qty) < total_volume {
                 volume_acc += qty;
                 price_acc += price.inner() * qty;
@@ -125,7 +125,7 @@ mod tests {
 
         let cents = converter.cents_from_sats(sats_volume);
 
-        assert_eq!(cents.floor(), UsdCents::from_major(2020029));
+        assert_eq!(cents.floor(), UsdCents::from_major(25));
 
         Ok(())
     }
@@ -134,11 +134,11 @@ mod tests {
     fn sats_from_cents_volume() -> anyhow::Result<()> {
         let latest_snapshot = load_order_book("real")?.payload;
         let converter = VolumeBasedPriceConverter::new(latest_snapshot.bids.iter().rev());
-        let cents_volume = UsdCents::from_decimal(dec!(1000));
+        let cents_volume = UsdCents::from_decimal(dec!(10));
 
         let sats = converter.sats_from_cents(cents_volume);
 
-        assert_eq!(sats.floor(), Sats::from_major(49075));
+        assert_eq!(sats.floor(), Sats::from_major(100));
 
         Ok(())
     }
