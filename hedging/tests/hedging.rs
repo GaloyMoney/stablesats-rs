@@ -120,7 +120,26 @@ async fn hedging() -> anyhow::Result<()> {
             HedgingAppConfig {
                 pg_con: pg_con.clone(),
                 okex_poll_frequency: std::time::Duration::from_secs(2),
-                ..Default::default()
+                ..Default::default(),
+
+                contract_size_cents: dec!(10000),
+                minimum_liability_threshold_cents: dec!(5000),
+                minimum_transfer_amount_cents: dec!(10000),
+
+                minimum_funding_balance_btc: dec!(1.00),
+
+                low_bound_ratio_shorting: dec!(0.95),
+                low_safebound_ratio_shorting: dec!(0.98),
+                high_safebound_ratio_shorting: dec!(1.00),
+                high_bound_ratio_shorting: dec!(1.03),
+
+                low_bound_ratio_leverage: dec!(1.20),
+                low_safebound_ratio_leverage: dec!(1.80),
+                high_safebound_ratio_leverage: dec!(2.25),
+                high_bound_ratio_leverage: dec!(3.00),
+
+                deposit_lost_timeout_minutes: 60,
+                ..
             },
             okex_client_config(),
             galoy_client_config(),

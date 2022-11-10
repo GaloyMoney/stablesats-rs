@@ -38,6 +38,7 @@ impl HedgingApp {
             okex_poll_frequency: okex_poll_delay,
             unhealthy_msg_interval_liability,
             unhealthy_msg_interval_position,
+            ..
         }: HedgingAppConfig,
         okex_client_config: OkexClientConfig,
         galoy_client_cfg: GaloyClientConfig,
@@ -80,6 +81,7 @@ impl HedgingApp {
             unhealthy_msg_interval_position,
             liability_sub,
             position_sub,
+            price_sub,
         )
         .await;
         Self::spawn_non_stop_polling(pool.clone(), okex_poll_delay).await?;
@@ -243,7 +245,7 @@ impl HedgingApp {
                         .healthy(unhealthy_msg_interval_liability)
                         .await,
                     position_sub.healthy(unhealthy_msg_interval_position).await,
-                    price_sub.healthy(duration).await,
+                    price_sub.healthy(unhealthy_msg_interval_position).await,
                 ) {
                     (Err(e), _, _) | (_, Err(e), _) | (_, _, Err(e)) => {
                         check.send(Err(e)).expect("Couldn't send response")
