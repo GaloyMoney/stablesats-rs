@@ -14,7 +14,7 @@ const MINIMUM_FUNDING_BALANCE_BTC: Decimal = dec!(1);
 #[instrument(name = "adjust_funding", skip_all, fields(correlation_id = %correlation_id,
         target_liability, current_position, last_price_in_usd_cents, funding_available_balance,
         trading_available_balance, onchain_fees, action, external_client_transfer_id, internal_client_transfer_id,
-        transfered_funding) err)]
+        transferred_funding) err)]
 pub(super) async fn execute(
     correlation_id: CorrelationId,
     synth_usd_liability: SynthUsdLiability,
@@ -216,7 +216,7 @@ pub(super) async fn execute(
                 }
                 _ => unreachable!(),
             }
-            span.record("transfered_funding", &tracing::field::display(true));
+            span.record("transferred_funding", &tracing::field::display(true));
         }
     };
     Ok(())
