@@ -84,6 +84,16 @@ pub struct OnchainFees {
     pub max_withdraw: Decimal,
 }
 
+impl Display for OnchainFees {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "ccy={}, chain={}, min_fee={}, max_fee={}, min_withdraw={}, max_withdraw={}",
+            self.ccy, self.chain, self.min_fee, self.max_fee, self.min_withdraw, self.max_withdraw
+        )
+    }
+}
+
 #[derive(Debug)]
 pub struct TransferId {
     pub value: String,
