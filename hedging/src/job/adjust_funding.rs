@@ -75,7 +75,7 @@ pub(super) async fn execute(
         action_type: action.action_type().to_string(),
         action_unit: action.unit().to_string(),
         target_usd_exposure: target_liability_in_cents.into(),
-        current_usd_exposure: current_position.usd_cents,
+        current_usd_exposure: current_position.usd_cents.abs(),
         trading_btc_used_balance: trading_available_balance.used_amt_in_btc,
         trading_btc_total_balance: trading_available_balance.total_amt_in_btc,
         current_usd_btc_price: last_price_in_usd_cents,
