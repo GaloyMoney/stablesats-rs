@@ -28,7 +28,7 @@ pub use error::*;
 
 pub struct PriceApp {
     price_mixer: PriceMixer,
-    order_book_cache: OrderBookCache,
+    snapshot_cache: OrderBookCache,
     fee_calculator: FeeCalculator,
 }
 
@@ -82,7 +82,7 @@ impl PriceApp {
         let fee_calculator = FeeCalculator::new(fee_calc_cfg);
         let app = Self {
             price_mixer: PriceMixer::new(providers),
-            order_book_cache,
+            snapshot_cache: order_book_cache,
             fee_calculator,
         };
 
