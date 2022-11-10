@@ -1,3 +1,26 @@
+# [stablesats release v0.3.16](https://github.com/GaloyMoney/stablesats/releases/tag/v0.3.16)
+
+
+### Bug Fixes
+
+- Implement ref-to-ref conversion for order book (#178)
+- Typo in misconfigured account error (#175)
+
+### Features
+
+- Weighted price from order book cache (#181)
+- Stream and publish okex order book (#176)
+- Kollider-integration (#173)
+
+### Miscellaneous Tasks
+
+- Bump prost from 0.11.0 to 0.11.2 (#179)
+- Bump clap from 4.0.18 to 4.0.22 (#180)
+
+### Testing
+
+- Ignore kollider price test
+
 # [stablesats release v0.3.15](https://github.com/GaloyMoney/stablesats/releases/tag/v0.3.15)
 
 
