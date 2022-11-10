@@ -2,7 +2,7 @@ use okex_client::{OkexClient, OkexClientError};
 
 use crate::{error::HedgingError, okex_transfers::*};
 
-const DEPOSIT_TIMEOUT: i64 = 10;
+const DEPOSIT_TIMEOUT: i64 = 60;
 
 pub async fn execute(okex_transfers: OkexTransfers, okex: OkexClient) -> Result<(), HedgingError> {
     let mut execute_sweep = false;

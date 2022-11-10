@@ -181,7 +181,7 @@ impl OkexTransfers {
 
     pub async fn sweep_lost_records(&self) -> Result<(), HedgingError> {
         sqlx::query!(
-            r#"UPDATE okex_transfers SET state = 'deleted' WHERE lost = true AND complete = false AND created_at < now() - interval '1 hour'"#
+            r#"UPDATE okex_transfers SET state = 'deleted' WHERE lost = true AND complete = false AND created_at < now() - interval '1 day'"#
         )
         .execute(&self.pool)
         .await?;
