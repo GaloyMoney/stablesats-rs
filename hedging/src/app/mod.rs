@@ -136,9 +136,6 @@ impl HedgingApp {
         let current_position_in_cents = okex.get_position_in_signed_usd_cents().await?.usd_cents;
         let trading_available_balance = okex.trading_account_balance().await?;
 
-        //
-        // TODO: streamline this conversion & verify all units match
-        //
         let mid_price_in_cents: Decimal =
             (payload.bid_price.numerator_amount() + payload.ask_price.numerator_amount()) / dec!(2);
         if rebalance_action::determine_action(
