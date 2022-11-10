@@ -4,7 +4,7 @@ CREATE TABLE okex_transfers (
   client_transfer_id VARCHAR(32) PRIMARY KEY,
   correlation_id UUID NOT NULL,
   
-  action VARCHAR(20) NOT NULL,
+  action VARCHAR(20) NOT NULL CHECK (action in ('withdraw-all', 'withdraw', 'deposit')),
   transfer_type VARCHAR(20) NOT NULL CHECK (transfer_type in ('internal', 'external')),
 
   currency VARCHAR(20) NOT NULL,
@@ -24,8 +24,8 @@ CREATE TABLE okex_transfers (
   complete BOOLEAN NOT NULL GENERATED ALWAYS AS (CASE WHEN state = 'pending' THEN FALSE ELSE TRUE END) STORED,
   lost BOOLEAN NOT NULL DEFAULT FALSE,
 
-  transfer_id VARCHAR(20),
-  state VARCHAR(20) NOT NULL CHECK (state in ('success', 'pending', 'failed')),
+  transfer_id VARCHAR(64),
+  state VARCHAR(20) NOT NULL CHECK (state in ('success', 'pending', 'failed', 'deleted')),
 
   created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()
 );

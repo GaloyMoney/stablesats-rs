@@ -98,9 +98,54 @@ impl OkexTransfers {
         Ok(Some(id))
     }
 
-    pub async fn open_transfers(&self) -> Result<Vec<ClientTransferId>, HedgingError> {
+    pub async fn open_external_deposit(
+        &self,
+    ) -> Result<
+        Vec<(
+            ClientTransferId,
+            String,
+            Decimal,
+            chrono::DateTime<chrono::Utc>,
+        )>,
+        HedgingError,
+    > {
         let res =
-            sqlx::query!(r#"SELECT client_transfer_id FROM okex_transfers WHERE complete = false"#)
+            sqlx::query!(r#"SELECT client_transfer_id, transfer_to, amount, created_at FROM okex_transfers WHERE action = 'deposit' AND transfer_type = 'external' AND complete = false"#)
+                .fetch_all(&self.pool)
+                .await?;
+        Ok(res
+            .into_iter()
+            .map(|r| {
+                (
+                    ClientTransferId::from(r.client_transfer_id),
+                    r.transfer_to.unwrap_or_else(|| "".to_string()),
+                    r.amount,
+                    r.created_at,
+                )
+            })
+            .collect())
+    }
+
+    pub async fn update_external_deposit(
+        &self,
+        client_id: ClientTransferId,
+        state: String,
+        transfer_id: String,
+    ) -> Result<(), HedgingError> {
+        sqlx::query!(
+            r#"UPDATE okex_transfers SET lost = false, transfer_id = $1, state = $2 WHERE client_transfer_id = $3"#,
+            transfer_id,
+            state,
+            String::from(client_id),
+        )
+        .execute(&self.pool)
+        .await?;
+        Ok(())
+    }
+
+    pub async fn open_non_external_deposit(&self) -> Result<Vec<ClientTransferId>, HedgingError> {
+        let res =
+            sqlx::query!(r#"SELECT client_transfer_id FROM okex_transfers WHERE (action != 'deposit' OR transfer_type != 'external') AND complete = false"#)
                 .fetch_all(&self.pool)
                 .await?;
         Ok(res
@@ -109,7 +154,10 @@ impl OkexTransfers {
             .collect())
     }
 
-    pub async fn update_transfer(&self, details: TransferState) -> Result<(), HedgingError> {
+    pub async fn update_non_external_deposit(
+        &self,
+        details: TransferState,
+    ) -> Result<(), HedgingError> {
         sqlx::query!(
             r#"UPDATE okex_transfers SET lost = false, transfer_id = $1, state = $2 WHERE client_transfer_id = $3"#,
             details.transfer_id,
@@ -133,7 +181,7 @@ impl OkexTransfers {
 
     pub async fn sweep_lost_records(&self) -> Result<(), HedgingError> {
         sqlx::query!(
-            r#"DELETE FROM okex_transfers WHERE lost = true AND complete = false AND created_at < now() - interval '1 day'"#
+            r#"UPDATE okex_transfers SET state = 'deleted' WHERE lost = true AND complete = false AND created_at < now() - interval '1 hour'"#
         )
         .execute(&self.pool)
         .await?;

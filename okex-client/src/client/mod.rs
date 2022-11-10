@@ -387,7 +387,16 @@ impl OkexClient {
 
         if let Some(deposit_data) = deposit {
             Ok(DepositStatus {
-                status: deposit_data.state,
+                state: match &deposit_data.state[..] {
+                    "0" => "pending".to_string(),  // waiting for confirmation
+                    "1" => "success".to_string(),  // deposit credited, cannot withdraw
+                    "2" => "success".to_string(),  // deposit successful, can withdraw
+                    "8" => "pending".to_string(), // pending due to temporary deposit suspension on this crypto currency
+                    "12" => "pending".to_string(), // account or deposit is frozen
+                    "13" => "success".to_string(), // sub-account deposit interception
+                    _ => "failed".to_string(),
+                },
+                transaction_id: deposit_data.tx_id,
             })
         } else {
             Err(OkexClientError::UnexpectedResponse {

@@ -117,7 +117,7 @@ async fn deposit_status() -> anyhow::Result<()> {
 
         let deposit = client.fetch_deposit(deposit_addr, amt).await?;
 
-        assert_eq!(deposit.status, "2".to_string());
+        assert_eq!(deposit.state, "2".to_string());
     }
     Ok(())
 }

@@ -120,7 +120,8 @@ pub struct WithdrawId {
 
 #[derive(Debug)]
 pub struct DepositStatus {
-    pub status: String,
+    pub state: String,
+    pub transaction_id: String,
 }
 
 #[derive(Debug)]
