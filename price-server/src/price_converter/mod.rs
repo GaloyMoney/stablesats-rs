@@ -105,7 +105,7 @@ mod tests {
             Sats::from_decimal(dec!(100)),
             Sats::from_decimal(dec!(200)),
         ];
-        let expected_prices = vec![dec!(0.1), dec!(0.1), dec!(0.075), dec!(0.055), dec!(0.0375)];
+        let expected_prices = vec![dec!(0.2), dec!(0.2), dec!(0.175), dec!(0.155), dec!(0.1275)];
 
         for (idx, sats) in volumes.into_iter().enumerate() {
             let mut price = converter.weighted_price_of_volume(*sats.amount());
@@ -125,7 +125,7 @@ mod tests {
 
         let cents = converter.cents_from_sats(sats_volume);
 
-        assert_eq!(cents.floor(), UsdCents::from_major(25));
+        assert_eq!(cents.floor(), UsdCents::from_major(65));
 
         Ok(())
     }
@@ -138,7 +138,7 @@ mod tests {
 
         let sats = converter.sats_from_cents(cents_volume);
 
-        assert_eq!(sats.floor(), Sats::from_major(100));
+        assert_eq!(sats.floor(), Sats::from_major(50));
 
         Ok(())
     }

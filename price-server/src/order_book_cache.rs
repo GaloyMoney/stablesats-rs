@@ -142,7 +142,7 @@ impl OrderBookView {
     ) -> VolumeBasedPriceConverter<
         std::iter::Rev<std::collections::btree_map::Iter<QuotePrice, rust_decimal::Decimal>>,
     > {
-        VolumeBasedPriceConverter::new(self.asks.iter().rev())
+        VolumeBasedPriceConverter::new(self.bids.iter().rev())
     }
 
     pub fn mid_price_of_one_sat(&self) -> Result<Decimal, OrderBookCacheError> {
