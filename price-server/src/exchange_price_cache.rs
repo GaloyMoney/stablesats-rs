@@ -23,10 +23,12 @@ pub enum ExchangePriceCacheError {
 }
 
 #[derive(Clone)]
+#[allow(dead_code)]
 pub struct ExchangePriceCache {
     inner: Arc<RwLock<ExchangePriceCacheInner>>,
 }
 
+#[allow(dead_code)]
 impl ExchangePriceCache {
     pub fn new(stale_after: Duration) -> Self {
         Self {
@@ -51,6 +53,7 @@ impl ExchangePriceCache {
 }
 
 #[derive(Clone)]
+#[allow(dead_code)]
 pub struct BtcSatTick {
     timestamp: TimeStamp,
     correlation_id: CorrelationId,
@@ -59,6 +62,7 @@ pub struct BtcSatTick {
     bid_price_of_one_sat: UsdCents,
 }
 
+#[allow(dead_code)]
 impl BtcSatTick {
     pub fn mid_price_of_one_sat(&self) -> UsdCents {
         (&self.bid_price_of_one_sat + &self.ask_price_of_one_sat) / 2
