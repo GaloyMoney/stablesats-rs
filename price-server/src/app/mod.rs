@@ -11,7 +11,7 @@ pub use crate::{currency::*, fee_calculator::*};
 pub use error::*;
 
 pub struct PriceApp {
-    price_cache: OrderBookCache,
+    snapshot_cache: OrderBookCache,
     fee_calculator: FeeCalculator,
 }
 
@@ -33,10 +33,10 @@ impl PriceApp {
             }
         });
 
-        let price_cache = OrderBookCache::new(Duration::seconds(30));
+        let order_book_cache = OrderBookCache::new(Duration::seconds(30));
         let fee_calculator = FeeCalculator::new(fee_calc_cfg);
         let app = Self {
-            price_cache: price_cache.clone(),
+            snapshot_cache: order_book_cache.clone(),
             fee_calculator,
         };
 
@@ -50,7 +50,7 @@ impl PriceApp {
                 shared::tracing::inject_tracing_data(&span, &msg.meta.tracing_data);
 
                 async {
-                    price_cache.apply_update(msg).await;
+                    order_book_cache.apply_update(msg).await;
                 }
                 .instrument(span)
                 .await;
@@ -65,7 +65,7 @@ impl PriceApp {
         sats: Sats,
     ) -> Result<UsdCents, PriceAppError> {
         let cents = self
-            .price_cache
+            .snapshot_cache
             .latest_snapshot()
             .await?
             .buy_usd()
@@ -79,7 +79,7 @@ impl PriceApp {
         sats: Sats,
     ) -> Result<UsdCents, PriceAppError> {
         let cents = self
-            .price_cache
+            .snapshot_cache
             .latest_snapshot()
             .await?
             .sell_usd()
@@ -93,7 +93,7 @@ impl PriceApp {
         sats: Sats,
     ) -> Result<UsdCents, PriceAppError> {
         let cents = self
-            .price_cache
+            .snapshot_cache
             .latest_snapshot()
             .await?
             .buy_usd()
@@ -107,7 +107,7 @@ impl PriceApp {
         sats: Sats,
     ) -> Result<UsdCents, PriceAppError> {
         let cents = self
-            .price_cache
+            .snapshot_cache
             .latest_snapshot()
             .await?
             .sell_usd()
@@ -121,7 +121,7 @@ impl PriceApp {
         cents: UsdCents,
     ) -> Result<Sats, PriceAppError> {
         let sats = self
-            .price_cache
+            .snapshot_cache
             .latest_snapshot()
             .await?
             .buy_usd()
@@ -135,7 +135,7 @@ impl PriceApp {
         cents: UsdCents,
     ) -> Result<Sats, PriceAppError> {
         let sats = self
-            .price_cache
+            .snapshot_cache
             .latest_snapshot()
             .await?
             .sell_usd()
@@ -149,7 +149,7 @@ impl PriceApp {
         cents: UsdCents,
     ) -> Result<Sats, PriceAppError> {
         let sats = self
-            .price_cache
+            .snapshot_cache
             .latest_snapshot()
             .await?
             .buy_usd()
@@ -163,7 +163,7 @@ impl PriceApp {
         cents: UsdCents,
     ) -> Result<Sats, PriceAppError> {
         let sats = self
-            .price_cache
+            .snapshot_cache
             .latest_snapshot()
             .await?
             .sell_usd()
@@ -174,7 +174,7 @@ impl PriceApp {
     #[instrument(skip_all, fields(correlation_id), ret, err)]
     pub async fn get_cents_per_sat_exchange_mid_rate(&self) -> Result<f64, PriceAppError> {
         let cents_per_sat = self
-            .price_cache
+            .snapshot_cache
             .latest_snapshot()
             .await?
             .mid_price_of_one_sat()?;
