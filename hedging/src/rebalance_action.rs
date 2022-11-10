@@ -4,9 +4,6 @@ use rust_decimal_macros::dec;
 pub use okex_client::BtcUsdSwapContracts;
 pub use shared::payload::{SyntheticCentExposure, SyntheticCentLiability};
 
-// crate::abs_decimal_wrapper! { SyntheticCentUserCollateral }
-// crate::decimal_wrapper! { SyntheticCentTotalCollateral }
-
 const CONTRACT_SIZE_CENTS: Decimal = dec!(10_000);
 const MIN_LIABILITY_THRESHOLD_CENTS: Decimal = dec!(5_000);
 const MINIMUM_TRANSFER_AMOUNT_CENTS: Decimal = CONTRACT_SIZE_CENTS;
