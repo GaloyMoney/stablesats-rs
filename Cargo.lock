@@ -820,32 +820,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "funding"
-version = "0.1.0"
-dependencies = [
- "anyhow",
- "chrono",
- "futures",
- "galoy-client",
- "okex-client",
- "opentelemetry",
- "rust_decimal",
- "rust_decimal_macros",
- "serde",
- "serde_json",
- "serde_with",
- "serial_test",
- "sqlx",
- "sqlxmq",
- "stablesats-shared",
- "thiserror",
- "tokio",
- "tracing",
- "tracing-opentelemetry",
- "uuid",
-]
-
-[[package]]
 name = "futures"
 version = "0.3.25"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1132,6 +1106,7 @@ dependencies = [
  "anyhow",
  "chrono",
  "futures",
+ "galoy-client",
  "okex-client",
  "opentelemetry",
  "rust_decimal",

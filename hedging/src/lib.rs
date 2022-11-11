@@ -5,9 +5,9 @@ mod adjustment_action;
 mod app;
 mod error;
 mod job;
+mod okex_orders;
 mod okex_transfers;
 mod rebalance_action;
-mod okex_orders;
 mod synth_usd_liability;
 
 use galoy_client::GaloyClientConfig;
@@ -24,8 +24,13 @@ pub async fn run(
     galoy_config: GaloyClientConfig,
     pubsub_cfg: PubSubConfig,
 ) -> Result<(), HedgingError> {
-    HedgingApp::run(health_check_trigger, config, okex_config, 
+    HedgingApp::run(
+        health_check_trigger,
+        config,
+        okex_config,
         galoy_config,
-        pubsub_cfg).await?;
+        pubsub_cfg,
+    )
+    .await?;
     Ok(())
 }

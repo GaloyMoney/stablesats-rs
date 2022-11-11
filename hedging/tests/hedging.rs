@@ -1,3 +1,5 @@
+#![allow(clippy::or_fun_call)]
+
 use futures::{stream::StreamExt, Stream};
 use galoy_client::GaloyClientConfig;
 use rust_decimal::Decimal;
@@ -38,13 +40,11 @@ fn galoy_client_config() -> GaloyClientConfig {
     let phone_number = env::var("PHONE_NUMBER").expect("PHONE_NUMBER not set");
     let code = env::var("AUTH_CODE").expect("AUTH_CODE not set");
 
-    let config = GaloyClientConfig {
+    GaloyClientConfig {
         api,
         phone_number,
         auth_code: code,
-    };
-
-    config
+    }
 }
 
 async fn expect_exposure_between(

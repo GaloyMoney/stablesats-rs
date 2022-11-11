@@ -63,7 +63,7 @@ async fn client_is_missing_header() -> anyhow::Result<()> {
     if let Err(OkexClientError::UnexpectedResponse { msg, .. }) = client {
         assert!(msg.contains("header"));
     } else {
-        assert!(false)
+        panic!()
     }
 
     Ok(())
@@ -99,9 +99,8 @@ async fn unknown_client_order_id() -> anyhow::Result<()> {
     let id = ClientOrderId::new();
     let result = client.order_details(id).await;
     if let Err(OkexClientError::OrderDoesNotExist) = result {
-        assert!(true)
     } else {
-        assert!(false)
+        panic!()
     }
     Ok(())
 }

@@ -1,3 +1,5 @@
+#![allow(clippy::or_fun_call)]
+
 use futures::stream::StreamExt;
 use rust_decimal_macros::dec;
 use std::{fs, time::Duration};
@@ -51,7 +53,7 @@ async fn price_app() -> anyhow::Result<()> {
     {
         assert!(true)
     } else {
-        assert!(false)
+        panic!()
     }
 
     let mut payloads = load_fixture()?.payloads.into_iter();
@@ -69,7 +71,7 @@ async fn price_app() -> anyhow::Result<()> {
     {
         assert!(true)
     } else {
-        assert!(false)
+        panic!()
     }
 
     payload.timestamp = TimeStamp::now();
