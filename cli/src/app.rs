@@ -118,6 +118,7 @@ async fn run_cmd(
         okex,
         hedging,
         kollider_price_feed,
+        exchanges,
     }: Config,
 ) -> anyhow::Result<()> {
     println!("Starting server process");

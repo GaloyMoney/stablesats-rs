@@ -2880,6 +2880,7 @@ dependencies = [
  "serde",
  "serde_json",
  "serde_with",
+ "serde_yaml",
  "sqlx",
  "sqlxmq",
  "thiserror",

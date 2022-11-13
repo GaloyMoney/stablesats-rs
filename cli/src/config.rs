@@ -8,7 +8,7 @@ use hedging::HedgingAppConfig;
 use okex_client::OkexClientConfig;
 use okex_price::PriceFeedConfig;
 use price_server::{FeeCalculatorConfig, PriceServerConfig};
-use shared::pubsub::PubSubConfig;
+use shared::{exchanges_config::ExchangesConfig, pubsub::PubSubConfig};
 use user_trades::UserTradesConfig;
 
 use super::tracing::TracingConfig;
@@ -33,6 +33,8 @@ pub struct Config {
     pub hedging: HedgingConfigWrapper,
     #[serde(default)]
     pub kollider_price_feed: KolliderPriceFeedConfigWrapper,
+    #[serde(default)]
+    pub exchanges: ExchangesConfig,
 }
 
 pub struct EnvOverride {
