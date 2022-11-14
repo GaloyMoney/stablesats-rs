@@ -7,10 +7,10 @@ pub use shared::payload::{SyntheticCentExposure, SyntheticCentLiability};
 const CONTRACT_SIZE_CENTS: Decimal = dec!(10000);
 const MIN_LIABILITY_THRESHOLD_CENTS: Decimal = dec!(5000); // CONTRACT_SIZE / 2
 
-const LOW_BOUND_RATIO_SHORTING: Decimal = dec!(0.95);
-const LOW_SAFEBOUND_RATIO_SHORTING: Decimal = dec!(0.98);
-const HIGH_SAFEBOUND_RATIO_SHORTING: Decimal = dec!(1.);
-const HIGH_BOUND_RATIO_SHORTING: Decimal = dec!(1.03);
+const LOW_BOUND_RATIO_SHORTING: Decimal = dec!(0.85);
+const LOW_SAFEBOUND_RATIO_SHORTING: Decimal = dec!(0.88);
+const HIGH_SAFEBOUND_RATIO_SHORTING: Decimal = dec!(1.2);
+const HIGH_BOUND_RATIO_SHORTING: Decimal = dec!(1.05);
 
 #[derive(Debug, PartialEq, Eq, Clone)]
 pub enum AdjustmentAction {
