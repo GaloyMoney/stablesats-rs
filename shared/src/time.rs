@@ -1,6 +1,14 @@
 use chrono::{prelude::*, Duration};
 use serde::{Deserialize, Serialize};
+use thiserror::Error;
 
+#[derive(Debug, Error)]
+pub enum TimeStampError {
+    #[error("ParseIntError - {0}")]
+    ParseIntError(#[from] std::num::ParseIntError),
+    #[error("EmptyNaiveDateTime - {0}")]
+    EmptyNaiveDateTime(String),
+}
 #[derive(Clone, Copy, PartialEq, Eq, Debug, Serialize, Deserialize)]
 #[serde(transparent)]
 pub struct TimeStamp(#[serde(with = "chrono::serde::ts_seconds")] DateTime<Utc>);
@@ -40,12 +48,17 @@ impl std::ops::Sub for TimeStamp {
 #[serde(transparent)]
 pub struct TimeStampMilliStr(String);
 impl TryFrom<&TimeStampMilliStr> for TimeStamp {
-    type Error = std::num::ParseIntError;
+    type Error = TimeStampError;
 
     fn try_from(value: &TimeStampMilliStr) -> Result<Self, Self::Error> {
         let millis = value.0.parse::<i64>()?;
-        let naive = NaiveDateTime::from_timestamp(millis / 1000, 0);
-        let datetime: DateTime<Utc> = DateTime::from_utc(naive, Utc);
-        Ok(Self(datetime))
+        if let Some(naive) = NaiveDateTime::from_timestamp_opt(millis / 1000, 0) {
+            let datetime: DateTime<Utc> = DateTime::from_utc(naive, Utc);
+            Ok(Self(datetime))
+        } else {
+            Err(TimeStampError::EmptyNaiveDateTime(
+                "Out-of-range no of seconds or invalid nanosecond".to_string(),
+            ))
+        }
     }
 }
