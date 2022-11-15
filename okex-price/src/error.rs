@@ -13,7 +13,7 @@ pub enum PriceFeedError {
     #[error("PriceFeedError - EmptyOrderBookData: OkexOrderBook.data was empty")]
     EmptyOrderBookData,
     #[error("PriceFeedError - InvalidTimestamp: {0}")]
-    InvalidTimestamp(#[from] std::num::ParseIntError),
+    InvalidTimestamp(#[from] shared::time::TimeStampError),
     #[error("PriceFeedError - SerdeError: {0}")]
     SerializationError(#[from] SerdeError),
     #[error("PriceFeedError - PublisherError: {0}")]
