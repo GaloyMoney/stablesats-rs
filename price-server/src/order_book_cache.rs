@@ -27,12 +27,12 @@ pub enum OrderBookCacheError {
 
 #[derive(Debug, Clone)]
 pub struct OrderBookCache {
-    inner: Arc<RwLock<SnapshotInner>>,
+    inner: Arc<RwLock<OrderBookCacheInner>>,
 }
 impl OrderBookCache {
     pub fn new(stale_after: Duration) -> Self {
         Self {
-            inner: Arc::new(RwLock::new(SnapshotInner::new(stale_after))),
+            inner: Arc::new(RwLock::new(OrderBookCacheInner::new(stale_after))),
         }
     }
 
@@ -47,11 +47,11 @@ impl OrderBookCache {
 }
 
 #[derive(Debug, Clone)]
-struct SnapshotInner {
+struct OrderBookCacheInner {
     stale_after: Duration,
     snapshot: Option<OrderBookView>,
 }
-impl SnapshotInner {
+impl OrderBookCacheInner {
     fn new(stale_after: Duration) -> Self {
         Self {
             stale_after,
