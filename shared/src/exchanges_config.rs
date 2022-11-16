@@ -15,9 +15,20 @@ pub struct ExchangeConfigEntry {
 #[serde(tag = "type")]
 pub enum ExchangeType {
     #[serde(rename = "okex")]
-    OkEx { api_key: String },
+    OkEx(OkExConfig),
     #[serde(rename = "kollider")]
-    Kollider { api_key: String, url: String },
+    Kollider(KolliderConfig),
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct OkExConfig {
+    pub api_key: String,
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct KolliderConfig {
+    pub api_key: String,
+    pub url: String,
 }
 
 #[cfg(test)]
@@ -29,11 +40,11 @@ mod test_super {
         let str = r#"
                   - weight: 50
                     config:
-                        type: OkEx
+                        type: okex
                         api_key: okex api
                   - weight: 50
                     config:
-                        type: Kollider
+                        type: kollider
                         api_key: kollider key
                         url: url
              "#;
@@ -45,17 +56,17 @@ mod test_super {
     fn test_serialize() {
         let ok = ExchangeConfigEntry {
             weight: 50,
-            config: ExchangeType::OkEx {
+            config: ExchangeType::OkEx(OkExConfig {
                 api_key: "okex api".to_string(),
-            },
+            }),
         };
 
         let kollider = ExchangeConfigEntry {
             weight: 50,
-            config: ExchangeType::Kollider {
+            config: ExchangeType::Kollider(KolliderConfig {
                 api_key: "kollider key".to_string(),
                 url: "url".to_string(),
-            },
+            }),
         };
 
         let lst = vec![ok, kollider];

@@ -3,7 +3,12 @@ use rust_decimal_macros::dec;
 use std::fs;
 
 use price_server::{app::*, *};
-use shared::{payload::*, pubsub::*, time::*};
+use shared::{
+    exchanges_config::{ExchangeConfigEntry, ExchangeType, ExchangesConfig, OkExConfig},
+    payload::*,
+    pubsub::*,
+    time::*,
+};
 
 #[derive(serde::Deserialize)]
 struct Fixture {
@@ -28,6 +33,15 @@ async fn price_app() -> anyhow::Result<()> {
     let mut stream = subscriber.subscribe::<OkexBtcUsdSwapPricePayload>().await?;
 
     let (_, recv) = futures::channel::mpsc::unbounded();
+
+    let okex_ex = ExchangeConfigEntry {
+        weight: 100,
+        config: ExchangeType::OkEx(OkExConfig {
+            api_key: "okex api".to_string(),
+        }),
+    };
+    let ex_cfgs = vec![okex_ex];
+
     let app = PriceApp::run(
         recv,
         FeeCalculatorConfig {
@@ -36,6 +50,7 @@ async fn price_app() -> anyhow::Result<()> {
             delayed_fee_rate: dec!(0.1),
         },
         config,
+        ex_cfgs,
     )
     .await?;
 
