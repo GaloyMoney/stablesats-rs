@@ -53,7 +53,7 @@ async fn price_app_with_order_book_cache() -> anyhow::Result<()> {
         assert!(false)
     }
 
-    let mut payload = load_fixture("real")?.payload;
+    let mut payload = load_fixture("contrived")?.payload;
 
     publisher
         .publish(OkexBtcUsdSwapOrderBookPayload(payload.clone()))
