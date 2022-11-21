@@ -43,6 +43,7 @@ impl Subscriber {
 
     pub async fn healthy(&self, largest_msg_delay: chrono::Duration) -> HealthCheckResponse {
         if let Some(time_since) = self.time_since_last_msg().await {
+            dbg!(time_since);
             if time_since <= largest_msg_delay {
                 Ok(())
             } else {
