@@ -51,7 +51,7 @@ async fn health_check_error(
     *n_errors += 1;
     let span = tracing::Span::current();
     span.record("component_name", name);
-    span.record("n_errors", *n_errors);
+    span.record("n_errors", &*n_errors);
     span.record("error.message", tracing::field::display(&err));
     if *n_errors > 4 {
         span.record(

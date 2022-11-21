@@ -15,7 +15,7 @@ pub enum CurrencyError {
 
 macro_rules! currency {
     ($name:ident, $code:ident) => {
-        #[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord)]
+        #[derive(Clone, Debug, PartialEq, Eq)]
         pub struct $name {
             inner: Money<'static, inner::stablesats::Currency>,
         }

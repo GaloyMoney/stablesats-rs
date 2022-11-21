@@ -1,6 +1,6 @@
 use thiserror::Error;
 
-use crate::{currency::CurrencyError, order_book_cache::OrderBookCacheError};
+use crate::{currency::CurrencyError, exchange_price_cache::ExchangePriceCacheError};
 use shared::pubsub::SubscriberError;
 
 #[allow(clippy::large_enum_variant)]
@@ -10,8 +10,6 @@ pub enum PriceAppError {
     CurrencyError(#[from] CurrencyError),
     #[error("PriceAppError - SubscriberError: {0}")]
     SubscriberError(#[from] SubscriberError),
-    #[error("PriceAppError - SnapshotCacheError: {0}")]
-    OrderBookCacheError(#[from] OrderBookCacheError),
-    #[error("PriceAppError - FloatingPointConversion: {0}")]
-    FloatingPointConversion(#[from] rust_decimal::Error),
+    #[error("PriceAppError - ExchangePriceCacheError: {0}")]
+    ExchangePriceCacheError(#[from] ExchangePriceCacheError),
 }
