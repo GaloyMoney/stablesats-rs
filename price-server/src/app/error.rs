@@ -1,6 +1,6 @@
 use thiserror::Error;
 
-use crate::{currency::CurrencyError, exchange_price_cache::ExchangePriceCacheError};
+use crate::{currency::CurrencyError, order_book_cache::OrderBookCacheError};
 use shared::pubsub::SubscriberError;
 
 #[allow(clippy::large_enum_variant)]

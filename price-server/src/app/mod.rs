@@ -44,7 +44,7 @@ impl PriceApp {
     ) -> Result<Self, PriceAppError> {
         let ht = Arc::new(RwLock::new(health_check_trigger));
         let mut prices_cache: PricesCache = HashMap::new();
-        let okex_order_book_cache = OrderBookCache::new(Duration::seconds(30));
+        let okex_order_book_cache = ExchangePriceCache::new(Duration::seconds(30));
 
         for exchange in exchanges_cfg {
             if exchange.weight == 0 {
@@ -81,7 +81,7 @@ impl PriceApp {
 
         let fee_calculator = FeeCalculator::new(fee_calc_cfg);
         let app = Self {
-            price_cache: order_book_cache.clone(),
+            snapshot_cache: okex_order_book_cache.clone(),
             fee_calculator,
         };
 
@@ -91,7 +91,7 @@ impl PriceApp {
     async fn subscribe_okex(
         pubsub_cfg: PubSubConfig,
         health_check_trigger: Arc<RwLock<HealthCheckTrigger>>,
-        order_book_cache: OrderBookCache,
+        order_book_cache: ExchangePriceCache,
     ) -> Result<(), PriceAppError> {
         let subscriber = Subscriber::new(pubsub_cfg).await?;
         let mut stream = subscriber
@@ -174,8 +174,8 @@ impl PriceApp {
         sats: Sats,
     ) -> Result<UsdCents, PriceAppError> {
         let cents = self
-            .price_cache
-            .latest_tick()
+            .snapshot_cache
+            .latest_snapshot()
             .await?
             .buy_usd()
             .cents_from_sats(sats);
@@ -188,8 +188,8 @@ impl PriceApp {
         sats: Sats,
     ) -> Result<UsdCents, PriceAppError> {
         let cents = self
-            .price_cache
-            .latest_tick()
+            .snapshot_cache
+            .latest_snapshot()
             .await?
             .sell_usd()
             .cents_from_sats(sats);
@@ -202,8 +202,8 @@ impl PriceApp {
         sats: Sats,
     ) -> Result<UsdCents, PriceAppError> {
         let cents = self
-            .price_cache
-            .latest_tick()
+            .snapshot_cache
+            .latest_snapshot()
             .await?
             .buy_usd()
             .cents_from_sats(sats);
@@ -216,8 +216,8 @@ impl PriceApp {
         sats: Sats,
     ) -> Result<UsdCents, PriceAppError> {
         let cents = self
-            .price_cache
-            .latest_tick()
+            .snapshot_cache
+            .latest_snapshot()
             .await?
             .sell_usd()
             .cents_from_sats(sats);
@@ -230,8 +230,8 @@ impl PriceApp {
         cents: UsdCents,
     ) -> Result<Sats, PriceAppError> {
         let sats = self
-            .price_cache
-            .latest_tick()
+            .snapshot_cache
+            .latest_snapshot()
             .await?
             .buy_usd()
             .sats_from_cents(cents);
@@ -244,8 +244,8 @@ impl PriceApp {
         cents: UsdCents,
     ) -> Result<Sats, PriceAppError> {
         let sats = self
-            .price_cache
-            .latest_tick()
+            .snapshot_cache
+            .latest_snapshot()
             .await?
             .sell_usd()
             .sats_from_cents(cents);
@@ -258,8 +258,8 @@ impl PriceApp {
         cents: UsdCents,
     ) -> Result<Sats, PriceAppError> {
         let sats = self
-            .price_cache
-            .latest_tick()
+            .snapshot_cache
+            .latest_snapshot()
             .await?
             .buy_usd()
             .sats_from_cents(cents);
@@ -272,8 +272,8 @@ impl PriceApp {
         cents: UsdCents,
     ) -> Result<Sats, PriceAppError> {
         let sats = self
-            .price_cache
-            .latest_tick()
+            .snapshot_cache
+            .latest_snapshot()
             .await?
             .sell_usd()
             .sats_from_cents(cents);
@@ -282,7 +282,11 @@ impl PriceApp {
 
     #[instrument(skip_all, fields(correlation_id), ret, err)]
     pub async fn get_cents_per_sat_exchange_mid_rate(&self) -> Result<f64, PriceAppError> {
-        let cents_per_sat = self.price_cache.latest_tick().await?.mid_price_of_one_sat();
+        let cents_per_sat = self
+            .snapshot_cache
+            .latest_snapshot()
+            .await?
+            .mid_price_of_one_sat()?;
         Ok(f64::try_from(cents_per_sat)?)
     }
 }

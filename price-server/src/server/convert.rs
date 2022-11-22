@@ -9,6 +9,9 @@ impl From<PriceAppError> for tonic::Status {
             ExchangePriceCacheError(err) => {
                 tonic::Status::new(tonic::Code::Unknown, format!("{}", err))
             }
+            ExchangePriceCacheError(err) => {
+                tonic::Status::new(tonic::Code::Unknown, format!("{}", err))
+            }
         }
     }
 }
