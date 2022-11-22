@@ -157,7 +157,6 @@ impl HedgingApp {
     ) -> Result<(), HedgingError> {
         loop {
             let _ = job::spawn_poll_okex(&pool, std::time::Duration::from_secs(1)).await;
-            let _ = job::spawn_poll_transfers(&pool, std::time::Duration::from_secs(1)).await;
             tokio::time::sleep(delay).await;
         }
     }
