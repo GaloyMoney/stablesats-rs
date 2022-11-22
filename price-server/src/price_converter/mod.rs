@@ -17,31 +17,53 @@ impl<'a, I: Iterator<Item = (&'a QuotePrice, &'a Decimal)> + Clone>
     }
 
     pub fn cents_from_sats(&self, sats: Sats) -> UsdCents {
-        UsdCents::from_decimal(sats.amount() * self.weighted_price_of_volume(*sats.amount()))
+        UsdCents::from_decimal(*sats.amount() * self.volume_weighted_price_of_one_sat(sats))
     }
 
     pub fn sats_from_cents(&self, cents: UsdCents) -> Sats {
-        Sats::from_decimal(cents.amount() / self.weighted_price_of_volume(*cents.amount()))
+        Sats::from_decimal(*cents.amount() / self.volume_weighted_price_of_one_cent(cents))
     }
 
-    fn weighted_price_of_volume(&self, total_volume: Decimal) -> Decimal {
+    fn volume_weighted_price_of_one_sat(&self, volume: Sats) -> Decimal {
         let mut price_acc = Decimal::ZERO;
         let mut volume_acc = Decimal::ZERO;
 
         let pairs = self.pairs.clone();
         for (price, qty) in pairs {
-            if (volume_acc + qty) < total_volume {
+            if (volume_acc + qty) < *volume.amount() {
                 volume_acc += qty;
                 price_acc += price.inner() * qty;
                 continue;
             } else {
-                let remaining_volume = total_volume - volume_acc;
+                let remaining_volume = volume.amount() - volume_acc;
+                volume_acc += remaining_volume;
                 price_acc += price.inner() * remaining_volume;
                 break;
             }
         }
 
-        price_acc / total_volume
+        price_acc / volume_acc
+    }
+
+    fn volume_weighted_price_of_one_cent(&self, volume: UsdCents) -> Decimal {
+        let mut price_acc = Decimal::ZERO;
+        let mut volume_acc = Decimal::ZERO;
+
+        let pairs = self.pairs.clone();
+        for (price, qty) in pairs {
+            if (volume_acc + qty) < *volume.amount() {
+                volume_acc += qty;
+                price_acc += (Decimal::ONE / price.inner()) * qty;
+                continue;
+            } else {
+                let remaining_volume = volume.amount() - volume_acc;
+                volume_acc += remaining_volume;
+                price_acc += (Decimal::ONE / price.inner()) * remaining_volume;
+                break;
+            }
+        }
+
+        (Decimal::ONE / price_acc) * volume_acc
     }
 }
 
@@ -72,73 +94,58 @@ mod tests {
     }
 
     #[test]
-    fn weighted_average_ask_price() -> anyhow::Result<()> {
+    fn sats_to_cents_to_sats() -> anyhow::Result<()> {
         let latest_snapshot = load_order_book("real")?.payload;
         let converter = VolumeBasedPriceConverter::new(latest_snapshot.asks.iter());
         let volumes = vec![
             Sats::from_decimal(dec!(1)),
             Sats::from_decimal(dec!(10)),
-            Sats::from_decimal(dec!(20)),
             Sats::from_decimal(dec!(100)),
-            Sats::from_decimal(dec!(110)),
+            Sats::from_decimal(dec!(1_000)),
+            Sats::from_decimal(dec!(10_000)),
+            Sats::from_decimal(dec!(100_000)),
+            Sats::from_decimal(dec!(1_000_000)),
+            Sats::from_decimal(dec!(10_000_000)),
+            Sats::from_decimal(dec!(100_000_000)),
+            Sats::from_decimal(dec!(1_000_000_000)),
         ];
-        let expected_prices = vec![dec!(0.1), dec!(0.1), dec!(0.15), dec!(0.19), dec!(0.2)];
 
-        for (idx, sats) in volumes.into_iter().enumerate() {
-            let mut price = converter.weighted_price_of_volume(*sats.amount());
-            price.rescale(7);
-
-            assert_eq!(price, expected_prices[idx]);
+        for (idx, sats) in volumes.iter().enumerate() {
+            let cents = converter.cents_from_sats(sats.clone());
+            let sats = converter.sats_from_cents(cents);
+            assert!(sats >= volumes[idx]);
         }
 
         Ok(())
     }
 
     #[test]
-    fn weighted_average_bid_price() -> anyhow::Result<()> {
+    fn cents_to_sats_to_cents() -> anyhow::Result<()> {
         let latest_snapshot = load_order_book("real")?.payload;
         let converter = VolumeBasedPriceConverter::new(latest_snapshot.bids.iter().rev());
         let volumes = vec![
-            Sats::from_decimal(dec!(1)),
-            Sats::from_decimal(dec!(10)),
-            Sats::from_decimal(dec!(20)),
-            Sats::from_decimal(dec!(100)),
-            Sats::from_decimal(dec!(200)),
+            UsdCents::from_major(1),
+            UsdCents::from_major(10),
+            UsdCents::from_major(100),
+            UsdCents::from_major(1_000),
+            UsdCents::from_major(10_000),
+            UsdCents::from_major(100_000),
+            UsdCents::from_major(1_000_000),
+            UsdCents::from_major(10_000_000),
+            UsdCents::from_major(100_000_000),
         ];
-        let expected_prices = vec![dec!(0.2), dec!(0.2), dec!(0.175), dec!(0.155), dec!(0.1275)];
 
-        for (idx, sats) in volumes.into_iter().enumerate() {
-            let mut price = converter.weighted_price_of_volume(*sats.amount());
-            price.rescale(7);
+        for (idx, cents) in volumes.iter().enumerate() {
+            let sats = converter.sats_from_cents(cents.clone());
+            let cents = converter.cents_from_sats(sats);
 
-            assert_eq!(price, expected_prices[idx]);
+            dbg!(cents.amount());
+            if *cents.amount() < dec!(100_000) {
+                assert!(cents <= volumes[idx])
+            } else {
+                assert!(cents >= volumes[idx])
+            }
         }
-
-        Ok(())
-    }
-
-    #[test]
-    fn cents_from_sats_volume() -> anyhow::Result<()> {
-        let latest_snapshot = load_order_book("real")?.payload;
-        let converter = VolumeBasedPriceConverter::new(latest_snapshot.bids.iter().rev());
-        let sats_volume = Sats::from_decimal(dec!(100_000_000));
-
-        let cents = converter.cents_from_sats(sats_volume);
-
-        assert_eq!(cents.floor(), UsdCents::from_major(65));
-
-        Ok(())
-    }
-
-    #[test]
-    fn sats_from_cents_volume() -> anyhow::Result<()> {
-        let latest_snapshot = load_order_book("real")?.payload;
-        let converter = VolumeBasedPriceConverter::new(latest_snapshot.bids.iter().rev());
-        let cents_volume = UsdCents::from_decimal(dec!(10));
-
-        let sats = converter.sats_from_cents(cents_volume);
-
-        assert_eq!(sats.floor(), Sats::from_major(50));
 
         Ok(())
     }
