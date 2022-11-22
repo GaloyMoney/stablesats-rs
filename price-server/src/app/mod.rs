@@ -11,7 +11,8 @@ use shared::{
     exchanges_config::{ExchangeType, ExchangesConfig},
     health::HealthCheckTrigger,
     payload::{
-        KolliderBtcUsdSwapPricePayload, OkexBtcUsdSwapOrderBookPayload, OkexBtcUsdSwapPricePayload,
+        KolliderBtcUsdSwapPricePayload, OkexBtcUsdSwapPricePayload, KOLLIDER_EXCHANGE_ID,
+        OKEX_EXCHANGE_ID,
     },
     pubsub::*,
 };
@@ -19,7 +20,6 @@ use shared::{
 use super::exchange_price_cache::ExchangePriceCache;
 
 pub use crate::{currency::*, fee_calculator::*};
-use crate::{exchange_price_cache::ExchangePriceCache, OrderBookCache};
 pub use error::*;
 
 pub struct PriceApp {
@@ -32,8 +32,6 @@ type PricesCache = HashMap<String, Box<dyn PriceProvider + Send + Sync>>;
 trait PriceProvider {}
 
 impl PriceProvider for ExchangePriceCache {}
-
-impl PriceProvider for OrderBookCache {}
 
 impl PriceApp {
     pub async fn run(
@@ -81,7 +79,7 @@ impl PriceApp {
 
         let fee_calculator = FeeCalculator::new(fee_calc_cfg);
         let app = Self {
-            snapshot_cache: okex_order_book_cache.clone(),
+            price_cache: okex_order_book_cache.clone(),
             fee_calculator,
         };
 
@@ -91,11 +89,11 @@ impl PriceApp {
     async fn subscribe_okex(
         pubsub_cfg: PubSubConfig,
         health_check_trigger: Arc<RwLock<HealthCheckTrigger>>,
-        order_book_cache: ExchangePriceCache,
+        price_cache: ExchangePriceCache,
     ) -> Result<(), PriceAppError> {
         let subscriber = Subscriber::new(pubsub_cfg).await?;
         let mut stream = subscriber
-            .subscribe::<OkexBtcUsdSwapOrderBookPayload>()
+            .subscribe::<OkexBtcUsdSwapPricePayload>()
             .await
             .unwrap();
         tokio::spawn(async move {
@@ -105,13 +103,6 @@ impl PriceApp {
                     .expect("Couldn't send response");
             }
         });
-
-        let order_book_cache = OrderBookCache::new(Duration::seconds(30));
-        let fee_calculator = FeeCalculator::new(fee_calc_cfg);
-        let app = Self {
-            price_cache: order_book_cache.clone(),
-            fee_calculator,
-        };
 
         let _ = tokio::spawn(async move {
             while let Some(msg) = stream.next().await {
@@ -123,7 +114,9 @@ impl PriceApp {
                 shared::tracing::inject_tracing_data(&span, &msg.meta.tracing_data);
 
                 async {
-                    price_cache.apply_update(msg).await;
+                    price_cache
+                        .apply_update(msg.payload.0, msg.meta.correlation_id)
+                        .await;
                 }
                 .instrument(span)
                 .await;
@@ -139,7 +132,10 @@ impl PriceApp {
         price_cache: ExchangePriceCache,
     ) -> Result<(), PriceAppError> {
         let subscriber = Subscriber::new(pubsub_cfg).await?;
-        let mut stream = subscriber.subscribe().await.unwrap();
+        let mut stream = subscriber
+            .subscribe::<KolliderBtcUsdSwapPricePayload>()
+            .await
+            .unwrap();
         tokio::spawn(async move {
             while let Some(check) = health_check_trigger.write().await.next().await {
                 check
@@ -158,7 +154,9 @@ impl PriceApp {
                 shared::tracing::inject_tracing_data(&span, &msg.meta.tracing_data);
 
                 async {
-                    price_cache.apply_update(msg).await;
+                    price_cache
+                        .apply_update(msg.payload.0, msg.meta.correlation_id)
+                        .await;
                 }
                 .instrument(span)
                 .await;
@@ -174,8 +172,8 @@ impl PriceApp {
         sats: Sats,
     ) -> Result<UsdCents, PriceAppError> {
         let cents = self
-            .snapshot_cache
-            .latest_snapshot()
+            .price_cache
+            .latest_tick()
             .await?
             .buy_usd()
             .cents_from_sats(sats);
@@ -188,8 +186,8 @@ impl PriceApp {
         sats: Sats,
     ) -> Result<UsdCents, PriceAppError> {
         let cents = self
-            .snapshot_cache
-            .latest_snapshot()
+            .price_cache
+            .latest_tick()
             .await?
             .sell_usd()
             .cents_from_sats(sats);
@@ -202,8 +200,8 @@ impl PriceApp {
         sats: Sats,
     ) -> Result<UsdCents, PriceAppError> {
         let cents = self
-            .snapshot_cache
-            .latest_snapshot()
+            .price_cache
+            .latest_tick()
             .await?
             .buy_usd()
             .cents_from_sats(sats);
@@ -216,8 +214,8 @@ impl PriceApp {
         sats: Sats,
     ) -> Result<UsdCents, PriceAppError> {
         let cents = self
-            .snapshot_cache
-            .latest_snapshot()
+            .price_cache
+            .latest_tick()
             .await?
             .sell_usd()
             .cents_from_sats(sats);
@@ -230,8 +228,8 @@ impl PriceApp {
         cents: UsdCents,
     ) -> Result<Sats, PriceAppError> {
         let sats = self
-            .snapshot_cache
-            .latest_snapshot()
+            .price_cache
+            .latest_tick()
             .await?
             .buy_usd()
             .sats_from_cents(cents);
@@ -244,8 +242,8 @@ impl PriceApp {
         cents: UsdCents,
     ) -> Result<Sats, PriceAppError> {
         let sats = self
-            .snapshot_cache
-            .latest_snapshot()
+            .price_cache
+            .latest_tick()
             .await?
             .sell_usd()
             .sats_from_cents(cents);
@@ -258,8 +256,8 @@ impl PriceApp {
         cents: UsdCents,
     ) -> Result<Sats, PriceAppError> {
         let sats = self
-            .snapshot_cache
-            .latest_snapshot()
+            .price_cache
+            .latest_tick()
             .await?
             .buy_usd()
             .sats_from_cents(cents);
@@ -272,8 +270,8 @@ impl PriceApp {
         cents: UsdCents,
     ) -> Result<Sats, PriceAppError> {
         let sats = self
-            .snapshot_cache
-            .latest_snapshot()
+            .price_cache
+            .latest_tick()
             .await?
             .sell_usd()
             .sats_from_cents(cents);
@@ -282,11 +280,7 @@ impl PriceApp {
 
     #[instrument(skip_all, fields(correlation_id), ret, err)]
     pub async fn get_cents_per_sat_exchange_mid_rate(&self) -> Result<f64, PriceAppError> {
-        let cents_per_sat = self
-            .snapshot_cache
-            .latest_snapshot()
-            .await?
-            .mid_price_of_one_sat()?;
+        let cents_per_sat = self.price_cache.latest_tick().await?.mid_price_of_one_sat();
         Ok(f64::try_from(cents_per_sat)?)
     }
 }

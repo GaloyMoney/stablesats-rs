@@ -6,11 +6,7 @@ use tokio::sync::RwLock;
 use tracing::Span;
 use tracing_opentelemetry::OpenTelemetrySpanExt;
 
-use shared::{
-    payload::*,
-    pubsub::{self, CorrelationId},
-    time::*,
-};
+use shared::{payload::*, pubsub::CorrelationId, time::*};
 
 use crate::currency::*;
 
@@ -34,8 +30,8 @@ impl ExchangePriceCache {
         }
     }
 
-    pub async fn apply_update(&self, message: pubsub::Envelope<KolliderBtcUsdSwapPricePayload>) {
-        self.inner.write().await.update_price(message);
+    pub async fn apply_update(&self, payload: PriceMessagePayload, id: CorrelationId) {
+        self.inner.write().await.update_price(payload, id);
     }
 
     pub async fn latest_tick(&self) -> Result<BtcSatTick, ExchangePriceCacheError> {
@@ -86,8 +82,7 @@ impl ExchangePriceCacheInner {
         }
     }
 
-    fn update_price(&mut self, message: pubsub::Envelope<KolliderBtcUsdSwapPricePayload>) {
-        let payload = message.payload.0;
+    fn update_price(&mut self, payload: PriceMessagePayload, id: CorrelationId) {
         if let Some(ref tick) = self.tick {
             if tick.timestamp > payload.timestamp {
                 return;
@@ -99,7 +94,7 @@ impl ExchangePriceCacheInner {
         ) {
             self.tick = Some(BtcSatTick {
                 timestamp: payload.timestamp,
-                correlation_id: message.meta.correlation_id,
+                correlation_id: id,
                 span_context: Span::current().context().span().span_context().clone(),
                 ask_price_of_one_sat,
                 bid_price_of_one_sat,

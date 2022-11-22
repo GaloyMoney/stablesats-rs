@@ -4,7 +4,7 @@ use std::fs;
 
 use price_server::{app::*, *};
 use shared::{
-    exchanges_config::{ExchangeConfigEntry, ExchangeType, ExchangesConfig, OkExConfig},
+    exchanges_config::{ExchangeConfigEntry, ExchangeType, OkExConfig},
     payload::*,
     pubsub::*,
     time::*,
