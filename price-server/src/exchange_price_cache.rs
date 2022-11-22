@@ -34,7 +34,7 @@ impl ExchangePriceCache {
         }
     }
 
-    pub async fn apply_update(&self, message: pubsub::Envelope<OkexBtcUsdSwapPricePayload>) {
+    pub async fn apply_update(&self, message: pubsub::Envelope<KolliderBtcUsdSwapPricePayload>) {
         self.inner.write().await.update_price(message);
     }
 
@@ -86,7 +86,7 @@ impl ExchangePriceCacheInner {
         }
     }
 
-    fn update_price(&mut self, message: pubsub::Envelope<OkexBtcUsdSwapPricePayload>) {
+    fn update_price(&mut self, message: pubsub::Envelope<KolliderBtcUsdSwapPricePayload>) {
         let payload = message.payload.0;
         if let Some(ref tick) = self.tick {
             if tick.timestamp > payload.timestamp {

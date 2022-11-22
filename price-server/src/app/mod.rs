@@ -1,6 +1,6 @@
 mod error;
 
-use std::sync::Arc;
+use std::{collections::HashMap, sync::Arc};
 
 use chrono::Duration;
 use futures::stream::StreamExt;
@@ -27,6 +27,14 @@ pub struct PriceApp {
     fee_calculator: FeeCalculator,
 }
 
+type PricesCache = HashMap<String, Box<dyn PriceProvider + Send + Sync>>;
+
+trait PriceProvider {}
+
+impl PriceProvider for ExchangePriceCache {}
+
+impl PriceProvider for OrderBookCache {}
+
 impl PriceApp {
     pub async fn run(
         health_check_trigger: HealthCheckTrigger,
@@ -35,22 +43,41 @@ impl PriceApp {
         exchanges_cfg: ExchangesConfig,
     ) -> Result<Self, PriceAppError> {
         let ht = Arc::new(RwLock::new(health_check_trigger));
-
-        let order_book_cache = OrderBookCache::new(Duration::seconds(30));
+        let mut prices_cache: PricesCache = HashMap::new();
+        let okex_order_book_cache = OrderBookCache::new(Duration::seconds(30));
 
         for exchange in exchanges_cfg {
+            if exchange.weight == 0 {
+                continue;
+            }
             match exchange.config {
                 ExchangeType::Kollider(_) => {
-                    Self::subscribe_kollider(pubsub_cfg.clone(), ht.clone()).await?
+                    let kollider_price_cache = ExchangePriceCache::new(Duration::seconds(30));
+                    prices_cache.insert(
+                        KOLLIDER_EXCHANGE_ID.to_string(),
+                        Box::new(kollider_price_cache.clone()),
+                    );
+                    Self::subscribe_kollider(
+                        pubsub_cfg.clone(),
+                        ht.clone(),
+                        kollider_price_cache.clone(),
+                    )
+                    .await?
                 }
                 ExchangeType::OkEx(_) => {
-                    Self::subscribe_okex(pubsub_cfg.clone(), ht.clone(), order_book_cache.clone())
-                        .await?
+                    prices_cache.insert(
+                        OKEX_EXCHANGE_ID.to_string(),
+                        Box::new(okex_order_book_cache.clone()),
+                    );
+                    Self::subscribe_okex(
+                        pubsub_cfg.clone(),
+                        ht.clone(),
+                        okex_order_book_cache.clone(),
+                    )
+                    .await?
                 }
             }
         }
-
-        let kollider_price_cache = ExchangePriceCache::new(Duration::seconds(30));
 
         let fee_calculator = FeeCalculator::new(fee_calc_cfg);
         let app = Self {
@@ -69,7 +96,8 @@ impl PriceApp {
         let subscriber = Subscriber::new(pubsub_cfg).await?;
         let mut stream = subscriber
             .subscribe::<OkexBtcUsdSwapOrderBookPayload>()
-            .await?;
+            .await
+            .unwrap();
         tokio::spawn(async move {
             while let Some(check) = health_check_trigger.write().await.next().await {
                 check
@@ -108,12 +136,10 @@ impl PriceApp {
     async fn subscribe_kollider(
         pubsub_cfg: PubSubConfig,
         health_check_trigger: Arc<RwLock<HealthCheckTrigger>>,
+        price_cache: ExchangePriceCache,
     ) -> Result<(), PriceAppError> {
         let subscriber = Subscriber::new(pubsub_cfg).await?;
-        let _stream = subscriber
-            .subscribe::<KolliderBtcUsdSwapPricePayload>()
-            .await
-            .unwrap();
+        let mut stream = subscriber.subscribe().await.unwrap();
         tokio::spawn(async move {
             while let Some(check) = health_check_trigger.write().await.next().await {
                 check
@@ -121,6 +147,24 @@ impl PriceApp {
                     .expect("Couldn't send response");
             }
         });
+
+        let _ = tokio::spawn(async move {
+            while let Some(msg) = stream.next().await {
+                let span = info_span!(
+                    "price_tick_received",
+                    message_type = %msg.payload_type,
+                    correlation_id = %msg.meta.correlation_id
+                );
+                shared::tracing::inject_tracing_data(&span, &msg.meta.tracing_data);
+
+                async {
+                    price_cache.apply_update(msg).await;
+                }
+                .instrument(span)
+                .await;
+            }
+        });
+
         Ok(())
     }
 
