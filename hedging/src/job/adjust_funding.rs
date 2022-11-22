@@ -85,8 +85,7 @@ pub(super) async fn execute(
         RebalanceAction::DoNothing => {}
         _ => {
             match action {
-                RebalanceAction::Withdraw(amount_in_btc)
-                | RebalanceAction::WithdrawAll(amount_in_btc) => {
+                RebalanceAction::Withdraw(amount_in_btc) => {
                     let internal_reservation = Reservation {
                         shared: &shared,
                         action_size: action.size(),

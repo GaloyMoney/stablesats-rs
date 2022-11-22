@@ -20,7 +20,6 @@ const SATS_PER_BTC: Decimal = dec!(100_000_000);
 #[derive(Debug, PartialEq, Eq, Clone)]
 pub enum RebalanceAction {
     DoNothing,
-    WithdrawAll(Decimal),
     Deposit(Decimal),
     Withdraw(Decimal),
 }
@@ -28,9 +27,6 @@ impl std::fmt::Display for RebalanceAction {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             RebalanceAction::DoNothing => write!(f, "DoNothing"),
-            RebalanceAction::WithdrawAll(amount_in_btc) => {
-                write!(f, "WithdrawAll({})", amount_in_btc)
-            }
             RebalanceAction::Deposit(amount_in_btc) => {
                 write!(f, "Deposit({})", amount_in_btc)
             }
@@ -48,7 +44,6 @@ impl RebalanceAction {
     pub fn action_type(&self) -> &'static str {
         match *self {
             Self::DoNothing => "do-nothing",
-            Self::WithdrawAll(_) => "withdraw-all",
             Self::Deposit(_) => "deposit",
             Self::Withdraw(_) => "withdraw",
         }
@@ -56,7 +51,7 @@ impl RebalanceAction {
 
     pub fn size(&self) -> Option<Decimal> {
         match *self {
-            Self::WithdrawAll(size) | Self::Deposit(size) | Self::Withdraw(size) => Some(size),
+            Self::Deposit(size) | Self::Withdraw(size) => Some(size),
             _ => None,
         }
     }
@@ -97,7 +92,7 @@ pub fn determine_action(
         && abs_liability_in_cents >= Decimal::ZERO
         && abs_liability_in_cents < MINIMUM_TRANSFER_AMOUNT_CENTS
     {
-        RebalanceAction::WithdrawAll(floor_btc(total_collateral_in_btc))
+        RebalanceAction::Withdraw(floor_btc(total_collateral_in_btc))
     } else if abs_liability_in_btc > total_collateral_in_btc * HIGH_BOUND_RATIO_LEVERAGE {
         let new_collateral_in_btc = abs_liability_in_btc / HIGH_SAFEBOUND_RATIO_LEVERAGE;
         let transfer_size_in_btc = round_btc(new_collateral_in_btc - total_collateral_in_btc);
@@ -155,7 +150,7 @@ mod tests {
         let btc_price: Decimal = dec!(1);
         let expected_transfer: Decimal = floor_btc(total_collateral);
         let adjustment = determine_action(liability, exposure, total_collateral, btc_price);
-        assert_eq!(adjustment, RebalanceAction::WithdrawAll(expected_transfer));
+        assert_eq!(adjustment, RebalanceAction::Withdraw(expected_transfer));
     }
 
     #[test]
