@@ -64,7 +64,6 @@ pub(super) async fn execute(
     let action = determine_action(
         target_liability_in_cents,
         current_position.usd_cents.into(),
-        trading_available_balance.used_amt_in_btc,
         trading_available_balance.total_amt_in_btc,
         last_price_in_usd_cents,
     );

@@ -141,7 +141,6 @@ impl HedgingApp {
         if rebalance_action::determine_action(
             target_liability_in_cents,
             current_position_in_cents.into(),
-            trading_available_balance.used_amt_in_btc,
             trading_available_balance.total_amt_in_btc,
             mid_price_in_cents,
         )
