@@ -77,8 +77,10 @@ impl BtcSatTick {
         }
     }
 
-    pub fn merge(ticks: Vec<BtcSatTick>) -> Self {
-        let first = ticks.get(0).unwrap();
+    pub fn merge(ticks: Vec<BtcSatTick>) -> Option<Self> {
+        if ticks.is_empty() {
+            return None;
+        }
 
         let mut ask_price = dec!(0);
         let mut bid_price = dec!(0);
@@ -87,16 +89,17 @@ impl BtcSatTick {
             ask_price += item.ask_price_of_one_sat.amount();
             bid_price += item.bid_price_of_one_sat.amount();
         }
-        let amount_items = dec!(1);
+        let amount_items = Decimal::from(ticks.len());
 
         ask_price /= amount_items;
         bid_price /= amount_items;
 
-        BtcSatTick {
+        let first = ticks.get(0)?;
+        Some(BtcSatTick {
             ask_price_of_one_sat: UsdCents::from_decimal(ask_price),
             bid_price_of_one_sat: UsdCents::from_decimal(bid_price),
             ..first.clone()
-        }
+        })
     }
 }
 

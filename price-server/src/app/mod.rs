@@ -40,11 +40,14 @@ impl PricesCache {
 
         for (id, ex) in self.caches.iter() {
             let tick = ex.latest_tick().await?;
-            let cfg = self.exchange_configs.get(id).unwrap(); // FIXME
+            let cfg = self
+                .exchange_configs
+                .get(id)
+                .ok_or(ExchangePriceCacheError::NoPriceAvailable)?;
             weighted_ticks.push(BtcSatTick::apply_weight(tick, cfg.weight));
         }
 
-        Ok(BtcSatTick::merge(weighted_ticks))
+        BtcSatTick::merge(weighted_ticks).ok_or(ExchangePriceCacheError::NoPriceAvailable)
     }
 }
 
