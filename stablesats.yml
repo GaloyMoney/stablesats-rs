@@ -47,3 +47,16 @@
 #   host: "localhost"
 #   port: 6831
 #   service_name: "stablesats-dev"
+
+# exchanges:
+#   okex:
+#     weight: 1.0
+#     config:
+#       type: okex
+#       api_key: okex api
+#   kollider:
+#     weight: 0.0
+#     config:
+#       type: kollider
+#       api_key: kollider key
+#       url: url
