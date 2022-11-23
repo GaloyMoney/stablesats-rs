@@ -4,6 +4,7 @@ use std::{collections::HashMap, sync::Arc};
 
 use chrono::Duration;
 use futures::stream::StreamExt;
+use rust_decimal::Decimal;
 use tokio::sync::RwLock;
 use tracing::{info_span, instrument, Instrument};
 
@@ -24,24 +25,26 @@ use crate::{exchange_price_cache::BtcSatTick, ExchangePriceCacheError};
 pub use error::*;
 
 pub struct PriceApp {
-    price_cache: ExchangePriceCache,
     all_price_caches: PricesCache,
     fee_calculator: FeeCalculator,
 }
 
 struct PricesCache {
-    cache: HashMap<String, Box<ExchangePriceCache>>,
-    exchanges: ExchangesConfig,
+    caches: HashMap<String, Box<ExchangePriceCache>>,
+    exchange_configs: ExchangesConfig,
 }
 
 impl PricesCache {
     pub async fn latest_tick(&self) -> Result<BtcSatTick, ExchangePriceCacheError> {
-        let _exchange = self.exchanges.get(&OKEX_EXCHANGE_ID.to_string());
-        let okex_exchange = self.cache.get(&OKEX_EXCHANGE_ID.to_string()).unwrap();
-        let okex_tick = okex_exchange.latest_tick().await?;
+        let mut weighted_ticks = vec![];
 
-        Ok(okex_tick)
-        //Err(ExchangePriceCacheError::NoPriceAvailable)
+        for (id, ex) in self.caches.iter() {
+            let tick = ex.latest_tick().await?;
+            let cfg = self.exchange_configs.get(id).unwrap(); // FIXME
+            weighted_ticks.push(BtcSatTick::apply_weight(tick, cfg.weight));
+        }
+
+        Ok(BtcSatTick::merge(weighted_ticks))
     }
 }
 
@@ -54,20 +57,18 @@ impl PriceApp {
     ) -> Result<Self, PriceAppError> {
         let ht = Arc::new(RwLock::new(health_check_trigger));
         let mut prices_cache: PricesCache = PricesCache {
-            cache: HashMap::new(),
-            exchanges: exchanges_cfg,
+            caches: HashMap::new(),
+            exchange_configs: exchanges_cfg,
         };
 
-        let okex_order_book_cache = ExchangePriceCache::new(Duration::seconds(30));
-
-        for (_, exchange_value) in prices_cache.exchanges.iter() {
-            if exchange_value.weight == 0 {
+        for (_, exchange_value) in prices_cache.exchange_configs.iter() {
+            if exchange_value.weight == Decimal::from(0) {
                 continue;
             }
             match exchange_value.config {
                 ExchangeType::Kollider(_) => {
                     let kollider_price_cache = ExchangePriceCache::new(Duration::seconds(30));
-                    prices_cache.cache.insert(
+                    prices_cache.caches.insert(
                         KOLLIDER_EXCHANGE_ID.to_string(),
                         Box::new(kollider_price_cache.clone()),
                     );
@@ -79,7 +80,8 @@ impl PriceApp {
                     .await?
                 }
                 ExchangeType::OkEx(_) => {
-                    prices_cache.cache.insert(
+                    let okex_order_book_cache = ExchangePriceCache::new(Duration::seconds(30));
+                    prices_cache.caches.insert(
                         OKEX_EXCHANGE_ID.to_string(),
                         Box::new(okex_order_book_cache.clone()),
                     );
@@ -95,7 +97,6 @@ impl PriceApp {
 
         let fee_calculator = FeeCalculator::new(fee_calc_cfg);
         let app = Self {
-            price_cache: okex_order_book_cache.clone(),
             all_price_caches: prices_cache,
             fee_calculator,
         };

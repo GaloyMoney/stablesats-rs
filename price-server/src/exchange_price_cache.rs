@@ -1,14 +1,15 @@
 use chrono::Duration;
 use opentelemetry::trace::{SpanContext, TraceContextExt};
+use rust_decimal::Decimal;
 use std::sync::Arc;
 use thiserror::Error;
 use tokio::sync::RwLock;
 use tracing::Span;
 use tracing_opentelemetry::OpenTelemetrySpanExt;
 
-use shared::{payload::*, pubsub::CorrelationId, time::*};
-
 use crate::currency::*;
+use rust_decimal_macros::dec;
+use shared::{payload::*, pubsub::CorrelationId, time::*};
 
 #[derive(Error, Debug)]
 pub enum ExchangePriceCacheError {
@@ -46,7 +47,7 @@ impl ExchangePriceCache {
     }
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct BtcSatTick {
     timestamp: TimeStamp,
     correlation_id: CorrelationId,
@@ -66,6 +67,36 @@ impl BtcSatTick {
 
     pub fn buy_usd(&self) -> CurrencyConverter {
         CurrencyConverter::new(&self.bid_price_of_one_sat)
+    }
+
+    pub fn apply_weight(tick: BtcSatTick, weight: Decimal) -> Self {
+        BtcSatTick {
+            ask_price_of_one_sat: tick.ask_price_of_one_sat * weight,
+            bid_price_of_one_sat: tick.bid_price_of_one_sat * weight,
+            ..tick
+        }
+    }
+
+    pub fn merge(ticks: Vec<BtcSatTick>) -> Self {
+        let first = ticks.get(0).unwrap();
+
+        let mut ask_price = dec!(0);
+        let mut bid_price = dec!(0);
+
+        for item in ticks.iter() {
+            ask_price += item.ask_price_of_one_sat.amount();
+            bid_price += item.bid_price_of_one_sat.amount();
+        }
+        let amount_items = dec!(1);
+
+        ask_price /= amount_items;
+        bid_price /= amount_items;
+
+        BtcSatTick {
+            ask_price_of_one_sat: UsdCents::from_decimal(ask_price),
+            bid_price_of_one_sat: UsdCents::from_decimal(bid_price),
+            ..first.clone()
+        }
     }
 }
 

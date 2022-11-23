@@ -35,7 +35,7 @@ async fn price_app() -> anyhow::Result<()> {
     let (_, recv) = futures::channel::mpsc::unbounded();
 
     let okex_ex = ExchangeConfigEntry {
-        weight: 100,
+        weight: dec!(1),
         config: ExchangeType::OkEx(OkExConfig {
             api_key: "okex api".to_string(),
         }),
