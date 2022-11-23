@@ -1,6 +1,6 @@
 use futures::stream::StreamExt;
 use rust_decimal_macros::dec;
-use std::fs;
+use std::{collections::HashMap, fs};
 
 use price_server::{app::*, *};
 use shared::{
@@ -40,7 +40,8 @@ async fn price_app() -> anyhow::Result<()> {
             api_key: "okex api".to_string(),
         }),
     };
-    let ex_cfgs = vec![okex_ex];
+    let mut ex_cfgs = HashMap::new();
+    ex_cfgs.insert("okex".to_string(), okex_ex);
 
     let app = PriceApp::run(
         recv,

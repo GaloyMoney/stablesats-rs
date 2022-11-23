@@ -20,18 +20,30 @@ use shared::{
 use super::exchange_price_cache::ExchangePriceCache;
 
 pub use crate::{currency::*, fee_calculator::*};
+use crate::{exchange_price_cache::BtcSatTick, ExchangePriceCacheError};
 pub use error::*;
 
 pub struct PriceApp {
     price_cache: ExchangePriceCache,
+    all_price_caches: PricesCache,
     fee_calculator: FeeCalculator,
 }
 
-type PricesCache = HashMap<String, Box<dyn PriceProvider + Send + Sync>>;
+struct PricesCache {
+    cache: HashMap<String, Box<ExchangePriceCache>>,
+    exchanges: ExchangesConfig,
+}
 
-trait PriceProvider {}
+impl PricesCache {
+    pub async fn latest_tick(&self) -> Result<BtcSatTick, ExchangePriceCacheError> {
+        let _exchange = self.exchanges.get(&OKEX_EXCHANGE_ID.to_string());
+        let okex_exchange = self.cache.get(&OKEX_EXCHANGE_ID.to_string()).unwrap();
+        let okex_tick = okex_exchange.latest_tick().await?;
 
-impl PriceProvider for ExchangePriceCache {}
+        Ok(okex_tick)
+        //Err(ExchangePriceCacheError::NoPriceAvailable)
+    }
+}
 
 impl PriceApp {
     pub async fn run(
@@ -41,17 +53,21 @@ impl PriceApp {
         exchanges_cfg: ExchangesConfig,
     ) -> Result<Self, PriceAppError> {
         let ht = Arc::new(RwLock::new(health_check_trigger));
-        let mut prices_cache: PricesCache = HashMap::new();
+        let mut prices_cache: PricesCache = PricesCache {
+            cache: HashMap::new(),
+            exchanges: exchanges_cfg,
+        };
+
         let okex_order_book_cache = ExchangePriceCache::new(Duration::seconds(30));
 
-        for exchange in exchanges_cfg {
-            if exchange.weight == 0 {
+        for (_, exchange_value) in prices_cache.exchanges.iter() {
+            if exchange_value.weight == 0 {
                 continue;
             }
-            match exchange.config {
+            match exchange_value.config {
                 ExchangeType::Kollider(_) => {
                     let kollider_price_cache = ExchangePriceCache::new(Duration::seconds(30));
-                    prices_cache.insert(
+                    prices_cache.cache.insert(
                         KOLLIDER_EXCHANGE_ID.to_string(),
                         Box::new(kollider_price_cache.clone()),
                     );
@@ -63,7 +79,7 @@ impl PriceApp {
                     .await?
                 }
                 ExchangeType::OkEx(_) => {
-                    prices_cache.insert(
+                    prices_cache.cache.insert(
                         OKEX_EXCHANGE_ID.to_string(),
                         Box::new(okex_order_book_cache.clone()),
                     );
@@ -80,6 +96,7 @@ impl PriceApp {
         let fee_calculator = FeeCalculator::new(fee_calc_cfg);
         let app = Self {
             price_cache: okex_order_book_cache.clone(),
+            all_price_caches: prices_cache,
             fee_calculator,
         };
 
@@ -172,7 +189,7 @@ impl PriceApp {
         sats: Sats,
     ) -> Result<UsdCents, PriceAppError> {
         let cents = self
-            .price_cache
+            .all_price_caches
             .latest_tick()
             .await?
             .buy_usd()
@@ -186,7 +203,7 @@ impl PriceApp {
         sats: Sats,
     ) -> Result<UsdCents, PriceAppError> {
         let cents = self
-            .price_cache
+            .all_price_caches
             .latest_tick()
             .await?
             .sell_usd()
@@ -200,7 +217,7 @@ impl PriceApp {
         sats: Sats,
     ) -> Result<UsdCents, PriceAppError> {
         let cents = self
-            .price_cache
+            .all_price_caches
             .latest_tick()
             .await?
             .buy_usd()
@@ -214,7 +231,7 @@ impl PriceApp {
         sats: Sats,
     ) -> Result<UsdCents, PriceAppError> {
         let cents = self
-            .price_cache
+            .all_price_caches
             .latest_tick()
             .await?
             .sell_usd()
@@ -228,7 +245,7 @@ impl PriceApp {
         cents: UsdCents,
     ) -> Result<Sats, PriceAppError> {
         let sats = self
-            .price_cache
+            .all_price_caches
             .latest_tick()
             .await?
             .buy_usd()
@@ -242,7 +259,7 @@ impl PriceApp {
         cents: UsdCents,
     ) -> Result<Sats, PriceAppError> {
         let sats = self
-            .price_cache
+            .all_price_caches
             .latest_tick()
             .await?
             .sell_usd()
@@ -256,7 +273,7 @@ impl PriceApp {
         cents: UsdCents,
     ) -> Result<Sats, PriceAppError> {
         let sats = self
-            .price_cache
+            .all_price_caches
             .latest_tick()
             .await?
             .buy_usd()
@@ -270,7 +287,7 @@ impl PriceApp {
         cents: UsdCents,
     ) -> Result<Sats, PriceAppError> {
         let sats = self
-            .price_cache
+            .all_price_caches
             .latest_tick()
             .await?
             .sell_usd()
@@ -280,7 +297,11 @@ impl PriceApp {
 
     #[instrument(skip_all, fields(correlation_id), ret, err)]
     pub async fn get_cents_per_sat_exchange_mid_rate(&self) -> Result<f64, PriceAppError> {
-        let cents_per_sat = self.price_cache.latest_tick().await?.mid_price_of_one_sat();
+        let cents_per_sat = self
+            .all_price_caches
+            .latest_tick()
+            .await?
+            .mid_price_of_one_sat();
         Ok(f64::try_from(cents_per_sat)?)
     }
 }
