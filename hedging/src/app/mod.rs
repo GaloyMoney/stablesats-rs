@@ -8,6 +8,7 @@ use tracing_opentelemetry::OpenTelemetrySpanExt;
 
 use okex_client::*;
 use shared::{
+    exchanges_config::OkexConfig,
     health::HealthCheckTrigger,
     payload::{OkexBtcUsdSwapPositionPayload, SynthUsdLiabilityPayload},
     pubsub::{CorrelationId, PubSubConfig, Publisher, Subscriber},
@@ -29,7 +30,7 @@ impl HedgingApp {
             migrate_on_start,
             okex_poll_frequency: okex_poll_delay,
         }: HedgingAppConfig,
-        okex_client_config: OkexClientConfig,
+        okex_client_config: OkexConfig,
         pubsub_config: PubSubConfig,
     ) -> Result<Self, HedgingError> {
         let pool = sqlx::PgPool::connect(&pg_con).await?;

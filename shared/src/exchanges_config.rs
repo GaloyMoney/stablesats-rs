@@ -4,7 +4,6 @@ use std::{collections::HashMap, fmt::Debug};
 
 pub type ExchangesConfig = HashMap<String, ExchangeConfigEntry>;
 
-#[allow(dead_code)]
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct ExchangeConfigEntry {
     pub weight: Decimal,
@@ -15,14 +14,21 @@ pub struct ExchangeConfigEntry {
 #[serde(tag = "type")]
 pub enum ExchangeType {
     #[serde(rename = "okex")]
-    OkEx(OkExConfig),
+    Okex(OkexConfig),
     #[serde(rename = "kollider")]
     Kollider(KolliderConfig),
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone)]
-pub struct OkExConfig {
+#[derive(Serialize, Deserialize, Debug, Clone, Default)]
+pub struct OkexConfig {
+    #[serde(default)]
     pub api_key: String,
+    #[serde(default)]
+    pub passphrase: String,
+    #[serde(default)]
+    pub secret_key: String,
+    #[serde(default)]
+    pub simulated: bool,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -62,8 +68,11 @@ mod test_super {
     fn test_serialize() {
         let ok = ExchangeConfigEntry {
             weight: dec!(0.7),
-            config: ExchangeType::OkEx(OkExConfig {
+            config: ExchangeType::Okex(OkexConfig {
                 api_key: "okex api".to_string(),
+                passphrase: "passphrase".to_string(),
+                secret_key: "secret".to_string(),
+                simulated: false,
             }),
         };
 

@@ -20,9 +20,6 @@
 #   config:
 #     migrate_on_start: true
 #     okex_poll_frequency: 10
-# okex:
-#   api_key: ""
-#   simulated: false
 
 # price_server:
   # enabled: true
@@ -54,6 +51,7 @@
 #     config:
 #       type: okex
 #       api_key: okex api
+#       simulated: false
 #   kollider:
 #     weight: 0.0
 #     config:

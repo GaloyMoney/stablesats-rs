@@ -5,10 +5,13 @@ use std::path::Path;
 
 use galoy_client::GaloyClientConfig;
 use hedging::HedgingAppConfig;
-use okex_client::OkexClientConfig;
 use okex_price::PriceFeedConfig;
 use price_server::{FeeCalculatorConfig, PriceServerConfig};
-use shared::{exchanges_config::ExchangesConfig, pubsub::PubSubConfig};
+use shared::{
+    exchanges_config::{ExchangeType, ExchangesConfig},
+    payload::OKEX_EXCHANGE_ID,
+    pubsub::PubSubConfig,
+};
 use user_trades::UserTradesConfig;
 
 use super::tracing::TracingConfig;
@@ -27,8 +30,6 @@ pub struct Config {
     pub user_trades: UserTradesConfigWrapper,
     #[serde(default)]
     pub galoy: GaloyClientConfig,
-    #[serde(default)]
-    pub okex: OkexClientConfig,
     #[serde(default)]
     pub hedging: HedgingConfigWrapper,
     #[serde(default)]
@@ -68,8 +69,16 @@ impl Config {
         config.user_trades.config.pg_con = user_trades_pg_con;
         config.galoy.auth_code = galoy_phone_code;
         config.hedging.config.pg_con = hedging_pg_con;
-        config.okex.secret_key = okex_secret_key;
-        config.okex.passphrase = okex_passphrase;
+
+        config
+            .exchanges
+            .entry(OKEX_EXCHANGE_ID.to_string())
+            .and_modify(|cfg| {
+                if let ExchangeType::Okex(ok) = &mut cfg.config {
+                    ok.passphrase = okex_passphrase;
+                    ok.secret_key = okex_secret_key;
+                }
+            });
 
         Ok(config)
     }

@@ -82,7 +82,7 @@ impl PriceApp {
                     )
                     .await?
                 }
-                ExchangeType::OkEx(_) => {
+                ExchangeType::Okex(_) => {
                     let okex_order_book_cache = ExchangePriceCache::new(Duration::seconds(30));
                     prices_cache.caches.insert(
                         OKEX_EXCHANGE_ID.to_string(),

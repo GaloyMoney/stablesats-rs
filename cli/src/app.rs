@@ -1,6 +1,7 @@
 use anyhow::Context;
 use clap::{Parser, Subcommand};
 use rust_decimal::Decimal;
+use shared::{exchanges_config::ExchangeType, payload::OKEX_EXCHANGE_ID};
 use std::{collections::HashMap, path::PathBuf};
 use url::Url;
 
@@ -115,7 +116,6 @@ async fn run_cmd(
         user_trades,
         tracing,
         galoy,
-        okex,
         hedging,
         kollider_price_feed,
         exchanges,
@@ -137,11 +137,18 @@ async fn run_cmd(
         let pubsub = pubsub.clone();
         let (snd, recv) = futures::channel::mpsc::unbounded();
         checkers.insert("price", snd);
+        let exchanges = exchanges.clone();
         handles.push(tokio::spawn(async move {
             let _ = price_send.try_send(
-                price_server::run(recv, price_server.server, price_server.fees, pubsub, exchanges)
-                    .await
-                    .context("Price Server error"),
+                price_server::run(
+                    recv,
+                    price_server.server,
+                    price_server.fees,
+                    pubsub,
+                    exchanges,
+                )
+                .await
+                .context("Price Server error"),
             );
         }));
     }
@@ -175,17 +182,26 @@ async fn run_cmd(
 
     if hedging.enabled {
         println!("Starting hedging process");
+
         let hedging_send = send.clone();
         let pubsub = pubsub.clone();
         let (snd, recv) = futures::channel::mpsc::unbounded();
         checkers.insert("hedging", snd);
-        handles.push(tokio::spawn(async move {
-            let _ = hedging_send.try_send(
-                hedging::run(recv, hedging.config, okex, pubsub)
-                    .await
-                    .context("Hedging error"),
-            );
-        }));
+        let exchanges = exchanges.clone();
+
+        if let Some(ex) = exchanges.get(&OKEX_EXCHANGE_ID.to_string()).cloned() {
+            if let ExchangeType::Okex(okex_cfg) = ex.config {
+                handles.push(tokio::spawn(async move {
+                    let _ = hedging_send.try_send(
+                        hedging::run(recv, hedging.config, okex_cfg.clone(), pubsub)
+                            .await
+                            .context("Hedging error"),
+                    );
+                }));
+            } else {
+                panic!("invalid okex config");
+            }
+        }
     }
     if user_trades.enabled {
         println!("Starting user trades process");
