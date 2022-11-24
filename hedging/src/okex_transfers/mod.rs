@@ -46,7 +46,7 @@ impl OkexTransfers {
         tx.execute("SET TRANSACTION ISOLATION LEVEL SERIALIZABLE")
             .await?;
         let res = sqlx::query!(
-            r#"SELECT client_transfer_id FROM okex_transfers WHERE complete = false AND lost = false AND transfer_type = $1"#,
+            r#"SELECT client_transfer_id FROM okex_transfers WHERE state = 'pending' AND lost = false AND transfer_type = $1"#,
             reservation.transfer_type,
         )
         .fetch_all(&mut tx)
@@ -110,7 +110,7 @@ impl OkexTransfers {
         HedgingError,
     > {
         let res =
-            sqlx::query!(r#"SELECT client_transfer_id, transfer_to, amount, created_at FROM okex_transfers WHERE action = 'deposit' AND transfer_type = 'external' AND complete = false"#)
+            sqlx::query!(r#"SELECT client_transfer_id, transfer_to, amount, created_at FROM okex_transfers WHERE action = 'deposit' AND transfer_type = 'external' AND state = 'pending'"#)
                 .fetch_all(&self.pool)
                 .await?;
         Ok(res
@@ -145,7 +145,7 @@ impl OkexTransfers {
 
     pub async fn open_non_external_deposit(&self) -> Result<Vec<ClientTransferId>, HedgingError> {
         let res =
-            sqlx::query!(r#"SELECT client_transfer_id FROM okex_transfers WHERE (action != 'deposit' OR transfer_type != 'external') AND complete = false"#)
+            sqlx::query!(r#"SELECT client_transfer_id FROM okex_transfers WHERE (action != 'deposit' OR transfer_type != 'external') AND state = 'pending'"#)
                 .fetch_all(&self.pool)
                 .await?;
         Ok(res
@@ -181,7 +181,7 @@ impl OkexTransfers {
 
     pub async fn sweep_lost_records(&self) -> Result<(), HedgingError> {
         sqlx::query!(
-            r#"UPDATE okex_transfers SET state = 'deleted' WHERE lost = true AND complete = false AND created_at < now() - interval '1 day'"#
+            r#"UPDATE okex_transfers SET state = 'deleted' WHERE lost = true AND state = 'pending' AND created_at < now() - interval '1 day'"#
         )
         .execute(&self.pool)
         .await?;
