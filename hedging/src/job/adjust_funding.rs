@@ -9,7 +9,7 @@ use shared::pubsub::CorrelationId;
 use crate::{error::*, okex_transfers::*, rebalance_action::*, synth_usd_liability::*};
 
 const SATS_PER_BTC: Decimal = dec!(100_000_000);
-const MINIMUM_FUNDING_BALANCE_BTC: Decimal = dec!(1);
+const MINIMUM_FUNDING_BALANCE_BTC: Decimal = dec!(0.5);
 
 #[instrument(name = "adjust_funding", skip_all, fields(correlation_id = %correlation_id,
         target_liability, current_position, last_price_in_usd_cents, funding_available_balance,
@@ -173,7 +173,8 @@ pub(super) async fn execute(
                         }
                     }
 
-                    let external_transfer_amount = amount_in_btc - internal_transfer_amount;
+                    let external_transfer_amount =
+                        amount_in_btc - internal_transfer_amount + MINIMUM_FUNDING_BALANCE_BTC;
                     let deposit_address = okex.get_funding_deposit_address().await?.value;
                     if !external_transfer_amount.is_zero()
                         && external_transfer_amount.is_sign_positive()
