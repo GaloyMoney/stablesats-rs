@@ -59,6 +59,7 @@ async fn expect_exposure_between(
         if passed {
             break;
         }
+        tokio::time::sleep(std::time::Duration::from_millis(300)).await;
     }
     assert!(passed);
 }
@@ -74,6 +75,7 @@ async fn expect_exposure_below(
         if passed {
             break;
         }
+        tokio::time::sleep(std::time::Duration::from_millis(300)).await;
     }
     assert!(passed);
 }
@@ -89,6 +91,7 @@ async fn expect_exposure_equal(
         if passed {
             break;
         }
+        tokio::time::sleep(std::time::Duration::from_millis(300)).await;
     }
     assert!(passed);
 }
