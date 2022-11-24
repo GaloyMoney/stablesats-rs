@@ -13,7 +13,7 @@ const LOW_SAFEBOUND_RATIO_LEVERAGE: Decimal = dec!(3);
 const HIGH_SAFEBOUND_RATIO_LEVERAGE: Decimal = dec!(3);
 const HIGH_BOUND_RATIO_LEVERAGE: Decimal = dec!(4);
 
-const HIGH_BOUND_BUFFER: Decimal = dec!(0.85);
+const HIGH_BOUND_BUFFER: Decimal = dec!(0.9);
 
 const SATS_PER_BTC: Decimal = dec!(100_000_000);
 
