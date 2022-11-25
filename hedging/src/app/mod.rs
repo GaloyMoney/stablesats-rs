@@ -145,7 +145,7 @@ impl HedgingApp {
                 let duration = chrono::Duration::seconds(20);
                 match (
                     liability_sub.healthy(duration).await,
-                    position_sub.healthy(chrono::Duration::minutes(10)).await,
+                    position_sub.healthy(chrono::Duration::minutes(5)).await,
                 ) {
                     (Err(e), _) | (_, Err(e)) => {
                         check.send(Err(e)).expect("Couldn't send response")
