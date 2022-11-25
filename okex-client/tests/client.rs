@@ -23,6 +23,7 @@ async fn configured_okex_client() -> anyhow::Result<OkexClient> {
 }
 
 #[tokio::test]
+#[serial]
 async fn get_deposit_address_data() -> anyhow::Result<()> {
     let client = configured_okex_client().await?;
     let address = client.get_funding_deposit_address().await?;
@@ -32,6 +33,7 @@ async fn get_deposit_address_data() -> anyhow::Result<()> {
 }
 
 #[tokio::test]
+#[serial]
 async fn get_onchain_fees_data() -> anyhow::Result<()> {
     let client = configured_okex_client().await?;
     let fees = client.get_onchain_fees().await?;
@@ -46,6 +48,7 @@ async fn get_onchain_fees_data() -> anyhow::Result<()> {
 }
 
 #[tokio::test]
+#[serial]
 async fn client_is_missing_header() -> anyhow::Result<()> {
     let client = OkexClient::new(OkexClientConfig {
         api_key: "".to_string(),
@@ -67,6 +70,7 @@ async fn client_is_missing_header() -> anyhow::Result<()> {
 }
 
 #[tokio::test]
+#[serial]
 async fn funding_account_balance() -> anyhow::Result<()> {
     let client = configured_okex_client().await?;
     let avail_balance = client.funding_account_balance().await?;
@@ -78,6 +82,7 @@ async fn funding_account_balance() -> anyhow::Result<()> {
 }
 
 #[tokio::test]
+#[serial]
 async fn trading_account_balance() -> anyhow::Result<()> {
     let client = configured_okex_client().await?;
     let avail_balance = client.trading_account_balance().await?;
@@ -88,6 +93,7 @@ async fn trading_account_balance() -> anyhow::Result<()> {
 }
 
 #[tokio::test]
+#[serial]
 async fn unknown_client_order_id() -> anyhow::Result<()> {
     let client = configured_okex_client().await?;
     let id = ClientOrderId::new();

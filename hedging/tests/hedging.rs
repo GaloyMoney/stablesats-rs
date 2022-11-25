@@ -100,19 +100,35 @@ async fn hedging() -> anyhow::Result<()> {
 
     tokio::spawn(async move {
         let (_, recv) = futures::channel::mpsc::unbounded();
-        HedgingApp::run(
+        if let Err(_) = HedgingApp::run(
             recv,
             HedgingAppConfig {
-                pg_con,
+                pg_con: pg_con.clone(),
                 migrate_on_start: true,
                 okex_poll_frequency: std::time::Duration::from_secs(2),
             },
             okex_client_config(),
-            pubsub_config,
+            pubsub_config.clone(),
         )
         .await
+        {
+            tokio::time::sleep(std::time::Duration::from_secs(2)).await;
+            let (_, recv) = futures::channel::mpsc::unbounded();
+            HedgingApp::run(
+                recv,
+                HedgingAppConfig {
+                    pg_con,
+                    migrate_on_start: true,
+                    okex_poll_frequency: std::time::Duration::from_secs(2),
+                },
+                okex_client_config(),
+                pubsub_config,
+            )
+            .await
+            .expect("Hedging app failed");
+        }
     });
-    tokio::time::sleep(std::time::Duration::from_secs(3)).await;
+    tokio::time::sleep(std::time::Duration::from_secs(5)).await;
 
     let mut payloads = load_fixture("./tests/fixtures/hedging.json")
         .expect("Couldn't load fixtures")
