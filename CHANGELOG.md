@@ -1,3 +1,31 @@
+# [stablesats release v0.3.17](https://github.com/GaloyMoney/stablesats/releases/tag/v0.3.17)
+
+
+### Miscellaneous Tasks
+
+- Run cargo update
+- Better okex position healthcheck and order err return
+- Add tracing to okex-client
+- Bump serde_json from 1.0.88 to 1.0.89 (#198)
+- Bump position subscription healthy duration
+- Instrument poll_okex entrypoint
+- Increase poll_okex retries
+- Add debug msg (#194)
+- Bump serde_json from 1.0.87 to 1.0.88 (#192)
+- Bump tokio from 1.21.2 to 1.22.0 (#193)
+- Bump reqwest from 0.11.12 to 0.11.13 (#189)
+- Bump clap from 4.0.25 to 4.0.26 (#190)
+- Bump serde_with from 2.0.1 to 2.1.0 (#191)
+- Bump clap from 4.0.24 to 4.0.25 (#188)
+- Bump uuid from 1.2.1 to 1.2.2 (#187)
+- Bump clap from 4.0.23 to 4.0.24 (#186)
+- Bump chrono from 0.4.22 to 0.4.23 (#182)
+- Bump clap from 4.0.22 to 4.0.23 (#183)
+
+### Testing
+
+- Adjust timing for hedging test to run better
+
 # [stablesats release v0.3.16](https://github.com/GaloyMoney/stablesats/releases/tag/v0.3.16)
 
 
