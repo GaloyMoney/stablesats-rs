@@ -11,6 +11,7 @@ use reqwest::{
 use ring::hmac;
 use rust_decimal::Decimal;
 use serde::{Deserialize, Serialize};
+use tracing::instrument;
 
 use std::{collections::HashMap, time::Duration};
 
@@ -93,6 +94,7 @@ impl OkexClient {
         &self.client
     }
 
+    #[instrument(skip(self), err)]
     pub async fn get_funding_deposit_address(&self) -> Result<DepositAddress, OkexClientError> {
         if self.config.simulated {
             return Ok(DepositAddress {
@@ -118,6 +120,7 @@ impl OkexClient {
         })
     }
 
+    #[instrument(skip(self), err)]
     pub async fn get_onchain_fees(&self) -> Result<OnchainFees, OkexClientError> {
         let request_path = "/api/v5/asset/currencies?ccy=BTC";
 
@@ -142,6 +145,7 @@ impl OkexClient {
         })
     }
 
+    #[instrument(skip(self), err)]
     pub async fn transfer_funding_to_trading(
         &self,
         amt: Decimal,
@@ -171,6 +175,7 @@ impl OkexClient {
         })
     }
 
+    #[instrument(skip(self), err)]
     pub async fn transfer_trading_to_funding(
         &self,
         amt: Decimal,
@@ -201,6 +206,7 @@ impl OkexClient {
         })
     }
 
+    #[instrument(skip(self), err)]
     pub async fn funding_account_balance(&self) -> Result<AvailableBalance, OkexClientError> {
         let request_path = "/api/v5/asset/balances?ccy=BTC";
 
@@ -223,6 +229,7 @@ impl OkexClient {
         })
     }
 
+    #[instrument(skip(self), err)]
     pub async fn trading_account_balance(&self) -> Result<AvailableBalance, OkexClientError> {
         let request_path = "/api/v5/account/balance?ccy=BTC";
 
@@ -245,6 +252,7 @@ impl OkexClient {
         })
     }
 
+    #[instrument(skip(self), err)]
     pub async fn transfer_state(
         &self,
         transfer_id: TransferId,
@@ -269,6 +277,7 @@ impl OkexClient {
         })
     }
 
+    #[instrument(skip(self), err)]
     pub async fn withdraw_btc_onchain(
         &self,
         amt: Decimal,
@@ -303,6 +312,7 @@ impl OkexClient {
         })
     }
 
+    #[instrument(skip(self), err)]
     pub async fn fetch_deposit(
         &self,
         depo_addr: String,
@@ -338,6 +348,7 @@ impl OkexClient {
         }
     }
 
+    #[instrument(skip(self), err)]
     pub async fn place_order(
         &self,
         id: ClientOrderId,
@@ -376,6 +387,7 @@ impl OkexClient {
         })
     }
 
+    #[instrument(skip(self), err)]
     pub async fn order_details(&self, id: ClientOrderId) -> Result<OrderDetails, OkexClientError> {
         let static_request_path = "/api/v5/trade/order?instId=BTC-USD-SWAP&clOrdId=";
         let request_path = format!("{}{}", static_request_path, id.0);
@@ -396,6 +408,7 @@ impl OkexClient {
         Ok(details)
     }
 
+    #[instrument(skip_all, err)]
     pub async fn get_position_in_signed_usd_cents(&self) -> Result<PositionSize, OkexClientError> {
         let request_path = "/api/v5/account/positions?instId=BTC-USD-SWAP";
         let headers = self.get_request_headers(request_path)?;
@@ -433,6 +446,7 @@ impl OkexClient {
         }
     }
 
+    #[instrument(skip(self), err)]
     pub async fn close_positions(&self, id: ClientOrderId) -> Result<(), OkexClientError> {
         let mut body: HashMap<String, String> = HashMap::new();
         body.insert(

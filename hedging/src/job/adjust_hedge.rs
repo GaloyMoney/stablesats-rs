@@ -58,6 +58,7 @@ pub(super) async fn execute(
                 }
                 span.record("placed_order", &tracing::field::display(true));
             } else {
+                span.record("placed_order", &tracing::field::display(false));
             }
         }
     };
