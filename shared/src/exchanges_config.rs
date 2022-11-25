@@ -1,21 +1,24 @@
 use rust_decimal::Decimal;
-use serde::{Deserialize, Serialize};
-use std::{collections::HashMap, fmt::Debug};
+use serde::{de::DeserializeOwned, Deserialize, Serialize};
+use std::fmt::Debug;
 
-pub type ExchangesConfig = HashMap<String, ExchangeConfigEntry>;
-
-#[derive(Serialize, Deserialize, Debug, Clone)]
-pub struct ExchangeConfigEntry {
-    pub weight: Decimal,
-    pub config: ExchangeType,
+#[derive(Serialize, Deserialize, Debug, Clone, Default)]
+pub struct ExchangeConfigAll {
+    pub okex: Option<ExchangeConfig<OkexConfig>>,
+    pub kollider: Option<ExchangeConfig<KolliderConfig>>,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
-#[serde(tag = "type")]
+pub struct ExchangeConfig<T: DeserializeOwned + Serialize> {
+    pub weight: Decimal,
+    #[serde(bound = "T: DeserializeOwned")]
+    pub config: T,
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
+#[serde(tag = "type", rename_all = "snake_case")]
 pub enum ExchangeType {
-    #[serde(rename = "okex")]
     Okex(OkexConfig),
-    #[serde(rename = "kollider")]
     Kollider(KolliderConfig),
 }
 
@@ -31,17 +34,18 @@ pub struct OkexConfig {
     pub simulated: bool,
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone, Default)]
 pub struct KolliderConfig {
+    #[serde(default)]
     pub api_key: String,
-    pub url: String,
+    #[serde(default)]
+    pub url: String, // FIXME is this needed?
 }
 
 #[cfg(test)]
 mod test_super {
     use super::*;
     use rust_decimal_macros::dec;
-    use std::collections::HashMap;
 
     #[test]
     fn test_deserialize() {
@@ -50,45 +54,72 @@ mod test_super {
                     weight: 0.8
                     config:
                         type: okex
-                        api_key: okex api
+                        api_key: okex api key
                   kollider: 
                     weight: 0.2
                     config:
                         type: kollider
-                        api_key: kollider key
+                        api_key: kollider api key
                         url: url
              "#;
-        let ex: ExchangesConfig = serde_yaml::from_str(str).unwrap();
-        let okex_item = ex.get("okex").unwrap();
-        assert_eq!(dec!(0.8), okex_item.weight);
-        dbg!(ex);
+        let ex: ExchangeConfigAll = serde_yaml::from_str(str).unwrap();
+
+        let okex = ex.okex.unwrap();
+        assert_eq!(dec!(0.8), okex.weight);
+        assert_eq!("okex api key", okex.config.api_key);
+
+        let kollider = ex.kollider.unwrap();
+        assert_eq!(dec!(0.2), kollider.weight);
+        assert_eq!("kollider api key", kollider.config.api_key);
     }
 
     #[test]
-    fn test_serialize() {
-        let ok = ExchangeConfigEntry {
-            weight: dec!(0.7),
-            config: ExchangeType::Okex(OkexConfig {
-                api_key: "okex api".to_string(),
-                passphrase: "passphrase".to_string(),
-                secret_key: "secret".to_string(),
+    fn test_serialize() -> anyhow::Result<()> {
+        let ok = ExchangeConfig {
+            weight: dec!(0.8),
+            config: OkexConfig {
+                api_key: "okex api key".to_string(),
+                passphrase: "okex passphrase".to_string(),
+                secret_key: "okex secret key".to_string(),
                 simulated: false,
-            }),
+            },
         };
 
-        let kollider = ExchangeConfigEntry {
-            weight: dec!(0.3),
-            config: ExchangeType::Kollider(KolliderConfig {
-                api_key: "kollider key".to_string(),
-                url: "url".to_string(),
-            }),
+        let kollider = ExchangeConfig {
+            weight: dec!(0.8),
+            config: KolliderConfig {
+                api_key: "kollider api key".to_string(),
+                url: "kollider url".to_string(),
+            },
         };
 
-        let mut data = HashMap::new();
-        data.insert("okex".to_string(), ok);
-        data.insert("kollider".to_string(), kollider);
+        let data = ExchangeConfigAll {
+            okex: Some(ok),
+            kollider: Some(kollider),
+        };
+        let result = serde_yaml::to_string(&data)?;
+        assert!(result.contains("okex passphrase"));
+        Ok(())
+    }
 
-        let result = serde_yaml::to_string(&data).unwrap();
-        println!("{:#?}", result);
+    #[test]
+    fn test_deserialize_new() -> anyhow::Result<()> {
+        let str = r#"
+                  okex:
+                    weight: 1
+                    config:
+                        api_key: okex api
+                  kollider:
+                    weight: 2
+                    config:
+                        api_key: kollider key
+                        url: url
+             "#;
+        let ex: ExchangeConfigAll = serde_yaml::from_str(str)?;
+        let okex_cfg = ex.okex.unwrap();
+        assert_eq!(dec!(1), okex_cfg.weight);
+        let kollider_cfg = ex.kollider.unwrap();
+        assert_eq!(dec!(2), kollider_cfg.weight);
+        Ok(())
     }
 }

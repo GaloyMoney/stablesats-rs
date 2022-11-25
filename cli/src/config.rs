@@ -7,11 +7,7 @@ use galoy_client::GaloyClientConfig;
 use hedging::HedgingAppConfig;
 use okex_price::PriceFeedConfig;
 use price_server::{FeeCalculatorConfig, PriceServerConfig};
-use shared::{
-    exchanges_config::{ExchangeType, ExchangesConfig},
-    payload::OKEX_EXCHANGE_ID,
-    pubsub::PubSubConfig,
-};
+use shared::{exchanges_config::ExchangeConfigAll, pubsub::PubSubConfig};
 use user_trades::UserTradesConfig;
 
 use super::tracing::TracingConfig;
@@ -35,7 +31,7 @@ pub struct Config {
     #[serde(default)]
     pub kollider_price_feed: KolliderPriceFeedConfigWrapper,
     #[serde(default)]
-    pub exchanges: ExchangesConfig,
+    pub exchanges: ExchangeConfigAll,
 }
 
 pub struct EnvOverride {
@@ -70,15 +66,10 @@ impl Config {
         config.galoy.auth_code = galoy_phone_code;
         config.hedging.config.pg_con = hedging_pg_con;
 
-        config
-            .exchanges
-            .entry(OKEX_EXCHANGE_ID.to_string())
-            .and_modify(|cfg| {
-                if let ExchangeType::Okex(ok) = &mut cfg.config {
-                    ok.passphrase = okex_passphrase;
-                    ok.secret_key = okex_secret_key;
-                }
-            });
+        if let Some(okex) = config.exchanges.okex.as_mut() {
+            okex.config.secret_key = okex_secret_key;
+            okex.config.passphrase = okex_passphrase;
+        };
 
         Ok(config)
     }

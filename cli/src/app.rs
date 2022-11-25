@@ -189,18 +189,14 @@ async fn run_cmd(
         checkers.insert("hedging", snd);
         let exchanges = exchanges.clone();
 
-        if let Some(ex) = exchanges.get(&OKEX_EXCHANGE_ID.to_string()).cloned() {
-            if let ExchangeType::Okex(okex_cfg) = ex.config {
-                handles.push(tokio::spawn(async move {
-                    let _ = hedging_send.try_send(
-                        hedging::run(recv, hedging.config, okex_cfg.clone(), pubsub)
-                            .await
-                            .context("Hedging error"),
-                    );
-                }));
-            } else {
-                panic!("invalid okex config");
-            }
+        if let Some(okex_cfg) = exchanges.okex {
+            handles.push(tokio::spawn(async move {
+                let _ = hedging_send.try_send(
+                    hedging::run(recv, hedging.config, okex_cfg.config, pubsub)
+                        .await
+                        .context("Hedging error"),
+                );
+            }));
         }
     }
     if user_trades.enabled {

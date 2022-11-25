@@ -1,10 +1,10 @@
 use futures::stream::StreamExt;
 use rust_decimal_macros::dec;
-use std::{collections::HashMap, fs};
+use std::fs;
 
 use price_server::{app::*, *};
 use shared::{
-    exchanges_config::{ExchangeConfigEntry, ExchangeType, OkexConfig},
+    exchanges_config::{ExchangeConfig, ExchangeConfigAll, OkexConfig},
     payload::*,
     pubsub::*,
     time::*,
@@ -34,17 +34,20 @@ async fn price_app() -> anyhow::Result<()> {
 
     let (_, recv) = futures::channel::mpsc::unbounded();
 
-    let okex_ex = ExchangeConfigEntry {
-        weight: dec!(1),
-        config: ExchangeType::Okex(OkexConfig {
-            passphrase: "passphrase".to_string(),
-            secret_key: "secret_key".to_string(),
-            simulated: false,
+    let ok = ExchangeConfig {
+        weight: dec!(1.0),
+        config: OkexConfig {
             api_key: "okex api".to_string(),
-        }),
+            passphrase: "passphrase".to_string(),
+            secret_key: "secret key".to_string(),
+            simulated: false,
+        },
     };
-    let mut ex_cfgs = HashMap::new();
-    ex_cfgs.insert("okex".to_string(), okex_ex);
+
+    let ex_cfgs = ExchangeConfigAll {
+        okex: Some(ok),
+        kollider: None,
+    };
 
     let app = PriceApp::run(
         recv,

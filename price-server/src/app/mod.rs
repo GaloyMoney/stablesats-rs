@@ -9,7 +9,7 @@ use tokio::sync::RwLock;
 use tracing::{info_span, instrument, Instrument};
 
 use shared::{
-    exchanges_config::{ExchangeType, ExchangesConfig},
+    exchanges_config::{ExchangeConfigAll, ExchangeType},
     health::HealthCheckTrigger,
     payload::{
         KolliderBtcUsdSwapPricePayload, OkexBtcUsdSwapPricePayload, KOLLIDER_EXCHANGE_ID,
@@ -31,21 +31,21 @@ pub struct PriceApp {
 
 struct PricesCache {
     caches: HashMap<String, Box<ExchangePriceCache>>,
-    exchange_configs: ExchangesConfig,
+    exchange_configs: ExchangeConfigAll,
 }
 
 impl PricesCache {
     pub async fn latest_tick(&self) -> Result<BtcSatTick, ExchangePriceCacheError> {
         let mut weighted_ticks = vec![];
 
-        for (id, ex) in self.caches.iter() {
-            let tick = ex.latest_tick().await?;
-            let cfg = self
-                .exchange_configs
-                .get(id)
-                .ok_or(ExchangePriceCacheError::NoPriceAvailable)?;
-            weighted_ticks.push(BtcSatTick::apply_weight(tick, cfg.weight));
-        }
+        let okex_cfg = self.exchange_configs.okex.as_ref().unwrap();
+        let tick = self
+            .caches
+            .get(&OKEX_EXCHANGE_ID.to_string())
+            .unwrap()
+            .latest_tick()
+            .await?;
+        weighted_ticks.push(BtcSatTick::apply_weight(tick, okex_cfg.weight));
 
         BtcSatTick::merge(weighted_ticks).ok_or(ExchangePriceCacheError::NoPriceAvailable)
     }
@@ -56,7 +56,7 @@ impl PriceApp {
         health_check_trigger: HealthCheckTrigger,
         fee_calc_cfg: FeeCalculatorConfig,
         pubsub_cfg: PubSubConfig,
-        exchanges_cfg: ExchangesConfig,
+        exchanges_cfg: ExchangeConfigAll,
     ) -> Result<Self, PriceAppError> {
         let ht = Arc::new(RwLock::new(health_check_trigger));
         let mut prices_cache: PricesCache = PricesCache {
@@ -64,38 +64,23 @@ impl PriceApp {
             exchange_configs: exchanges_cfg,
         };
 
-        for (_, exchange_value) in prices_cache.exchange_configs.iter() {
-            if exchange_value.weight == Decimal::from(0) {
-                continue;
-            }
-            match exchange_value.config {
-                ExchangeType::Kollider(_) => {
-                    let kollider_price_cache = ExchangePriceCache::new(Duration::seconds(30));
-                    prices_cache.caches.insert(
-                        KOLLIDER_EXCHANGE_ID.to_string(),
-                        Box::new(kollider_price_cache.clone()),
-                    );
-                    Self::subscribe_kollider(
-                        pubsub_cfg.clone(),
-                        ht.clone(),
-                        kollider_price_cache.clone(),
-                    )
-                    .await?
-                }
-                ExchangeType::Okex(_) => {
-                    let okex_order_book_cache = ExchangePriceCache::new(Duration::seconds(30));
-                    prices_cache.caches.insert(
-                        OKEX_EXCHANGE_ID.to_string(),
-                        Box::new(okex_order_book_cache.clone()),
-                    );
-                    Self::subscribe_okex(
-                        pubsub_cfg.clone(),
-                        ht.clone(),
-                        okex_order_book_cache.clone(),
-                    )
-                    .await?
-                }
-            }
+        if prices_cache.exchange_configs.kollider.is_some() {
+            let kollider_price_cache = ExchangePriceCache::new(Duration::seconds(30));
+            prices_cache.caches.insert(
+                KOLLIDER_EXCHANGE_ID.to_string(),
+                Box::new(kollider_price_cache.clone()),
+            );
+            Self::subscribe_kollider(pubsub_cfg.clone(), ht.clone(), kollider_price_cache.clone())
+                .await?
+        }
+
+        if prices_cache.exchange_configs.okex.is_some() {
+            let okex_price_cache = ExchangePriceCache::new(Duration::seconds(30));
+            prices_cache.caches.insert(
+                OKEX_EXCHANGE_ID.to_string(),
+                Box::new(okex_price_cache.clone()),
+            );
+            Self::subscribe_okex(pubsub_cfg.clone(), ht.clone(), okex_price_cache.clone()).await?
         }
 
         let fee_calculator = FeeCalculator::new(fee_calc_cfg);

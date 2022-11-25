@@ -7,7 +7,9 @@ mod exchange_price_cache;
 mod fee_calculator;
 mod server;
 
-use shared::{exchanges_config::ExchangesConfig, health::HealthCheckTrigger, pubsub::PubSubConfig};
+use shared::{
+    exchanges_config::ExchangeConfigAll, health::HealthCheckTrigger, pubsub::PubSubConfig,
+};
 
 use app::PriceApp;
 pub use exchange_price_cache::ExchangePriceCacheError;
@@ -19,7 +21,7 @@ pub async fn run(
     server_config: PriceServerConfig,
     fee_calc_cfg: FeeCalculatorConfig,
     pubsub_cfg: PubSubConfig,
-    exchanges_cfg: ExchangesConfig,
+    exchanges_cfg: ExchangeConfigAll,
 ) -> Result<(), PriceServerError> {
     let app = PriceApp::run(
         health_check_trigger,
