@@ -28,6 +28,7 @@ opentelemetry = { version = "0.18.0", features = ["trace"] }
 tracing-opentelemetry = "0.18.0"
 rust_decimal_macros = "1.26.1"
 rusty-money = "0.4.1"
+async-trait = "0.1.58"
 
 [build-dependencies]
 protobuf-src = { version = "1.1.0" }

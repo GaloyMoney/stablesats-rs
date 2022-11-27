@@ -2,29 +2,27 @@ use chrono::Duration;
 use opentelemetry::trace::{SpanContext, TraceContextExt};
 use rust_decimal::Decimal;
 use std::sync::Arc;
-use thiserror::Error;
 use tokio::sync::RwLock;
 use tracing::Span;
 use tracing_opentelemetry::OpenTelemetrySpanExt;
 
-use crate::currency::*;
-use rust_decimal_macros::dec;
+use crate::{currency::*, price_mixer::*};
 use shared::{payload::*, pubsub::CorrelationId, time::*};
 
-#[derive(Error, Debug)]
-pub enum ExchangePriceCacheError {
-    #[error("StalePrice: last update was at {0}")]
-    StalePrice(TimeStamp),
-    #[error("No price data available")]
-    NoPriceAvailable,
-}
-
 #[derive(Clone)]
-pub struct ExchangePriceCache {
+pub struct ExchangeTickCache {
     inner: Arc<RwLock<ExchangePriceCacheInner>>,
 }
 
-impl ExchangePriceCache {
+#[async_trait::async_trait]
+impl PriceProvider for ExchangeTickCache {
+    async fn latest(&self) -> Result<Box<dyn SidePicker>, ExchangePriceCacheError> {
+        let inner = self.inner.read().await;
+        Ok(Box::new(inner.latest_tick()?))
+    }
+}
+
+impl ExchangeTickCache {
     pub fn new(stale_after: Duration) -> Self {
         Self {
             inner: Arc::new(RwLock::new(ExchangePriceCacheInner::new(stale_after))),
@@ -56,7 +54,26 @@ pub struct BtcSatTick {
     bid_price_of_one_sat: UsdCents,
 }
 
+impl SidePicker for BtcSatTick {
+    fn buy_usd<'a>(&'a self) -> Box<dyn VolumePicker + 'a> {
+        Box::new(CurrencyConverter::new(&self.ask_price_of_one_sat))
+    }
+
+    fn sell_usd<'a>(&'a self) -> Box<dyn VolumePicker + 'a> {
+        Box::new(CurrencyConverter::new(&self.ask_price_of_one_sat))
+    }
+
+    fn mid_price_of_one_sat<'a>(&'a self) -> Box<dyn VolumePicker + 'a> {
+        Box::new(CurrencyConverter::new(&self.bid_price_of_one_sat)) // FIXME
+    }
+
+    // pub fn mid_price_of_one_sat(&self) -> UsdCents {
+    //     (&self.bid_price_of_one_sat + &self.ask_price_of_one_sat) / 2
+    // }
+}
+
 impl BtcSatTick {
+    //FIXME: delete unused functions
     pub fn mid_price_of_one_sat(&self) -> UsdCents {
         (&self.bid_price_of_one_sat + &self.ask_price_of_one_sat) / 2
     }

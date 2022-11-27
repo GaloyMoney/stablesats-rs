@@ -1964,6 +1964,7 @@ name = "price-server"
 version = "0.3.18-dev"
 dependencies = [
  "anyhow",
+ "async-trait",
  "axum-core",
  "chrono",
  "futures",
