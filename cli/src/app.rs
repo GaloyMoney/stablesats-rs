@@ -1,7 +1,6 @@
 use anyhow::Context;
 use clap::{Parser, Subcommand};
 use rust_decimal::Decimal;
-use shared::{exchanges_config::ExchangeType, payload::OKEX_EXCHANGE_ID};
 use std::{collections::HashMap, path::PathBuf};
 use url::Url;
 

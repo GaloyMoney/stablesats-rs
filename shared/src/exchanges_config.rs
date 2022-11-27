@@ -15,13 +15,6 @@ pub struct ExchangeConfig<T: DeserializeOwned + Serialize> {
     pub config: T,
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone)]
-#[serde(tag = "type", rename_all = "snake_case")]
-pub enum ExchangeType {
-    Okex(OkexConfig),
-    Kollider(KolliderConfig),
-}
-
 #[derive(Serialize, Deserialize, Debug, Clone, Default)]
 pub struct OkexConfig {
     #[serde(default)]
@@ -39,7 +32,7 @@ pub struct KolliderConfig {
     #[serde(default)]
     pub api_key: String,
     #[serde(default)]
-    pub url: String, // FIXME is this needed?
+    pub url: String,
 }
 
 #[cfg(test)]
