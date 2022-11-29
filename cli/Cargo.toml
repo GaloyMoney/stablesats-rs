@@ -23,7 +23,7 @@ serde = { version = "1.0.148", features = ["derive"] }
 serde_yaml = "0.9.14"
 tokio = "1.22.0"
 futures = "0.3.25"
-tonic = "0.8.2"
+tonic = "0.8.3"
 url = { version = "2.3.1", features = ["serde"] }
 rust_decimal = "1.26.1"
 opentelemetry = "0.18.0"
