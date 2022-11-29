@@ -382,7 +382,7 @@ impl OkexClient {
             .await?;
 
         let order_data = Self::extract_response_data::<OrderData>(response).await?;
-        if order_data.ord_id == "" && order_data.s_code != "" {
+        if order_data.ord_id.is_empty() && !order_data.s_code.is_empty() {
             return Err(OkexClientError::UnexpectedResponse {
                 msg: order_data.s_msg,
                 code: order_data.s_code,
