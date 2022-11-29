@@ -141,7 +141,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "744864363a200a5e724a7e61bc8c11b6628cf2e3ec519c8a1a48e609a8156b40"
 dependencies = [
  "async-trait",
- "axum-core 0.3.0",
+ "axum-core",
  "bitflags",
  "bytes",
  "futures-util",
@@ -163,22 +163,6 @@ dependencies = [
  "tokio",
  "tower",
  "tower-http",
- "tower-layer",
- "tower-service",
-]
-
-[[package]]
-name = "axum-core"
-version = "0.2.9"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "37e5939e02c56fecd5c017c37df4238c0a839fa76b7f97acdd7efb804fd181cc"
-dependencies = [
- "async-trait",
- "bytes",
- "futures-util",
- "http",
- "http-body",
- "mime",
  "tower-layer",
  "tower-service",
 ]
@@ -1979,7 +1963,7 @@ name = "price-server"
 version = "0.3.18-dev"
 dependencies = [
  "anyhow",
- "axum-core 0.2.9",
+ "axum-core",
  "chrono",
  "futures",
  "opentelemetry",
