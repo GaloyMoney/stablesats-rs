@@ -6,10 +6,12 @@ use crate::currency::VolumePicker;
 use shared::time::*;
 use std::collections::HashMap;
 
+use super::currency::*;
+
 pub trait SidePicker {
     fn buy_usd<'a>(&'a self) -> Box<dyn VolumePicker + 'a>;
     fn sell_usd<'a>(&'a self) -> Box<dyn VolumePicker + 'a>;
-    fn mid_price_of_one_sat<'a>(&'a self) -> Box<dyn VolumePicker + 'a>;
+    fn mid_price_of_one_sat<'a>(&'a self) -> UsdCents;
 }
 
 #[async_trait]
@@ -55,11 +57,14 @@ pub enum ExchangePriceCacheError {
     NoPriceAvailable,
 }
 
+#[cfg(test)]
 mod tests {
     pub use std::collections::HashMap;
 
     pub use chrono::Duration;
     pub use rust_decimal::Decimal;
+    use shared::payload::PriceMessagePayload;
+    use shared::pubsub::CorrelationId;
 
     pub use super::PriceMixer;
     pub use super::PriceProvider;
@@ -68,22 +73,51 @@ mod tests {
         currency::{Sats, VolumePicker},
         exchange_tick_cache::ExchangeTickCache,
     };
+    pub use serde_json::*;
 
     #[tokio::test]
-    async fn test_price_mixer() {
+    async fn test_price_mixer() -> anyhow::Result<(), Error> {
         let mut providers: HashMap<String, (Box<dyn PriceProvider + Sync + Send>, Decimal)> =
             HashMap::new();
-        let cache = ExchangeTickCache::new(Duration::seconds(30));
-        providers.insert("okex".to_string(), (Box::new(cache), Decimal::from(1)));
+        let cache = Box::new(ExchangeTickCache::new(Duration::seconds(30)));
+        providers.insert("okex".to_string(), (cache.clone(), Decimal::from(1)));
         let price_mixer = PriceMixer::new(providers);
-        //cache.apply_update(payload, id)
 
-        let usd = UsdCents::from_decimal(Decimal::ONE);
+        let pay = get_payload()?;
+
+        cache.apply_update(pay, CorrelationId::new()).await;
 
         let price = price_mixer
-            .apply(|p| p.sell_usd().sats_from_cents(usd.clone()).amount().clone())
+            .apply(|p| {
+                p.sell_usd()
+                    .sats_from_cents(UsdCents::from_decimal(Decimal::ONE))
+                    .amount()
+                    .clone()
+            })
             .await
             .unwrap();
-        println!("price: {}", price);
+        assert_ne!(Decimal::ZERO, price);
+        Ok(())
+    }
+
+    fn get_payload() -> Result<PriceMessagePayload> {
+        let raw = r#"{
+            "exchange": "okex",
+            "instrumentId": "BTC-USD-SWAP",
+            "timestamp": 1,
+            "bidPrice": {
+                "numeratorUnit": "USD_CENT",
+                "denominatorUnit": "BTC_SAT",
+                "offset": 12,
+                "base": "1000000000"
+            },
+            "askPrice": {
+                "numeratorUnit": "USD_CENT",
+                "denominatorUnit": "BTC_SAT",
+                "offset": 12,
+                "base": "10000000000"
+            }
+            }"#;
+        Ok(serde_json::from_str::<PriceMessagePayload>(raw).unwrap())
     }
 }

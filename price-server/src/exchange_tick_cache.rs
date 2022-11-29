@@ -1,6 +1,5 @@
 use chrono::Duration;
 use opentelemetry::trace::{SpanContext, TraceContextExt};
-use rust_decimal::Decimal;
 use std::sync::Arc;
 use tokio::sync::RwLock;
 use tracing::Span;
@@ -17,8 +16,15 @@ pub struct ExchangeTickCache {
 #[async_trait::async_trait]
 impl PriceProvider for ExchangeTickCache {
     async fn latest(&self) -> Result<Box<dyn SidePicker>, ExchangePriceCacheError> {
-        let inner = self.inner.read().await;
-        Ok(Box::new(inner.latest_tick()?))
+        let tick = self.inner.read().await.latest_tick()?;
+
+        let span = Span::current();
+        span.add_link(tick.span_context.clone());
+        span.record(
+            "correlation_id",
+            &tracing::field::display(tick.correlation_id),
+        );
+        Ok(Box::new(tick))
     }
 }
 
@@ -31,17 +37,6 @@ impl ExchangeTickCache {
 
     pub async fn apply_update(&self, payload: PriceMessagePayload, id: CorrelationId) {
         self.inner.write().await.update_price(payload, id);
-    }
-
-    pub async fn latest_tick(&self) -> Result<BtcSatTick, ExchangePriceCacheError> {
-        let tick = self.inner.read().await.latest_tick()?;
-        let span = Span::current();
-        span.add_link(tick.span_context.clone());
-        span.record(
-            "correlation_id",
-            &tracing::field::display(tick.correlation_id),
-        );
-        Ok(tick)
     }
 }
 
@@ -63,27 +58,8 @@ impl SidePicker for BtcSatTick {
         Box::new(CurrencyConverter::new(&self.ask_price_of_one_sat))
     }
 
-    fn mid_price_of_one_sat<'a>(&'a self) -> Box<dyn VolumePicker + 'a> {
-        Box::new(CurrencyConverter::new(&self.bid_price_of_one_sat)) // FIXME
-    }
-
-    // pub fn mid_price_of_one_sat(&self) -> UsdCents {
-    //     (&self.bid_price_of_one_sat + &self.ask_price_of_one_sat) / 2
-    // }
-}
-
-impl BtcSatTick {
-    //FIXME: delete unused functions
-    pub fn mid_price_of_one_sat(&self) -> UsdCents {
+    fn mid_price_of_one_sat<'a>(&'a self) -> UsdCents {
         (&self.bid_price_of_one_sat + &self.ask_price_of_one_sat) / 2
-    }
-
-    pub fn sell_usd(&self) -> CurrencyConverter {
-        CurrencyConverter::new(&self.ask_price_of_one_sat)
-    }
-
-    pub fn buy_usd(&self) -> CurrencyConverter {
-        CurrencyConverter::new(&self.bid_price_of_one_sat)
     }
 }
 
@@ -137,7 +113,7 @@ mod tests {
 
     #[test]
     fn test_mid_price_of_one_sat() {
-        let tick = BtcSatTick {
+        let _tick = BtcSatTick {
             timestamp: TimeStamp::now(),
             correlation_id: CorrelationId::new(),
             span_context: SpanContext::empty_context(),
@@ -145,6 +121,6 @@ mod tests {
             ask_price_of_one_sat: UsdCents::from_major(10000),
         };
 
-        assert_eq!(tick.mid_price_of_one_sat(), UsdCents::from_major(7500));
+        assert_eq!(UsdCents::from_major(7500), _tick.mid_price_of_one_sat());
     }
 }

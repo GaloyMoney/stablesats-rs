@@ -20,7 +20,6 @@ use shared::{
 
 pub use crate::{currency::*, fee_calculator::*};
 use crate::{
-    exchange_price_cache::ExchangePriceCache,
     exchange_tick_cache::ExchangeTickCache,
     price_mixer::{PriceMixer, PriceProvider},
 };
@@ -168,8 +167,7 @@ impl PriceApp {
         let cents = UsdCents::from_decimal(
             self.price_mixer
                 .apply(|p| p.buy_usd().cents_from_sats(sats.clone()).amount().clone())
-                .await
-                .unwrap(), // FIXME fix unwrap
+                .await?,
         );
 
         Ok(self.fee_calculator.increase_by_immediate_fee(cents).ceil())
@@ -180,12 +178,10 @@ impl PriceApp {
         &self,
         sats: Sats,
     ) -> Result<UsdCents, PriceAppError> {
-        // let cents = cache.latest_tick().await?.sell_usd().cents_from_sats(sats);
         let cents = UsdCents::from_decimal(
             self.price_mixer
                 .apply(|p| p.sell_usd().cents_from_sats(sats.clone()).amount().clone())
-                .await
-                .unwrap(), // FIXME fix unwrap
+                .await?,
         );
         Ok(self.fee_calculator.increase_by_immediate_fee(cents).ceil())
     }
@@ -195,12 +191,10 @@ impl PriceApp {
         &self,
         sats: Sats,
     ) -> Result<UsdCents, PriceAppError> {
-        // let cents = cache.latest_tick().await?.buy_usd().cents_from_sats(sats);
         let cents = UsdCents::from_decimal(
             self.price_mixer
                 .apply(|p| p.buy_usd().cents_from_sats(sats.clone()).amount().clone())
-                .await
-                .unwrap(), // FIXME fix unwrap
+                .await?,
         );
         Ok(self.fee_calculator.decrease_by_delayed_fee(cents).floor())
     }
@@ -210,15 +204,11 @@ impl PriceApp {
         &self,
         sats: Sats,
     ) -> Result<UsdCents, PriceAppError> {
-        // let cents = cache.latest_tick().await?.sell_usd().cents_from_sats(sats);
-
         let cents = UsdCents::from_decimal(
             self.price_mixer
                 .apply(|p| p.sell_usd().cents_from_sats(sats.clone()).amount().clone())
-                .await
-                .unwrap(), // FIXME fix unwrap
+                .await?,
         );
-
         Ok(self.fee_calculator.increase_by_delayed_fee(cents).ceil())
     }
 
@@ -227,12 +217,10 @@ impl PriceApp {
         &self,
         cents: UsdCents,
     ) -> Result<Sats, PriceAppError> {
-        // let sats = cache.latest_tick().await?.buy_usd().sats_from_cents(cents);
         let sats = Sats::from_decimal(
             self.price_mixer
                 .apply(|p| p.buy_usd().sats_from_cents(cents.clone()).amount().clone())
-                .await
-                .unwrap(), // FIXME fix unwrap
+                .await?,
         );
         Ok(self.fee_calculator.increase_by_immediate_fee(sats).ceil())
     }
@@ -242,13 +230,10 @@ impl PriceApp {
         &self,
         cents: UsdCents,
     ) -> Result<Sats, PriceAppError> {
-        // let sats = cache.latest_tick().await?.sell_usd().sats_from_cents(cents);
-
         let sats = Sats::from_decimal(
             self.price_mixer
                 .apply(|p| p.sell_usd().sats_from_cents(cents.clone()).amount().clone())
-                .await
-                .unwrap(), // FIXME fix unwrap
+                .await?,
         );
 
         Ok(self.fee_calculator.decrease_by_immediate_fee(sats).floor())
@@ -259,13 +244,10 @@ impl PriceApp {
         &self,
         cents: UsdCents,
     ) -> Result<Sats, PriceAppError> {
-        // let sats = cache.latest_tick().await?.buy_usd().sats_from_cents(cents);
-
         let sats = Sats::from_decimal(
             self.price_mixer
                 .apply(|p| p.buy_usd().sats_from_cents(cents.clone()).amount().clone())
-                .await
-                .unwrap(), // FIXME fix unwrap
+                .await?,
         );
 
         Ok(self.fee_calculator.increase_by_delayed_fee(sats).ceil())
@@ -276,29 +258,25 @@ impl PriceApp {
         &self,
         cents: UsdCents,
     ) -> Result<Sats, PriceAppError> {
-        // let sats = cache.latest_tick().await?.sell_usd().sats_from_cents(cents);
-
         let sats = Sats::from_decimal(
             self.price_mixer
                 .apply(|p| p.sell_usd().sats_from_cents(cents.clone()).amount().clone())
-                .await
-                .unwrap(), // FIXME fix unwrap
+                .await?,
         );
         Ok(self.fee_calculator.decrease_by_delayed_fee(sats).floor())
     }
 
     #[instrument(skip_all, fields(correlation_id), ret, err)]
     pub async fn get_cents_per_sat_exchange_mid_rate(&self) -> Result<f64, PriceAppError> {
-        let cache = ExchangePriceCache::new(Duration::seconds(30));
+        let cents_per_sat = self
+            .price_mixer
+            .apply(|p| p.mid_price_of_one_sat().amount().clone())
+            .await
+            .unwrap();
 
-        // let sats = Sats::from_decimal(
-        //     self.price_mixer
-        //         .apply(|p| p.mid_price_of_one_sat())
-        //         .await
-        //         .unwrap(), // FIXME fix unwrap
-        // );
+        // let cents_per_sat = cache.latest_tick().await?.mid_price_of_one_sat();
+        // Ok(f64::try_from(cents_per_sat)?)
 
-        let cents_per_sat = cache.latest_tick().await?.mid_price_of_one_sat(); // FIXME
         Ok(f64::try_from(cents_per_sat)?)
     }
 }

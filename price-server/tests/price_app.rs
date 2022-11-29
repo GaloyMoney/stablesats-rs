@@ -2,7 +2,7 @@ use futures::stream::StreamExt;
 use rust_decimal_macros::dec;
 use std::fs;
 
-use price_server::{app::*, *};
+use price_server::{app::*, ExchangePriceCacheError};
 use shared::{
     exchanges_config::{ExchangeConfig, ExchangeConfigAll, OkexConfig},
     payload::*,

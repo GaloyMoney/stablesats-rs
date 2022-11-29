@@ -3,7 +3,6 @@
 
 pub mod app;
 pub mod currency;
-mod exchange_price_cache;
 mod exchange_tick_cache;
 mod fee_calculator;
 mod price_mixer;
@@ -14,9 +13,10 @@ use shared::{
 };
 
 use app::PriceApp;
-pub use exchange_price_cache::ExchangePriceCacheError;
 pub use fee_calculator::FeeCalculatorConfig;
 pub use server::*;
+
+pub use price_mixer::ExchangePriceCacheError;
 
 pub async fn run(
     health_check_trigger: HealthCheckTrigger,
