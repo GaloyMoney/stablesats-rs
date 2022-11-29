@@ -16,7 +16,8 @@ pub struct ExchangeTickCache {
 #[async_trait::async_trait]
 impl PriceProvider for ExchangeTickCache {
     async fn latest(&self) -> Result<Box<dyn SidePicker>, ExchangePriceCacheError> {
-        let tick = self.inner.read().await.latest_tick()?;
+        let inner = self.inner.read().await;
+        let tick = inner.latest_tick()?;
 
         let span = Span::current();
         span.add_link(tick.span_context.clone());
@@ -51,7 +52,7 @@ pub struct BtcSatTick {
 
 impl SidePicker for BtcSatTick {
     fn buy_usd<'a>(&'a self) -> Box<dyn VolumePicker + 'a> {
-        Box::new(CurrencyConverter::new(&self.ask_price_of_one_sat))
+        Box::new(CurrencyConverter::new(&self.bid_price_of_one_sat))
     }
 
     fn sell_usd<'a>(&'a self) -> Box<dyn VolumePicker + 'a> {

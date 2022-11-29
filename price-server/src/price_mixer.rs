@@ -36,16 +36,24 @@ impl PriceMixer {
     ) -> Result<Decimal, ExchangePriceCacheError> {
         let mut total = Decimal::ZERO;
         let mut total_weights = Decimal::ZERO;
+        let mut prev_error: Option<ExchangePriceCacheError> = None;
         for (provider, weight) in self.providers.values() {
             let side_picker = match provider.latest().await {
                 Ok(side_picker) => side_picker,
-                Err(_) => continue,
+                Err(err) => {
+                    prev_error = Some(err);
+                    continue;
+                }
             };
-            println!("call_picker");
             total_weights += weight;
             total += f(&side_picker) * weight;
         }
-        Ok(total / total_weights)
+
+        if let Some(prev_error) = prev_error {
+            Err(prev_error)
+        } else {
+            Ok(total / total_weights)
+        }
     }
 }
 
@@ -65,6 +73,7 @@ mod tests {
     pub use rust_decimal::Decimal;
     use shared::payload::PriceMessagePayload;
     use shared::pubsub::CorrelationId;
+    use shared::time::TimeStamp;
 
     pub use super::PriceMixer;
     pub use super::PriceProvider;
@@ -79,7 +88,7 @@ mod tests {
     async fn test_price_mixer() -> anyhow::Result<(), Error> {
         let mut providers: HashMap<String, (Box<dyn PriceProvider + Sync + Send>, Decimal)> =
             HashMap::new();
-        let cache = Box::new(ExchangeTickCache::new(Duration::seconds(30)));
+        let cache = Box::new(ExchangeTickCache::new(Duration::seconds(3000)));
         providers.insert("okex".to_string(), (cache.clone(), Decimal::from(1)));
         let price_mixer = PriceMixer::new(providers);
 
@@ -118,6 +127,8 @@ mod tests {
                 "base": "10000000000"
             }
             }"#;
-        Ok(serde_json::from_str::<PriceMessagePayload>(raw).unwrap())
+        let mut price_message_payload = serde_json::from_str::<PriceMessagePayload>(raw).unwrap();
+        price_message_payload.timestamp = TimeStamp::now();
+        Ok(price_message_payload)
     }
 }

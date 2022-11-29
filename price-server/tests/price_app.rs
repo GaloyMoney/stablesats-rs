@@ -34,7 +34,7 @@ async fn price_app() -> anyhow::Result<()> {
 
     let (_, recv) = futures::channel::mpsc::unbounded();
 
-    let ok = ExchangeConfig {
+    let okex = ExchangeConfig {
         weight: dec!(1.0),
         config: OkexConfig {
             api_key: "okex api".to_string(),
@@ -45,7 +45,7 @@ async fn price_app() -> anyhow::Result<()> {
     };
 
     let ex_cfgs = ExchangeConfigAll {
-        okex: Some(ok),
+        okex: Some(okex),
         kollider: None,
     };
 
@@ -74,6 +74,7 @@ async fn price_app() -> anyhow::Result<()> {
 
     let mut payloads = load_fixture()?.payloads.into_iter();
     let mut payload = payloads.next().unwrap();
+
     publisher
         .publish(OkexBtcUsdSwapPricePayload(payload.clone()))
         .await?;

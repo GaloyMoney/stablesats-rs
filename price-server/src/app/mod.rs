@@ -85,10 +85,7 @@ impl PriceApp {
         price_cache: ExchangeTickCache,
     ) -> Result<(), PriceAppError> {
         let subscriber = Subscriber::new(pubsub_cfg).await?;
-        let mut stream = subscriber
-            .subscribe::<OkexBtcUsdSwapPricePayload>()
-            .await
-            .unwrap();
+        let mut stream = subscriber.subscribe::<OkexBtcUsdSwapPricePayload>().await?;
         tokio::spawn(async move {
             while let Some(check) = health_check_trigger.write().await.next().await {
                 check
@@ -127,8 +124,7 @@ impl PriceApp {
         let subscriber = Subscriber::new(pubsub_cfg).await?;
         let mut stream = subscriber
             .subscribe::<KolliderBtcUsdSwapPricePayload>()
-            .await
-            .unwrap();
+            .await?;
         tokio::spawn(async move {
             while let Some(check) = health_check_trigger.write().await.next().await {
                 check
@@ -170,7 +166,7 @@ impl PriceApp {
                 .await?,
         );
 
-        Ok(self.fee_calculator.increase_by_immediate_fee(cents).ceil())
+        Ok(self.fee_calculator.decrease_by_immediate_fee(cents).floor())
     }
 
     #[instrument(skip_all, fields(correlation_id, amount = %sats.amount()), ret, err)]
@@ -271,12 +267,7 @@ impl PriceApp {
         let cents_per_sat = self
             .price_mixer
             .apply(|p| p.mid_price_of_one_sat().amount().clone())
-            .await
-            .unwrap();
-
-        // let cents_per_sat = cache.latest_tick().await?.mid_price_of_one_sat();
-        // Ok(f64::try_from(cents_per_sat)?)
-
+            .await?;
         Ok(f64::try_from(cents_per_sat)?)
     }
 }
