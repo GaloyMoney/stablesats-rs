@@ -8,6 +8,12 @@ pub struct ExchangeConfigAll {
     pub kollider: Option<ExchangeConfig<KolliderConfig>>,
 }
 
+impl ExchangeConfigAll {
+    pub fn is_valid(&self) -> bool {
+        self.okex.is_some() || self.kollider.is_some()
+    }
+}
+
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct ExchangeConfig<T: DeserializeOwned + Serialize> {
     pub weight: Decimal,
@@ -39,6 +45,13 @@ pub struct KolliderConfig {
 mod test_super {
     use super::*;
     use rust_decimal_macros::dec;
+
+    #[test]
+    fn test_default() {
+        let config = ExchangeConfigAll::default();
+        assert!(config.okex.is_none());
+        assert!(config.kollider.is_none());
+    }
 
     #[test]
     fn test_deserialize() {

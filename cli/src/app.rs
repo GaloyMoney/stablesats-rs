@@ -120,6 +120,11 @@ async fn run_cmd(
         exchanges,
     }: Config,
 ) -> anyhow::Result<()> {
+    if !exchanges.is_valid() {
+        Err(anyhow::anyhow!(
+            "Invalid exchanges config - at least one exchange has to be configured"
+        ))?;
+    }
     println!("Starting server process");
     crate::tracing::init_tracer(tracing)?;
     let (send, mut receive) = tokio::sync::mpsc::channel(1);
