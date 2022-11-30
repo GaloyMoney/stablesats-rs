@@ -10,7 +10,7 @@ use reqwest::{
 };
 use ring::hmac;
 use rust_decimal::Decimal;
-use serde::{Deserialize, Serialize};
+use shared::exchanges_config::OkexConfig;
 use tracing::instrument;
 
 use std::{collections::HashMap, time::Duration};
