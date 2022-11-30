@@ -1,4 +1,5 @@
 use rust_decimal::Decimal;
+use rust_decimal_macros::dec;
 
 use crate::{
     currency::{Sats, UsdCents},
@@ -21,6 +22,10 @@ impl<'a, I: Iterator<Item = (&'a QuotePrice, &'a Decimal)> + Clone>
     }
 
     pub fn sats_from_cents(&self, cents: UsdCents) -> Sats {
+        if *cents.amount() == dec!(0) {
+            return Sats::from_major(0);
+        }
+
         Sats::from_decimal(*cents.amount() / self.volume_weighted_price_of_one_cent(cents))
     }
 
@@ -53,12 +58,14 @@ impl<'a, I: Iterator<Item = (&'a QuotePrice, &'a Decimal)> + Clone>
         for (price, qty) in pairs {
             if (volume_acc + qty) < *volume.amount() {
                 volume_acc += qty;
-                price_acc += (Decimal::ONE / price.inner()) * qty;
+                let price_of_one_cent = Decimal::ONE / price.inner();
+                price_acc += price_of_one_cent * qty;
                 continue;
             } else {
                 let remaining_volume = volume.amount() - volume_acc;
                 volume_acc += remaining_volume;
-                price_acc += (Decimal::ONE / price.inner()) * remaining_volume;
+                let price_of_one_cent = Decimal::ONE / price.inner();
+                price_acc += price_of_one_cent * remaining_volume;
                 break;
             }
         }
@@ -94,8 +101,8 @@ mod tests {
     }
 
     #[test]
-    fn sats_to_cents_to_sats() -> anyhow::Result<()> {
-        let latest_snapshot = load_order_book("real")?.payload;
+    fn sats_to_cents() -> anyhow::Result<()> {
+        let latest_snapshot = load_order_book("contrived")?.payload;
         let converter = VolumeBasedPriceConverter::new(latest_snapshot.asks.iter());
         let volumes = vec![
             Sats::from_decimal(dec!(1)),
@@ -103,25 +110,27 @@ mod tests {
             Sats::from_decimal(dec!(100)),
             Sats::from_decimal(dec!(1_000)),
             Sats::from_decimal(dec!(10_000)),
-            Sats::from_decimal(dec!(100_000)),
-            Sats::from_decimal(dec!(1_000_000)),
-            Sats::from_decimal(dec!(10_000_000)),
-            Sats::from_decimal(dec!(100_000_000)),
-            Sats::from_decimal(dec!(1_000_000_000)),
+        ];
+
+        let expected_cents = vec![
+            UsdCents::from_decimal(dec!(0.10)),
+            UsdCents::from_decimal(dec!(1.00)),
+            UsdCents::from_decimal(dec!(19.00)),
+            UsdCents::from_decimal(dec!(289.00)),
+            UsdCents::from_decimal(dec!(2950.00)),
         ];
 
         for (idx, sats) in volumes.iter().enumerate() {
             let cents = converter.cents_from_sats(sats.clone());
-            let sats = converter.sats_from_cents(cents);
-            assert!(sats >= volumes[idx]);
+            assert!(cents.amount() >= expected_cents[idx].amount());
         }
 
         Ok(())
     }
 
     #[test]
-    fn cents_to_sats_to_cents() -> anyhow::Result<()> {
-        let latest_snapshot = load_order_book("real")?.payload;
+    fn cents_to_sats() -> anyhow::Result<()> {
+        let latest_snapshot = load_order_book("contrived")?.payload;
         let converter = VolumeBasedPriceConverter::new(latest_snapshot.bids.iter().rev());
         let volumes = vec![
             UsdCents::from_major(1),
@@ -129,22 +138,19 @@ mod tests {
             UsdCents::from_major(100),
             UsdCents::from_major(1_000),
             UsdCents::from_major(10_000),
-            UsdCents::from_major(100_000),
-            UsdCents::from_major(1_000_000),
-            UsdCents::from_major(10_000_000),
-            UsdCents::from_major(100_000_000),
+        ];
+
+        let expected_sats = vec![
+            Sats::from_decimal(dec!(4)),
+            Sats::from_decimal(dec!(40)),
+            Sats::from_decimal(dec!(400)),
+            Sats::from_decimal(dec!(4100)),
+            Sats::from_decimal(dec!(53625)),
         ];
 
         for (idx, cents) in volumes.iter().enumerate() {
             let sats = converter.sats_from_cents(cents.clone());
-            let cents = converter.cents_from_sats(sats);
-
-            dbg!(cents.amount());
-            if *cents.amount() < dec!(100_000) {
-                assert!(cents <= volumes[idx])
-            } else {
-                assert!(cents >= volumes[idx])
-            }
+            assert_eq!(sats.amount().round(), *expected_sats[idx].amount());
         }
 
         Ok(())
