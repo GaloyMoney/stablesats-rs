@@ -14,7 +14,7 @@ fail-on-warnings = []
 [dependencies]
 # setting default-features = false to not include vulnerable time crate
 chrono = { version = "0.4", features = ["clock", "serde"], default-features = false }
-derive_builder = "0.11.2"
+derive_builder = "0.12.0"
 fred = { version = "5.2.0", features = ["subscriber-client"] }
 futures = "0.3.25"
 opentelemetry = "0.18.0"
