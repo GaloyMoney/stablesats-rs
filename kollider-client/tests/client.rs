@@ -35,18 +35,19 @@ async fn get_user_balances() -> anyhow::Result<()> {
 async fn place_order() -> anyhow::Result<()> {
     if let Ok(client) = create_test_client() {
         let order = client.place_order(KolliderOrderSide::Sell, 10, 700).await?;
-        let result = client.get_orders().await?;
-        assert_eq!(10000, order.quantity);
-        println!("order: {} ", result);
+        let open_orders = client.get_open_orders().await?;
+        assert_eq!(10, order.quantity);
+        dbg!("order: {} ", open_orders);
     }
     Ok(())
 }
 
 #[tokio::test]
+#[ignore]
 async fn get_open_positions() -> anyhow::Result<()> {
     if let Ok(client) = create_test_client() {
         let pos = client.get_open_positions().await?;
-        println!("order: {:?}", pos);
+        dbg!(pos);
     }
     Ok(())
 }

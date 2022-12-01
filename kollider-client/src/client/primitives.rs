@@ -84,6 +84,32 @@ pub struct BtcusdPerp {
     pub open_order_ids: Vec<i32>,
 }
 
+#[derive(Default, Debug, Clone, PartialEq, Deserialize, Eq)]
+pub struct OpenOrders {
+    #[serde(rename = "BTCUSD.PERP")]
+    pub btcusd_perp: Vec<OpenOrderBtcusdPerp>,
+}
+
+#[derive(Debug, Clone, Deserialize, PartialEq, Eq)]
+pub struct OpenOrderBtcusdPerp {
+    pub order_id: i64,
+    pub uid: i64,
+    pub price: i64,
+    pub timestamp: i64,
+    pub filled: i64,
+    pub ext_order_id: String,
+    pub order_type: String,
+    pub advanced_order_type: Option<String>,
+    pub trigger_price_type: Option<String>,
+    pub side: String,
+    pub quantity: i64,
+    pub symbol: String,
+    pub leverage: i64,
+    pub margin_type: String,
+    pub settlement_type: String,
+    pub origin: String,
+}
+
 #[derive(Debug, Clone, Deserialize)]
 pub enum KolliderOrderType {
     Market,

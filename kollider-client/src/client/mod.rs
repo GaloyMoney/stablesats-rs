@@ -223,36 +223,17 @@ impl KolliderClient {
         Ok(res.json::<OpenPositions>().await?)
     }
 
-    pub async fn get_orders(&self) -> Result<String, KolliderClientError> {
-        let path = "/user/fills";
-
-        let symbol = "BTCUSD.PERP";
-        let start = 1667741718;
-        let end = 1667918120;
-        let auth_body = serde_json::json!({
-            "symbol": symbol,
-            "start": start,
-            "end": end,
-            "limit": 3
-        })
-        .to_string();
-
-        let url = format!(
-            "{}{}?symbol={}&start={}&end={}&limit=3",
-            self.config.url, path, symbol, start, end
-        );
-
-        println!(">> {}", url);
+    pub async fn get_open_orders(&self) -> Result<OpenOrders, KolliderClientError> {
+        let path = "/orders/open";
+        let url = format!("{}{}", self.config.url, path);
 
         let res = self
             .rate_limit_client(path)
             .await
             .get(url)
-            .headers(Self::create_get_headers_with_body(self, path, &auth_body)?)
+            .headers(Self::create_get_headers(self, path)?)
             .send()
             .await?;
-        let st = res.status();
-        println!("st {}", st);
-        Ok(res.text().await?)
+        Ok(res.json::<OpenOrders>().await?)
     }
 }
