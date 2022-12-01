@@ -92,24 +92,23 @@ mod tests {
         providers.insert("okex".to_string(), (cache.clone(), Decimal::from(1)));
         let price_mixer = PriceMixer::new(providers);
 
-        let pay = get_payload()?;
-
-        cache.apply_update(pay, CorrelationId::new()).await;
+        cache
+            .apply_update(get_payload(), CorrelationId::new())
+            .await;
 
         let price = price_mixer
             .apply(|p| {
-                p.sell_usd()
+                *p.sell_usd()
                     .sats_from_cents(UsdCents::from_decimal(Decimal::ONE))
                     .amount()
-                    .clone()
             })
             .await
-            .unwrap();
+            .expect("Price should be available");
         assert_ne!(Decimal::ZERO, price);
         Ok(())
     }
 
-    fn get_payload() -> Result<PriceMessagePayload> {
+    fn get_payload() -> PriceMessagePayload {
         let raw = r#"{
             "exchange": "okex",
             "instrumentId": "BTC-USD-SWAP",
@@ -127,8 +126,9 @@ mod tests {
                 "base": "10000000000"
             }
             }"#;
-        let mut price_message_payload = serde_json::from_str::<PriceMessagePayload>(raw).unwrap();
+        let mut price_message_payload =
+            serde_json::from_str::<PriceMessagePayload>(raw).expect("Could not parse payload");
         price_message_payload.timestamp = TimeStamp::now();
-        Ok(price_message_payload)
+        price_message_payload
     }
 }

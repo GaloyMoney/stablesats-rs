@@ -68,13 +68,13 @@ mod test_super {
                         api_key: kollider api key
                         url: url
              "#;
-        let ex: ExchangeConfigAll = serde_yaml::from_str(str).unwrap();
+        let ex: ExchangeConfigAll = serde_yaml::from_str(str).expect("Couldn't deserialize yaml");
 
-        let okex = ex.okex.unwrap();
+        let okex = ex.okex.expect("Okex-config not found");
         assert_eq!(dec!(0.8), okex.weight);
         assert_eq!("okex api key", okex.config.api_key);
 
-        let kollider = ex.kollider.unwrap();
+        let kollider = ex.kollider.expect("Kollider-config not found");
         assert_eq!(dec!(0.2), kollider.weight);
         assert_eq!("kollider api key", kollider.config.api_key);
     }
@@ -122,9 +122,9 @@ mod test_super {
                         url: url
              "#;
         let ex: ExchangeConfigAll = serde_yaml::from_str(str)?;
-        let okex_cfg = ex.okex.unwrap();
+        let okex_cfg = ex.okex.expect("Okex-config not found");
         assert_eq!(dec!(1), okex_cfg.weight);
-        let kollider_cfg = ex.kollider.unwrap();
+        let kollider_cfg = ex.kollider.expect("Kollider-config not found");
         assert_eq!(dec!(2), kollider_cfg.weight);
         Ok(())
     }
