@@ -59,7 +59,7 @@ impl SidePicker for BtcSatTick {
         Box::new(CurrencyConverter::new(&self.ask_price_of_one_sat))
     }
 
-    fn mid_price_of_one_sat<'a>(&'a self) -> UsdCents {
+    fn mid_price_of_one_sat(&self) -> UsdCents {
         (&self.bid_price_of_one_sat + &self.ask_price_of_one_sat) / 2
     }
 }

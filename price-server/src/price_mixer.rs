@@ -11,7 +11,7 @@ use super::currency::*;
 pub trait SidePicker {
     fn buy_usd<'a>(&'a self) -> Box<dyn VolumePicker + 'a>;
     fn sell_usd<'a>(&'a self) -> Box<dyn VolumePicker + 'a>;
-    fn mid_price_of_one_sat<'a>(&'a self) -> UsdCents;
+    fn mid_price_of_one_sat(&self) -> UsdCents;
 }
 
 #[async_trait]
