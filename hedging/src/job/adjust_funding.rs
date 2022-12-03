@@ -9,7 +9,6 @@ use shared::pubsub::CorrelationId;
 use crate::{error::*, okex_transfers::*, rebalance_action::*, synth_usd_liability::*};
 
 const SATS_PER_BTC: Decimal = dec!(100_000_000);
-const MINIMUM_FUNDING_BALANCE_BTC: Decimal = dec!(0.5);
 
 #[instrument(name = "adjust_funding", skip_all, fields(correlation_id = %correlation_id,
         target_liability, current_position, last_price_in_usd_cents, funding_available_balance,
@@ -66,6 +65,7 @@ pub(super) async fn execute(
         current_position.usd_cents.into(),
         trading_available_balance.total_amt_in_btc,
         last_price_in_usd_cents,
+        funding_available_balance.total_amt_in_btc,
     );
     span.record("action", &tracing::field::display(&action));
 
@@ -85,68 +85,69 @@ pub(super) async fn execute(
         RebalanceAction::DoNothing => {}
         _ => {
             match action {
-                RebalanceAction::Withdraw(amount_in_btc) => {
-                    let internal_reservation = Reservation {
-                        shared: &shared,
-                        action_size: action.size(),
-                        transfer_type: "internal".to_string(),
-                        fee: Decimal::ZERO,
-                        transfer_from: "trading".to_string(),
-                        transfer_to: "funding".to_string(),
-                    };
-                    if let Some(client_id) = okex_transfers
-                        .reserve_transfer_slot(internal_reservation)
-                        .await?
+                RebalanceAction::Withdraw(
+                    _,
+                    internal_transfer_amount,
+                    external_transfer_amount,
+                ) => {
+                    if !internal_transfer_amount.is_zero()
+                        && internal_transfer_amount.is_sign_positive()
                     {
-                        span.record(
-                            "internal_client_transfer_id",
-                            &tracing::field::display(String::from(client_id.clone())),
-                        );
-
-                        let _ = okex
-                            .transfer_trading_to_funding(client_id, amount_in_btc)
-                            .await;
-
-                        let external_transfer_amount = std::cmp::max(
-                            Decimal::ZERO,
-                            amount_in_btc + funding_available_balance.total_amt_in_btc
-                                - MINIMUM_FUNDING_BALANCE_BTC,
-                        );
-                        if !external_transfer_amount.is_zero()
-                            && external_transfer_amount.is_sign_positive()
+                        let internal_reservation = Reservation {
+                            shared: &shared,
+                            action_size: action.size(),
+                            transfer_type: "internal".to_string(),
+                            fee: Decimal::ZERO,
+                            transfer_from: "trading".to_string(),
+                            transfer_to: "funding".to_string(),
+                        };
+                        if let Some(client_id) = okex_transfers
+                            .reserve_transfer_slot(internal_reservation)
+                            .await?
                         {
-                            let deposit_address = galoy.onchain_address().await?.address;
-                            let external_reservation = Reservation {
-                                shared: &shared,
-                                action_size: Some(external_transfer_amount),
-                                transfer_type: "external".to_string(),
-                                fee: fees.min_fee,
-                                transfer_from: "okx".to_string(),
-                                transfer_to: deposit_address.clone(),
-                            };
-                            if let Some(client_id) = okex_transfers
-                                .reserve_transfer_slot(external_reservation)
-                                .await?
-                            {
-                                span.record(
-                                    "external_client_transfer_id",
-                                    &tracing::field::display(String::from(client_id.clone())),
-                                );
+                            span.record(
+                                "internal_client_transfer_id",
+                                &tracing::field::display(String::from(client_id.clone())),
+                            );
 
-                                okex.withdraw_btc_onchain(
-                                    client_id,
-                                    external_transfer_amount,
-                                    fees.min_fee,
-                                    deposit_address,
-                                )
-                                .await?;
-                            }
+                            let _ = okex
+                                .transfer_trading_to_funding(client_id, internal_transfer_amount)
+                                .await;
+                        }
+                    }
+
+                    if !external_transfer_amount.is_zero()
+                        && external_transfer_amount.is_sign_positive()
+                    {
+                        let deposit_address = galoy.onchain_address().await?.address;
+                        let external_reservation = Reservation {
+                            shared: &shared,
+                            action_size: Some(external_transfer_amount),
+                            transfer_type: "external".to_string(),
+                            fee: fees.min_fee,
+                            transfer_from: "okx".to_string(),
+                            transfer_to: deposit_address.clone(),
+                        };
+                        if let Some(client_id) = okex_transfers
+                            .reserve_transfer_slot(external_reservation)
+                            .await?
+                        {
+                            span.record(
+                                "external_client_transfer_id",
+                                &tracing::field::display(String::from(client_id.clone())),
+                            );
+
+                            okex.withdraw_btc_onchain(
+                                client_id,
+                                external_transfer_amount,
+                                fees.min_fee,
+                                deposit_address,
+                            )
+                            .await?;
                         }
                     }
                 }
-                RebalanceAction::Deposit(amount_in_btc) => {
-                    let internal_transfer_amount =
-                        std::cmp::min(funding_available_balance.total_amt_in_btc, amount_in_btc);
+                RebalanceAction::Deposit(_, internal_transfer_amount, external_transfer_amount) => {
                     if !internal_transfer_amount.is_zero()
                         && internal_transfer_amount.is_sign_positive()
                     {
@@ -173,12 +174,10 @@ pub(super) async fn execute(
                         }
                     }
 
-                    let external_transfer_amount =
-                        amount_in_btc - internal_transfer_amount + MINIMUM_FUNDING_BALANCE_BTC;
-                    let deposit_address = okex.get_funding_deposit_address().await?.value;
                     if !external_transfer_amount.is_zero()
                         && external_transfer_amount.is_sign_positive()
                     {
+                        let deposit_address = okex.get_funding_deposit_address().await?.value;
                         let external_reservation = Reservation {
                             shared: &shared,
                             action_size: Some(external_transfer_amount),

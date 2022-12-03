@@ -16,22 +16,39 @@ const HIGH_BOUND_RATIO_LEVERAGE: Decimal = dec!(4);
 const HIGH_BOUND_BUFFER: Decimal = dec!(0.9);
 
 const SATS_PER_BTC: Decimal = dec!(100_000_000);
+const MINIMUM_FUNDING_BALANCE_BTC: Decimal = dec!(0.5);
 
 #[derive(Debug, PartialEq, Eq, Clone)]
 pub enum RebalanceAction {
     DoNothing,
-    Deposit(Decimal),
-    Withdraw(Decimal),
+    Deposit(Decimal, Decimal, Decimal),
+    Withdraw(Decimal, Decimal, Decimal),
 }
 impl std::fmt::Display for RebalanceAction {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             RebalanceAction::DoNothing => write!(f, "DoNothing"),
-            RebalanceAction::Deposit(amount_in_btc) => {
-                write!(f, "Deposit({})", amount_in_btc)
+            RebalanceAction::Deposit(
+                amount_in_btc,
+                internal_amount_in_btc,
+                external_amount_in_btc,
+            ) => {
+                write!(
+                    f,
+                    "Deposit(total: {}, internal:{}, external:{})",
+                    amount_in_btc, internal_amount_in_btc, external_amount_in_btc
+                )
             }
-            RebalanceAction::Withdraw(amount_in_btc) => {
-                write!(f, "Withdraw({})", amount_in_btc)
+            RebalanceAction::Withdraw(
+                amount_in_btc,
+                internal_amount_in_btc,
+                external_amount_in_btc,
+            ) => {
+                write!(
+                    f,
+                    "Withdraw(total: {}, internal:{}, external:{})",
+                    amount_in_btc, internal_amount_in_btc, external_amount_in_btc
+                )
             }
         }
     }
@@ -44,14 +61,14 @@ impl RebalanceAction {
     pub fn action_type(&self) -> &'static str {
         match *self {
             Self::DoNothing => "do-nothing",
-            Self::Deposit(_) => "deposit",
-            Self::Withdraw(_) => "withdraw",
+            Self::Deposit(_, _, _) => "deposit",
+            Self::Withdraw(_, _, _) => "withdraw",
         }
     }
 
     pub fn size(&self) -> Option<Decimal> {
         match *self {
-            Self::Deposit(size) | Self::Withdraw(size) => Some(size),
+            Self::Deposit(size, _, _) | Self::Withdraw(size, _, _) => Some(size),
             _ => None,
         }
     }
@@ -76,6 +93,7 @@ pub fn determine_action(
     signed_exposure_in_cents: SyntheticCentExposure,
     total_collateral_in_btc: Decimal,
     btc_price_in_cents: Decimal,
+    funding_btc_total_balance: Decimal,
 ) -> RebalanceAction {
     let abs_liability_in_btc = abs_liability_in_cents / btc_price_in_cents;
     let abs_exposure_in_btc = Decimal::from(signed_exposure_in_cents).abs() / btc_price_in_cents;
@@ -86,33 +104,91 @@ pub fn determine_action(
         let new_collateral_in_btc = abs_liability_in_btc / HIGH_SAFEBOUND_RATIO_LEVERAGE;
         let transfer_size_in_btc = round_btc(new_collateral_in_btc - total_collateral_in_btc);
 
-        RebalanceAction::Deposit(transfer_size_in_btc)
+        let (internal_transfer_amount, external_transfer_amount) =
+            split_deposit(funding_btc_total_balance, transfer_size_in_btc);
+
+        RebalanceAction::Deposit(
+            transfer_size_in_btc,
+            internal_transfer_amount,
+            external_transfer_amount,
+        )
     } else if abs_exposure_in_btc.is_zero()
         && total_collateral_in_btc > Decimal::ZERO
         && abs_liability_in_cents >= Decimal::ZERO
         && abs_liability_in_cents < MINIMUM_TRANSFER_AMOUNT_CENTS
     {
-        RebalanceAction::Withdraw(floor_btc(total_collateral_in_btc))
+        let transfer_size_in_btc = floor_btc(total_collateral_in_btc);
+
+        let (internal_transfer_amount, external_transfer_amount) =
+            split_withdraw(funding_btc_total_balance, transfer_size_in_btc);
+
+        RebalanceAction::Withdraw(
+            transfer_size_in_btc,
+            internal_transfer_amount,
+            external_transfer_amount,
+        )
     } else if abs_liability_in_btc > total_collateral_in_btc * HIGH_BOUND_RATIO_LEVERAGE {
         let new_collateral_in_btc = abs_liability_in_btc / HIGH_SAFEBOUND_RATIO_LEVERAGE;
         let transfer_size_in_btc = round_btc(new_collateral_in_btc - total_collateral_in_btc);
 
-        RebalanceAction::Deposit(transfer_size_in_btc)
+        let (internal_transfer_amount, external_transfer_amount) =
+            split_deposit(funding_btc_total_balance, transfer_size_in_btc);
+
+        RebalanceAction::Deposit(
+            transfer_size_in_btc,
+            internal_transfer_amount,
+            external_transfer_amount,
+        )
     } else if abs_exposure_in_btc < total_collateral_in_btc * LOW_BOUND_RATIO_LEVERAGE {
         let new_collateral_in_btc = abs_exposure_in_btc / LOW_SAFEBOUND_RATIO_LEVERAGE;
         let transfer_size_in_btc = floor_btc(total_collateral_in_btc - new_collateral_in_btc);
 
-        RebalanceAction::Withdraw(transfer_size_in_btc)
+        let (internal_transfer_amount, external_transfer_amount) =
+            split_withdraw(funding_btc_total_balance, transfer_size_in_btc);
+
+        RebalanceAction::Withdraw(
+            transfer_size_in_btc,
+            internal_transfer_amount,
+            external_transfer_amount,
+        )
     } else if abs_exposure_in_btc
         > total_collateral_in_btc * HIGH_BOUND_BUFFER * HIGH_BOUND_RATIO_LEVERAGE
     {
         let new_collateral_in_btc = abs_exposure_in_btc / HIGH_SAFEBOUND_RATIO_LEVERAGE;
         let transfer_size_in_btc = round_btc(new_collateral_in_btc - total_collateral_in_btc);
 
-        RebalanceAction::Deposit(transfer_size_in_btc)
+        let (internal_transfer_amount, external_transfer_amount) =
+            split_deposit(funding_btc_total_balance, transfer_size_in_btc);
+
+        RebalanceAction::Deposit(
+            transfer_size_in_btc,
+            internal_transfer_amount,
+            external_transfer_amount,
+        )
     } else {
         RebalanceAction::DoNothing
     }
+}
+
+fn split_deposit(funding_btc_total_balance: Decimal, amount_in_btc: Decimal) -> (Decimal, Decimal) {
+    let internal_transfer_amount = std::cmp::min(funding_btc_total_balance, amount_in_btc);
+    let external_transfer_amount =
+        amount_in_btc - internal_transfer_amount + MINIMUM_FUNDING_BALANCE_BTC;
+
+    (internal_transfer_amount, external_transfer_amount)
+}
+
+fn split_withdraw(
+    funding_btc_total_balance: Decimal,
+    amount_in_btc: Decimal,
+) -> (Decimal, Decimal) {
+    let internal_transfer_amount = amount_in_btc;
+    let external_transfer_amount = std::cmp::max(
+        Decimal::ZERO,
+        amount_in_btc + funding_btc_total_balance - MINIMUM_FUNDING_BALANCE_BTC,
+    );
+
+    (internal_transfer_amount, external_transfer_amount)
 }
 
 #[cfg(test)]
@@ -126,7 +202,13 @@ mod tests {
         let exposure = SyntheticCentExposure::from(dec!(-10_000));
         let total_collateral: Decimal = liability / HIGH_SAFEBOUND_RATIO_LEVERAGE;
         let btc_price: Decimal = dec!(1);
-        let adjustment = determine_action(liability, exposure, total_collateral, btc_price);
+        let adjustment = determine_action(
+            liability,
+            exposure,
+            total_collateral,
+            btc_price,
+            MINIMUM_FUNDING_BALANCE_BTC,
+        );
         assert_eq!(adjustment, RebalanceAction::DoNothing);
     }
 
@@ -135,10 +217,22 @@ mod tests {
         let liability = SyntheticCentLiability::try_from(dec!(10_000)).unwrap();
         let exposure = SyntheticCentExposure::from(dec!(0));
         let total_collateral: Decimal = dec!(0);
+        let funding_btc_total_balance: Decimal = dec!(0);
         let btc_price: Decimal = dec!(1);
-        let expected_transfer: Decimal = round_btc(liability / HIGH_SAFEBOUND_RATIO_LEVERAGE);
-        let adjustment = determine_action(liability, exposure, total_collateral, btc_price);
-        assert_eq!(adjustment, RebalanceAction::Deposit(expected_transfer));
+        let expected_total: Decimal = round_btc(liability / HIGH_SAFEBOUND_RATIO_LEVERAGE);
+        let (expected_internal, expected_external) =
+            split_deposit(funding_btc_total_balance, expected_total);
+        let adjustment = determine_action(
+            liability,
+            exposure,
+            total_collateral,
+            btc_price,
+            funding_btc_total_balance,
+        );
+        assert_eq!(
+            adjustment,
+            RebalanceAction::Deposit(expected_total, expected_internal, expected_external)
+        );
     }
 
     #[test]
@@ -147,10 +241,22 @@ mod tests {
             SyntheticCentLiability::try_from(MINIMUM_TRANSFER_AMOUNT_CENTS / dec!(2)).unwrap();
         let exposure = SyntheticCentExposure::from(dec!(0));
         let total_collateral: Decimal = liability / HIGH_SAFEBOUND_RATIO_LEVERAGE;
+        let funding_btc_total_balance: Decimal = dec!(0);
         let btc_price: Decimal = dec!(1);
-        let expected_transfer: Decimal = floor_btc(total_collateral);
-        let adjustment = determine_action(liability, exposure, total_collateral, btc_price);
-        assert_eq!(adjustment, RebalanceAction::Withdraw(expected_transfer));
+        let expected_total: Decimal = floor_btc(total_collateral);
+        let (expected_internal, expected_external) =
+            split_withdraw(funding_btc_total_balance, expected_total);
+        let adjustment = determine_action(
+            liability,
+            exposure,
+            total_collateral,
+            btc_price,
+            funding_btc_total_balance,
+        );
+        assert_eq!(
+            adjustment,
+            RebalanceAction::Withdraw(expected_total, expected_internal, expected_external)
+        );
     }
 
     #[test]
@@ -158,11 +264,23 @@ mod tests {
         let liability = SyntheticCentLiability::try_from(dec!(10_000)).unwrap();
         let exposure = SyntheticCentExposure::from(dec!(-3_000));
         let total_collateral: Decimal = exposure / HIGH_SAFEBOUND_RATIO_LEVERAGE;
+        let funding_btc_total_balance: Decimal = dec!(0);
         let btc_price: Decimal = dec!(1);
-        let expected_transfer: Decimal =
+        let expected_total: Decimal =
             round_btc(liability / HIGH_SAFEBOUND_RATIO_LEVERAGE - total_collateral);
-        let adjustment = determine_action(liability, exposure, total_collateral, btc_price);
-        assert_eq!(adjustment, RebalanceAction::Deposit(expected_transfer));
+        let (expected_internal, expected_external) =
+            split_deposit(funding_btc_total_balance, expected_total);
+        let adjustment = determine_action(
+            liability,
+            exposure,
+            total_collateral,
+            btc_price,
+            funding_btc_total_balance,
+        );
+        assert_eq!(
+            adjustment,
+            RebalanceAction::Deposit(expected_total, expected_internal, expected_external)
+        );
     }
 
     #[test]
@@ -171,11 +289,23 @@ mod tests {
         let exposure = dec!(10_000);
         let signed_exposure = SyntheticCentExposure::from(-exposure);
         let total_collateral: Decimal = dec!(10_000);
+        let funding_btc_total_balance: Decimal = dec!(0);
         let btc_price: Decimal = dec!(1);
-        let expected_transfer: Decimal =
+        let expected_total: Decimal =
             floor_btc(total_collateral - exposure / LOW_SAFEBOUND_RATIO_LEVERAGE);
-        let adjustment = determine_action(liability, signed_exposure, total_collateral, btc_price);
-        assert_eq!(adjustment, RebalanceAction::Withdraw(expected_transfer));
+        let (expected_internal, expected_external) =
+            split_withdraw(funding_btc_total_balance, expected_total);
+        let adjustment = determine_action(
+            liability,
+            signed_exposure,
+            total_collateral,
+            btc_price,
+            funding_btc_total_balance,
+        );
+        assert_eq!(
+            adjustment,
+            RebalanceAction::Withdraw(expected_total, expected_internal, expected_external)
+        );
     }
 
     #[test]
@@ -184,11 +314,23 @@ mod tests {
         let exposure = dec!(10_100);
         let signed_exposure = SyntheticCentExposure::from(-exposure);
         let total_collateral: Decimal = exposure / HIGH_BOUND_RATIO_LEVERAGE;
+        let funding_btc_total_balance: Decimal = dec!(0);
         let btc_price: Decimal = dec!(1);
-        let expected_transfer: Decimal =
+        let expected_total: Decimal =
             round_btc(exposure / HIGH_SAFEBOUND_RATIO_LEVERAGE - total_collateral);
-        let adjustment = determine_action(liability, signed_exposure, total_collateral, btc_price);
-        assert_eq!(adjustment, RebalanceAction::Deposit(expected_transfer));
+        let (expected_internal, expected_external) =
+            split_deposit(funding_btc_total_balance, expected_total);
+        let adjustment = determine_action(
+            liability,
+            signed_exposure,
+            total_collateral,
+            btc_price,
+            funding_btc_total_balance,
+        );
+        assert_eq!(
+            adjustment,
+            RebalanceAction::Deposit(expected_total, expected_internal, expected_external)
+        );
     }
 
     #[test]

@@ -135,6 +135,7 @@ impl HedgingApp {
         let target_liability_in_cents = synth_usd_liability.get_latest_liability().await?;
         let current_position_in_cents = okex.get_position_in_signed_usd_cents().await?.usd_cents;
         let trading_available_balance = okex.trading_account_balance().await?;
+        let funding_available_balance = okex.funding_account_balance().await?;
 
         let mid_price_in_cents: Decimal =
             (payload.bid_price.numerator_amount() + payload.ask_price.numerator_amount()) / dec!(2);
@@ -143,6 +144,7 @@ impl HedgingApp {
             current_position_in_cents.into(),
             trading_available_balance.total_amt_in_btc,
             mid_price_in_cents,
+            funding_available_balance.total_amt_in_btc,
         )
         .action_required()
         {
