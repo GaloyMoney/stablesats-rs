@@ -157,6 +157,7 @@ async fn hedging() -> anyhow::Result<()> {
                     ..Default::default()
                 },
                 okex_client_config(),
+                galoy_client_config(),
                 pubsub_config,
             )
             .await
