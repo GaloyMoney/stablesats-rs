@@ -118,7 +118,7 @@ impl OkexTransfers {
             .map(|r| {
                 (
                     ClientTransferId::from(r.client_transfer_id),
-                    r.transfer_to.unwrap_or_else(|| "".to_string()),
+                    r.transfer_to.unwrap_or_default(),
                     r.amount,
                     r.created_at,
                 )
