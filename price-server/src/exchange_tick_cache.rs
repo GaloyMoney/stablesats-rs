@@ -1,56 +1,48 @@
 use chrono::Duration;
 use opentelemetry::trace::{SpanContext, TraceContextExt};
 use std::sync::Arc;
-use thiserror::Error;
 use tokio::sync::RwLock;
 use tracing::Span;
 use tracing_opentelemetry::OpenTelemetrySpanExt;
 
-use shared::{
-    payload::*,
-    pubsub::{self, CorrelationId},
-    time::*,
-};
-
-use crate::currency::*;
-
-#[derive(Error, Debug)]
-pub enum ExchangePriceCacheError {
-    #[error("StalePrice: last update was at {0}")]
-    StalePrice(TimeStamp),
-    #[error("No price data available")]
-    NoPriceAvailable,
-}
+use crate::{currency::*, price_mixer::*, ExchangePriceCacheError};
+use shared::{payload::*, pubsub::CorrelationId, time::*};
 
 #[derive(Clone)]
-pub struct ExchangePriceCache {
+pub struct ExchangeTickCache {
     inner: Arc<RwLock<ExchangePriceCacheInner>>,
 }
 
-impl ExchangePriceCache {
-    pub fn new(stale_after: Duration) -> Self {
-        Self {
-            inner: Arc::new(RwLock::new(ExchangePriceCacheInner::new(stale_after))),
-        }
-    }
+#[async_trait::async_trait]
+impl PriceProvider for ExchangeTickCache {
+    async fn latest(&self) -> Result<Box<dyn SidePicker>, ExchangePriceCacheError> {
+        let inner = self.inner.read().await;
+        let tick = inner.latest_tick()?;
 
-    pub async fn apply_update(&self, message: pubsub::Envelope<OkexBtcUsdSwapPricePayload>) {
-        self.inner.write().await.update_price(message);
-    }
-
-    pub async fn latest_tick(&self) -> Result<BtcSatTick, ExchangePriceCacheError> {
-        let tick = self.inner.read().await.latest_tick()?;
         let span = Span::current();
         span.add_link(tick.span_context.clone());
         span.record(
             "correlation_id",
             &tracing::field::display(tick.correlation_id),
         );
-        Ok(tick)
+        Ok(Box::new(tick))
     }
 }
 
-#[derive(Clone)]
+impl ExchangeTickCache {
+    pub fn new(stale_after: Duration) -> Self {
+        Self {
+            inner: Arc::new(RwLock::new(ExchangePriceCacheInner::new(stale_after))),
+        }
+    }
+
+    pub async fn apply_update(&self, payload: PriceMessagePayload, id: CorrelationId) {
+        self.inner.write().await.update_price(payload, id);
+    }
+}
+
+#[derive(Clone, Debug)]
+#[allow(dead_code)]
 pub struct BtcSatTick {
     timestamp: TimeStamp,
     correlation_id: CorrelationId,
@@ -59,17 +51,17 @@ pub struct BtcSatTick {
     bid_price_of_one_sat: UsdCents,
 }
 
-impl BtcSatTick {
-    pub fn mid_price_of_one_sat(&self) -> UsdCents {
+impl SidePicker for BtcSatTick {
+    fn buy_usd<'a>(&'a self) -> Box<dyn VolumePicker + 'a> {
+        Box::new(CurrencyConverter::new(&self.bid_price_of_one_sat))
+    }
+
+    fn sell_usd<'a>(&'a self) -> Box<dyn VolumePicker + 'a> {
+        Box::new(CurrencyConverter::new(&self.ask_price_of_one_sat))
+    }
+
+    fn mid_price_of_one_sat(&self) -> UsdCents {
         (&self.bid_price_of_one_sat + &self.ask_price_of_one_sat) / 2
-    }
-
-    pub fn sell_usd(&self) -> CurrencyConverter {
-        CurrencyConverter::new(&self.ask_price_of_one_sat)
-    }
-
-    pub fn buy_usd(&self) -> CurrencyConverter {
-        CurrencyConverter::new(&self.bid_price_of_one_sat)
     }
 }
 
@@ -86,8 +78,7 @@ impl ExchangePriceCacheInner {
         }
     }
 
-    fn update_price(&mut self, message: pubsub::Envelope<OkexBtcUsdSwapPricePayload>) {
-        let payload = message.payload.0;
+    fn update_price(&mut self, payload: PriceMessagePayload, id: CorrelationId) {
         if let Some(ref tick) = self.tick {
             if tick.timestamp > payload.timestamp {
                 return;
@@ -99,7 +90,7 @@ impl ExchangePriceCacheInner {
         ) {
             self.tick = Some(BtcSatTick {
                 timestamp: payload.timestamp,
-                correlation_id: message.meta.correlation_id,
+                correlation_id: id,
                 span_context: Span::current().context().span().span_context().clone(),
                 ask_price_of_one_sat,
                 bid_price_of_one_sat,
@@ -107,14 +98,14 @@ impl ExchangePriceCacheInner {
         }
     }
 
-    fn latest_tick(&self) -> Result<BtcSatTick, ExchangePriceCacheError> {
+    fn latest_tick(&self) -> Result<BtcSatTick, PriceTickCacheError> {
         if let Some(ref tick) = self.tick {
             if tick.timestamp.duration_since() > self.stale_after {
-                return Err(ExchangePriceCacheError::StalePrice(tick.timestamp));
+                return Err(PriceTickCacheError::StalePrice(tick.timestamp));
             }
             return Ok(tick.clone());
         }
-        Err(ExchangePriceCacheError::NoPriceAvailable)
+        Err(PriceTickCacheError::NoPriceAvailable)
     }
 }
 
@@ -124,7 +115,7 @@ mod tests {
 
     #[test]
     fn test_mid_price_of_one_sat() {
-        let tick = BtcSatTick {
+        let _tick = BtcSatTick {
             timestamp: TimeStamp::now(),
             correlation_id: CorrelationId::new(),
             span_context: SpanContext::empty_context(),
@@ -132,6 +123,6 @@ mod tests {
             ask_price_of_one_sat: UsdCents::from_major(10000),
         };
 
-        assert_eq!(tick.mid_price_of_one_sat(), UsdCents::from_major(7500));
+        assert_eq!(UsdCents::from_major(7500), _tick.mid_price_of_one_sat());
     }
 }

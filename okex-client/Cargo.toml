@@ -6,6 +6,7 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
+shared = { path = "../shared", package = "stablesats-shared" }
 reqwest = { version = "0.11.13", default-features = false, features = ["json", "rustls-tls"] }
 thiserror = "1.0.37"
 tokio = "1.22.0"

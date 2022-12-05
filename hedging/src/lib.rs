@@ -8,8 +8,7 @@ mod job;
 mod okex_orders;
 mod synth_usd_liability;
 
-use okex_client::OkexClientConfig;
-use shared::{health::HealthCheckTrigger, pubsub::*};
+use shared::{exchanges_config::OkexConfig, health::HealthCheckTrigger, pubsub::*};
 
 pub use app::*;
 pub use error::*;
@@ -17,7 +16,7 @@ pub use error::*;
 pub async fn run(
     health_check_trigger: HealthCheckTrigger,
     config: HedgingAppConfig,
-    okex_config: OkexClientConfig,
+    okex_config: OkexConfig,
     pubsub_cfg: PubSubConfig,
 ) -> Result<(), HedgingError> {
     HedgingApp::run(health_check_trigger, config, okex_config, pubsub_cfg).await?;

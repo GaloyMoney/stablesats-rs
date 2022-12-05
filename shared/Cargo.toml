@@ -23,8 +23,8 @@ rust_decimal_macros = "1.26.1"
 serde = { version = "1.0.148", features = ["derive"] }
 serde_json = "1.0.89"
 serde_with = "2.1.0"
-sqlx = { version = "0.6", features = [ "offline", "runtime-tokio-rustls", "postgres", "decimal", "uuid", "chrono", "json" ] }
-sqlxmq = { version = "0.4.1", default-features = false, features = [ "runtime-tokio-rustls" ] }
+sqlx = { version = "0.6", features = ["offline", "runtime-tokio-rustls", "postgres", "decimal", "uuid", "chrono", "json"] }
+sqlxmq = { version = "0.4.1", default-features = false, features = ["runtime-tokio-rustls"] }
 thiserror = "1.0.37"
 tokio = "1.22.0"
 tracing = "0.1.37"
@@ -35,3 +35,4 @@ lazy_static = "1.4.0"
 
 [dev-dependencies]
 anyhow = "1.0.66"
+serde_yaml = "0.9.14"

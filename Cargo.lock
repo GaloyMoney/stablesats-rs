@@ -1635,6 +1635,7 @@ dependencies = [
  "serde_json",
  "serde_yaml",
  "serial_test",
+ "stablesats-shared",
  "thiserror",
  "tokio",
  "tracing",
@@ -1963,6 +1964,7 @@ name = "price-server"
 version = "0.3.18-dev"
 dependencies = [
  "anyhow",
+ "async-trait",
  "axum-core",
  "chrono",
  "futures",
@@ -2880,6 +2882,7 @@ dependencies = [
  "serde",
  "serde_json",
  "serde_with",
+ "serde_yaml",
  "sqlx",
  "sqlxmq",
  "thiserror",
