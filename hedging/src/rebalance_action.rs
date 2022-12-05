@@ -172,8 +172,13 @@ pub fn determine_action(
 
 fn split_deposit(funding_btc_total_balance: Decimal, amount_in_btc: Decimal) -> (Decimal, Decimal) {
     let internal_transfer_amount = std::cmp::min(funding_btc_total_balance, amount_in_btc);
-    let external_transfer_amount =
-        amount_in_btc - internal_transfer_amount + MINIMUM_FUNDING_BALANCE_BTC;
+    let new_funding_balance = funding_btc_total_balance - internal_transfer_amount;
+    let funding_refill = std::cmp::max(
+        Decimal::ZERO,
+        MINIMUM_FUNDING_BALANCE_BTC - new_funding_balance,
+    );
+    let missing_amount = amount_in_btc - internal_transfer_amount;
+    let external_transfer_amount = missing_amount + funding_refill;
 
     (internal_transfer_amount, external_transfer_amount)
 }
@@ -331,6 +336,154 @@ mod tests {
             adjustment,
             RebalanceAction::Deposit(expected_total, expected_internal, expected_external)
         );
+    }
+
+    #[test]
+    fn split_deposit_no_funding() {
+        let funding_btc_total_balance: Decimal = dec!(0);
+        let amount_in_btc: Decimal = dec!(1);
+        let expected_internal = dec!(0);
+        let expected_external = amount_in_btc + MINIMUM_FUNDING_BALANCE_BTC;
+        let (internal, external) = split_deposit(funding_btc_total_balance, amount_in_btc);
+
+        assert_eq!(internal, expected_internal);
+        assert_eq!(external, expected_external);
+    }
+
+    #[test]
+    fn split_deposit_equal_funding_amount_under() {
+        let funding_btc_total_balance: Decimal = MINIMUM_FUNDING_BALANCE_BTC;
+        let amount_in_btc: Decimal = funding_btc_total_balance / dec!(5) * dec!(3);
+        let expected_internal = amount_in_btc;
+        let expected_external = expected_internal;
+        let (internal, external) = split_deposit(funding_btc_total_balance, amount_in_btc);
+
+        assert_eq!(internal, expected_internal);
+        assert_eq!(external, expected_external);
+    }
+
+    #[test]
+    fn split_deposit_equal_funding_amount_equal() {
+        let funding_btc_total_balance: Decimal = MINIMUM_FUNDING_BALANCE_BTC;
+        let amount_in_btc: Decimal = funding_btc_total_balance;
+        let expected_internal = amount_in_btc;
+        let expected_external = expected_internal;
+        let (internal, external) = split_deposit(funding_btc_total_balance, amount_in_btc);
+
+        assert_eq!(internal, expected_internal);
+        assert_eq!(external, expected_external);
+    }
+
+    #[test]
+    fn split_deposit_equal_funding_amount_over() {
+        let funding_btc_total_balance: Decimal = MINIMUM_FUNDING_BALANCE_BTC;
+        let amount_in_btc: Decimal = funding_btc_total_balance * dec!(2);
+        let expected_internal = funding_btc_total_balance;
+        let expected_external = amount_in_btc;
+        let (internal, external) = split_deposit(funding_btc_total_balance, amount_in_btc);
+
+        assert_eq!(internal, expected_internal);
+        assert_eq!(external, expected_external);
+    }
+
+    #[test]
+    fn split_deposit_more_funding_amount_under() {
+        let extra_funding = dec!(0.3);
+        let funding_btc_total_balance: Decimal = MINIMUM_FUNDING_BALANCE_BTC + extra_funding;
+        let amount_in_btc: Decimal = MINIMUM_FUNDING_BALANCE_BTC;
+        let expected_internal = amount_in_btc;
+        let expected_external = expected_internal - extra_funding;
+        let (internal, external) = split_deposit(funding_btc_total_balance, amount_in_btc);
+
+        assert_eq!(internal, expected_internal);
+        assert_eq!(external, expected_external);
+    }
+
+    #[test]
+    fn split_deposit_more_funding_amount_equal() {
+        let extra_funding = dec!(0.3);
+        let funding_btc_total_balance: Decimal = MINIMUM_FUNDING_BALANCE_BTC + extra_funding;
+        let amount_in_btc: Decimal = funding_btc_total_balance;
+        let expected_internal = amount_in_btc;
+        let expected_external = MINIMUM_FUNDING_BALANCE_BTC;
+        let (internal, external) = split_deposit(funding_btc_total_balance, amount_in_btc);
+
+        assert_eq!(internal, expected_internal);
+        assert_eq!(external, expected_external);
+    }
+
+    #[test]
+    fn split_deposit_more_funding_amount_over() {
+        let extra_funding = dec!(0.3);
+        let funding_btc_total_balance: Decimal = MINIMUM_FUNDING_BALANCE_BTC + extra_funding;
+        let amount_in_btc: Decimal = funding_btc_total_balance * dec!(2);
+        let expected_internal = funding_btc_total_balance;
+        let expected_external = amount_in_btc - extra_funding;
+        let (internal, external) = split_deposit(funding_btc_total_balance, amount_in_btc);
+
+        assert_eq!(internal, expected_internal);
+        assert_eq!(external, expected_external);
+    }
+
+    #[test]
+    fn split_withdraw_no_funding_amount_under() {
+        let funding_btc_total_balance: Decimal = dec!(0);
+        let amount_in_btc: Decimal = MINIMUM_FUNDING_BALANCE_BTC / dec!(5) * dec!(3);
+        let expected_internal = amount_in_btc;
+        let expected_external = dec!(0);
+        let (internal, external) = split_withdraw(funding_btc_total_balance, amount_in_btc);
+
+        assert_eq!(internal, expected_internal);
+        assert_eq!(external, expected_external);
+    }
+
+    #[test]
+    fn split_withdraw_no_funding_amount_equal() {
+        let funding_btc_total_balance: Decimal = dec!(0);
+        let amount_in_btc: Decimal = MINIMUM_FUNDING_BALANCE_BTC;
+        let expected_internal = amount_in_btc;
+        let expected_external = dec!(0);
+        let (internal, external) = split_withdraw(funding_btc_total_balance, amount_in_btc);
+
+        assert_eq!(internal, expected_internal);
+        assert_eq!(external, expected_external);
+    }
+
+    #[test]
+    fn split_withdraw_no_funding_amount_over() {
+        let funding_btc_total_balance: Decimal = dec!(0);
+        let amount_in_btc: Decimal = MINIMUM_FUNDING_BALANCE_BTC * dec!(2);
+        let expected_internal = amount_in_btc;
+        let expected_external = amount_in_btc - MINIMUM_FUNDING_BALANCE_BTC;
+        let (internal, external) = split_withdraw(funding_btc_total_balance, amount_in_btc);
+
+        assert_eq!(internal, expected_internal);
+        assert_eq!(external, expected_external);
+    }
+
+    #[test]
+    fn split_withdraw_equal_funding() {
+        let funding_btc_total_balance: Decimal = MINIMUM_FUNDING_BALANCE_BTC;
+        let amount_in_btc: Decimal = dec!(1);
+        let expected_internal = amount_in_btc;
+        let expected_external = expected_internal;
+        let (internal, external) = split_withdraw(funding_btc_total_balance, amount_in_btc);
+
+        assert_eq!(internal, expected_internal);
+        assert_eq!(external, expected_external);
+    }
+
+    #[test]
+    fn split_withdraw_more_funding() {
+        let extra_funding = dec!(0.3);
+        let funding_btc_total_balance: Decimal = MINIMUM_FUNDING_BALANCE_BTC + extra_funding;
+        let amount_in_btc: Decimal = MINIMUM_FUNDING_BALANCE_BTC;
+        let expected_internal = amount_in_btc;
+        let expected_external = expected_internal + extra_funding;
+        let (internal, external) = split_withdraw(funding_btc_total_balance, amount_in_btc);
+
+        assert_eq!(internal, expected_internal);
+        assert_eq!(external, expected_external);
     }
 
     #[test]
