@@ -63,7 +63,7 @@ pub struct Envelope<P: MessagePayload + Clone> {
 }
 
 impl<P: MessagePayload> Envelope<P> {
-    pub(super) fn new(payload: P) -> Self {
+    pub fn new(payload: P) -> Self {
         Self {
             meta: MessageMetadata::new(),
             payload_type: <P as MessagePayload>::message_type().to_string(),

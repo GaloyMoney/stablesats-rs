@@ -5,11 +5,10 @@ use tokio::sync::RwLock;
 use tracing::Span;
 use tracing_opentelemetry::OpenTelemetrySpanExt;
 
-use crate::{currency::*, price_mixer::*};
+use crate::{currency::*, price_mixer::*, ExchangePriceCacheError};
 use shared::{payload::*, pubsub::CorrelationId, time::*};
 
 #[derive(Clone)]
-// <<<<<<< HEAD:price-server/src/exchange_tick_cache.rs
 pub struct ExchangeTickCache {
     inner: Arc<RwLock<ExchangePriceCacheInner>>,
 }
@@ -99,14 +98,14 @@ impl ExchangePriceCacheInner {
         }
     }
 
-    fn latest_tick(&self) -> Result<BtcSatTick, ExchangePriceCacheError> {
+    fn latest_tick(&self) -> Result<BtcSatTick, PriceTickCacheError> {
         if let Some(ref tick) = self.tick {
             if tick.timestamp.duration_since() > self.stale_after {
-                return Err(ExchangePriceCacheError::StalePrice(tick.timestamp));
+                return Err(PriceTickCacheError::StalePrice(tick.timestamp));
             }
             return Ok(tick.clone());
         }
-        Err(ExchangePriceCacheError::NoPriceAvailable)
+        Err(PriceTickCacheError::NoPriceAvailable)
     }
 }
 

@@ -9,10 +9,9 @@ impl From<PriceAppError> for tonic::Status {
             FloatingPointConversion(err) => {
                 tonic::Status::new(tonic::Code::Unknown, format!("{}", err))
             }
-            OrderBookCacheError(err) => {
+            ExchangePriceCacheError(_) => {
                 tonic::Status::new(tonic::Code::Unknown, format!("{}", err))
             }
-            ExchangePriceCacheError(_) => todo!(), // DecimalError(err) => tonic::Status::new(tonic::Code::Unknown, format!("{}", err)),
         }
     }
 }

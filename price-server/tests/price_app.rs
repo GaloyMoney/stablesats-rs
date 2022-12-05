@@ -2,7 +2,7 @@ use futures::stream::StreamExt;
 use rust_decimal_macros::dec;
 use std::fs;
 
-use price_server::{app::*, ExchangePriceCacheError};
+use price_server::{app::*, exchange_order_book_cache::*, ExchangePriceCacheError};
 use shared::{
     exchanges_config::{ExchangeConfig, ExchangeConfigAll, OkexConfig},
     payload::*,
@@ -24,6 +24,22 @@ fn load_fixture(dataname: &str) -> anyhow::Result<Fixture> {
     Ok(serde_json::from_str(&contents)?)
 }
 
+fn load_okex_config() -> anyhow::Result<OkexConfig> {
+    let api_key = std::env::var("OKEX_API_KEY").expect("OKEX_API_KEY: Failed to load API key");
+    let secret_key =
+        std::env::var("OKEX_SECRET_KEY").expect("OKEX_SECRET_KEY: Failed to load API secret");
+    let passphrase =
+        std::env::var("OKEX_PASSPHRASE").expect("OKEX_PASSPHRASE: Failed to load API passphrase");
+
+    Ok(OkexConfig {
+        api_key,
+        passphrase,
+        secret_key,
+        simulated: true,
+    })
+}
+
+/// Contrived data test
 #[tokio::test]
 async fn price_app_with_order_book_cache() -> anyhow::Result<()> {
     let redis_host = std::env::var("REDIS_HOST").unwrap_or("localhost".to_string());
@@ -41,12 +57,7 @@ async fn price_app_with_order_book_cache() -> anyhow::Result<()> {
 
     let okex = ExchangeConfig {
         weight: dec!(1.0),
-        config: OkexConfig {
-            api_key: "okex api".to_string(),
-            passphrase: "passphrase".to_string(),
-            secret_key: "secret key".to_string(),
-            simulated: false,
-        },
+        config: load_okex_config()?,
     };
 
     let ex_cfgs = ExchangeConfigAll {
@@ -69,14 +80,16 @@ async fn price_app_with_order_book_cache() -> anyhow::Result<()> {
     let err = app
         .get_cents_from_sats_for_immediate_buy(Sats::from_major(100_000_000))
         .await;
-    if let Err(PriceAppError::OrderBookCacheError(OrderBookCacheError::NoSnapshotAvailable)) = err {
+    if let Err(PriceAppError::ExchangePriceCacheError(ExchangePriceCacheError::OrderBookCache(
+        OrderBookCacheError::NoSnapshotAvailable,
+    ))) = err
+    {
         assert!(true)
     } else {
         assert!(false)
     }
 
-    let mut payloads = load_fixture()?.payloads.into_iter();
-    let mut payload = payloads.next().unwrap();
+    let mut payload = load_fixture("contrived")?.payload;
 
     publisher
         .publish(OkexBtcUsdSwapOrderBookPayload(payload.clone()))
@@ -87,7 +100,9 @@ async fn price_app_with_order_book_cache() -> anyhow::Result<()> {
     let err = app
         .get_cents_from_sats_for_immediate_buy(Sats::from_major(100))
         .await;
-    if let Err(PriceAppError::OrderBookCacheError(OrderBookCacheError::OutdatedSnapshot(_))) = err {
+    if let Err(PriceAppError::ExchangePriceCacheError(ExchangePriceCacheError::OrderBookCache(_))) =
+        err
+    {
         assert!(true)
     } else {
         assert!(false)
@@ -174,6 +189,7 @@ async fn price_app_with_order_book_cache() -> anyhow::Result<()> {
     Ok(())
 }
 
+/// Real data test
 #[tokio::test]
 async fn price_app_round_trip() -> anyhow::Result<()> {
     let redis_host = std::env::var("REDIS_HOST").unwrap_or("localhost".to_string());
@@ -188,6 +204,16 @@ async fn price_app_round_trip() -> anyhow::Result<()> {
         .await?;
 
     let (_, recv) = futures::channel::mpsc::unbounded();
+    let okex = ExchangeConfig {
+        weight: dec!(1.0),
+        config: load_okex_config()?,
+    };
+
+    let ex_cfgs = ExchangeConfigAll {
+        okex: Some(okex),
+        kollider: None,
+    };
+
     let app = PriceApp::run(
         recv,
         FeeCalculatorConfig {
@@ -196,6 +222,7 @@ async fn price_app_round_trip() -> anyhow::Result<()> {
             delayed_fee_rate: dec!(0.1),
         },
         config,
+        ex_cfgs,
     )
     .await?;
 

@@ -2,7 +2,7 @@ use rust_decimal::Decimal;
 use rust_decimal_macros::dec;
 
 use crate::{
-    currency::{Sats, UsdCents},
+    currency::{Sats, UsdCents, VolumePicker},
     QuotePrice,
 };
 
@@ -15,18 +15,6 @@ impl<'a, I: Iterator<Item = (&'a QuotePrice, &'a Decimal)> + Clone>
 {
     pub fn new(pairs: I) -> Self {
         Self { pairs }
-    }
-
-    pub fn cents_from_sats(&self, sats: Sats) -> UsdCents {
-        UsdCents::from_decimal(*sats.amount() * self.volume_weighted_price_of_one_sat(sats))
-    }
-
-    pub fn sats_from_cents(&self, cents: UsdCents) -> Sats {
-        if *cents.amount() == dec!(0) {
-            return Sats::from_major(0);
-        }
-
-        Sats::from_decimal(*cents.amount() / self.volume_weighted_price_of_one_cent(cents))
     }
 
     fn volume_weighted_price_of_one_sat(&self, volume: Sats) -> Decimal {
@@ -74,6 +62,21 @@ impl<'a, I: Iterator<Item = (&'a QuotePrice, &'a Decimal)> + Clone>
     }
 }
 
+impl<'a, I: Iterator<Item = (&'a QuotePrice, &'a Decimal)> + Clone> VolumePicker
+    for VolumeBasedPriceConverter<'a, I>
+{
+    fn cents_from_sats(&self, sats: Sats) -> UsdCents {
+        UsdCents::from_decimal(*sats.amount() * self.volume_weighted_price_of_one_sat(sats))
+    }
+
+    fn sats_from_cents(&self, cents: UsdCents) -> Sats {
+        if *cents.amount() == dec!(0) {
+            return Sats::from_major(0);
+        }
+
+        Sats::from_decimal(*cents.amount() / self.volume_weighted_price_of_one_cent(cents))
+    }
+}
 #[cfg(test)]
 mod tests {
     use rust_decimal_macros::dec;

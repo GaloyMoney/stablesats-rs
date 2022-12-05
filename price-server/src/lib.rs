@@ -3,11 +3,12 @@
 
 pub mod app;
 pub mod currency;
-mod exchange_tick_cache;
+pub mod error;
+pub mod exchange_order_book_cache;
+pub mod exchange_tick_cache;
 mod fee_calculator;
-mod order_book_cache;
-mod price_converter;
-mod price_mixer;
+pub mod price_converter;
+pub mod price_mixer;
 mod server;
 
 use shared::{
@@ -15,12 +16,12 @@ use shared::{
 };
 
 use app::PriceApp;
+pub use error::*;
+pub use exchange_order_book_cache::*;
 pub use fee_calculator::FeeCalculatorConfig;
-pub use order_book_cache::*;
 pub use price_converter::*;
+pub use price_mixer::PriceTickCacheError;
 pub use server::*;
-
-pub use price_mixer::ExchangePriceCacheError;
 
 pub async fn run(
     health_check_trigger: HealthCheckTrigger,
