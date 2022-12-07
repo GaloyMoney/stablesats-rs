@@ -1,5 +1,3 @@
-#![allow(clippy::or_fun_call)]
-
 use chrono::Utc;
 use rust_decimal_macros::dec;
 use sqlx::PgPool;
