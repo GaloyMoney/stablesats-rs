@@ -99,6 +99,7 @@ async fn unknown_client_order_id() -> anyhow::Result<()> {
     let id = ClientOrderId::new();
     let result = client.order_details(id).await;
     if let Err(OkexClientError::OrderDoesNotExist) = result {
+        assert!(true)
     } else {
         assert!(false)
     }
