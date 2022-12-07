@@ -74,6 +74,7 @@ async fn expect_exposure_below(
         if passed {
             break;
         }
+        tokio::time::sleep(std::time::Duration::from_millis(200)).await;
     }
     assert!(passed);
 }

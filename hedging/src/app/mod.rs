@@ -57,7 +57,7 @@ impl HedgingApp {
             synth_usd_liability.clone(),
             okex.clone(),
             okex_orders,
-            okex_transfers,
+            okex_transfers.clone(),
             GaloyClient::connect(galoy_client_cfg).await?,
             Publisher::new(pubsub_config.clone()).await?,
             okex_poll_delay,
@@ -72,9 +72,14 @@ impl HedgingApp {
             synth_usd_liability.clone(),
         )
         .await?;
-        let price_sub =
-            Self::spawn_okex_price_listener(pubsub_config, pool.clone(), synth_usd_liability, okex)
-                .await?;
+        let price_sub = Self::spawn_okex_price_listener(
+            pubsub_config,
+            pool.clone(),
+            synth_usd_liability,
+            okex,
+            okex_transfers,
+        )
+        .await?;
         Self::spawn_health_checker(
             health_check_trigger,
             unhealthy_msg_interval_liability,
@@ -96,6 +101,7 @@ impl HedgingApp {
         pool: sqlx::PgPool,
         synth_usd_liability: SynthUsdLiability,
         okex: OkexClient,
+        okex_transfers: OkexTransfers,
     ) -> Result<Subscriber, HedgingError> {
         let subscriber = Subscriber::new(config).await?;
         let mut stream = subscriber.subscribe::<OkexBtcUsdSwapPricePayload>().await?;
@@ -117,6 +123,7 @@ impl HedgingApp {
                     &pool,
                     &synth_usd_liability,
                     &okex,
+                    &okex_transfers,
                 )
                 .instrument(span)
                 .await;
@@ -131,11 +138,14 @@ impl HedgingApp {
         pool: &sqlx::PgPool,
         synth_usd_liability: &SynthUsdLiability,
         okex: &OkexClient,
+        okex_transfers: &OkexTransfers,
     ) -> Result<(), HedgingError> {
         let target_liability_in_cents = synth_usd_liability.get_latest_liability().await?;
         let current_position_in_cents = okex.get_position_in_signed_usd_cents().await?.usd_cents;
         let trading_available_balance = okex.trading_account_balance().await?;
         let funding_available_balance = okex.funding_account_balance().await?;
+        let is_internal_transfer_pending = okex_transfers.is_internal_transfer_pending().await?;
+        let is_external_transfer_pending = okex_transfers.is_external_transfer_pending().await?;
 
         let mid_price_in_cents: Decimal =
             (payload.bid_price.numerator_amount() + payload.ask_price.numerator_amount()) / dec!(2);
@@ -145,6 +155,8 @@ impl HedgingApp {
             trading_available_balance.total_amt_in_btc,
             mid_price_in_cents,
             funding_available_balance.total_amt_in_btc,
+            is_internal_transfer_pending,
+            is_external_transfer_pending,
         )
         .action_required()
         {
