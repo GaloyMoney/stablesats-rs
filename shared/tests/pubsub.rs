@@ -1,5 +1,3 @@
-#![allow(clippy::or_fun_call)]
-
 use futures::{channel::mpsc, stream::StreamExt, SinkExt};
 use serde::*;
 use stablesats_shared::{payload, pubsub::*};

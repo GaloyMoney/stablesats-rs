@@ -1,5 +1,3 @@
-#![allow(clippy::or_fun_call)]
-
 use futures::StreamExt;
 use rust_decimal_macros::dec;
 use serial_test::serial;
@@ -16,11 +14,13 @@ fn galoy_client_configuration() -> GaloyClientConfig {
     let phone_number = env::var("PHONE_NUMBER").expect("PHONE_NUMBER not set");
     let code = env::var("AUTH_CODE").expect("AUTH_CODE not set");
 
-    GaloyClientConfig {
+    let config = GaloyClientConfig {
         api,
         phone_number,
         auth_code: code,
-    }
+    };
+
+    config
 }
 
 #[tokio::test]

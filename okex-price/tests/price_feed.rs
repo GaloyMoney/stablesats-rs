@@ -1,5 +1,3 @@
-#![allow(clippy::or_fun_call)]
-
 use chrono::Duration;
 use futures::StreamExt;
 use okex_price::*;
