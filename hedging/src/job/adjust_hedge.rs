@@ -6,6 +6,8 @@ use shared::pubsub::CorrelationId;
 
 use crate::{adjustment_action::*, error::*, okex_orders::*, synth_usd_liability::*};
 
+use super::HedgingFundingConfig;
+
 #[instrument(name = "adjust_hedge", skip_all, fields(correlation_id = %correlation_id,
         target_liability, current_position, action, placed_order, client_order_id) err)]
 pub(super) async fn execute(
@@ -13,6 +15,7 @@ pub(super) async fn execute(
     synth_usd_liability: SynthUsdLiability,
     okex: OkexClient,
     okex_orders: OkexOrders,
+    hedging_funding_config: HedgingFundingConfig,
 ) -> Result<(), HedgingError> {
     let span = tracing::Span::current();
     let target_liability = synth_usd_liability.get_latest_liability().await?;
@@ -26,7 +29,11 @@ pub(super) async fn execute(
         &tracing::field::display(current_position),
     );
 
-    let action = determine_action(target_liability, current_position.into());
+    let action = determine_action(
+        target_liability,
+        current_position.into(),
+        hedging_funding_config,
+    );
     span.record("action", &tracing::field::display(&action));
     match action {
         AdjustmentAction::DoNothing => {}

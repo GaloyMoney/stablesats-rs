@@ -19,7 +19,12 @@ use shared::{
 };
 
 use crate::{
-    adjustment_action, error::*, job, okex_orders::*, okex_transfers::*, rebalance_action,
+    adjustment_action,
+    error::*,
+    job::{self, HedgingFundingConfig},
+    okex_orders::*,
+    okex_transfers::*,
+    rebalance_action,
     synth_usd_liability::*,
 };
 
@@ -38,6 +43,8 @@ impl HedgingApp {
             okex_poll_frequency: okex_poll_delay,
             unhealthy_msg_interval_liability,
             unhealthy_msg_interval_position,
+            hedging: hedging_config,
+            funding: funding_config,
             ..
         }: HedgingAppConfig,
         okex_client_config: OkexClientConfig,
@@ -61,6 +68,8 @@ impl HedgingApp {
             GaloyClient::connect(galoy_client_cfg).await?,
             Publisher::new(pubsub_config.clone()).await?,
             okex_poll_delay,
+            hedging_config.clone(),
+            funding_config.clone(),
         )
         .await?;
         let liability_sub =
@@ -70,6 +79,7 @@ impl HedgingApp {
             pubsub_config.clone(),
             pool.clone(),
             synth_usd_liability.clone(),
+            HedgingFundingConfig(hedging_config.clone(), funding_config.clone()),
         )
         .await?;
         let price_sub = Self::spawn_okex_price_listener(
@@ -78,6 +88,7 @@ impl HedgingApp {
             synth_usd_liability,
             okex,
             okex_transfers,
+            HedgingFundingConfig(hedging_config, funding_config),
         )
         .await?;
         Self::spawn_health_checker(
@@ -102,6 +113,7 @@ impl HedgingApp {
         synth_usd_liability: SynthUsdLiability,
         okex: OkexClient,
         okex_transfers: OkexTransfers,
+        hedging_funding_config: HedgingFundingConfig,
     ) -> Result<Subscriber, HedgingError> {
         let subscriber = Subscriber::new(config).await?;
         let mut stream = subscriber.subscribe::<OkexBtcUsdSwapPricePayload>().await?;
@@ -124,6 +136,7 @@ impl HedgingApp {
                     &synth_usd_liability,
                     &okex,
                     &okex_transfers,
+                    hedging_funding_config.clone(),
                 )
                 .instrument(span)
                 .await;
@@ -139,6 +152,7 @@ impl HedgingApp {
         synth_usd_liability: &SynthUsdLiability,
         okex: &OkexClient,
         okex_transfers: &OkexTransfers,
+        hedging_funding_config: HedgingFundingConfig,
     ) -> Result<(), HedgingError> {
         let target_liability_in_cents = synth_usd_liability.get_latest_liability().await?;
         let current_position_in_cents = okex.get_position_in_signed_usd_cents().await?.usd_cents;
@@ -209,6 +223,7 @@ impl HedgingApp {
         config: PubSubConfig,
         pool: sqlx::PgPool,
         synth_usd_liability: SynthUsdLiability,
+        hedging_funding_config: HedgingFundingConfig,
     ) -> Result<Subscriber, HedgingError> {
         let subscriber = Subscriber::new(config).await?;
         let mut stream = subscriber
@@ -231,6 +246,7 @@ impl HedgingApp {
                     correlation_id,
                     &pool,
                     &synth_usd_liability,
+                    hedging_funding_config.clone(),
                 )
                 .instrument(span)
                 .await;
@@ -292,6 +308,7 @@ impl HedgingApp {
         correlation_id: CorrelationId,
         pool: &sqlx::PgPool,
         synth_usd_liability: &SynthUsdLiability,
+        hedging_funding_config: HedgingFundingConfig,
     ) -> Result<(), HedgingError> {
         let amount = synth_usd_liability.get_latest_liability().await?;
         if adjustment_action::determine_action(amount, payload.signed_usd_exposure)

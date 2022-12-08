@@ -8,6 +8,8 @@ use shared::pubsub::CorrelationId;
 
 use crate::{error::*, okex_transfers::*, rebalance_action::*, synth_usd_liability::*};
 
+use super::HedgingFundingConfig;
+
 const SATS_PER_BTC: Decimal = dec!(100_000_000);
 
 #[instrument(name = "adjust_funding", skip_all, fields(correlation_id = %correlation_id,
@@ -20,6 +22,7 @@ pub(super) async fn execute(
     okex: OkexClient,
     okex_transfers: OkexTransfers,
     galoy: GaloyClient,
+    hedging_funding_config: HedgingFundingConfig,
 ) -> Result<(), HedgingError> {
     let span = tracing::Span::current();
 
@@ -83,6 +86,7 @@ pub(super) async fn execute(
         funding_available_balance.total_amt_in_btc,
         is_internal_transfer_pending,
         is_external_transfer_pending,
+        hedging_funding_config,
     );
     span.record("action", &tracing::field::display(&action));
 
