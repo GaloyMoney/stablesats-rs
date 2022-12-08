@@ -23,22 +23,20 @@
 #     unhealthy_msg_interval_liability: 20
 #     unhealthy_msg_interval_position: 20
 #
-#     contract_size_cents: 10000
-#     minimum_liability_threshold_cents: 5000 # CONTRACT_SIZE / 2
-#     minimum_transfer_amount_cents: 10000 # CONTRACT_SIZE
-#
-#     minimum_funding_balance_btc: 1.00
-#
-#     low_bound_ratio_shorting: 0.95
-#     low_safebound_ratio_shorting: 0.98
+#   hedging:
+#     low_bound_ratio_shorting: 0.98
+#     low_safebound_ratio_shorting: 1.00
 #     high_safebound_ratio_shorting: 1.00
-#     high_bound_ratio_shorting: 1.03
-#
-#     low_bound_ratio_leverage: 1.20
-#     low_safebound_ratio_leverage: 1.80
-#     high_safebound_ratio_leverage: 2.25
-#     high_bound_ratio_leverage: 3.00
-
+#     high_bound_ratio_shorting: 1.02
+#     minimum_liability_threshold_cents: 5000
+#   funding:
+#     minimum_transfer_amount_cents: 10000
+#     minimum_funding_balance_btc: 1.0
+#     low_bound_ratio_leverage: 2.0
+#     low_safebound_ratio_leverage: 3.0
+#     high_safebound_ratio_leverage: 3.0
+#     high_bound_ratio_leverage: 4.0
+#     high_bound_buffer_percentage: 0.9
 #     deposit_lost_timeout_minutes: 60
 
 # okex:
