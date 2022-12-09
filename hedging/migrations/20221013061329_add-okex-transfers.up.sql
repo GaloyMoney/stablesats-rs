@@ -1,4 +1,3 @@
--- Add up migration script here
 CREATE TABLE okex_transfers (
   
   client_transfer_id VARCHAR(32) PRIMARY KEY,
