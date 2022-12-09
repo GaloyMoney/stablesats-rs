@@ -18,17 +18,14 @@ use shared::{
 };
 
 use crate::{
-    error::*, okex_orders::OkexOrders, okex_transfers::OkexTransfers, synth_usd_liability::*,
-    FundingSectionConfig, HedgingSectionConfig,
+    adjustment_action::*, app::FundingSectionConfig, error::*, okex_orders::OkexOrders,
+    okex_transfers::OkexTransfers, rebalance_action::*, synth_usd_liability::*,
 };
 
 const POLL_OKEX_ID: Uuid = uuid!("00000000-0000-0000-0000-000000000001");
 
 #[derive(Debug, Clone)]
 struct OkexPollDelay(std::time::Duration);
-
-#[derive(Debug, Clone)]
-pub struct HedgingFundingConfig(pub HedgingSectionConfig, pub FundingSectionConfig);
 
 #[allow(clippy::too_many_arguments)]
 pub async fn start_job_runner(
@@ -40,7 +37,8 @@ pub async fn start_job_runner(
     galoy: GaloyClient,
     publisher: Publisher,
     delay: std::time::Duration,
-    hedging_config: HedgingSectionConfig,
+    funding_adjustment: FundingAdjustment,
+    hedging_adjustment: HedgingAdjustment,
     funding_config: FundingSectionConfig,
 ) -> Result<OwnedHandle, HedgingError> {
     let mut registry = JobRegistry::new(&[adjust_hedge, poll_okex, adjust_funding]);
@@ -51,7 +49,9 @@ pub async fn start_job_runner(
     registry.set_context(galoy);
     registry.set_context(publisher);
     registry.set_context(OkexPollDelay(delay));
-    registry.set_context(HedgingFundingConfig(hedging_config, funding_config));
+    registry.set_context(funding_adjustment);
+    registry.set_context(hedging_adjustment);
+    registry.set_context(funding_config);
 
     Ok(registry.runner(&pool).run().await?)
 }
@@ -114,20 +114,13 @@ async fn poll_okex(
     okex_orders: OkexOrders,
     okex_transfers: OkexTransfers,
     publisher: Publisher,
-    hedging_funding_config: HedgingFundingConfig,
+    funding_config: FundingSectionConfig,
 ) -> Result<(), HedgingError> {
     JobExecutor::builder(&mut current_job)
         .build()
         .expect("couldn't build JobExecutor")
         .execute(|_| async move {
-            poll_okex::execute(
-                okex_orders,
-                okex_transfers,
-                okex,
-                publisher,
-                hedging_funding_config,
-            )
-            .await
+            poll_okex::execute(okex_orders, okex_transfers, okex, publisher, funding_config).await
         })
         .await?;
     spawn_poll_okex(current_job.pool(), delay).await?;
@@ -140,7 +133,7 @@ async fn adjust_hedge(
     synth_usd_liability: SynthUsdLiability,
     okex: OkexClient,
     okex_orders: OkexOrders,
-    hedging_funding_config: HedgingFundingConfig,
+    hedging_adjustment: HedgingAdjustment,
 ) -> Result<(), HedgingError> {
     JobExecutor::builder(&mut current_job)
         .build()
@@ -152,7 +145,7 @@ async fn adjust_hedge(
                 synth_usd_liability,
                 okex,
                 okex_orders,
-                hedging_funding_config,
+                hedging_adjustment,
             )
             .await?;
             Ok::<_, HedgingError>(data)
@@ -198,7 +191,7 @@ async fn adjust_funding(
     okex: OkexClient,
     okex_transfers: OkexTransfers,
     galoy: GaloyClient,
-    hedging_funding_config: HedgingFundingConfig,
+    funding_adjustment: FundingAdjustment,
 ) -> Result<(), HedgingError> {
     JobExecutor::builder(&mut current_job)
         .build()
@@ -211,7 +204,7 @@ async fn adjust_funding(
                 okex,
                 okex_transfers,
                 galoy,
-                hedging_funding_config,
+                funding_adjustment,
             )
             .await?;
             Ok::<_, HedgingError>(data)

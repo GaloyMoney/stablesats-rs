@@ -75,12 +75,20 @@ fn floor_btc(amount_in_btc: Decimal) -> Decimal {
     amount_in_sats.floor() / SATS_PER_BTC
 }
 
+#[derive(Debug, Clone)]
 pub struct FundingAdjustment {
-    pub config: FundingSectionConfig,
-    pub hedging_config: HedgingSectionConfig,
+    config: FundingSectionConfig,
+    hedging_config: HedgingSectionConfig,
 }
 
 impl FundingAdjustment {
+    pub fn new(config: FundingSectionConfig, hedging_config: HedgingSectionConfig) -> Self {
+        Self {
+            config,
+            hedging_config,
+        }
+    }
+
     pub fn determine_action(
         &self,
         abs_liability_in_cents: SyntheticCentLiability,

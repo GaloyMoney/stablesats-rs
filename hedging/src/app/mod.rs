@@ -19,13 +19,8 @@ use shared::{
 };
 
 use crate::{
-    adjustment_action,
-    error::*,
-    job::{self, HedgingFundingConfig},
-    okex_orders::*,
-    okex_transfers::*,
-    rebalance_action,
-    synth_usd_liability::*,
+    adjustment_action, adjustment_action::*, error::*, job, okex_orders::*, okex_transfers::*,
+    rebalance_action, rebalance_action::*, synth_usd_liability::*,
 };
 
 pub use config::*;
@@ -59,6 +54,9 @@ impl HedgingApp {
         let okex_orders = OkexOrders::new(pool.clone()).await?;
         let okex_transfers = OkexTransfers::new(pool.clone()).await?;
         let okex = OkexClient::new(okex_client_config).await?;
+        let funding_adjustment =
+            FundingAdjustment::new(funding_config.clone(), hedging_config.clone());
+        let hedging_adjustment = HedgingAdjustment::new(hedging_config);
         let job_runner = job::start_job_runner(
             pool.clone(),
             synth_usd_liability.clone(),
@@ -68,7 +66,8 @@ impl HedgingApp {
             GaloyClient::connect(galoy_client_cfg).await?,
             Publisher::new(pubsub_config.clone()).await?,
             okex_poll_delay,
-            hedging_config.clone(),
+            funding_adjustment.clone(),
+            hedging_adjustment.clone(),
             funding_config.clone(),
         )
         .await?;
@@ -79,7 +78,7 @@ impl HedgingApp {
             pubsub_config.clone(),
             pool.clone(),
             synth_usd_liability.clone(),
-            HedgingFundingConfig(hedging_config.clone(), funding_config.clone()),
+            hedging_adjustment,
         )
         .await?;
         let price_sub = Self::spawn_okex_price_listener(
@@ -87,7 +86,7 @@ impl HedgingApp {
             pool.clone(),
             synth_usd_liability,
             okex,
-            HedgingFundingConfig(hedging_config, funding_config),
+            funding_adjustment,
         )
         .await?;
         Self::spawn_health_checker(
@@ -111,7 +110,7 @@ impl HedgingApp {
         pool: sqlx::PgPool,
         synth_usd_liability: SynthUsdLiability,
         okex: OkexClient,
-        hedging_funding_config: HedgingFundingConfig,
+        funding_adjustment: FundingAdjustment,
     ) -> Result<Subscriber, HedgingError> {
         let subscriber = Subscriber::new(config).await?;
         let mut stream = subscriber.subscribe::<OkexBtcUsdSwapPricePayload>().await?;
@@ -133,7 +132,7 @@ impl HedgingApp {
                     &pool,
                     &synth_usd_liability,
                     &okex,
-                    hedging_funding_config.clone(),
+                    funding_adjustment.clone(),
                 )
                 .instrument(span)
                 .await;
@@ -148,7 +147,7 @@ impl HedgingApp {
         pool: &sqlx::PgPool,
         synth_usd_liability: &SynthUsdLiability,
         okex: &OkexClient,
-        hedging_funding_config: HedgingFundingConfig,
+        funding_adjustment: FundingAdjustment,
     ) -> Result<(), HedgingError> {
         let target_liability_in_cents = synth_usd_liability.get_latest_liability().await?;
         let current_position_in_cents = okex.get_position_in_signed_usd_cents().await?.usd_cents;
@@ -158,10 +157,6 @@ impl HedgingApp {
         let mid_price_in_cents: Decimal =
             (payload.bid_price.numerator_amount() + payload.ask_price.numerator_amount()) / dec!(2);
 
-        let funding_adjustment = rebalance_action::FundingAdjustment {
-            config: hedging_funding_config.1,
-            hedging_config: hedging_funding_config.0,
-        };
         if funding_adjustment
             .determine_action(
                 target_liability_in_cents,
@@ -221,7 +216,7 @@ impl HedgingApp {
         config: PubSubConfig,
         pool: sqlx::PgPool,
         synth_usd_liability: SynthUsdLiability,
-        hedging_funding_config: HedgingFundingConfig,
+        hedging_adjustment: HedgingAdjustment,
     ) -> Result<Subscriber, HedgingError> {
         let subscriber = Subscriber::new(config).await?;
         let mut stream = subscriber
@@ -244,7 +239,7 @@ impl HedgingApp {
                     correlation_id,
                     &pool,
                     &synth_usd_liability,
-                    hedging_funding_config.clone(),
+                    hedging_adjustment.clone(),
                 )
                 .instrument(span)
                 .await;
@@ -306,12 +301,9 @@ impl HedgingApp {
         correlation_id: CorrelationId,
         pool: &sqlx::PgPool,
         synth_usd_liability: &SynthUsdLiability,
-        hedging_funding_config: HedgingFundingConfig,
+        hedging_adjustment: HedgingAdjustment,
     ) -> Result<(), HedgingError> {
         let amount = synth_usd_liability.get_latest_liability().await?;
-        let hedging_adjustment = adjustment_action::HedgingAdjustment {
-            config: hedging_funding_config.0,
-        };
         if hedging_adjustment
             .determine_action(amount, payload.signed_usd_exposure)
             .action_required()

@@ -56,11 +56,16 @@ impl AdjustmentAction {
     }
 }
 
+#[derive(Debug, Clone)]
 pub struct HedgingAdjustment {
-    pub config: HedgingSectionConfig,
+    config: HedgingSectionConfig,
 }
 
 impl HedgingAdjustment {
+    pub fn new(config: HedgingSectionConfig) -> Self {
+        Self { config }
+    }
+
     pub fn determine_action(
         &self,
         abs_liability: SyntheticCentLiability,

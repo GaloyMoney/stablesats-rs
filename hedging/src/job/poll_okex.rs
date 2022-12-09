@@ -7,16 +7,14 @@ use shared::{
     pubsub::Publisher,
 };
 
-use crate::{error::HedgingError, okex_orders::*, okex_transfers::*};
-
-use super::HedgingFundingConfig;
+use crate::{app::FundingSectionConfig, error::HedgingError, okex_orders::*, okex_transfers::*};
 
 pub async fn execute(
     okex_orders: OkexOrders,
     okex_transfers: OkexTransfers,
     okex: OkexClient,
     publisher: Publisher,
-    HedgingFundingConfig(_, funding_config): HedgingFundingConfig,
+    funding_config: FundingSectionConfig,
 ) -> Result<(), HedgingError> {
     let PositionSize {
         usd_cents,
@@ -72,9 +70,7 @@ pub async fn execute(
                     .await?;
             }
             Err(OkexClientError::UnexpectedResponse { .. }) => {
-                if chrono::Utc::now() - created_at
-                    > chrono::Duration::minutes(funding_config.deposit_lost_timeout_minutes)
-                {
+                if chrono::Utc::now() - created_at > funding_config.deposit_lost_timeout_seconds {
                     okex_transfers.mark_as_lost(id).await?;
                     execute_transfer_sweep = true;
                 }
