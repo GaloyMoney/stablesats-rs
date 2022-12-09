@@ -63,30 +63,19 @@ pub(super) async fn execute(
     let fees = okex.get_onchain_fees().await?;
     span.record("onchain_fees", &tracing::field::display(&fees));
 
-    let is_internal_transfer_pending = okex_transfers.is_internal_transfer_pending().await?;
-    span.record(
-        "is_internal_transfer_pending",
-        &tracing::field::display(&is_internal_transfer_pending),
-    );
-
-    let is_external_transfer_pending = okex_transfers.is_external_transfer_pending().await?;
-    span.record(
-        "is_external_transfer_pending",
-        &tracing::field::display(&is_external_transfer_pending),
-    );
-
     let fees = okex.get_onchain_fees().await?;
     span.record("onchain_fees", &tracing::field::display(&fees));
 
-    let action = determine_action(
+    let funding_adjustment = FundingAdjustment {
+        config: hedging_funding_config.1,
+        hedging_config: hedging_funding_config.0,
+    };
+    let action = funding_adjustment.determine_action(
         target_liability_in_cents,
         current_position.usd_cents.into(),
         trading_available_balance.total_amt_in_btc,
         last_price_in_usd_cents,
         funding_available_balance.total_amt_in_btc,
-        is_internal_transfer_pending,
-        is_external_transfer_pending,
-        hedging_funding_config,
     );
     span.record("action", &tracing::field::display(&action));
 

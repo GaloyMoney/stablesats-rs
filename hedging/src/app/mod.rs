@@ -87,7 +87,6 @@ impl HedgingApp {
             pool.clone(),
             synth_usd_liability,
             okex,
-            okex_transfers,
             HedgingFundingConfig(hedging_config, funding_config),
         )
         .await?;
@@ -112,7 +111,6 @@ impl HedgingApp {
         pool: sqlx::PgPool,
         synth_usd_liability: SynthUsdLiability,
         okex: OkexClient,
-        okex_transfers: OkexTransfers,
         hedging_funding_config: HedgingFundingConfig,
     ) -> Result<Subscriber, HedgingError> {
         let subscriber = Subscriber::new(config).await?;
@@ -135,7 +133,6 @@ impl HedgingApp {
                     &pool,
                     &synth_usd_liability,
                     &okex,
-                    &okex_transfers,
                     hedging_funding_config.clone(),
                 )
                 .instrument(span)
@@ -151,28 +148,29 @@ impl HedgingApp {
         pool: &sqlx::PgPool,
         synth_usd_liability: &SynthUsdLiability,
         okex: &OkexClient,
-        okex_transfers: &OkexTransfers,
         hedging_funding_config: HedgingFundingConfig,
     ) -> Result<(), HedgingError> {
         let target_liability_in_cents = synth_usd_liability.get_latest_liability().await?;
         let current_position_in_cents = okex.get_position_in_signed_usd_cents().await?.usd_cents;
         let trading_available_balance = okex.trading_account_balance().await?;
         let funding_available_balance = okex.funding_account_balance().await?;
-        let is_internal_transfer_pending = okex_transfers.is_internal_transfer_pending().await?;
-        let is_external_transfer_pending = okex_transfers.is_external_transfer_pending().await?;
 
         let mid_price_in_cents: Decimal =
             (payload.bid_price.numerator_amount() + payload.ask_price.numerator_amount()) / dec!(2);
-        if rebalance_action::determine_action(
-            target_liability_in_cents,
-            current_position_in_cents.into(),
-            trading_available_balance.total_amt_in_btc,
-            mid_price_in_cents,
-            funding_available_balance.total_amt_in_btc,
-            is_internal_transfer_pending,
-            is_external_transfer_pending,
-        )
-        .action_required()
+
+        let funding_adjustment = rebalance_action::FundingAdjustment {
+            config: hedging_funding_config.1,
+            hedging_config: hedging_funding_config.0,
+        };
+        if funding_adjustment
+            .determine_action(
+                target_liability_in_cents,
+                current_position_in_cents.into(),
+                trading_available_balance.total_amt_in_btc,
+                mid_price_in_cents,
+                funding_available_balance.total_amt_in_btc,
+            )
+            .action_required()
         {
             job::spawn_adjust_funding(pool, correlation_id).await?;
         }
@@ -311,7 +309,11 @@ impl HedgingApp {
         hedging_funding_config: HedgingFundingConfig,
     ) -> Result<(), HedgingError> {
         let amount = synth_usd_liability.get_latest_liability().await?;
-        if adjustment_action::determine_action(amount, payload.signed_usd_exposure)
+        let hedging_adjustment = adjustment_action::HedgingAdjustment {
+            config: hedging_funding_config.0,
+        };
+        if hedging_adjustment
+            .determine_action(amount, payload.signed_usd_exposure)
             .action_required()
         {
             job::spawn_adjust_hedge(pool, correlation_id).await?;

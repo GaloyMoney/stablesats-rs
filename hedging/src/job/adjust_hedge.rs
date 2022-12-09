@@ -29,11 +29,10 @@ pub(super) async fn execute(
         &tracing::field::display(current_position),
     );
 
-    let action = determine_action(
-        target_liability,
-        current_position.into(),
-        hedging_funding_config,
-    );
+    let hedging_adjustment = HedgingAdjustment {
+        config: hedging_funding_config.0,
+    };
+    let action = hedging_adjustment.determine_action(target_liability, current_position.into());
     span.record("action", &tracing::field::display(&action));
     match action {
         AdjustmentAction::DoNothing => {}

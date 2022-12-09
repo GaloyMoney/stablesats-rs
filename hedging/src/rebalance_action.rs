@@ -4,7 +4,7 @@ use rust_decimal_macros::dec;
 pub use okex_client::BtcUsdSwapContracts;
 pub use shared::payload::{SyntheticCentExposure, SyntheticCentLiability};
 
-use crate::job::HedgingFundingConfig;
+use crate::{FundingSectionConfig, HedgingSectionConfig};
 
 const SATS_PER_BTC: Decimal = dec!(100_000_000);
 
@@ -75,124 +75,129 @@ fn floor_btc(amount_in_btc: Decimal) -> Decimal {
     amount_in_sats.floor() / SATS_PER_BTC
 }
 
-#[allow(clippy::too_many_arguments)]
-pub fn determine_action(
-    abs_liability_in_cents: SyntheticCentLiability,
-    signed_exposure_in_cents: SyntheticCentExposure,
-    total_collateral_in_btc: Decimal,
-    btc_price_in_cents: Decimal,
-    funding_btc_total_balance: Decimal,
-    internal_transfer_pending: bool,
-    external_transfer_pending: bool,
-    HedgingFundingConfig(hedging_config, funding_config): HedgingFundingConfig,
-) -> RebalanceAction {
-    let abs_liability_in_btc = abs_liability_in_cents / btc_price_in_cents;
-    let abs_exposure_in_btc = Decimal::from(signed_exposure_in_cents).abs() / btc_price_in_cents;
-    if abs_exposure_in_btc.is_zero()
-        && total_collateral_in_btc.is_zero()
-        && abs_liability_in_cents > hedging_config.minimum_liability_threshold_cents
-    {
-        let new_collateral_in_btc =
-            abs_liability_in_btc / funding_config.high_safebound_ratio_leverage;
-        let transfer_size_in_btc = round_btc(new_collateral_in_btc - total_collateral_in_btc);
+pub struct FundingAdjustment {
+    pub config: FundingSectionConfig,
+    pub hedging_config: HedgingSectionConfig,
+}
 
-        let (internal_transfer_amount, external_transfer_amount) = split_deposit(
-            funding_btc_total_balance,
-            transfer_size_in_btc,
-            funding_config.minimum_funding_balance_btc,
-        );
+impl FundingAdjustment {
+    pub fn determine_action(
+        &self,
+        abs_liability_in_cents: SyntheticCentLiability,
+        signed_exposure_in_cents: SyntheticCentExposure,
+        total_collateral_in_btc: Decimal,
+        btc_price_in_cents: Decimal,
+        funding_btc_total_balance: Decimal,
+    ) -> RebalanceAction {
+        let abs_liability_in_btc = abs_liability_in_cents / btc_price_in_cents;
+        let abs_exposure_in_btc =
+            Decimal::from(signed_exposure_in_cents).abs() / btc_price_in_cents;
+        if abs_exposure_in_btc.is_zero()
+            && total_collateral_in_btc.is_zero()
+            && abs_liability_in_cents > self.hedging_config.minimum_liability_threshold_cents
+        {
+            let new_collateral_in_btc =
+                abs_liability_in_btc / self.config.high_safebound_ratio_leverage;
+            let transfer_size_in_btc = round_btc(new_collateral_in_btc - total_collateral_in_btc);
 
-        if !internal_transfer_pending && !internal_transfer_amount.is_zero() {
-            RebalanceAction::TransferFundingToTrading(internal_transfer_amount)
-        } else if !external_transfer_pending && !external_transfer_amount.is_zero() {
-            RebalanceAction::OnchainDeposit(external_transfer_amount)
+            let (internal_transfer_amount, external_transfer_amount) = split_deposit(
+                funding_btc_total_balance,
+                transfer_size_in_btc,
+                self.config.minimum_funding_balance_btc,
+            );
+
+            if !internal_transfer_amount.is_zero() {
+                RebalanceAction::TransferFundingToTrading(internal_transfer_amount)
+            } else if !external_transfer_amount.is_zero() {
+                RebalanceAction::OnchainDeposit(external_transfer_amount)
+            } else {
+                RebalanceAction::DoNothing
+            }
+        } else if abs_exposure_in_btc.is_zero()
+            && total_collateral_in_btc > Decimal::ZERO
+            && abs_liability_in_cents >= Decimal::ZERO
+            && abs_liability_in_cents < self.config.minimum_transfer_amount_cents
+        {
+            let transfer_size_in_btc = floor_btc(total_collateral_in_btc);
+
+            let (internal_transfer_amount, external_transfer_amount) = split_withdraw(
+                funding_btc_total_balance,
+                transfer_size_in_btc,
+                self.config.minimum_funding_balance_btc,
+            );
+
+            if !internal_transfer_amount.is_zero() {
+                RebalanceAction::TransferTradingToFunding(internal_transfer_amount)
+            } else if !external_transfer_amount.is_zero() {
+                RebalanceAction::OnchainWithdraw(external_transfer_amount)
+            } else {
+                RebalanceAction::DoNothing
+            }
+        } else if abs_liability_in_btc
+            > total_collateral_in_btc * self.config.high_bound_ratio_leverage
+        {
+            let new_collateral_in_btc =
+                abs_liability_in_btc / self.config.high_safebound_ratio_leverage;
+            let transfer_size_in_btc = round_btc(new_collateral_in_btc - total_collateral_in_btc);
+
+            let (internal_transfer_amount, external_transfer_amount) = split_deposit(
+                funding_btc_total_balance,
+                transfer_size_in_btc,
+                self.config.minimum_funding_balance_btc,
+            );
+
+            if !internal_transfer_amount.is_zero() {
+                RebalanceAction::TransferFundingToTrading(internal_transfer_amount)
+            } else if !external_transfer_amount.is_zero() {
+                RebalanceAction::OnchainDeposit(external_transfer_amount)
+            } else {
+                RebalanceAction::DoNothing
+            }
+        } else if abs_exposure_in_btc
+            < total_collateral_in_btc * self.config.low_bound_ratio_leverage
+        {
+            let new_collateral_in_btc =
+                abs_exposure_in_btc / self.config.low_safebound_ratio_leverage;
+            let transfer_size_in_btc = floor_btc(total_collateral_in_btc - new_collateral_in_btc);
+
+            let (internal_transfer_amount, external_transfer_amount) = split_withdraw(
+                funding_btc_total_balance,
+                transfer_size_in_btc,
+                self.config.minimum_funding_balance_btc,
+            );
+
+            if !internal_transfer_amount.is_zero() {
+                RebalanceAction::TransferTradingToFunding(internal_transfer_amount)
+            } else if !external_transfer_amount.is_zero() {
+                RebalanceAction::OnchainWithdraw(external_transfer_amount)
+            } else {
+                RebalanceAction::DoNothing
+            }
+        } else if abs_exposure_in_btc
+            > total_collateral_in_btc
+                * self.config.high_bound_buffer_percentage
+                * self.config.high_bound_ratio_leverage
+        {
+            let new_collateral_in_btc =
+                abs_exposure_in_btc / self.config.high_safebound_ratio_leverage;
+            let transfer_size_in_btc = round_btc(new_collateral_in_btc - total_collateral_in_btc);
+
+            let (internal_transfer_amount, external_transfer_amount) = split_deposit(
+                funding_btc_total_balance,
+                transfer_size_in_btc,
+                self.config.minimum_funding_balance_btc,
+            );
+
+            if !internal_transfer_amount.is_zero() {
+                RebalanceAction::TransferFundingToTrading(internal_transfer_amount)
+            } else if !external_transfer_amount.is_zero() {
+                RebalanceAction::OnchainDeposit(external_transfer_amount)
+            } else {
+                RebalanceAction::DoNothing
+            }
         } else {
             RebalanceAction::DoNothing
         }
-    } else if abs_exposure_in_btc.is_zero()
-        && total_collateral_in_btc > Decimal::ZERO
-        && abs_liability_in_cents >= Decimal::ZERO
-        && abs_liability_in_cents < funding_config.minimum_transfer_amount_cents
-    {
-        let transfer_size_in_btc = floor_btc(total_collateral_in_btc);
-
-        let (internal_transfer_amount, external_transfer_amount) = split_withdraw(
-            funding_btc_total_balance,
-            transfer_size_in_btc,
-            funding_config.minimum_funding_balance_btc,
-        );
-
-        if !internal_transfer_pending && !internal_transfer_amount.is_zero() {
-            RebalanceAction::TransferTradingToFunding(internal_transfer_amount)
-        } else if !external_transfer_pending && !external_transfer_amount.is_zero() {
-            RebalanceAction::OnchainWithdraw(external_transfer_amount)
-        } else {
-            RebalanceAction::DoNothing
-        }
-    } else if abs_liability_in_btc
-        > total_collateral_in_btc * funding_config.high_bound_ratio_leverage
-    {
-        let new_collateral_in_btc =
-            abs_liability_in_btc / funding_config.high_safebound_ratio_leverage;
-        let transfer_size_in_btc = round_btc(new_collateral_in_btc - total_collateral_in_btc);
-
-        let (internal_transfer_amount, external_transfer_amount) = split_deposit(
-            funding_btc_total_balance,
-            transfer_size_in_btc,
-            funding_config.minimum_funding_balance_btc,
-        );
-
-        if !internal_transfer_pending && !internal_transfer_amount.is_zero() {
-            RebalanceAction::TransferFundingToTrading(internal_transfer_amount)
-        } else if !external_transfer_pending && !external_transfer_amount.is_zero() {
-            RebalanceAction::OnchainDeposit(external_transfer_amount)
-        } else {
-            RebalanceAction::DoNothing
-        }
-    } else if abs_exposure_in_btc
-        < total_collateral_in_btc * funding_config.low_bound_ratio_leverage
-    {
-        let new_collateral_in_btc =
-            abs_exposure_in_btc / funding_config.low_safebound_ratio_leverage;
-        let transfer_size_in_btc = floor_btc(total_collateral_in_btc - new_collateral_in_btc);
-
-        let (internal_transfer_amount, external_transfer_amount) = split_withdraw(
-            funding_btc_total_balance,
-            transfer_size_in_btc,
-            funding_config.minimum_funding_balance_btc,
-        );
-
-        if !internal_transfer_pending && !internal_transfer_amount.is_zero() {
-            RebalanceAction::TransferTradingToFunding(internal_transfer_amount)
-        } else if !external_transfer_pending && !external_transfer_amount.is_zero() {
-            RebalanceAction::OnchainWithdraw(external_transfer_amount)
-        } else {
-            RebalanceAction::DoNothing
-        }
-    } else if abs_exposure_in_btc
-        > total_collateral_in_btc
-            * funding_config.high_bound_buffer_percentage
-            * funding_config.high_bound_ratio_leverage
-    {
-        let new_collateral_in_btc =
-            abs_exposure_in_btc / funding_config.high_safebound_ratio_leverage;
-        let transfer_size_in_btc = round_btc(new_collateral_in_btc - total_collateral_in_btc);
-
-        let (internal_transfer_amount, external_transfer_amount) = split_deposit(
-            funding_btc_total_balance,
-            transfer_size_in_btc,
-            funding_config.minimum_funding_balance_btc,
-        );
-
-        if !internal_transfer_pending && !internal_transfer_amount.is_zero() {
-            RebalanceAction::TransferFundingToTrading(internal_transfer_amount)
-        } else if !external_transfer_pending && !external_transfer_amount.is_zero() {
-            RebalanceAction::OnchainDeposit(external_transfer_amount)
-        } else {
-            RebalanceAction::DoNothing
-        }
-    } else {
-        RebalanceAction::DoNothing
     }
 }
 
@@ -233,271 +238,185 @@ mod tests {
     use crate::{FundingSectionConfig, HedgingSectionConfig};
     use rust_decimal_macros::dec;
 
-    fn hedging_funding_config() -> HedgingFundingConfig {
-        let hedging = HedgingSectionConfig::default();
-        let funding = FundingSectionConfig::default();
-        HedgingFundingConfig(hedging, funding)
-    }
-
     #[test]
     fn do_nothing_conditions() {
-        let hedging_funding_config = hedging_funding_config();
-        let funding_config = hedging_funding_config.clone().1;
+        let funding_adjustment = FundingAdjustment {
+            config: FundingSectionConfig::default(),
+            hedging_config: HedgingSectionConfig::default(),
+        };
         let liability = SyntheticCentLiability::try_from(dec!(10_000)).unwrap();
         let exposure = SyntheticCentExposure::from(dec!(-10_000));
-        let total_collateral: Decimal = liability / funding_config.high_safebound_ratio_leverage;
+        let total_collateral: Decimal =
+            liability / funding_adjustment.config.high_safebound_ratio_leverage;
         let btc_price: Decimal = dec!(1);
-        let adjustment = determine_action(
+        let adjustment = funding_adjustment.determine_action(
             liability,
             exposure,
             total_collateral,
             btc_price,
-            funding_config.minimum_funding_balance_btc,
-            false,
-            false,
-            hedging_funding_config,
+            funding_adjustment.config.minimum_funding_balance_btc,
         );
         assert_eq!(adjustment, RebalanceAction::DoNothing);
     }
 
     #[test]
     fn initial_conditions() {
-        let hedging_funding_config = hedging_funding_config();
-        let funding_config = hedging_funding_config.clone().1;
+        let funding_adjustment = FundingAdjustment {
+            config: FundingSectionConfig::default(),
+            hedging_config: HedgingSectionConfig::default(),
+        };
         let liability = SyntheticCentLiability::try_from(dec!(10_000)).unwrap();
         let exposure = SyntheticCentExposure::from(dec!(0));
         let total_collateral: Decimal = dec!(0);
         let funding_btc_total_balance: Decimal = dec!(0);
         let btc_price: Decimal = dec!(1);
         let expected_total: Decimal =
-            round_btc(liability / funding_config.high_safebound_ratio_leverage);
+            round_btc(liability / funding_adjustment.config.high_safebound_ratio_leverage);
         let (_, expected_external) = split_deposit(
             funding_btc_total_balance,
             expected_total,
-            funding_config.minimum_funding_balance_btc,
+            funding_adjustment.config.minimum_funding_balance_btc,
         );
-        let adjustment = determine_action(
+        let adjustment = funding_adjustment.determine_action(
             liability,
             exposure,
             total_collateral,
             btc_price,
             funding_btc_total_balance,
-            false,
-            false,
-            hedging_funding_config.clone(),
         );
         assert_eq!(
             adjustment,
             RebalanceAction::OnchainDeposit(expected_external)
         );
-        let adjustment = determine_action(
-            liability,
-            exposure,
-            total_collateral,
-            btc_price,
-            funding_btc_total_balance,
-            true,
-            false,
-            hedging_funding_config.clone(),
-        );
-        assert_eq!(
-            adjustment,
-            RebalanceAction::OnchainDeposit(expected_external)
-        );
-        let adjustment = determine_action(
-            liability,
-            exposure,
-            total_collateral,
-            btc_price,
-            funding_btc_total_balance,
-            true,
-            true,
-            hedging_funding_config,
-        );
-        assert_eq!(adjustment, RebalanceAction::DoNothing);
     }
 
     #[test]
     fn terminal_conditions() {
-        let hedging_funding_config = hedging_funding_config();
-        let funding_config = hedging_funding_config.clone().1;
+        let funding_adjustment = FundingAdjustment {
+            config: FundingSectionConfig::default(),
+            hedging_config: HedgingSectionConfig::default(),
+        };
         let liability = SyntheticCentLiability::try_from(
-            funding_config.minimum_transfer_amount_cents / dec!(2),
+            funding_adjustment.config.minimum_transfer_amount_cents / dec!(2),
         )
         .unwrap();
         let exposure = SyntheticCentExposure::from(dec!(0));
-        let total_collateral: Decimal = liability / funding_config.high_safebound_ratio_leverage;
+        let total_collateral: Decimal =
+            liability / funding_adjustment.config.high_safebound_ratio_leverage;
         let funding_btc_total_balance: Decimal = dec!(0);
         let btc_price: Decimal = dec!(1);
         let expected_total: Decimal = floor_btc(total_collateral);
-        let (expected_internal, expected_external) = split_withdraw(
+        let (expected_internal, _) = split_withdraw(
             funding_btc_total_balance,
             expected_total,
-            funding_config.minimum_funding_balance_btc,
+            funding_adjustment.config.minimum_funding_balance_btc,
         );
-        let adjustment = determine_action(
+        let adjustment = funding_adjustment.determine_action(
             liability,
             exposure,
             total_collateral,
             btc_price,
             funding_btc_total_balance,
-            false,
-            false,
-            hedging_funding_config.clone(),
         );
         assert_eq!(
             adjustment,
             RebalanceAction::TransferTradingToFunding(expected_internal)
         );
-        let adjustment = determine_action(
-            liability,
-            exposure,
-            total_collateral,
-            btc_price,
-            funding_btc_total_balance,
-            true,
-            false,
-            hedging_funding_config,
-        );
-        assert_eq!(
-            adjustment,
-            RebalanceAction::OnchainWithdraw(expected_external)
-        );
     }
 
     #[test]
     fn user_activity_tracking() {
-        let hedging_funding_config = hedging_funding_config();
-        let funding_config = hedging_funding_config.clone().1;
+        let funding_adjustment = FundingAdjustment {
+            config: FundingSectionConfig::default(),
+            hedging_config: HedgingSectionConfig::default(),
+        };
         let liability = SyntheticCentLiability::try_from(dec!(10_000)).unwrap();
         let exposure = SyntheticCentExposure::from(dec!(-3_000));
-        let total_collateral: Decimal = exposure / funding_config.high_safebound_ratio_leverage;
+        let total_collateral: Decimal =
+            exposure / funding_adjustment.config.high_safebound_ratio_leverage;
         let funding_btc_total_balance: Decimal = dec!(2_000);
         let btc_price: Decimal = dec!(1);
-        let expected_total: Decimal =
-            round_btc(liability / funding_config.high_safebound_ratio_leverage - total_collateral);
-        let (expected_internal, expected_external) = split_deposit(
+        let expected_total: Decimal = round_btc(
+            liability / funding_adjustment.config.high_safebound_ratio_leverage - total_collateral,
+        );
+        let (expected_internal, _) = split_deposit(
             funding_btc_total_balance,
             expected_total,
-            funding_config.minimum_funding_balance_btc,
+            funding_adjustment.config.minimum_funding_balance_btc,
         );
-        let adjustment = determine_action(
+        let adjustment = funding_adjustment.determine_action(
             liability,
             exposure,
             total_collateral,
             btc_price,
             funding_btc_total_balance,
-            false,
-            false,
-            hedging_funding_config.clone(),
         );
         assert_eq!(
             adjustment,
             RebalanceAction::TransferFundingToTrading(expected_internal)
         );
-        let adjustment = determine_action(
-            liability,
-            exposure,
-            total_collateral,
-            btc_price,
-            funding_btc_total_balance,
-            true,
-            false,
-            hedging_funding_config,
-        );
-        assert_eq!(
-            adjustment,
-            RebalanceAction::OnchainDeposit(expected_external)
-        );
     }
 
     #[test]
     fn counterparty_risk_avoidance() {
-        let hedging_funding_config = hedging_funding_config();
-        let funding_config = hedging_funding_config.clone().1;
+        let funding_adjustment = FundingAdjustment {
+            config: FundingSectionConfig::default(),
+            hedging_config: HedgingSectionConfig::default(),
+        };
         let liability = SyntheticCentLiability::try_from(dec!(10_000)).unwrap();
         let exposure = dec!(10_000);
         let signed_exposure = SyntheticCentExposure::from(-exposure);
         let total_collateral: Decimal = dec!(10_000);
         let funding_btc_total_balance: Decimal = dec!(0);
         let btc_price: Decimal = dec!(1);
-        let expected_total: Decimal =
-            floor_btc(total_collateral - exposure / funding_config.low_safebound_ratio_leverage);
-        let (expected_internal, expected_external) = split_withdraw(
+        let expected_total: Decimal = floor_btc(
+            total_collateral - exposure / funding_adjustment.config.low_safebound_ratio_leverage,
+        );
+        let (expected_internal, _) = split_withdraw(
             funding_btc_total_balance,
             expected_total,
-            funding_config.minimum_funding_balance_btc,
+            funding_adjustment.config.minimum_funding_balance_btc,
         );
-        let adjustment = determine_action(
+        let adjustment = funding_adjustment.determine_action(
             liability,
             signed_exposure,
             total_collateral,
             btc_price,
             funding_btc_total_balance,
-            false,
-            false,
-            hedging_funding_config.clone(),
         );
         assert_eq!(
             adjustment,
             RebalanceAction::TransferTradingToFunding(expected_internal)
         );
-        let adjustment = determine_action(
-            liability,
-            signed_exposure,
-            total_collateral,
-            btc_price,
-            funding_btc_total_balance,
-            true,
-            false,
-            hedging_funding_config,
-        );
-        assert_eq!(
-            adjustment,
-            RebalanceAction::OnchainWithdraw(expected_external)
-        );
     }
 
     #[test]
     fn liquidation_risk_avoidance() {
-        let hedging_funding_config = hedging_funding_config();
-        let funding_config = hedging_funding_config.clone().1;
+        let funding_adjustment = FundingAdjustment {
+            config: FundingSectionConfig::default(),
+            hedging_config: HedgingSectionConfig::default(),
+        };
         let liability = SyntheticCentLiability::try_from(dec!(10_000)).unwrap();
         let exposure = dec!(10_100);
         let signed_exposure = SyntheticCentExposure::from(-exposure);
-        let total_collateral: Decimal = exposure / funding_config.high_bound_ratio_leverage;
+        let total_collateral: Decimal =
+            exposure / funding_adjustment.config.high_bound_ratio_leverage;
         let funding_btc_total_balance: Decimal = dec!(0);
         let btc_price: Decimal = dec!(1);
-        let expected_total: Decimal =
-            round_btc(exposure / funding_config.high_safebound_ratio_leverage - total_collateral);
+        let expected_total: Decimal = round_btc(
+            exposure / funding_adjustment.config.high_safebound_ratio_leverage - total_collateral,
+        );
         let (_, expected_external) = split_deposit(
             funding_btc_total_balance,
             expected_total,
-            funding_config.minimum_funding_balance_btc,
+            funding_adjustment.config.minimum_funding_balance_btc,
         );
-        let adjustment = determine_action(
+        let adjustment = funding_adjustment.determine_action(
             liability,
             signed_exposure,
             total_collateral,
             btc_price,
             funding_btc_total_balance,
-            false,
-            false,
-            hedging_funding_config.clone(),
-        );
-        assert_eq!(
-            adjustment,
-            RebalanceAction::OnchainDeposit(expected_external)
-        );
-        let adjustment = determine_action(
-            liability,
-            signed_exposure,
-            total_collateral,
-            btc_price,
-            funding_btc_total_balance,
-            true,
-            false,
-            hedging_funding_config,
         );
         assert_eq!(
             adjustment,
@@ -507,16 +426,19 @@ mod tests {
 
     #[test]
     fn split_deposit_no_funding() {
-        let hedging_funding_config = hedging_funding_config();
-        let funding_config = hedging_funding_config.1;
+        let funding_adjustment = FundingAdjustment {
+            config: FundingSectionConfig::default(),
+            hedging_config: HedgingSectionConfig::default(),
+        };
         let funding_btc_total_balance: Decimal = dec!(0);
         let amount_in_btc: Decimal = dec!(1);
         let expected_internal = dec!(0);
-        let expected_external = amount_in_btc + funding_config.minimum_funding_balance_btc;
+        let expected_external =
+            amount_in_btc + funding_adjustment.config.minimum_funding_balance_btc;
         let (internal, external) = split_deposit(
             funding_btc_total_balance,
             amount_in_btc,
-            funding_config.minimum_funding_balance_btc,
+            funding_adjustment.config.minimum_funding_balance_btc,
         );
 
         assert_eq!(internal, expected_internal);
@@ -525,16 +447,19 @@ mod tests {
 
     #[test]
     fn split_deposit_equal_funding_amount_under() {
-        let hedging_funding_config = hedging_funding_config();
-        let funding_config = hedging_funding_config.1;
-        let funding_btc_total_balance: Decimal = funding_config.minimum_funding_balance_btc;
+        let funding_adjustment = FundingAdjustment {
+            config: FundingSectionConfig::default(),
+            hedging_config: HedgingSectionConfig::default(),
+        };
+        let funding_btc_total_balance: Decimal =
+            funding_adjustment.config.minimum_funding_balance_btc;
         let amount_in_btc: Decimal = funding_btc_total_balance / dec!(5) * dec!(3);
         let expected_internal = amount_in_btc;
         let expected_external = expected_internal;
         let (internal, external) = split_deposit(
             funding_btc_total_balance,
             amount_in_btc,
-            funding_config.minimum_funding_balance_btc,
+            funding_adjustment.config.minimum_funding_balance_btc,
         );
 
         assert_eq!(internal, expected_internal);
@@ -543,16 +468,19 @@ mod tests {
 
     #[test]
     fn split_deposit_equal_funding_amount_equal() {
-        let hedging_funding_config = hedging_funding_config();
-        let funding_config = hedging_funding_config.1;
-        let funding_btc_total_balance: Decimal = funding_config.minimum_funding_balance_btc;
+        let funding_adjustment = FundingAdjustment {
+            config: FundingSectionConfig::default(),
+            hedging_config: HedgingSectionConfig::default(),
+        };
+        let funding_btc_total_balance: Decimal =
+            funding_adjustment.config.minimum_funding_balance_btc;
         let amount_in_btc: Decimal = funding_btc_total_balance;
         let expected_internal = amount_in_btc;
         let expected_external = expected_internal;
         let (internal, external) = split_deposit(
             funding_btc_total_balance,
             amount_in_btc,
-            funding_config.minimum_funding_balance_btc,
+            funding_adjustment.config.minimum_funding_balance_btc,
         );
 
         assert_eq!(internal, expected_internal);
@@ -561,16 +489,19 @@ mod tests {
 
     #[test]
     fn split_deposit_equal_funding_amount_over() {
-        let hedging_funding_config = hedging_funding_config();
-        let funding_config = hedging_funding_config.1;
-        let funding_btc_total_balance: Decimal = funding_config.minimum_funding_balance_btc;
+        let funding_adjustment = FundingAdjustment {
+            config: FundingSectionConfig::default(),
+            hedging_config: HedgingSectionConfig::default(),
+        };
+        let funding_btc_total_balance: Decimal =
+            funding_adjustment.config.minimum_funding_balance_btc;
         let amount_in_btc: Decimal = funding_btc_total_balance * dec!(2);
         let expected_internal = funding_btc_total_balance;
         let expected_external = amount_in_btc;
         let (internal, external) = split_deposit(
             funding_btc_total_balance,
             amount_in_btc,
-            funding_config.minimum_funding_balance_btc,
+            funding_adjustment.config.minimum_funding_balance_btc,
         );
 
         assert_eq!(internal, expected_internal);
@@ -579,18 +510,20 @@ mod tests {
 
     #[test]
     fn split_deposit_more_funding_amount_under() {
-        let hedging_funding_config = hedging_funding_config();
-        let funding_config = hedging_funding_config.1;
+        let funding_adjustment = FundingAdjustment {
+            config: FundingSectionConfig::default(),
+            hedging_config: HedgingSectionConfig::default(),
+        };
         let extra_funding = dec!(0.3);
         let funding_btc_total_balance: Decimal =
-            funding_config.minimum_funding_balance_btc + extra_funding;
-        let amount_in_btc: Decimal = funding_config.minimum_funding_balance_btc;
+            funding_adjustment.config.minimum_funding_balance_btc + extra_funding;
+        let amount_in_btc: Decimal = funding_adjustment.config.minimum_funding_balance_btc;
         let expected_internal = amount_in_btc;
         let expected_external = expected_internal - extra_funding;
         let (internal, external) = split_deposit(
             funding_btc_total_balance,
             amount_in_btc,
-            funding_config.minimum_funding_balance_btc,
+            funding_adjustment.config.minimum_funding_balance_btc,
         );
 
         assert_eq!(internal, expected_internal);
@@ -599,18 +532,20 @@ mod tests {
 
     #[test]
     fn split_deposit_more_funding_amount_equal() {
-        let hedging_funding_config = hedging_funding_config();
-        let funding_config = hedging_funding_config.1;
+        let funding_adjustment = FundingAdjustment {
+            config: FundingSectionConfig::default(),
+            hedging_config: HedgingSectionConfig::default(),
+        };
         let extra_funding = dec!(0.3);
         let funding_btc_total_balance: Decimal =
-            funding_config.minimum_funding_balance_btc + extra_funding;
+            funding_adjustment.config.minimum_funding_balance_btc + extra_funding;
         let amount_in_btc: Decimal = funding_btc_total_balance;
         let expected_internal = amount_in_btc;
-        let expected_external = funding_config.minimum_funding_balance_btc;
+        let expected_external = funding_adjustment.config.minimum_funding_balance_btc;
         let (internal, external) = split_deposit(
             funding_btc_total_balance,
             amount_in_btc,
-            funding_config.minimum_funding_balance_btc,
+            funding_adjustment.config.minimum_funding_balance_btc,
         );
 
         assert_eq!(internal, expected_internal);
@@ -619,18 +554,20 @@ mod tests {
 
     #[test]
     fn split_deposit_more_funding_amount_over() {
-        let hedging_funding_config = hedging_funding_config();
-        let funding_config = hedging_funding_config.1;
+        let funding_adjustment = FundingAdjustment {
+            config: FundingSectionConfig::default(),
+            hedging_config: HedgingSectionConfig::default(),
+        };
         let extra_funding = dec!(0.3);
         let funding_btc_total_balance: Decimal =
-            funding_config.minimum_funding_balance_btc + extra_funding;
+            funding_adjustment.config.minimum_funding_balance_btc + extra_funding;
         let amount_in_btc: Decimal = funding_btc_total_balance * dec!(2);
         let expected_internal = funding_btc_total_balance;
         let expected_external = amount_in_btc - extra_funding;
         let (internal, external) = split_deposit(
             funding_btc_total_balance,
             amount_in_btc,
-            funding_config.minimum_funding_balance_btc,
+            funding_adjustment.config.minimum_funding_balance_btc,
         );
 
         assert_eq!(internal, expected_internal);
@@ -639,16 +576,19 @@ mod tests {
 
     #[test]
     fn split_withdraw_no_funding_amount_under() {
-        let hedging_funding_config = hedging_funding_config();
-        let funding_config = hedging_funding_config.1;
+        let funding_adjustment = FundingAdjustment {
+            config: FundingSectionConfig::default(),
+            hedging_config: HedgingSectionConfig::default(),
+        };
         let funding_btc_total_balance: Decimal = dec!(0);
-        let amount_in_btc: Decimal = funding_config.minimum_funding_balance_btc / dec!(5) * dec!(3);
+        let amount_in_btc: Decimal =
+            funding_adjustment.config.minimum_funding_balance_btc / dec!(5) * dec!(3);
         let expected_internal = amount_in_btc;
         let expected_external = dec!(0);
         let (internal, external) = split_withdraw(
             funding_btc_total_balance,
             amount_in_btc,
-            funding_config.minimum_funding_balance_btc,
+            funding_adjustment.config.minimum_funding_balance_btc,
         );
 
         assert_eq!(internal, expected_internal);
@@ -657,16 +597,18 @@ mod tests {
 
     #[test]
     fn split_withdraw_no_funding_amount_equal() {
-        let hedging_funding_config = hedging_funding_config();
-        let funding_config = hedging_funding_config.1;
+        let funding_adjustment = FundingAdjustment {
+            config: FundingSectionConfig::default(),
+            hedging_config: HedgingSectionConfig::default(),
+        };
         let funding_btc_total_balance: Decimal = dec!(0);
-        let amount_in_btc: Decimal = funding_config.minimum_funding_balance_btc;
+        let amount_in_btc: Decimal = funding_adjustment.config.minimum_funding_balance_btc;
         let expected_internal = amount_in_btc;
         let expected_external = dec!(0);
         let (internal, external) = split_withdraw(
             funding_btc_total_balance,
             amount_in_btc,
-            funding_config.minimum_funding_balance_btc,
+            funding_adjustment.config.minimum_funding_balance_btc,
         );
 
         assert_eq!(internal, expected_internal);
@@ -675,16 +617,20 @@ mod tests {
 
     #[test]
     fn split_withdraw_no_funding_amount_over() {
-        let hedging_funding_config = hedging_funding_config();
-        let funding_config = hedging_funding_config.1;
+        let funding_adjustment = FundingAdjustment {
+            config: FundingSectionConfig::default(),
+            hedging_config: HedgingSectionConfig::default(),
+        };
         let funding_btc_total_balance: Decimal = dec!(0);
-        let amount_in_btc: Decimal = funding_config.minimum_funding_balance_btc * dec!(2);
+        let amount_in_btc: Decimal =
+            funding_adjustment.config.minimum_funding_balance_btc * dec!(2);
         let expected_internal = amount_in_btc;
-        let expected_external = amount_in_btc - funding_config.minimum_funding_balance_btc;
+        let expected_external =
+            amount_in_btc - funding_adjustment.config.minimum_funding_balance_btc;
         let (internal, external) = split_withdraw(
             funding_btc_total_balance,
             amount_in_btc,
-            funding_config.minimum_funding_balance_btc,
+            funding_adjustment.config.minimum_funding_balance_btc,
         );
 
         assert_eq!(internal, expected_internal);
@@ -693,16 +639,19 @@ mod tests {
 
     #[test]
     fn split_withdraw_equal_funding() {
-        let hedging_funding_config = hedging_funding_config();
-        let funding_config = hedging_funding_config.1;
-        let funding_btc_total_balance: Decimal = funding_config.minimum_funding_balance_btc;
+        let funding_adjustment = FundingAdjustment {
+            config: FundingSectionConfig::default(),
+            hedging_config: HedgingSectionConfig::default(),
+        };
+        let funding_btc_total_balance: Decimal =
+            funding_adjustment.config.minimum_funding_balance_btc;
         let amount_in_btc: Decimal = dec!(1);
         let expected_internal = amount_in_btc;
         let expected_external = expected_internal;
         let (internal, external) = split_withdraw(
             funding_btc_total_balance,
             amount_in_btc,
-            funding_config.minimum_funding_balance_btc,
+            funding_adjustment.config.minimum_funding_balance_btc,
         );
 
         assert_eq!(internal, expected_internal);
@@ -711,18 +660,20 @@ mod tests {
 
     #[test]
     fn split_withdraw_more_funding() {
-        let hedging_funding_config = hedging_funding_config();
-        let funding_config = hedging_funding_config.1;
+        let funding_adjustment = FundingAdjustment {
+            config: FundingSectionConfig::default(),
+            hedging_config: HedgingSectionConfig::default(),
+        };
         let extra_funding = dec!(0.3);
         let funding_btc_total_balance: Decimal =
-            funding_config.minimum_funding_balance_btc + extra_funding;
-        let amount_in_btc: Decimal = funding_config.minimum_funding_balance_btc;
+            funding_adjustment.config.minimum_funding_balance_btc + extra_funding;
+        let amount_in_btc: Decimal = funding_adjustment.config.minimum_funding_balance_btc;
         let expected_internal = amount_in_btc;
         let expected_external = expected_internal + extra_funding;
         let (internal, external) = split_withdraw(
             funding_btc_total_balance,
             amount_in_btc,
-            funding_config.minimum_funding_balance_btc,
+            funding_adjustment.config.minimum_funding_balance_btc,
         );
 
         assert_eq!(internal, expected_internal);

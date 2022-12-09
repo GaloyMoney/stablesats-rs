@@ -126,22 +126,6 @@ impl OkexTransfers {
             .collect())
     }
 
-    pub async fn is_internal_transfer_pending(&self) -> Result<bool, HedgingError> {
-        let res: bool =
-            sqlx::query_scalar(r#"SELECT count(*) > 0 as is_internal_transfer_pending FROM okex_transfers WHERE action = 'deposit' AND transfer_type = 'internal' AND state = 'pending'"#)
-                .fetch_one(&self.pool)
-                .await?;
-        Ok(res)
-    }
-
-    pub async fn is_external_transfer_pending(&self) -> Result<bool, HedgingError> {
-        let res: bool =
-            sqlx::query_scalar(r#"SELECT count(*) > 0 as is_external_transfer_pending FROM okex_transfers WHERE action = 'deposit' AND transfer_type = 'external' AND state = 'pending'"#)
-                .fetch_one(&self.pool)
-                .await?;
-        Ok(res)
-    }
-
     pub async fn update_external_deposit(
         &self,
         client_id: ClientTransferId,
