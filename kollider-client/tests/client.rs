@@ -12,42 +12,41 @@ fn create_test_client() -> anyhow::Result<KolliderClient> {
 
 #[tokio::test]
 async fn get_products() -> anyhow::Result<()> {
-    if let Ok(client) = create_test_client() {
-        let products = client.get_products().await?;
-        assert_eq!("BTCUSD.PERP", products.btcusd_perp.symbol);
-        println!("products: {:?}", products.btcusd_perp);
-    }
+    let conf = KolliderClientConfig {
+        url: "https://testnet.kollider.xyz/v1".to_string(),
+        ..KolliderClientConfig::default()
+    };
+    let client = KolliderClient::new(conf);
+    let products = client.get_products().await?;
+    assert_eq!("BTCUSD.PERP", products.btcusd_perp.symbol);
     Ok(())
 }
 
 #[tokio::test]
 #[ignore]
 async fn get_user_balances() -> anyhow::Result<()> {
-    if let Ok(client) = create_test_client() {
-        let balance = client.get_user_balances().await?;
-        println!("balance: {:?}", balance);
-    }
+    let client = create_test_client().expect("Could not create test-client");
+    let balance = client.get_user_balances().await?;
+    dbg!(balance);
     Ok(())
 }
 
 #[tokio::test]
 #[ignore]
 async fn place_order() -> anyhow::Result<()> {
-    if let Ok(client) = create_test_client() {
-        let order = client.place_order(KolliderOrderSide::Sell, 10, 700).await?;
-        let open_orders = client.get_open_orders().await?;
-        assert_eq!(10, order.quantity);
-        dbg!("order: {} ", open_orders);
-    }
+    let client = create_test_client().expect("Could not create test-client");
+    let order = client.place_order(KolliderOrderSide::Sell, 10, 700).await?;
+    let open_orders = client.get_open_orders().await?;
+    assert_eq!(10, order.quantity);
+    dbg!("order: {} ", open_orders);
     Ok(())
 }
 
 #[tokio::test]
 #[ignore]
 async fn get_open_positions() -> anyhow::Result<()> {
-    if let Ok(client) = create_test_client() {
-        let pos = client.get_open_positions().await?;
-        dbg!(pos);
-    }
+    let client = create_test_client().expect("Could not create test-client");
+    let pos = client.get_open_positions().await?;
+    dbg!(pos);
     Ok(())
 }
