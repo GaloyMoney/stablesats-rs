@@ -435,7 +435,7 @@ impl OkexClient {
                 "2" => "success".to_string(),  // withdraw success
                 "7" => "pending".to_string(),  // approved
                 "10" => "pending".to_string(), // waiting transfer
-                "4" | "5" | "6" | "8" | "9" | "12" => "pending".to_string(), // waiting mannual review
+                "4" | "5" | "6" | "8" | "9" | "12" => "pending".to_string(), // waiting manual review
                 _ => "failed".to_string(),
             },
             transaction_id: withdrawal_data.tx_id,
