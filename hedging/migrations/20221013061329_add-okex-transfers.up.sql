@@ -3,10 +3,9 @@ CREATE TABLE okex_transfers (
   client_transfer_id VARCHAR(32) PRIMARY KEY,
   correlation_id UUID NOT NULL,
   
-  action VARCHAR(20) NOT NULL CHECK (action in ('withdraw-all', 'withdraw', 'deposit')),
-  transfer_type VARCHAR(20) NOT NULL CHECK (transfer_type in ('internal', 'external')),
+  action VARCHAR(32) NOT NULL CHECK (action in ('transfer-trading-to-funding', 'transfer-funding-to-trading', 'deposit', 'withdraw')),
 
-  currency VARCHAR(20) NOT NULL,
+  currency VARCHAR(16) NOT NULL,
   amount NUMERIC NOT NULL,
   fee NUMERIC NOT NULL,
 
