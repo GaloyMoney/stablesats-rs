@@ -48,13 +48,12 @@ pub async fn execute(
     }
 
     let mut execute_transfer_sweep = false;
-    for id in okex_transfers.open_non_external_deposit().await? {
+    for id in okex_transfers.get_pending_transfers().await? {
         match okex.transfer_state_by_client_id(id.clone()).await {
             Ok(details) => {
-                okex_transfers.update_non_external_deposit(details).await?;
+                okex_transfers.update_transfer(details).await?;
             }
-            Err(OkexClientError::WithdrawalIdDoesNotExist)
-            | Err(OkexClientError::ParameterClientIdError) => {
+            Err(OkexClientError::ParameterClientIdError) => {
                 okex_transfers.mark_as_lost(id).await?;
                 execute_transfer_sweep = true;
             }
@@ -62,11 +61,11 @@ pub async fn execute(
         }
     }
 
-    for (id, address, amount, created_at) in okex_transfers.open_external_deposit().await? {
+    for (id, address, amount, created_at) in okex_transfers.get_pending_deposits().await? {
         match okex.fetch_deposit(address, amount).await {
             Ok(details) => {
                 okex_transfers
-                    .update_external_deposit(id, details.state, details.transaction_id)
+                    .update_deposit(id, details.state, details.transaction_id)
                     .await?;
             }
             Err(OkexClientError::UnexpectedResponse { .. }) => {
@@ -74,6 +73,20 @@ pub async fn execute(
                     okex_transfers.mark_as_lost(id).await?;
                     execute_transfer_sweep = true;
                 }
+            }
+            Err(res) => return Err(res.into()),
+        }
+    }
+
+    for id in okex_transfers.get_pending_withdrawals().await? {
+        match okex.fetch_withdrawal_by_client_id(id.clone()).await {
+            Ok(details) => {
+                okex_transfers.update_withdrawal(details).await?;
+            }
+            Err(OkexClientError::WithdrawalIdDoesNotExist)
+            | Err(OkexClientError::ParameterClientIdError) => {
+                okex_transfers.mark_as_lost(id).await?;
+                execute_transfer_sweep = true;
             }
             Err(res) => return Err(res.into()),
         }
