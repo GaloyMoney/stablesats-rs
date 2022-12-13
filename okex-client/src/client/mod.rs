@@ -407,6 +407,43 @@ impl OkexClient {
     }
 
     #[instrument(skip(self), err)]
+    pub async fn fetch_withdrawal_by_client_id(
+        &self,
+        client_id: ClientTransferId,
+    ) -> Result<WithdrawalStatus, OkexClientError> {
+        let static_request_path = "/api/v5/asset/withdrawal-history?ccy=BTC&clientId=";
+        let request_path = format!("{}{}", static_request_path, client_id.0);
+        let headers = self.get_request_headers(&request_path)?;
+        let response = self
+            .rate_limit_client(static_request_path)
+            .await
+            .get(Self::url_for_path(&request_path))
+            .headers(headers)
+            .send()
+            .await?;
+
+        let withdrawal_data =
+            Self::extract_response_data::<WithdrawalHistoryData>(response).await?;
+
+        Ok(WithdrawalStatus {
+            state: match &withdrawal_data.state[..] {
+                "-3" => "pending".to_string(), // canceling
+                "-2" => "failed".to_string(),  // canceled
+                "-1" => "failed".to_string(),  // failed
+                "0" => "pending".to_string(),  // waiting withdrawal
+                "1" => "pending".to_string(),  // withdrawing
+                "2" => "success".to_string(),  // withdraw success
+                "7" => "pending".to_string(),  // approved
+                "10" => "pending".to_string(), // waiting transfer
+                "4" | "5" | "6" | "8" | "9" | "12" => "pending".to_string(), // waiting mannual review
+                _ => "failed".to_string(),
+            },
+            transaction_id: withdrawal_data.tx_id,
+            client_id: withdrawal_data.client_id,
+        })
+    }
+
+    #[instrument(skip(self), err)]
     pub async fn place_order(
         &self,
         id: ClientOrderId,

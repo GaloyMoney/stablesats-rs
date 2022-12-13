@@ -136,6 +136,21 @@ pub struct DepositHistoryData {
 
 #[derive(Deserialize, Debug)]
 #[serde(rename_all = "camelCase")]
+pub struct WithdrawalHistoryData {
+    pub ccy: String,
+    pub chain: String,
+    pub amt: String,
+    pub ts: String,
+    pub from: String,
+    pub to: String,
+    pub tx_id: String,
+    pub state: String,
+    pub wd_id: String,
+    pub client_id: String,
+}
+
+#[derive(Deserialize, Debug)]
+#[serde(rename_all = "camelCase")]
 pub struct OrderData {
     pub cl_ord_id: String,
     pub ord_id: String,

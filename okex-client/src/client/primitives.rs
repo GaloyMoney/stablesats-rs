@@ -135,6 +135,13 @@ pub struct DepositStatus {
 }
 
 #[derive(Debug)]
+pub struct WithdrawalStatus {
+    pub state: String,
+    pub transaction_id: String,
+    pub client_id: String,
+}
+
+#[derive(Debug)]
 pub struct OrderId {
     pub value: String,
 }
