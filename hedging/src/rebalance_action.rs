@@ -174,19 +174,19 @@ fn return_deposit_action(
     amount_in_btc: Decimal,
     minimum_funding_balance_btc: Decimal,
 ) -> RebalanceAction {
-    let internal_transfer_amount = std::cmp::min(funding_btc_total_balance, amount_in_btc);
-    let new_funding_balance = funding_btc_total_balance - internal_transfer_amount;
+    let internal_amount = std::cmp::min(funding_btc_total_balance, amount_in_btc);
+    let new_funding_balance = funding_btc_total_balance - internal_amount;
     let funding_refill = std::cmp::max(
         Decimal::ZERO,
         minimum_funding_balance_btc - new_funding_balance,
     );
-    let missing_amount = amount_in_btc - internal_transfer_amount;
-    let external_transfer_amount = missing_amount + funding_refill;
+    let missing_amount = amount_in_btc - internal_amount;
+    let external_amount = missing_amount + funding_refill;
 
-    if !internal_transfer_amount.is_zero() {
-        RebalanceAction::TransferFundingToTrading(internal_transfer_amount)
-    } else if !external_transfer_amount.is_zero() {
-        RebalanceAction::OnchainDeposit(external_transfer_amount)
+    if !internal_amount.is_zero() {
+        RebalanceAction::TransferFundingToTrading(internal_amount)
+    } else if !external_amount.is_zero() {
+        RebalanceAction::OnchainDeposit(external_amount)
     } else {
         RebalanceAction::DoNothing
     }
@@ -197,16 +197,16 @@ fn return_withdraw_action(
     amount_in_btc: Decimal,
     minimum_funding_balance_btc: Decimal,
 ) -> RebalanceAction {
-    let internal_transfer_amount = amount_in_btc;
-    let external_transfer_amount = std::cmp::max(
+    let internal_amount = amount_in_btc;
+    let external_amount = std::cmp::max(
         Decimal::ZERO,
         amount_in_btc + funding_btc_total_balance - minimum_funding_balance_btc,
     );
 
-    if !internal_transfer_amount.is_zero() {
-        RebalanceAction::TransferTradingToFunding(internal_transfer_amount)
-    } else if !external_transfer_amount.is_zero() {
-        RebalanceAction::OnchainWithdraw(external_transfer_amount)
+    if !internal_amount.is_zero() {
+        RebalanceAction::TransferTradingToFunding(internal_amount)
+    } else if !external_amount.is_zero() {
+        RebalanceAction::OnchainWithdraw(external_amount)
     } else {
         RebalanceAction::DoNothing
     }
@@ -223,16 +223,16 @@ mod tests {
         amount_in_btc: Decimal,
         minimum_funding_balance_btc: Decimal,
     ) -> (Decimal, Decimal) {
-        let internal_transfer_amount = std::cmp::min(funding_btc_total_balance, amount_in_btc);
-        let new_funding_balance = funding_btc_total_balance - internal_transfer_amount;
+        let internal_amount = std::cmp::min(funding_btc_total_balance, amount_in_btc);
+        let new_funding_balance = funding_btc_total_balance - internal_amount;
         let funding_refill = std::cmp::max(
             Decimal::ZERO,
             minimum_funding_balance_btc - new_funding_balance,
         );
-        let missing_amount = amount_in_btc - internal_transfer_amount;
-        let external_transfer_amount = missing_amount + funding_refill;
+        let missing_amount = amount_in_btc - internal_amount;
+        let external_amount = missing_amount + funding_refill;
 
-        (internal_transfer_amount, external_transfer_amount)
+        (internal_amount, external_amount)
     }
 
     fn split_withdraw(
@@ -240,13 +240,13 @@ mod tests {
         amount_in_btc: Decimal,
         minimum_funding_balance_btc: Decimal,
     ) -> (Decimal, Decimal) {
-        let internal_transfer_amount = amount_in_btc;
-        let external_transfer_amount = std::cmp::max(
+        let internal_amount = amount_in_btc;
+        let external_amount = std::cmp::max(
             Decimal::ZERO,
             amount_in_btc + funding_btc_total_balance - minimum_funding_balance_btc,
         );
 
-        (internal_transfer_amount, external_transfer_amount)
+        (internal_amount, external_amount)
     }
 
     #[test]
