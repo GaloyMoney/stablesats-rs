@@ -1,25 +1,5 @@
 {
   "db": "PostgreSQL",
-  "067fc789bdeb59ea4d9f271336cee94df869e51760eba4653b1bec2cc37d44c2": {
-    "describe": {
-      "columns": [
-        {
-          "name": "client_transfer_id",
-          "ordinal": 0,
-          "type_info": "Varchar"
-        }
-      ],
-      "nullable": [
-        false
-      ],
-      "parameters": {
-        "Left": [
-          "Text"
-        ]
-      }
-    },
-    "query": "SELECT client_transfer_id FROM okex_transfers WHERE state = 'pending' AND lost = false AND transfer_type = $1"
-  },
   "0eb7034d6a8048df9d45a2950feb3031fbc4024b17547e89f3370fa9987f25a5": {
     "describe": {
       "columns": [],
@@ -79,24 +59,6 @@
     },
     "query": "SELECT client_order_id FROM okex_orders WHERE complete = false"
   },
-  "55fb296a1a8c842015d77ecf026240409e37416b1bc726a14225348774768f3f": {
-    "describe": {
-      "columns": [
-        {
-          "name": "client_transfer_id",
-          "ordinal": 0,
-          "type_info": "Varchar"
-        }
-      ],
-      "nullable": [
-        false
-      ],
-      "parameters": {
-        "Left": []
-      }
-    },
-    "query": "SELECT client_transfer_id FROM okex_transfers WHERE (action != 'deposit' OR transfer_type != 'external') AND state = 'pending'"
-  },
   "774f260ef3109c246642f50d09384471a5bb9a7c59203fb5c1d7d9eca1a7f5dc": {
     "describe": {
       "columns": [
@@ -118,43 +80,21 @@
     },
     "query": "INSERT INTO synth_usd_liability (amount, correlation_id) \n  SELECT $1, $2\n  WHERE NOT EXISTS (\n    SELECT FROM (\n      SELECT amount FROM synth_usd_liability ORDER BY idx DESC LIMIT 1\n    ) last_row WHERE amount = $1\n  )\nRETURNING amount;\n"
   },
-  "7aee83d3388ea3ce2613ac1a4428bb7f219647d4ba07a372af66012ad62e891f": {
+  "96f7ee6322ab9ae4a1a69d230e50dcbec45afacfbbf811d90078643fa67cd772": {
     "describe": {
-      "columns": [
-        {
-          "name": "client_transfer_id",
-          "ordinal": 0,
-          "type_info": "Varchar"
-        },
-        {
-          "name": "transfer_to",
-          "ordinal": 1,
-          "type_info": "Varchar"
-        },
-        {
-          "name": "amount",
-          "ordinal": 2,
-          "type_info": "Numeric"
-        },
-        {
-          "name": "created_at",
-          "ordinal": 3,
-          "type_info": "Timestamptz"
-        }
-      ],
-      "nullable": [
-        false,
-        true,
-        false,
-        false
-      ],
+      "columns": [],
+      "nullable": [],
       "parameters": {
-        "Left": []
+        "Left": [
+          "Varchar",
+          "Varchar",
+          "Text"
+        ]
       }
     },
-    "query": "SELECT client_transfer_id, transfer_to, amount, created_at FROM okex_transfers WHERE action = 'deposit' AND transfer_type = 'external' AND state = 'pending'"
+    "query": "UPDATE okex_transfers SET lost = false, transfer_id = $1, state = $2 WHERE client_transfer_id = $3"
   },
-  "7bf9f32637678c7ff4d18bf748bad288aaa36e1c6f27a29e4a631b15f2f59e26": {
+  "9f0ad7bff9fc100811e93f38ee7eff83114f092eee6971a1a15586597beb61f2": {
     "describe": {
       "columns": [],
       "nullable": [],
@@ -162,7 +102,6 @@
         "Left": [
           "Varchar",
           "Uuid",
-          "Varchar",
           "Varchar",
           "Varchar",
           "Numeric",
@@ -179,21 +118,7 @@
         ]
       }
     },
-    "query": "INSERT INTO okex_transfers (\n                client_transfer_id, \n                correlation_id, \n                action, \n                transfer_type, \n                currency,\n                amount,\n                fee,\n                transfer_from,\n                transfer_to,\n                target_usd_exposure,\n                current_usd_exposure,\n                trading_btc_used_balance,\n                trading_btc_total_balance,\n                current_usd_btc_price,\n                funding_btc_total_balance,\n                state\n            ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16)"
-  },
-  "96f7ee6322ab9ae4a1a69d230e50dcbec45afacfbbf811d90078643fa67cd772": {
-    "describe": {
-      "columns": [],
-      "nullable": [],
-      "parameters": {
-        "Left": [
-          "Varchar",
-          "Varchar",
-          "Text"
-        ]
-      }
-    },
-    "query": "UPDATE okex_transfers SET lost = false, transfer_id = $1, state = $2 WHERE client_transfer_id = $3"
+    "query": "INSERT INTO okex_transfers (\n                client_transfer_id, \n                correlation_id, \n                action, \n                currency,\n                amount,\n                fee,\n                transfer_from,\n                transfer_to,\n                target_usd_exposure,\n                current_usd_exposure,\n                trading_btc_used_balance,\n                trading_btc_total_balance,\n                current_usd_btc_price,\n                funding_btc_total_balance,\n                state\n            ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)"
   },
   "a3364ac9e48a6dc9b7cf1b02d70b454ccc1e20bc1528ed1896e8411b30ae9d00": {
     "describe": {
@@ -261,6 +186,24 @@
     },
     "query": "SELECT amount FROM synth_usd_liability ORDER BY idx DESC LIMIT 1"
   },
+  "d393086f855e0eb9bae8575eabf08e0882c0dbaaa7235c8ef9f94954c1f4a9a4": {
+    "describe": {
+      "columns": [
+        {
+          "name": "client_transfer_id",
+          "ordinal": 0,
+          "type_info": "Varchar"
+        }
+      ],
+      "nullable": [
+        false
+      ],
+      "parameters": {
+        "Left": []
+      }
+    },
+    "query": "SELECT client_transfer_id FROM okex_transfers WHERE action = 'withdraw' AND state = 'pending'"
+  },
   "dc6913735a5493821cc85a6a069277431024ccdffbc76d09f11629e818f54df2": {
     "describe": {
       "columns": [],
@@ -270,5 +213,77 @@
       }
     },
     "query": "DELETE FROM okex_orders WHERE lost = true AND complete = false AND created_at < now() - interval '1 day'"
+  },
+  "ec7ba61bfab2d7ce85f306efac3a90a1fc514ce949e1984fe518b46e2c4a3612": {
+    "describe": {
+      "columns": [
+        {
+          "name": "client_transfer_id",
+          "ordinal": 0,
+          "type_info": "Varchar"
+        }
+      ],
+      "nullable": [
+        false
+      ],
+      "parameters": {
+        "Left": []
+      }
+    },
+    "query": "SELECT client_transfer_id FROM okex_transfers WHERE state = 'pending' AND lost = false"
+  },
+  "f0d88cf22a894b17539514bc1e8dfc412dcc36212cccd5f99a6715b057f0fb52": {
+    "describe": {
+      "columns": [
+        {
+          "name": "client_transfer_id",
+          "ordinal": 0,
+          "type_info": "Varchar"
+        }
+      ],
+      "nullable": [
+        false
+      ],
+      "parameters": {
+        "Left": []
+      }
+    },
+    "query": "SELECT client_transfer_id FROM okex_transfers WHERE action IN ('transfer-trading-to-funding', 'transfer-funding-to-trading') AND state = 'pending'"
+  },
+  "f7c8576f2bd7f5f9124bd5eb7f959064f6d3bc255aa827dc3eb86460b60d2881": {
+    "describe": {
+      "columns": [
+        {
+          "name": "client_transfer_id",
+          "ordinal": 0,
+          "type_info": "Varchar"
+        },
+        {
+          "name": "transfer_to",
+          "ordinal": 1,
+          "type_info": "Varchar"
+        },
+        {
+          "name": "amount",
+          "ordinal": 2,
+          "type_info": "Numeric"
+        },
+        {
+          "name": "created_at",
+          "ordinal": 3,
+          "type_info": "Timestamptz"
+        }
+      ],
+      "nullable": [
+        false,
+        true,
+        false,
+        false
+      ],
+      "parameters": {
+        "Left": []
+      }
+    },
+    "query": "SELECT client_transfer_id, transfer_to, amount, created_at FROM okex_transfers WHERE action = 'deposit' AND state = 'pending'"
   }
 }
