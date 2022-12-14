@@ -1,3 +1,25 @@
+# [stablesats release v0.3.18](https://github.com/GaloyMoney/stablesats/releases/tag/v0.3.18)
+
+
+### Bug Fixes
+
+- Use explicit is_empty() for clarity (#206)
+
+### Miscellaneous Tasks
+
+- Limit galoy tx poll to 100
+- Bump derive_builder from 0.11.2 to 0.12.0 (#213)
+- Bump tonic-build from 0.8.2 to 0.8.4 (#207)
+- Bump clap from 4.0.27 to 4.0.29 (#208)
+- Bump tokio-tungstenite from 0.17.2 to 0.18.0 (#209)
+- Bump axum from 0.6.0 to 0.6.1 (#210)
+- Bump governor from 0.5.0 to 0.5.1 (#211)
+- Bump axum-core from 0.2.9 to 0.3.0 (#202)
+- Bump axum from 0.5.17 to 0.6.0 (#201)
+- Bump tonic from 0.8.2 to 0.8.3 (#204)
+- Bump serde from 1.0.147 to 1.0.148 (#203)
+- Bump prost from 0.11.2 to 0.11.3 (#205)
+
 # [stablesats release v0.3.17](https://github.com/GaloyMoney/stablesats/releases/tag/v0.3.17)
 
 
