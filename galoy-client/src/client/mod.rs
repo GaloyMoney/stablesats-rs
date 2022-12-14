@@ -180,7 +180,7 @@ impl GaloyClient {
         cursor: Option<TxCursor>,
     ) -> Result<GaloyTransactions, GaloyClientError> {
         let variables = stablesats_transactions_list::Variables {
-            last: Some(200),
+            last: Some(100),
             before: cursor.map(|cursor| cursor.0),
         };
 
