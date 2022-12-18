@@ -1,3 +1,13 @@
+# [stablesats release v0.3.19](https://github.com/GaloyMoney/stablesats/releases/tag/v0.3.19)
+
+
+### Miscellaneous Tasks
+
+- Increase stale price duration
+- Bump tokio from 1.22.0 to 1.23.0 (#215)
+- Bump data-encoding from 2.3.2 to 2.3.3 (#217)
+- Bump serde from 1.0.148 to 1.0.150 (#219)
+
 # [stablesats release v0.3.18](https://github.com/GaloyMoney/stablesats/releases/tag/v0.3.18)
 
 
