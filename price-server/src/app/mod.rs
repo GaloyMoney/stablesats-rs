@@ -27,12 +27,12 @@ impl PriceApp {
         tokio::spawn(async move {
             while let Some(check) = health_check_trigger.next().await {
                 check
-                    .send(subscriber.healthy(Duration::seconds(20)).await)
+                    .send(subscriber.healthy(Duration::seconds(200)).await)
                     .expect("Couldn't send response");
             }
         });
 
-        let price_cache = ExchangePriceCache::new(Duration::seconds(30));
+        let price_cache = ExchangePriceCache::new(Duration::seconds(300));
         let fee_calculator = FeeCalculator::new(fee_calc_cfg);
         let app = Self {
             price_cache: price_cache.clone(),
