@@ -1,3 +1,5 @@
+pub mod config;
+
 use chrono::Duration;
 use opentelemetry::trace::{SpanContext, TraceContextExt};
 use std::sync::Arc;
@@ -13,6 +15,7 @@ use shared::{
 };
 
 use crate::currency::*;
+pub use config::*;
 
 #[derive(Error, Debug)]
 pub enum ExchangePriceCacheError {

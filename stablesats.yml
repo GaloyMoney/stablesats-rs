@@ -3,6 +3,7 @@
 # pubsub:
   # host: localhost
   # rate_limit_duration: 2
+  # last_msg_delay: 20
 
 # galoy:
 #   api: galoy-endpoint
@@ -32,6 +33,8 @@
   #   base_fee_rate: 0.0005
   #   immediate_fee_rate: 0.0005
   #   delayed_fee_rate: 0.0007
+  # price_cache:
+  #   stale_after: 30
 
 # okex_price_feed:
   # enabled: true

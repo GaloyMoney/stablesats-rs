@@ -12,4 +12,6 @@ pub enum PriceAppError {
     SubscriberError(#[from] SubscriberError),
     #[error("PriceAppError - ExchangePriceCacheError: {0}")]
     ExchangePriceCacheError(#[from] ExchangePriceCacheError),
+    #[error("PriceAppError - StdDurationConversionError: {0}")]
+    StdDurationConversionError(#[from] chrono::OutOfRangeError),
 }

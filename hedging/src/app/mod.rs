@@ -1,5 +1,6 @@
 mod config;
 
+use chrono::Duration;
 use futures::stream::StreamExt;
 use opentelemetry::{propagation::TextMapPropagator, sdk::propagation::TraceContextPropagator};
 use sqlxmq::OwnedHandle;
@@ -50,10 +51,19 @@ impl HedgingApp {
         let liability_sub =
             Self::spawn_synth_usd_listener(pubsub_config.clone(), synth_usd_liability.clone())
                 .await?;
-        let position_sub =
-            Self::spawn_okex_position_listener(pubsub_config, pool.clone(), synth_usd_liability)
-                .await?;
-        Self::spawn_health_checker(health_check_trigger, liability_sub, position_sub).await;
+        let position_sub = Self::spawn_okex_position_listener(
+            pubsub_config.clone(),
+            pool.clone(),
+            synth_usd_liability,
+        )
+        .await?;
+        Self::spawn_health_checker(
+            health_check_trigger,
+            liability_sub,
+            position_sub,
+            pubsub_config,
+        )
+        .await;
         Self::spawn_okex_polling(pool, okex_poll_delay).await?;
         let app = HedgingApp {
             _runner: job_runner,
@@ -139,10 +149,12 @@ impl HedgingApp {
         mut health_check_trigger: HealthCheckTrigger,
         liability_sub: Subscriber,
         position_sub: Subscriber,
+        pubsub_config: PubSubConfig,
     ) {
         tokio::spawn(async move {
             while let Some(check) = health_check_trigger.next().await {
-                let duration = chrono::Duration::seconds(20);
+                let duration = Duration::from_std(pubsub_config.last_msg_delay)
+                    .expect("Failed to convert std::time::Duration to chrono::time::Duration");
                 match (
                     liability_sub.healthy(duration).await,
                     position_sub.healthy(chrono::Duration::minutes(5)).await,
