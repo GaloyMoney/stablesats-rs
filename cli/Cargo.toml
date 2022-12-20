@@ -17,7 +17,7 @@ hedging = { path = "../hedging" }
 okex-price = { path = "../okex-price" }
 kollider-price = { path = "../kollider-price" }
 
-anyhow = "1.0.66"
+anyhow = "1.0.68"
 clap = { version = "4.0", features = ["derive", "env"] }
 serde = { version = "1.0.150", features = ["derive"] }
 serde_yaml = "0.9.16"
