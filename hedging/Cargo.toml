@@ -30,5 +30,5 @@ uuid = "1.2.2"
 serde_with = "2.1.0"
 
 [dev-dependencies]
-anyhow = "1.0.66"
+anyhow = "1.0.68"
 serial_test = "*"
