@@ -1,3 +1,14 @@
+# [stablesats release v0.3.20](https://github.com/GaloyMoney/stablesats/releases/tag/v0.3.20)
+
+
+### Miscellaneous Tasks
+
+- Bump anyhow from 1.0.66 to 1.0.68 (#221)
+- Bump serde_yaml from 0.9.14 to 0.9.16 (#220)
+- Bump thiserror from 1.0.37 to 1.0.38 (#222)
+- Bump serial_test from 0.9.0 to 0.10.0 (#223)
+- Bump serde_json from 1.0.89 to 1.0.91 (#224)
+
 # [stablesats release v0.3.19](https://github.com/GaloyMoney/stablesats/releases/tag/v0.3.19)
 
 
