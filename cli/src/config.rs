@@ -7,7 +7,9 @@ use galoy_client::GaloyClientConfig;
 use hedging::HedgingAppConfig;
 use okex_client::OkexClientConfig;
 use okex_price::PriceFeedConfig;
-use price_server::{ExchangePriceCacheConfig, FeeCalculatorConfig, PriceServerConfig};
+use price_server::{
+    ExchangePriceCacheConfig, FeeCalculatorConfig, PriceServerConfig, PriceServerHealthCheckConfig,
+};
 use shared::pubsub::PubSubConfig;
 use user_trades::UserTradesConfig;
 
@@ -78,6 +80,8 @@ pub struct PriceServerWrapper {
     #[serde(default = "bool_true")]
     pub enabled: bool,
     #[serde(default)]
+    pub health: PriceServerHealthCheckConfig,
+    #[serde(default)]
     pub server: PriceServerConfig,
     #[serde(default)]
     pub fees: FeeCalculatorConfig,
@@ -89,6 +93,7 @@ impl Default for PriceServerWrapper {
         Self {
             enabled: true,
             server: PriceServerConfig::default(),
+            health: PriceServerHealthCheckConfig::default(),
             fees: FeeCalculatorConfig::default(),
             price_cache: ExchangePriceCacheConfig::default(),
         }

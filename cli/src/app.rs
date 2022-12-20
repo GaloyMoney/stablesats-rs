@@ -140,6 +140,7 @@ async fn run_cmd(
             let _ = price_send.try_send(
                 price_server::run(
                     recv,
+                    price_server.health,
                     price_server.server,
                     price_server.fees,
                     pubsub,

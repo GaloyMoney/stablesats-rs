@@ -14,9 +14,6 @@ pub struct PubSubConfig {
     #[serde_as(as = "serde_with::DurationSeconds<u64>")]
     #[serde(default = "default_throttle")]
     pub rate_limit_interval: Duration,
-    #[serde_as(as = "serde_with::DurationSeconds<u64>")]
-    #[serde(default = "default_last_msg_duration")]
-    pub last_msg_delay: Duration,
 }
 
 #[derive(Clone, Serialize, Deserialize, Debug)]
@@ -41,7 +38,6 @@ impl Default for PubSubConfig {
             password: None,
             sentinel: None,
             rate_limit_interval: default_throttle(),
-            last_msg_delay: default_last_msg_duration(),
         }
     }
 }
@@ -60,10 +56,6 @@ fn default_throttle() -> Duration {
 
 fn default_service_name() -> String {
     "mymaster".to_string()
-}
-
-fn default_last_msg_duration() -> Duration {
-    Duration::from_secs(20)
 }
 
 impl From<PubSubConfig> for RedisConfig {

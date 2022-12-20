@@ -3,7 +3,6 @@
 # pubsub:
   # host: localhost
   # rate_limit_duration: 2
-  # last_msg_delay: 20
 
 # galoy:
 #   api: galoy-endpoint
@@ -15,6 +14,8 @@
 #     migrate_on_start: true
 #     balance_publish_frequency: 5
 #     galoy_poll_frequency: 5
+#     unhealthy_msg_interval_liability: 20
+#     unhealthy_msg_interval_position: 20
 #
 # hedging:
 #   enabled: true
@@ -29,6 +30,8 @@
   # enabled: true
   # server:
   #   listen_port: 3325
+  # health:
+  #   unhealthy_msg_interval_price: 20
   # fees:
   #   base_fee_rate: 0.0005
   #   immediate_fee_rate: 0.0005

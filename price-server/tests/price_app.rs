@@ -30,6 +30,7 @@ async fn price_app() -> anyhow::Result<()> {
     let (_, recv) = futures::channel::mpsc::unbounded();
     let app = PriceApp::run(
         recv,
+        PriceServerHealthCheckConfig::default(),
         FeeCalculatorConfig {
             base_fee_rate: dec!(0.001),
             immediate_fee_rate: dec!(0.01),

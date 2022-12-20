@@ -1,3 +1,4 @@
+mod config;
 mod error;
 
 use chrono::Duration;
@@ -10,6 +11,7 @@ use super::exchange_price_cache::ExchangePriceCache;
 
 use crate::ExchangePriceCacheConfig;
 pub use crate::{currency::*, fee_calculator::*};
+pub use config::*;
 pub use error::*;
 
 pub struct PriceApp {
@@ -20,6 +22,7 @@ pub struct PriceApp {
 impl PriceApp {
     pub async fn run(
         mut health_check_trigger: HealthCheckTrigger,
+        health_check_cfg: PriceServerHealthCheckConfig,
         fee_calc_cfg: FeeCalculatorConfig,
         pubsub_cfg: PubSubConfig,
         price_cache_config: ExchangePriceCacheConfig,
@@ -31,9 +34,7 @@ impl PriceApp {
                 check
                     .send(
                         subscriber
-                            .healthy(Duration::from_std(pubsub_cfg.last_msg_delay).expect(
-                                "Failed to convert std::time::Duration to chrono::time::Duration",
-                            ))
+                            .healthy(health_check_cfg.unhealthy_msg_interval_price)
                             .await,
                     )
                     .expect("Couldn't send response");
