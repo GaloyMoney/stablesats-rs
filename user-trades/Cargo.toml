@@ -11,7 +11,7 @@ fail-on-warnings = []
 shared = { path = "../shared", package = "stablesats-shared" }
 galoy_client = { path = "../galoy-client", package = "galoy-client" }
 
-thiserror = "1.0.37"
+thiserror = "1.0.38"
 chrono = "0.4"
 tokio = "1.23.0"
 sqlx = { version = "0.6", features = [ "offline", "runtime-tokio-rustls", "postgres", "decimal", "uuid", "chrono", "json" ] }
