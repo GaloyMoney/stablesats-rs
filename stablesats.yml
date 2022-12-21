@@ -20,8 +20,10 @@
 #   config:
 #     migrate_on_start: true
 #     okex_poll_frequency: 10
-#     unhealthy_msg_interval_liability: 20
-#     unhealthy_msg_interval_position: 20
+#     health:
+#       unhealthy_msg_interval_liability: 20
+#       unhealthy_msg_interval_position: 20
+#       unhealthy_msg_interval_price: 20
 #
 #   hedging:
 #     low_bound_ratio_shorting: 0.98

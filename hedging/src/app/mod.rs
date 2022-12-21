@@ -36,8 +36,7 @@ impl HedgingApp {
             pg_con,
             migrate_on_start,
             okex_poll_frequency: okex_poll_delay,
-            unhealthy_msg_interval_liability,
-            unhealthy_msg_interval_position,
+            health: health_cfg,
             hedging: hedging_config,
             funding: funding_config,
             ..
@@ -91,8 +90,7 @@ impl HedgingApp {
         .await?;
         Self::spawn_health_checker(
             health_check_trigger,
-            unhealthy_msg_interval_liability,
-            unhealthy_msg_interval_position,
+            health_cfg,
             liability_sub,
             position_sub,
             price_sub,
@@ -250,8 +248,7 @@ impl HedgingApp {
 
     async fn spawn_health_checker(
         mut health_check_trigger: HealthCheckTrigger,
-        unhealthy_msg_interval_liability: chrono::Duration,
-        unhealthy_msg_interval_position: chrono::Duration,
+        health_cfg: HedgingAppHealthConfig,
         liability_sub: Subscriber,
         position_sub: Subscriber,
         price_sub: Subscriber,
@@ -260,10 +257,14 @@ impl HedgingApp {
             while let Some(check) = health_check_trigger.next().await {
                 match (
                     liability_sub
-                        .healthy(unhealthy_msg_interval_liability)
+                        .healthy(health_cfg.unhealthy_msg_interval_liability)
                         .await,
-                    position_sub.healthy(unhealthy_msg_interval_position).await,
-                    price_sub.healthy(unhealthy_msg_interval_position).await,
+                    position_sub
+                        .healthy(health_cfg.unhealthy_msg_interval_position)
+                        .await,
+                    price_sub
+                        .healthy(health_cfg.unhealthy_msg_interval_price)
+                        .await,
                 ) {
                     (Err(e), _, _) | (_, Err(e), _) | (_, _, Err(e)) => {
                         check.send(Err(e)).expect("Couldn't send response")

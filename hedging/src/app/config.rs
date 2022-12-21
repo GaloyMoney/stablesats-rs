@@ -13,12 +13,8 @@ pub struct HedgingAppConfig {
     #[serde_as(as = "serde_with::DurationSeconds<u64>")]
     #[serde(default = "default_okex_poll_frequency")]
     pub okex_poll_frequency: Duration,
-    #[serde_as(as = "serde_with::DurationSeconds<i64>")]
-    #[serde(default = "default_unhealthy_msg_interval")]
-    pub unhealthy_msg_interval_liability: chrono::Duration,
-    #[serde_as(as = "serde_with::DurationSeconds<i64>")]
-    #[serde(default = "default_unhealthy_msg_interval")]
-    pub unhealthy_msg_interval_position: chrono::Duration,
+    #[serde(default)]
+    pub health: HedgingAppHealthConfig,
 
     #[serde(default)]
     pub hedging: HedgingSectionConfig,
@@ -33,11 +29,34 @@ impl Default for HedgingAppConfig {
             pg_con: "".to_string(),
             migrate_on_start: true,
             okex_poll_frequency: default_okex_poll_frequency(),
-            unhealthy_msg_interval_liability: default_unhealthy_msg_interval(),
-            unhealthy_msg_interval_position: default_unhealthy_msg_interval(),
+            health: HedgingAppHealthConfig::default(),
 
             hedging: HedgingSectionConfig::default(),
             funding: FundingSectionConfig::default(),
+        }
+    }
+}
+
+#[serde_with::serde_as]
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct HedgingAppHealthConfig {
+    #[serde_as(as = "serde_with::DurationSeconds<i64>")]
+    #[serde(default = "default_unhealthy_msg_interval")]
+    pub unhealthy_msg_interval_liability: chrono::Duration,
+    #[serde_as(as = "serde_with::DurationSeconds<i64>")]
+    #[serde(default = "default_unhealthy_msg_interval")]
+    pub unhealthy_msg_interval_position: chrono::Duration,
+    #[serde_as(as = "serde_with::DurationSeconds<i64>")]
+    #[serde(default = "default_unhealthy_msg_interval")]
+    pub unhealthy_msg_interval_price: chrono::Duration,
+}
+
+impl Default for HedgingAppHealthConfig {
+    fn default() -> Self {
+        Self {
+            unhealthy_msg_interval_liability: default_unhealthy_msg_interval(),
+            unhealthy_msg_interval_position: default_unhealthy_msg_interval(),
+            unhealthy_msg_interval_price: default_unhealthy_msg_interval(),
         }
     }
 }
