@@ -927,7 +927,7 @@ dependencies = [
 
 [[package]]
 name = "galoy-client"
-version = "0.3.21"
+version = "0.3.22-dev"
 dependencies = [
  "anyhow",
  "chrono",
@@ -1101,7 +1101,7 @@ dependencies = [
 
 [[package]]
 name = "hedging"
-version = "0.3.21"
+version = "0.3.22-dev"
 dependencies = [
  "anyhow",
  "chrono",
@@ -1397,7 +1397,7 @@ dependencies = [
 
 [[package]]
 name = "kollider-price"
-version = "0.3.21"
+version = "0.3.22-dev"
 dependencies = [
  "anyhow",
  "chrono",
@@ -1619,7 +1619,7 @@ dependencies = [
 
 [[package]]
 name = "okex-client"
-version = "0.3.21"
+version = "0.3.22-dev"
 dependencies = [
  "anyhow",
  "chrono",
@@ -1642,7 +1642,7 @@ dependencies = [
 
 [[package]]
 name = "okex-price"
-version = "0.3.21"
+version = "0.3.22-dev"
 dependencies = [
  "anyhow",
  "chrono",
@@ -1960,7 +1960,7 @@ dependencies = [
 
 [[package]]
 name = "price-server"
-version = "0.3.21"
+version = "0.3.22-dev"
 dependencies = [
  "anyhow",
  "axum-core",
@@ -2836,7 +2836,7 @@ dependencies = [
 
 [[package]]
 name = "stablesats"
-version = "0.3.21"
+version = "0.3.22-dev"
 dependencies = [
  "anyhow",
  "axum",
@@ -2865,7 +2865,7 @@ dependencies = [
 
 [[package]]
 name = "stablesats-shared"
-version = "0.3.21"
+version = "0.3.22-dev"
 dependencies = [
  "anyhow",
  "chrono",
@@ -3483,7 +3483,7 @@ dependencies = [
 
 [[package]]
 name = "user-trades"
-version = "0.3.21"
+version = "0.3.22-dev"
 dependencies = [
  "anyhow",
  "chrono",
