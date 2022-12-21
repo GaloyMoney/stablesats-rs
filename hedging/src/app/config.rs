@@ -118,8 +118,8 @@ pub struct FundingSectionConfig {
     pub high_bound_buffer_percentage: Decimal,
 
     #[serde_as(as = "serde_with::DurationSeconds<i64>")]
-    #[serde(default = "default_deposit_lost_timeout_minutes")]
-    pub deposit_lost_timeout_minutes: chrono::Duration,
+    #[serde(default = "default_deposit_lost_timeout_seconds")]
+    pub deposit_lost_timeout_seconds: chrono::Duration,
 }
 impl Default for FundingSectionConfig {
     fn default() -> Self {
@@ -134,7 +134,7 @@ impl Default for FundingSectionConfig {
             high_bound_ratio_leverage: default_high_bound_ratio_leverage(),
             high_bound_buffer_percentage: default_high_bound_buffer_percentage(),
 
-            deposit_lost_timeout_minutes: default_deposit_lost_timeout_minutes(),
+            deposit_lost_timeout_seconds: default_deposit_lost_timeout_seconds(),
         }
     }
 }
@@ -162,6 +162,6 @@ fn default_high_bound_ratio_leverage() -> Decimal {
 fn default_high_bound_buffer_percentage() -> Decimal {
     dec!(0.9)
 }
-fn default_deposit_lost_timeout_minutes() -> chrono::Duration {
-    chrono::Duration::minutes(60)
+fn default_deposit_lost_timeout_seconds() -> chrono::Duration {
+    chrono::Duration::seconds(3600)
 }

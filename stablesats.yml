@@ -37,7 +37,7 @@
 #     high_safebound_ratio_leverage: 3.0
 #     high_bound_ratio_leverage: 4.0
 #     high_bound_buffer_percentage: 0.9
-#     deposit_lost_timeout_minutes: 60
+#     deposit_lost_timeout_seconds: 3600
 
 # okex:
 #   api_key: ""

@@ -69,7 +69,7 @@ pub async fn execute(
                     .await?;
             }
             Err(OkexClientError::UnexpectedResponse { .. }) => {
-                if chrono::Utc::now() - created_at > funding_config.deposit_lost_timeout_minutes {
+                if chrono::Utc::now() - created_at > funding_config.deposit_lost_timeout_seconds {
                     okex_transfers.mark_as_lost(id).await?;
                     execute_transfer_sweep = true;
                 }
