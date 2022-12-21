@@ -1,3 +1,14 @@
+# [stablesats release v0.3.22](https://github.com/GaloyMoney/stablesats/releases/tag/v0.3.22)
+
+
+### Miscellaneous Tasks
+
+- Fix stablesats.yml
+
+### Testing
+
+- Attempt to avoid rate limit
+
 # [stablesats release v0.3.21](https://github.com/GaloyMoney/stablesats/releases/tag/v0.3.21)
 
 
