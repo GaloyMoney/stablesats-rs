@@ -121,9 +121,7 @@ async fn hedging() -> anyhow::Result<()> {
             HedgingAppConfig {
                 pg_con: pg_con.clone(),
                 okex_poll_frequency: std::time::Duration::from_secs(2),
-                ..Default::default(),
-                hedging: HedgingSectionConfig::default(),
-                funding: FundingSectionConfig::default(),
+                ..Default::default()
             },
             okex_client_config(),
             galoy_client_config(),
@@ -138,9 +136,7 @@ async fn hedging() -> anyhow::Result<()> {
                 HedgingAppConfig {
                     pg_con,
                     okex_poll_frequency: std::time::Duration::from_secs(2),
-                    ..Default::default(),
-                    hedging: HedgingSectionConfig::default(),
-                    funding: FundingSectionConfig::default(),
+                    ..Default::default()
                 },
                 okex_client_config(),
                 galoy_client_config(),
