@@ -14,14 +14,15 @@
 #     migrate_on_start: true
 #     balance_publish_frequency: 5
 #     galoy_poll_frequency: 5
-#     unhealthy_msg_interval_liability: 20
-#     unhealthy_msg_interval_position: 20
 #
 # hedging:
 #   enabled: true
 #   config:
 #     migrate_on_start: true
 #     okex_poll_frequency: 10
+#     unhealthy_msg_interval_liability: 20
+#     unhealthy_msg_interval_position: 20
+
 # okex:
 #   api_key: ""
 #   simulated: false
