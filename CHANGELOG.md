@@ -1,3 +1,10 @@
+# [stablesats release v0.3.23](https://github.com/GaloyMoney/stablesats/releases/tag/v0.3.23)
+
+
+### Miscellaneous Tasks
+
+- Add aditional context to health check message
+
 # [stablesats release v0.3.22](https://github.com/GaloyMoney/stablesats/releases/tag/v0.3.22)
 
 
