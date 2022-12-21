@@ -94,6 +94,7 @@ async fn trading_account_balance() -> anyhow::Result<()> {
 
 #[tokio::test]
 #[serial]
+#[ignore = "avoid rate limit"]
 async fn unknown_client_order_id() -> anyhow::Result<()> {
     let client = configured_okex_client().await?;
     let id = ClientOrderId::new();
