@@ -1,3 +1,10 @@
+# [stablesats release v0.3.21](https://github.com/GaloyMoney/stablesats/releases/tag/v0.3.21)
+
+
+### Refactor
+
+- Configure stale_after & last_msg_delay (#225)
+
 # [stablesats release v0.3.20](https://github.com/GaloyMoney/stablesats/releases/tag/v0.3.20)
 
 
