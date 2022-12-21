@@ -4,7 +4,7 @@ use rust_decimal_macros::dec;
 pub use okex_client::BtcUsdSwapContracts;
 pub use shared::payload::{SyntheticCentExposure, SyntheticCentLiability};
 
-use crate::{FundingSectionConfig, HedgingSectionConfig};
+use crate::{adjustment_action::CONTRACT_SIZE_CENTS, FundingSectionConfig, HedgingSectionConfig};
 
 const SATS_PER_BTC: Decimal = dec!(100_000_000);
 
@@ -65,6 +65,11 @@ impl RebalanceAction {
     }
 }
 
+fn round_contract_in_cents(amount_in_cents: Decimal) -> Decimal {
+    let number_of_contract = amount_in_cents / CONTRACT_SIZE_CENTS;
+    number_of_contract.round() * CONTRACT_SIZE_CENTS
+}
+
 fn round_btc(amount_in_btc: Decimal) -> Decimal {
     let amount_in_sats = amount_in_btc * SATS_PER_BTC;
     amount_in_sats.round() / SATS_PER_BTC
@@ -97,42 +102,65 @@ impl FundingAdjustment {
         btc_price_in_cents: Decimal,
         funding_btc_total_balance: Decimal,
     ) -> RebalanceAction {
-        let abs_liability_in_btc = abs_liability_in_cents / btc_price_in_cents;
+        let round_liability_in_cents = round_contract_in_cents(abs_liability_in_cents.into());
+        let abs_liability_in_btc = round_liability_in_cents / btc_price_in_cents;
         let abs_exposure_in_btc =
             Decimal::from(signed_exposure_in_cents).abs() / btc_price_in_cents;
+
         if abs_exposure_in_btc.is_zero()
             && total_collateral_in_btc.is_zero()
             && abs_liability_in_cents > self.hedging_config.minimum_liability_threshold_cents
+            && funding_btc_total_balance.is_zero()
         {
             let new_collateral_in_btc =
                 abs_liability_in_btc / self.config.high_safebound_ratio_leverage;
             let transfer_size_in_btc = round_btc(new_collateral_in_btc - total_collateral_in_btc);
 
-            return_deposit_action(
+            calculate_deposit(
                 funding_btc_total_balance,
                 transfer_size_in_btc,
                 self.config.minimum_funding_balance_btc,
             )
         } else if abs_exposure_in_btc.is_zero()
-            && total_collateral_in_btc > Decimal::ZERO
-            && abs_liability_in_cents >= Decimal::ZERO
-            && abs_liability_in_cents < self.config.minimum_transfer_amount_cents
-        {
-            let transfer_size_in_btc = floor_btc(total_collateral_in_btc);
-
-            return_withdraw_action(
-                funding_btc_total_balance,
-                transfer_size_in_btc,
-                self.config.minimum_funding_balance_btc,
-            )
-        } else if abs_liability_in_btc
-            > total_collateral_in_btc * self.config.high_bound_ratio_leverage
+            && abs_liability_in_cents > self.hedging_config.minimum_liability_threshold_cents
+            && total_collateral_in_btc.is_zero()
+            && !funding_btc_total_balance.is_zero()
         {
             let new_collateral_in_btc =
                 abs_liability_in_btc / self.config.high_safebound_ratio_leverage;
             let transfer_size_in_btc = round_btc(new_collateral_in_btc - total_collateral_in_btc);
 
-            return_deposit_action(
+            calculate_transfer_in(funding_btc_total_balance, transfer_size_in_btc)
+        } else if abs_exposure_in_btc.is_zero()
+            && abs_liability_in_cents >= Decimal::ZERO
+            && abs_liability_in_cents < self.config.minimum_transfer_amount_cents
+            && total_collateral_in_btc > Decimal::ZERO
+        {
+            let transfer_size_in_btc = floor_btc(total_collateral_in_btc);
+
+            calculate_transfer_out(transfer_size_in_btc)
+        } else if abs_exposure_in_btc.is_zero()
+            && abs_liability_in_cents >= Decimal::ZERO
+            && abs_liability_in_cents < self.config.minimum_transfer_amount_cents
+            && total_collateral_in_btc.is_zero()
+            && funding_btc_total_balance > self.config.minimum_funding_balance_btc
+        {
+            let transfer_size_in_btc = floor_btc(total_collateral_in_btc);
+
+            calculate_withdraw(
+                funding_btc_total_balance,
+                transfer_size_in_btc,
+                self.config.minimum_funding_balance_btc,
+            )
+        } else if abs_liability_in_cents > self.hedging_config.minimum_liability_threshold_cents
+            && abs_liability_in_btc
+                > total_collateral_in_btc * self.config.high_bound_ratio_leverage
+        {
+            let new_collateral_in_btc =
+                abs_liability_in_btc / self.config.high_safebound_ratio_leverage;
+            let transfer_size_in_btc = round_btc(new_collateral_in_btc - total_collateral_in_btc);
+
+            calculate_transfer_in_deposit(
                 funding_btc_total_balance,
                 transfer_size_in_btc,
                 self.config.minimum_funding_balance_btc,
@@ -144,7 +172,7 @@ impl FundingAdjustment {
                 abs_exposure_in_btc / self.config.low_safebound_ratio_leverage;
             let transfer_size_in_btc = floor_btc(total_collateral_in_btc - new_collateral_in_btc);
 
-            return_withdraw_action(
+            calculate_transfer_out_withdraw(
                 funding_btc_total_balance,
                 transfer_size_in_btc,
                 self.config.minimum_funding_balance_btc,
@@ -158,7 +186,7 @@ impl FundingAdjustment {
                 abs_exposure_in_btc / self.config.high_safebound_ratio_leverage;
             let transfer_size_in_btc = round_btc(new_collateral_in_btc - total_collateral_in_btc);
 
-            return_deposit_action(
+            calculate_transfer_in_deposit(
                 funding_btc_total_balance,
                 transfer_size_in_btc,
                 self.config.minimum_funding_balance_btc,
@@ -169,7 +197,7 @@ impl FundingAdjustment {
     }
 }
 
-fn return_deposit_action(
+fn calculate_transfer_in_deposit(
     funding_btc_total_balance: Decimal,
     amount_in_btc: Decimal,
     minimum_funding_balance_btc: Decimal,
@@ -192,7 +220,7 @@ fn return_deposit_action(
     }
 }
 
-fn return_withdraw_action(
+fn calculate_transfer_out_withdraw(
     funding_btc_total_balance: Decimal,
     amount_in_btc: Decimal,
     minimum_funding_balance_btc: Decimal,
@@ -206,6 +234,67 @@ fn return_withdraw_action(
     if !internal_amount.is_zero() {
         RebalanceAction::TransferTradingToFunding(internal_amount)
     } else if !external_amount.is_zero() {
+        RebalanceAction::OnchainWithdraw(external_amount)
+    } else {
+        RebalanceAction::DoNothing
+    }
+}
+
+fn calculate_deposit(
+    funding_btc_total_balance: Decimal,
+    amount_in_btc: Decimal,
+    minimum_funding_balance_btc: Decimal,
+) -> RebalanceAction {
+    let internal_amount = std::cmp::min(funding_btc_total_balance, amount_in_btc);
+    let new_funding_balance = funding_btc_total_balance - internal_amount;
+    let funding_refill = std::cmp::max(
+        Decimal::ZERO,
+        minimum_funding_balance_btc - new_funding_balance,
+    );
+    let missing_amount = amount_in_btc - internal_amount;
+    let external_amount = missing_amount + funding_refill;
+
+    if !external_amount.is_zero() {
+        RebalanceAction::OnchainDeposit(external_amount)
+    } else {
+        RebalanceAction::DoNothing
+    }
+}
+
+fn calculate_transfer_in(
+    funding_btc_total_balance: Decimal,
+    amount_in_btc: Decimal,
+) -> RebalanceAction {
+    let internal_amount = std::cmp::min(funding_btc_total_balance, amount_in_btc);
+
+    if !internal_amount.is_zero() {
+        RebalanceAction::TransferFundingToTrading(internal_amount)
+    } else {
+        RebalanceAction::DoNothing
+    }
+}
+
+fn calculate_transfer_out(amount_in_btc: Decimal) -> RebalanceAction {
+    let internal_amount = amount_in_btc;
+
+    if !internal_amount.is_zero() {
+        RebalanceAction::TransferTradingToFunding(internal_amount)
+    } else {
+        RebalanceAction::DoNothing
+    }
+}
+
+fn calculate_withdraw(
+    funding_btc_total_balance: Decimal,
+    amount_in_btc: Decimal,
+    minimum_funding_balance_btc: Decimal,
+) -> RebalanceAction {
+    let external_amount = std::cmp::max(
+        Decimal::ZERO,
+        amount_in_btc + funding_btc_total_balance - minimum_funding_balance_btc,
+    );
+
+    if !external_amount.is_zero() {
         RebalanceAction::OnchainWithdraw(external_amount)
     } else {
         RebalanceAction::DoNothing
@@ -721,5 +810,21 @@ mod tests {
         let unfloored_btc = dec!(100_000_000.6) / dec!(100_000_000);
         let floored_btc = floor_btc(unfloored_btc);
         assert_eq!(floored_btc, expected_btc);
+    }
+
+    #[test]
+    fn contract_round_down() {
+        let amount = dec!(1.4) * CONTRACT_SIZE_CENTS;
+        let expected_amount = dec!(1.0) * CONTRACT_SIZE_CENTS;
+        let rounded_amount = round_contract_in_cents(amount);
+        assert_eq!(rounded_amount, expected_amount);
+    }
+
+    #[test]
+    fn contract_round_up() {
+        let amount = dec!(1.6) * CONTRACT_SIZE_CENTS;
+        let expected_amount = dec!(2.0) * CONTRACT_SIZE_CENTS;
+        let rounded_amount = round_contract_in_cents(amount);
+        assert_eq!(rounded_amount, expected_amount);
     }
 }
