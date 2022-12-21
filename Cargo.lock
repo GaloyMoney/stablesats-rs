@@ -1106,6 +1106,7 @@ dependencies = [
  "anyhow",
  "chrono",
  "futures",
+ "galoy-client",
  "okex-client",
  "opentelemetry",
  "rust_decimal",

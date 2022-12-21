@@ -13,6 +13,7 @@ pub(super) async fn execute(
     synth_usd_liability: SynthUsdLiability,
     okex: OkexClient,
     okex_orders: OkexOrders,
+    hedging_adjustment: HedgingAdjustment,
 ) -> Result<(), HedgingError> {
     let span = tracing::Span::current();
     let target_liability = synth_usd_liability.get_latest_liability().await?;
@@ -26,7 +27,7 @@ pub(super) async fn execute(
         &tracing::field::display(current_position),
     );
 
-    let action = determine_action(target_liability, current_position.into());
+    let action = hedging_adjustment.determine_action(target_liability, current_position.into());
     span.record("action", &tracing::field::display(&action));
     match action {
         AdjustmentAction::DoNothing => {}

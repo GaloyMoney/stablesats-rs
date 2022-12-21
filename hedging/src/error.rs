@@ -20,6 +20,8 @@ pub enum HedgingError {
     Migrate(#[from] sqlx::migrate::MigrateError),
     #[error("HedgingError - OkexClient: {0}")]
     OkexClient(#[from] okex_client::OkexClientError),
+    #[error("HedgingError - GaloyClient: {0}")]
+    GaloyClient(#[from] galoy_client::GaloyClientError),
 }
 
 impl JobExecutionError for HedgingError {}

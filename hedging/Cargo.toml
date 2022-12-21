@@ -12,6 +12,7 @@ fail-on-warnings = []
 [dependencies]
 shared = { path = "../shared", package = "stablesats-shared" }
 okex-client = { path = "../okex-client" }
+galoy-client = { path = "../galoy-client" }
 
 rust_decimal_macros = "1.26.1"
 serde = "1.0.150"
@@ -27,7 +28,7 @@ sqlx = { version = "0.6", features = [ "offline", "runtime-tokio-rustls", "postg
 sqlxmq = { version = "0.4.1", default-features = false, features = [ "runtime-tokio-rustls" ] }
 rust_decimal = "1.26.1"
 uuid = "1.2.2"
-serde_with = "2.1.0"
+serde_with = { version = "2.1.0", features = ["chrono_0_4"] }
 
 [dev-dependencies]
 anyhow = "1.0.68"

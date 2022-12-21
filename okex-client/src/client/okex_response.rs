@@ -106,6 +106,7 @@ pub struct TradingBalanceDetails {
     pub upl: String,
     pub upl_liab: String,
     pub stgy_eq: String,
+    pub spot_in_use_amt: String,
 }
 
 #[derive(Deserialize, Debug)]
@@ -135,6 +136,21 @@ pub struct DepositHistoryData {
 
 #[derive(Deserialize, Debug)]
 #[serde(rename_all = "camelCase")]
+pub struct WithdrawalHistoryData {
+    pub ccy: String,
+    pub chain: String,
+    pub amt: String,
+    pub ts: String,
+    pub from: String,
+    pub to: String,
+    pub tx_id: String,
+    pub state: String,
+    pub wd_id: String,
+    pub client_id: String,
+}
+
+#[derive(Deserialize, Debug)]
+#[serde(rename_all = "camelCase")]
 pub struct OrderData {
     pub cl_ord_id: String,
     pub ord_id: String,
@@ -154,6 +170,19 @@ pub struct OrderDetails {
     pub state: String,
     #[serde(skip)]
     pub complete: bool,
+}
+
+#[derive(Deserialize, Debug)]
+#[serde(rename_all = "camelCase")]
+pub struct LastPriceData {
+    pub inst_type: String,
+    pub inst_id: String,
+    pub last: Decimal,
+    pub last_sz: Decimal,
+    pub ask_px: Decimal,
+    pub ask_sz: Decimal,
+    pub bid_px: Decimal,
+    pub bid_sz: Decimal,
 }
 
 #[derive(Deserialize, Debug)]

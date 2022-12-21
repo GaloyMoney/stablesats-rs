@@ -1,4 +1,7 @@
+#![allow(clippy::or_fun_call)]
+
 use futures::{stream::StreamExt, Stream};
+use galoy_client::GaloyClientConfig;
 use rust_decimal::Decimal;
 use rust_decimal_macros::dec;
 use serial_test::serial;
@@ -32,6 +35,18 @@ fn okex_client_config() -> OkexClientConfig {
     }
 }
 
+fn galoy_client_config() -> GaloyClientConfig {
+    let api = env::var("GALOY_GRAPHQL_URI").expect("GALOY_GRAPHQL_URI not set");
+    let phone_number = env::var("PHONE_NUMBER").expect("PHONE_NUMBER not set");
+    let code = env::var("AUTH_CODE").expect("AUTH_CODE not set");
+
+    GaloyClientConfig {
+        api,
+        phone_number,
+        auth_code: code,
+    }
+}
+
 async fn expect_exposure_between(
     mut stream: impl Stream<Item = Envelope<OkexBtcUsdSwapPositionPayload>> + Unpin,
     lower: Decimal,
@@ -59,6 +74,7 @@ async fn expect_exposure_below(
         if passed {
             break;
         }
+        tokio::time::sleep(std::time::Duration::from_millis(200)).await;
     }
     assert!(passed);
 }
@@ -108,6 +124,7 @@ async fn hedging() -> anyhow::Result<()> {
                 ..Default::default()
             },
             okex_client_config(),
+            galoy_client_config(),
             pubsub_config.clone(),
         )
         .await
@@ -122,6 +139,7 @@ async fn hedging() -> anyhow::Result<()> {
                     ..Default::default()
                 },
                 okex_client_config(),
+                galoy_client_config(),
                 pubsub_config,
             )
             .await

@@ -183,11 +183,12 @@ async fn run_cmd(
         println!("Starting hedging process");
         let hedging_send = send.clone();
         let pubsub = pubsub.clone();
+        let galoy = galoy.clone();
         let (snd, recv) = futures::channel::mpsc::unbounded();
         checkers.insert("hedging", snd);
         handles.push(tokio::spawn(async move {
             let _ = hedging_send.try_send(
-                hedging::run(recv, hedging.config, okex, pubsub)
+                hedging::run(recv, hedging.config, okex, galoy, pubsub)
                     .await
                     .context("Hedging error"),
             );

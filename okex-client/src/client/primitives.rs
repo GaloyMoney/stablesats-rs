@@ -26,6 +26,31 @@ impl Default for ClientOrderId {
     }
 }
 
+#[derive(serde::Deserialize, Debug, Clone)]
+#[serde(transparent)]
+pub struct ClientTransferId(pub(super) String);
+impl ClientTransferId {
+    pub fn new() -> Self {
+        use rand::distributions::{Alphanumeric, DistString};
+        Self(Alphanumeric.sample_string(&mut rand::thread_rng(), 32))
+    }
+}
+impl From<String> for ClientTransferId {
+    fn from(s: String) -> Self {
+        Self(s)
+    }
+}
+impl From<ClientTransferId> for String {
+    fn from(id: ClientTransferId) -> Self {
+        id.0
+    }
+}
+impl Default for ClientTransferId {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 #[derive(Debug, PartialEq, Eq, Clone)]
 pub struct BtcUsdSwapContracts(pub(super) u32);
 impl From<u32> for BtcUsdSwapContracts {
@@ -59,6 +84,16 @@ pub struct OnchainFees {
     pub max_withdraw: Decimal,
 }
 
+impl Display for OnchainFees {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "ccy={}, chain={}, min_fee={}, max_fee={}, min_withdraw={}, max_withdraw={}",
+            self.ccy, self.chain, self.min_fee, self.max_fee, self.min_withdraw, self.max_withdraw
+        )
+    }
+}
+
 #[derive(Debug)]
 pub struct TransferId {
     pub value: String,
@@ -71,9 +106,21 @@ pub struct AvailableBalance {
     pub total_amt_in_btc: Decimal,
 }
 
+impl Display for AvailableBalance {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "free_amt_in_btc={}, used_amt_in_btc={}, total_amt_in_btc={},",
+            self.free_amt_in_btc, self.used_amt_in_btc, self.total_amt_in_btc
+        )
+    }
+}
+
 #[derive(Debug)]
 pub struct TransferState {
-    pub value: String,
+    pub state: String,
+    pub transfer_id: String,
+    pub client_id: String,
 }
 
 #[derive(Debug)]
@@ -83,7 +130,15 @@ pub struct WithdrawId {
 
 #[derive(Debug)]
 pub struct DepositStatus {
-    pub status: String,
+    pub state: String,
+    pub transaction_id: String,
+}
+
+#[derive(Debug)]
+pub struct WithdrawalStatus {
+    pub state: String,
+    pub transaction_id: String,
+    pub client_id: String,
 }
 
 #[derive(Debug)]
@@ -92,9 +147,15 @@ pub struct OrderId {
 }
 
 #[derive(Debug)]
+pub struct LastPrice {
+    pub usd_cents: Decimal,
+}
+
+#[derive(Debug)]
 pub struct PositionSize {
     pub instrument_id: OkexInstrumentId,
     pub usd_cents: Decimal,
+    pub last_price_in_usd_cents: Decimal,
 }
 
 #[derive(Debug, Clone)]
@@ -212,6 +273,12 @@ mod tests {
     #[test]
     fn client_order_id() {
         let id = ClientOrderId::new();
+        assert_eq!(id.0.len(), 32);
+    }
+
+    #[test]
+    fn client_transfer_id() {
+        let id = ClientTransferId::new();
         assert_eq!(id.0.len(), 32);
     }
 }
