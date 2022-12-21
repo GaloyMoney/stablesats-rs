@@ -109,7 +109,7 @@ async fn hedging() -> anyhow::Result<()> {
     );
 
     let publisher = Publisher::new(pubsub_config.clone()).await?;
-    let subscriber = Subscriber::new(pubsub_config.clone()).await?;
+    let mut subscriber = Subscriber::new(pubsub_config.clone()).await?;
     let mut stream = subscriber
         .subscribe::<OkexBtcUsdSwapPositionPayload>()
         .await?;

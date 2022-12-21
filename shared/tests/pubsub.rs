@@ -21,7 +21,7 @@ async fn pubsub() -> anyhow::Result<()> {
         ..PubSubConfig::default()
     };
     let publisher = Publisher::new(config.clone()).await?;
-    let subscriber = Subscriber::new(config).await?;
+    let mut subscriber = Subscriber::new(config).await?;
     assert!(subscriber.time_since_last_msg().await.is_none());
     let mut stream = subscriber.subscribe::<TestMessage>().await?;
     let msg = TestMessage {
@@ -44,7 +44,7 @@ async fn throttle_publishing() -> anyhow::Result<()> {
         ..PubSubConfig::default()
     };
     let publisher = Publisher::new(config.clone()).await?;
-    let subscriber = Subscriber::new(config).await?;
+    let mut subscriber = Subscriber::new(config).await?;
     let stream = subscriber.subscribe::<TestMessage>().await?;
     let msg = TestMessage {
         test: "test".to_string(),

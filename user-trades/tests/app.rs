@@ -31,7 +31,7 @@ async fn publishes_liability() -> anyhow::Result<()> {
         host: Some(redis_host),
         ..PubSubConfig::default()
     };
-    let subscriber = Subscriber::new(pubsub_config.clone()).await?;
+    let mut subscriber = Subscriber::new(pubsub_config.clone()).await?;
     let user_trades_pg_host =
         std::env::var("USER_TRADES_PG_HOST").unwrap_or("localhost".to_string());
     let pg_con = format!(

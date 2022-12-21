@@ -112,7 +112,7 @@ impl HedgingApp {
         okex: OkexClient,
         funding_adjustment: FundingAdjustment,
     ) -> Result<Subscriber, HedgingError> {
-        let subscriber = Subscriber::new(config).await?;
+        let mut subscriber = Subscriber::new(config).await?;
         let mut stream = subscriber.subscribe::<OkexBtcUsdSwapPricePayload>().await?;
         let _ = tokio::spawn(async move {
             while let Some(msg) = stream.next().await {
@@ -186,7 +186,7 @@ impl HedgingApp {
         config: PubSubConfig,
         synth_usd_liability: SynthUsdLiability,
     ) -> Result<Subscriber, HedgingError> {
-        let subscriber = Subscriber::new(config).await?;
+        let mut subscriber = Subscriber::new(config).await?;
         let mut stream = subscriber.subscribe::<SynthUsdLiabilityPayload>().await?;
         let _ = tokio::spawn(async move {
             let propagator = TraceContextPropagator::new();
@@ -218,7 +218,7 @@ impl HedgingApp {
         synth_usd_liability: SynthUsdLiability,
         hedging_adjustment: HedgingAdjustment,
     ) -> Result<Subscriber, HedgingError> {
-        let subscriber = Subscriber::new(config).await?;
+        let mut subscriber = Subscriber::new(config).await?;
         let mut stream = subscriber
             .subscribe::<OkexBtcUsdSwapPositionPayload>()
             .await?;

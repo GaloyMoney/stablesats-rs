@@ -24,7 +24,7 @@ async fn publishes_to_redis() -> anyhow::Result<()> {
         host: Some(redis_host),
         ..PubSubConfig::default()
     };
-    let subscriber = Subscriber::new(pubsub_config.clone()).await?;
+    let mut subscriber = Subscriber::new(pubsub_config.clone()).await?;
 
     let _ = tokio::spawn(async move {
         let config = KolliderPriceFeedConfig {

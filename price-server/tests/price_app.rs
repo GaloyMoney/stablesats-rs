@@ -24,7 +24,7 @@ async fn price_app() -> anyhow::Result<()> {
         ..PubSubConfig::default()
     };
     let publisher = Publisher::new(config.clone()).await?;
-    let subscriber = Subscriber::new(config.clone()).await?;
+    let mut subscriber = Subscriber::new(config.clone()).await?;
     let mut stream = subscriber.subscribe::<OkexBtcUsdSwapPricePayload>().await?;
 
     let (_, recv) = futures::channel::mpsc::unbounded();

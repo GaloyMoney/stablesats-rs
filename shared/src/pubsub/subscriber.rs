@@ -8,6 +8,7 @@ use crate::{health::HealthCheckResponse, time::TimeStamp};
 
 pub struct Subscriber {
     client: SubscriberClient,
+    subscribed_to: Option<String>,
     last_msg_timestamp: Arc<RwLock<Option<TimeStamp>>>,
     timestamp_sender: UnboundedSender<TimeStamp>,
 }
@@ -31,6 +32,7 @@ impl Subscriber {
         });
         Ok(Self {
             client,
+            subscribed_to: None,
             last_msg_timestamp,
             timestamp_sender,
         })
@@ -47,7 +49,8 @@ impl Subscriber {
                 Ok(())
             } else {
                 Err(format!(
-                    "No messages received in the last {} seconds",
+                    "No '{}' messages received in the last {} seconds",
+                    self.subscribed_to.as_ref().expect("No subscription"),
                     time_since.num_seconds()
                 ))
             }
@@ -57,8 +60,9 @@ impl Subscriber {
     }
 
     pub async fn subscribe<M: MessagePayload>(
-        &self,
+        &mut self,
     ) -> Result<Receiver<Envelope<M>>, SubscriberError> {
+        self.subscribed_to = Some(<M as MessagePayload>::message_type().to_string());
         let message_stream = self.client.on_message();
         self.client
             .subscribe(<M as MessagePayload>::channel())

@@ -27,7 +27,7 @@ impl PriceApp {
         pubsub_cfg: PubSubConfig,
         price_cache_config: ExchangePriceCacheConfig,
     ) -> Result<Self, PriceAppError> {
-        let subscriber = Subscriber::new(pubsub_cfg.clone()).await?;
+        let mut subscriber = Subscriber::new(pubsub_cfg.clone()).await?;
         let mut stream = subscriber.subscribe::<OkexBtcUsdSwapPricePayload>().await?;
         tokio::spawn(async move {
             while let Some(check) = health_check_trigger.next().await {
