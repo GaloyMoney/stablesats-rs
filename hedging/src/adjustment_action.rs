@@ -6,7 +6,7 @@ pub use shared::payload::{SyntheticCentExposure, SyntheticCentLiability};
 
 use crate::HedgingSectionConfig;
 
-const CONTRACT_SIZE_CENTS: Decimal = dec!(10000);
+pub const CONTRACT_SIZE_CENTS: Decimal = dec!(10000);
 
 #[derive(Debug, PartialEq, Eq, Clone)]
 pub enum AdjustmentAction {
