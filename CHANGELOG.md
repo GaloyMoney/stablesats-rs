@@ -1,3 +1,10 @@
+# [stablesats release v0.3.24](https://github.com/GaloyMoney/stablesats/releases/tag/v0.3.24)
+
+
+### Miscellaneous Tasks
+
+- Nest health config for hedging
+
 # [stablesats release v0.3.23](https://github.com/GaloyMoney/stablesats/releases/tag/v0.3.23)
 
 
