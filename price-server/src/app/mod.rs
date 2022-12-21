@@ -1,3 +1,4 @@
+mod config;
 mod error;
 
 use chrono::Duration;
@@ -8,7 +9,9 @@ use shared::{health::HealthCheckTrigger, payload::OkexBtcUsdSwapPricePayload, pu
 
 use super::exchange_price_cache::ExchangePriceCache;
 
+use crate::ExchangePriceCacheConfig;
 pub use crate::{currency::*, fee_calculator::*};
+pub use config::*;
 pub use error::*;
 
 pub struct PriceApp {
@@ -19,20 +22,27 @@ pub struct PriceApp {
 impl PriceApp {
     pub async fn run(
         mut health_check_trigger: HealthCheckTrigger,
+        health_check_cfg: PriceServerHealthCheckConfig,
         fee_calc_cfg: FeeCalculatorConfig,
         pubsub_cfg: PubSubConfig,
+        price_cache_config: ExchangePriceCacheConfig,
     ) -> Result<Self, PriceAppError> {
-        let subscriber = Subscriber::new(pubsub_cfg).await?;
+        let subscriber = Subscriber::new(pubsub_cfg.clone()).await?;
         let mut stream = subscriber.subscribe::<OkexBtcUsdSwapPricePayload>().await?;
         tokio::spawn(async move {
             while let Some(check) = health_check_trigger.next().await {
                 check
-                    .send(subscriber.healthy(Duration::seconds(200)).await)
+                    .send(
+                        subscriber
+                            .healthy(health_check_cfg.unhealthy_msg_interval_price)
+                            .await,
+                    )
                     .expect("Couldn't send response");
             }
         });
 
-        let price_cache = ExchangePriceCache::new(Duration::seconds(300));
+        let price_cache =
+            ExchangePriceCache::new(Duration::from_std(price_cache_config.stale_after)?);
         let fee_calculator = FeeCalculator::new(fee_calc_cfg);
         let app = Self {
             price_cache: price_cache.clone(),

@@ -28,6 +28,8 @@ impl HedgingApp {
             pg_con,
             migrate_on_start,
             okex_poll_frequency: okex_poll_delay,
+            unhealthy_msg_interval_liability,
+            unhealthy_msg_interval_position,
         }: HedgingAppConfig,
         okex_client_config: OkexClientConfig,
         pubsub_config: PubSubConfig,
@@ -53,7 +55,14 @@ impl HedgingApp {
         let position_sub =
             Self::spawn_okex_position_listener(pubsub_config, pool.clone(), synth_usd_liability)
                 .await?;
-        Self::spawn_health_checker(health_check_trigger, liability_sub, position_sub).await;
+        Self::spawn_health_checker(
+            health_check_trigger,
+            unhealthy_msg_interval_liability,
+            unhealthy_msg_interval_position,
+            liability_sub,
+            position_sub,
+        )
+        .await;
         Self::spawn_okex_polling(pool, okex_poll_delay).await?;
         let app = HedgingApp {
             _runner: job_runner,
@@ -137,15 +146,18 @@ impl HedgingApp {
 
     async fn spawn_health_checker(
         mut health_check_trigger: HealthCheckTrigger,
+        unhealthy_msg_interval_liability: chrono::Duration,
+        unhealthy_msg_interval_position: chrono::Duration,
         liability_sub: Subscriber,
         position_sub: Subscriber,
     ) {
         tokio::spawn(async move {
             while let Some(check) = health_check_trigger.next().await {
-                let duration = chrono::Duration::seconds(20);
                 match (
-                    liability_sub.healthy(duration).await,
-                    position_sub.healthy(chrono::Duration::minutes(5)).await,
+                    liability_sub
+                        .healthy(unhealthy_msg_interval_liability)
+                        .await,
+                    position_sub.healthy(unhealthy_msg_interval_position).await,
                 ) {
                     (Err(e), _) | (_, Err(e)) => {
                         check.send(Err(e)).expect("Couldn't send response")

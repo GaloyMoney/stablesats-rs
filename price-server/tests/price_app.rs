@@ -1,6 +1,6 @@
 use futures::stream::StreamExt;
 use rust_decimal_macros::dec;
-use std::fs;
+use std::{fs, time::Duration};
 
 use price_server::{app::*, *};
 use shared::{payload::*, pubsub::*, time::*};
@@ -30,12 +30,16 @@ async fn price_app() -> anyhow::Result<()> {
     let (_, recv) = futures::channel::mpsc::unbounded();
     let app = PriceApp::run(
         recv,
+        PriceServerHealthCheckConfig::default(),
         FeeCalculatorConfig {
             base_fee_rate: dec!(0.001),
             immediate_fee_rate: dec!(0.01),
             delayed_fee_rate: dec!(0.1),
         },
         config,
+        ExchangePriceCacheConfig {
+            stale_after: Duration::from_secs(30),
+        },
     )
     .await?;
 

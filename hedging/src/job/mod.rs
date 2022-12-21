@@ -72,6 +72,7 @@ pub async fn spawn_adjust_hedge<'a>(
     correlation_id: CorrelationId,
 ) -> Result<(), HedgingError> {
     match JobBuilder::new_with_id(Uuid::from(correlation_id), "adjust_hedge")
+        .set_ordered(true)
         .set_json(&AdjustHedgeData {
             tracing_data: shared::tracing::extract_tracing_data(),
             correlation_id,
