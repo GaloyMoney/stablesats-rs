@@ -1653,6 +1653,7 @@ dependencies = [
  "rust_decimal",
  "serde",
  "serde_json",
+ "serde_with",
  "stablesats-shared",
  "thiserror",
  "tokio",
@@ -2841,6 +2842,7 @@ version = "0.3.25-dev"
 dependencies = [
  "anyhow",
  "axum",
+ "chrono",
  "clap",
  "futures",
  "galoy-client",

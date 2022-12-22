@@ -7,7 +7,7 @@ mod exchange_price_cache;
 mod fee_calculator;
 mod server;
 
-use shared::{health::HealthCheckTrigger, pubsub::PubSubConfig};
+use shared::{health::HealthCheckTrigger, payload::*, pubsub::memory};
 
 use app::PriceApp;
 pub use app::PriceServerHealthCheckConfig;
@@ -20,14 +20,14 @@ pub async fn run(
     health_check_cfg: PriceServerHealthCheckConfig,
     server_config: PriceServerConfig,
     fee_calc_cfg: FeeCalculatorConfig,
-    pubsub_cfg: PubSubConfig,
+    subscriber: memory::Subscriber<OkexBtcUsdSwapPricePayload>,
     price_cache_config: ExchangePriceCacheConfig,
 ) -> Result<(), PriceServerError> {
     let app = PriceApp::run(
         health_check_trigger,
         health_check_cfg,
         fee_calc_cfg,
-        pubsub_cfg,
+        subscriber,
         price_cache_config,
     )
     .await?;

@@ -24,16 +24,15 @@ impl PriceApp {
         mut health_check_trigger: HealthCheckTrigger,
         health_check_cfg: PriceServerHealthCheckConfig,
         fee_calc_cfg: FeeCalculatorConfig,
-        pubsub_cfg: PubSubConfig,
+        mut subscriber: memory::Subscriber<OkexBtcUsdSwapPricePayload>,
         price_cache_config: ExchangePriceCacheConfig,
     ) -> Result<Self, PriceAppError> {
-        let mut subscriber = Subscriber::new(pubsub_cfg.clone()).await?;
-        let mut stream = subscriber.subscribe::<OkexBtcUsdSwapPricePayload>().await?;
+        let health_subscriber = subscriber.resubscribe();
         tokio::spawn(async move {
             while let Some(check) = health_check_trigger.next().await {
                 check
                     .send(
-                        subscriber
+                        health_subscriber
                             .healthy(health_check_cfg.unhealthy_msg_interval_price)
                             .await,
                     )
@@ -50,7 +49,7 @@ impl PriceApp {
         };
 
         let _ = tokio::spawn(async move {
-            while let Some(msg) = stream.next().await {
+            while let Some(msg) = subscriber.next().await {
                 let span = info_span!(
                     "price_tick_received",
                     message_type = %msg.payload_type,

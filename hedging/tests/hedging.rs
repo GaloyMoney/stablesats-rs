@@ -97,6 +97,9 @@ async fn expect_exposure_equal(
 #[tokio::test]
 #[serial]
 async fn hedging() -> anyhow::Result<()> {
+    let (_, tick_recv) = memory::channel(chrono::Duration::from_std(
+        std::time::Duration::from_secs(1),
+    )?);
     let redis_host = std::env::var("REDIS_HOST").unwrap_or("localhost".to_string());
     let pubsub_config = PubSubConfig {
         host: Some(redis_host),
@@ -126,6 +129,7 @@ async fn hedging() -> anyhow::Result<()> {
             okex_client_config(),
             galoy_client_config(),
             pubsub_config.clone(),
+            tick_recv.resubscribe(),
         )
         .await
         {
@@ -141,6 +145,7 @@ async fn hedging() -> anyhow::Result<()> {
                 okex_client_config(),
                 galoy_client_config(),
                 pubsub_config,
+                tick_recv,
             )
             .await
             .expect("Hedging app failed");

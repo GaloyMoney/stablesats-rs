@@ -32,3 +32,4 @@ opentelemetry-jaeger = { version = "0.17.0", features = ["rt-tokio"] }
 tracing-subscriber = { version = "0.3.16", features = ["env-filter", "json"] }
 tracing-opentelemetry = "0.18.0"
 axum = "0.6.1"
+chrono = "0.4.23"
