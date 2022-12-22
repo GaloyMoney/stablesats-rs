@@ -8,7 +8,7 @@ use super::{config::*, error::*};
 pub use book::*;
 
 pub async fn subscribe_btc_usd_swap_order_book(
-    PriceFeedConfig { url }: PriceFeedConfig,
+    PriceFeedConfig { url, .. }: PriceFeedConfig,
 ) -> Result<Pin<Box<dyn Stream<Item = OkexOrderBook> + Send>>, PriceFeedError> {
     let (ws_stream, _ws_sink) = connect_async(url).await?;
     let (mut sender, receiver) = ws_stream.split();

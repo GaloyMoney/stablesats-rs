@@ -1,5 +1,6 @@
 mod config;
 mod error;
+pub mod memory;
 mod message;
 mod publisher;
 mod subscriber;

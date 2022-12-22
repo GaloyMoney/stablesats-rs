@@ -2,7 +2,6 @@ use chrono::Duration;
 use futures::StreamExt;
 use okex_price::*;
 use std::fs;
-use url::Url;
 
 use shared::{payload::*, pubsub::*, time::*};
 
@@ -19,9 +18,7 @@ fn load_fixture() -> anyhow::Result<Fixture> {
 
 #[tokio::test]
 async fn subscribes_to_tickers_channel() -> anyhow::Result<()> {
-    let config = PriceFeedConfig {
-        url: Url::parse("wss://ws.okx.com:8443/ws/v5/public").unwrap(),
-    };
+    let config = PriceFeedConfig::default();
     let mut received = subscribe_btc_usd_swap_price_tick(config)
         .await
         .expect("subscribe_btc_usd_swap");
@@ -47,9 +44,7 @@ async fn subscribes_to_tickers_channel() -> anyhow::Result<()> {
 
 #[tokio::test]
 async fn subscribe_to_order_book_channel() -> anyhow::Result<()> {
-    let config = PriceFeedConfig {
-        url: Url::parse("wss://ws.okx.com:8443/ws/v5/public").unwrap(),
-    };
+    let config = PriceFeedConfig::default();
     let mut order_book_stream = subscribe_btc_usd_swap_order_book(config)
         .await
         .expect("subscribe to order book channel");
@@ -71,30 +66,18 @@ async fn subscribe_to_order_book_channel() -> anyhow::Result<()> {
 
 #[tokio::test]
 async fn publishes_to_redis() -> anyhow::Result<()> {
-    let redis_host = std::env::var("REDIS_HOST").unwrap_or("localhost".to_string());
-    let pubsub_config = PubSubConfig {
-        host: Some(redis_host),
-        ..PubSubConfig::default()
-    };
-    let mut subscriber = Subscriber::new(pubsub_config.clone()).await?;
+    let (tick_send, mut tick_recv) =
+        memory::channel(chrono::Duration::from_std(std::time::Duration::from_secs(2)).unwrap());
 
     let _ = tokio::spawn(async move {
-        let _res = okex_price::run(PriceFeedConfig::default(), pubsub_config).await;
+        let _res = okex_price::run(PriceFeedConfig::default(), tick_send).await;
     });
 
-    let mut tick_stream = subscriber.subscribe::<OkexBtcUsdSwapPricePayload>().await?;
-    let mut book_stream = subscriber
-        .subscribe::<OkexBtcUsdSwapOrderBookPayload>()
-        .await?;
-
-    let received_tick = tick_stream.next().await.expect("expected price tick");
-    let received_book = book_stream.next().await.expect("expected price snapshot");
+    let received_tick = tick_recv.next().await.expect("expected price tick");
 
     let payload = &load_fixture()?.payloads[0];
     assert_eq!(received_tick.payload.exchange, payload.exchange);
     assert_eq!(received_tick.payload.instrument_id, payload.instrument_id);
-    assert_eq!(received_book.payload.exchange, payload.exchange);
-    assert!(received_book.payload.asks.len() >= 400);
 
     Ok(())
 }

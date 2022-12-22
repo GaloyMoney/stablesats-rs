@@ -1,4 +1,3 @@
-use futures::stream::StreamExt;
 use rust_decimal_macros::dec;
 use std::{fs, time::Duration};
 
@@ -18,14 +17,10 @@ fn load_fixture() -> anyhow::Result<Fixture> {
 
 #[tokio::test]
 async fn price_app() -> anyhow::Result<()> {
-    let redis_host = std::env::var("REDIS_HOST").unwrap_or("localhost".to_string());
-    let config = PubSubConfig {
-        host: Some(redis_host),
-        ..PubSubConfig::default()
-    };
-    let publisher = Publisher::new(config.clone()).await?;
-    let mut subscriber = Subscriber::new(config.clone()).await?;
-    let mut stream = subscriber.subscribe::<OkexBtcUsdSwapPricePayload>().await?;
+    let (tick_send, tick_recv) =
+        memory::channel(chrono::Duration::from_std(std::time::Duration::from_secs(2)).unwrap());
+    let publisher = tick_send.clone();
+    let mut subscriber = tick_recv.resubscribe();
 
     let (_, recv) = futures::channel::mpsc::unbounded();
     let app = PriceApp::run(
@@ -36,7 +31,7 @@ async fn price_app() -> anyhow::Result<()> {
             immediate_fee_rate: dec!(0.01),
             delayed_fee_rate: dec!(0.1),
         },
-        config,
+        tick_recv,
         ExchangePriceCacheConfig {
             stale_after: Duration::from_secs(30),
         },
@@ -56,10 +51,10 @@ async fn price_app() -> anyhow::Result<()> {
 
     let mut payloads = load_fixture()?.payloads.into_iter();
     let mut payload = payloads.next().unwrap();
-    publisher
+    tick_send
         .publish(OkexBtcUsdSwapPricePayload(payload.clone()))
         .await?;
-    stream.next().await;
+    subscriber.next().await;
     tokio::time::sleep(std::time::Duration::from_millis(100)).await;
 
     let err = app
@@ -76,7 +71,7 @@ async fn price_app() -> anyhow::Result<()> {
     publisher
         .publish(OkexBtcUsdSwapPricePayload(payload))
         .await?;
-    stream.next().await;
+    subscriber.next().await;
     tokio::time::sleep(std::time::Duration::from_millis(100)).await;
 
     let cents = app
