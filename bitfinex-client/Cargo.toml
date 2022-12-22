@@ -1,0 +1,28 @@
+[package]
+name = "bitfinex-client"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+hex = "0.4.3"
+reqwest = { version = "0.11.13", default-features = false, features = ["json", "rustls-tls"] }
+thiserror = "1.0.38"
+tokio = { version = "1.23.0", features = ["full"] }
+ring = "0.16.20"
+data-encoding = "2.3.3"
+serde = { version = "1.0.150", features = ["derive"] }
+serde_json = "1.0.91"
+chrono = { version = "0.4", features = ["clock", "serde"], default-features = false }
+serde_yaml = "0.9.16"
+rust_decimal = "1.26.1"
+governor = "0.5.1"
+lazy_static = "1.4.0"
+rust_decimal_macros = "1.26.1"
+rand = "0.8.5"
+tracing = "0.1.37"
+
+[dev-dependencies]
+anyhow = "1.0.68"
+serial_test = "*"

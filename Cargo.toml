@@ -8,6 +8,7 @@ members = [
   "user-trades",
   "okex-price",
   "okex-client",
+  "bitfinex-client",
   "galoy-client",
   "kollider-price",
 ]
