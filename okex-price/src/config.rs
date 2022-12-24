@@ -1,4 +1,5 @@
 use chrono::Duration;
+use rust_decimal::Decimal;
 use serde::{Deserialize, Serialize};
 use url::Url;
 
@@ -10,6 +11,8 @@ pub struct PriceFeedConfig {
     #[serde_as(as = "serde_with::DurationSeconds<i64>")]
     #[serde(default = "default_throttle")]
     pub rate_limit_interval: Duration,
+    #[serde(default)]
+    pub dev_mock_price_btc_in_usd: Option<Decimal>,
 }
 
 impl Default for PriceFeedConfig {
@@ -17,6 +20,7 @@ impl Default for PriceFeedConfig {
         Self {
             url: default_url(),
             rate_limit_interval: default_throttle(),
+            dev_mock_price_btc_in_usd: None,
         }
     }
 }
