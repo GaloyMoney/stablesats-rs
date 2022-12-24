@@ -1,3 +1,11 @@
+# [stablesats release v0.3.25](https://github.com/GaloyMoney/stablesats/releases/tag/v0.3.25)
+
+
+### Miscellaneous Tasks
+
+- Add mock dev price
+- Switch price feed to in-memory pubsub (#230)
+
 # [stablesats release v0.3.24](https://github.com/GaloyMoney/stablesats/releases/tag/v0.3.24)
 
 
