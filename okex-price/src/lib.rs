@@ -9,7 +9,7 @@ pub mod order_book;
 pub mod price_feed;
 
 use futures::StreamExt;
-use shared::{payload::*, pubsub::*, time::TimeStamp};
+use shared::{payload::*, pubsub::*};
 use tokio::join;
 
 pub use config::*;
@@ -25,35 +25,11 @@ pub async fn run(
     let pf_config = price_feed_config.clone();
     let mut stream = subscribe_btc_usd_swap_price_tick(pf_config).await?;
 
-    let tick_task = if let Some(price) = price_feed_config.dev_mock_price_btc_in_usd {
-        tokio::spawn(async move {
-            loop {
-                ticks_publisher
-                    .publish(OkexBtcUsdSwapPricePayload(PriceMessagePayload {
-                        timestamp: TimeStamp::now(),
-                        exchange: ExchangeIdRaw::from(OKEX_EXCHANGE_ID),
-                        instrument_id: InstrumentIdRaw::from("BTC-USD-SWAP".to_string()),
-                        ask_price: PriceRatioRaw::from_one_btc_in_usd_price(price),
-                        bid_price: PriceRatioRaw::from_one_btc_in_usd_price(price),
-                    }))
-                    .await
-                    .expect("failed to publish tick");
-                tokio::time::sleep(
-                    price_feed_config
-                        .rate_limit_interval
-                        .to_std()
-                        .expect("rate limit is not positive"),
-                )
-                .await;
-            }
-        })
-    } else {
-        tokio::spawn(async move {
-            while let Some(tick) = stream.next().await {
-                let _res = okex_price_tick_received(&ticks_publisher, tick).await;
-            }
-        })
-    };
+    let tick_task = tokio::spawn(async move {
+        while let Some(tick) = stream.next().await {
+            let _res = okex_price_tick_received(&ticks_publisher, tick).await;
+        }
+    });
 
     // let order_book_task = tokio::spawn(async move {
     //     loop {
