@@ -1,3 +1,10 @@
+# [stablesats release v0.3.26](https://github.com/GaloyMoney/stablesats/releases/tag/v0.3.26)
+
+
+### Miscellaneous Tasks
+
+- Dev mock price is configured directly in price_cache
+
 # [stablesats release v0.3.25](https://github.com/GaloyMoney/stablesats/releases/tag/v0.3.25)
 
 
