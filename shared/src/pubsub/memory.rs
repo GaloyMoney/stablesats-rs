@@ -111,7 +111,7 @@ impl<P: MessagePayload> Subscriber<P> {
         loop {
             match self.inner.recv().await {
                 Ok(msg) => {
-                    let _ = self.timestamp_sender.send(msg.meta.published_at);
+                    let _ = self.timestamp_sender.send(msg.meta.published_at).await;
                     return Some(msg);
                 }
                 Err(tokio::sync::broadcast::error::RecvError::Closed) => return None,
