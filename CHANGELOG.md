@@ -1,3 +1,10 @@
+# [stablesats release v0.3.27](https://github.com/GaloyMoney/stablesats/releases/tag/v0.3.27)
+
+
+### Bug Fixes
+
+- Await timestamp_sender for health check
+
 # [stablesats release v0.3.26](https://github.com/GaloyMoney/stablesats/releases/tag/v0.3.26)
 
 
