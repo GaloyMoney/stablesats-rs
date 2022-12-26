@@ -1,5 +1,5 @@
 use rust_decimal_macros::dec;
-use std::{fs, time::Duration};
+use std::fs;
 
 use price_server::{app::*, *};
 use shared::{payload::*, pubsub::*, time::*};
@@ -32,9 +32,7 @@ async fn price_app() -> anyhow::Result<()> {
             delayed_fee_rate: dec!(0.1),
         },
         tick_recv,
-        ExchangePriceCacheConfig {
-            stale_after: Duration::from_secs(30),
-        },
+        ExchangePriceCacheConfig::default(),
     )
     .await?;
 

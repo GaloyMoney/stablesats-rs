@@ -1,7 +1,6 @@
 mod config;
 mod error;
 
-use chrono::Duration;
 use futures::stream::StreamExt;
 use tracing::{info_span, instrument, Instrument};
 
@@ -40,8 +39,7 @@ impl PriceApp {
             }
         });
 
-        let price_cache =
-            ExchangePriceCache::new(Duration::from_std(price_cache_config.stale_after)?);
+        let price_cache = ExchangePriceCache::new(price_cache_config);
         let fee_calculator = FeeCalculator::new(fee_calc_cfg);
         let app = Self {
             price_cache: price_cache.clone(),

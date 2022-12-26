@@ -28,12 +28,16 @@ pub enum ExchangePriceCacheError {
 #[derive(Clone)]
 pub struct ExchangePriceCache {
     inner: Arc<RwLock<ExchangePriceCacheInner>>,
+    config: ExchangePriceCacheConfig,
 }
 
 impl ExchangePriceCache {
-    pub fn new(stale_after: Duration) -> Self {
+    pub fn new(config: ExchangePriceCacheConfig) -> Self {
         Self {
-            inner: Arc::new(RwLock::new(ExchangePriceCacheInner::new(stale_after))),
+            inner: Arc::new(RwLock::new(ExchangePriceCacheInner::new(
+                config.stale_after,
+            ))),
+            config,
         }
     }
 
@@ -42,6 +46,17 @@ impl ExchangePriceCache {
     }
 
     pub async fn latest_tick(&self) -> Result<BtcSatTick, ExchangePriceCacheError> {
+        if let Some(mock_price) = self.config.dev_mock_price_btc_in_usd {
+            let price = PriceRatioRaw::from_one_btc_in_usd_price(mock_price);
+            let cent_price = UsdCents::try_from(price).expect("couldn't create mack UsdCents");
+            return Ok(BtcSatTick {
+                timestamp: TimeStamp::now(),
+                correlation_id: CorrelationId::new(),
+                span_context: Span::current().context().span().span_context().clone(),
+                ask_price_of_one_sat: cent_price.clone(),
+                bid_price_of_one_sat: cent_price,
+            });
+        }
         let tick = self.inner.read().await.latest_tick()?;
         let span = Span::current();
         span.add_link(tick.span_context.clone());
