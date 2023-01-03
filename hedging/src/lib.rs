@@ -12,7 +12,7 @@ mod synth_usd_liability;
 
 use galoy_client::GaloyClientConfig;
 use okex_client::OkexClientConfig;
-use shared::{health::HealthCheckTrigger, payload::*, pubsub::*};
+use shared::{exchanges_config::OkexConfig, health::HealthCheckTrigger, payload::*, pubsub::*};
 
 pub use app::*;
 pub use error::*;

@@ -9,7 +9,7 @@ use serial_test::serial;
 use std::{env, fs};
 
 use okex_client::*;
-use shared::{payload::*, pubsub::*};
+use shared::{exchanges_config::OkexConfig, payload::*, pubsub::*};
 
 use hedging::*;
 
@@ -23,11 +23,11 @@ fn load_fixture(path: &str) -> anyhow::Result<Fixture> {
     Ok(serde_json::from_str(&contents)?)
 }
 
-fn okex_client_config() -> OkexClientConfig {
+fn okex_client_config() -> OkexConfig {
     let api_key = env::var("OKEX_API_KEY").expect("OKEX_API_KEY not set");
     let passphrase = env::var("OKEX_PASSPHRASE").expect("OKEX_PASS_PHRASE not set");
     let secret_key = env::var("OKEX_SECRET_KEY").expect("OKEX_SECRET_KEY not set");
-    OkexClientConfig {
+    OkexConfig {
         api_key,
         passphrase,
         secret_key,

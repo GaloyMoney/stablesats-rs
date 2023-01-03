@@ -11,6 +11,7 @@ use tracing_opentelemetry::OpenTelemetrySpanExt;
 use galoy_client::*;
 use okex_client::*;
 use shared::{
+    exchanges_config::OkexConfig,
     health::HealthCheckTrigger,
     payload::{
         OkexBtcUsdSwapPositionPayload, OkexBtcUsdSwapPricePayload, SynthUsdLiabilityPayload,

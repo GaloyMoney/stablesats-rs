@@ -116,11 +116,16 @@ async fn run_cmd(
         user_trades,
         tracing,
         galoy,
-        okex,
         hedging,
         kollider_price_feed,
+        exchanges,
     }: Config,
 ) -> anyhow::Result<()> {
+    if !exchanges.is_valid() {
+        Err(anyhow::anyhow!(
+            "Invalid exchanges config - at least one exchange has to be configured"
+        ))?;
+    }
     println!("Starting server process");
     crate::tracing::init_tracer(tracing)?;
     let (send, mut receive) = tokio::sync::mpsc::channel(1);
@@ -183,19 +188,24 @@ async fn run_cmd(
 
     if hedging.enabled {
         println!("Starting hedging process");
+
         let hedging_send = send.clone();
         let pubsub = pubsub.clone();
         let galoy = galoy.clone();
         let (snd, recv) = futures::channel::mpsc::unbounded();
         let tick = tick_recv.resubscribe();
         checkers.insert("hedging", snd);
-        handles.push(tokio::spawn(async move {
-            let _ = hedging_send.try_send(
-                hedging::run(recv, hedging.config, okex, galoy, pubsub, tick)
-                    .await
-                    .context("Hedging error"),
-            );
-        }));
+        let exchanges = exchanges.clone();
+
+        if let Some(okex_cfg) = exchanges.okex {
+            handles.push(tokio::spawn(async move {
+                let _ = hedging_send.try_send(
+                    hedging::run(recv, hedging.config, okex_cfg.config, pubsub, tick)
+                        .await
+                        .context("Hedging error"),
+                );
+            }));
+        }
     }
     if user_trades.enabled {
         println!("Starting user trades process");

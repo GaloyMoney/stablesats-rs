@@ -1,6 +1,6 @@
 use thiserror::Error;
 
-use crate::{currency::CurrencyError, exchange_price_cache::ExchangePriceCacheError};
+use crate::{currency::CurrencyError, price_mixer::ExchangePriceCacheError};
 use shared::pubsub::SubscriberError;
 
 #[allow(clippy::large_enum_variant)]
@@ -12,6 +12,12 @@ pub enum PriceAppError {
     SubscriberError(#[from] SubscriberError),
     #[error("PriceAppError - ExchangePriceCacheError: {0}")]
     ExchangePriceCacheError(#[from] ExchangePriceCacheError),
-    #[error("PriceAppError - StdDurationConversionError: {0}")]
-    StdDurationConversionError(#[from] chrono::OutOfRangeError),
+}
+
+#[derive(Error, Debug)]
+pub enum ExchangePriceCacheError {
+    #[error("StalePrice: last update was at {0}")]
+    StalePrice(TimeStamp),
+    #[error("No price data available")]
+    NoPriceAvailable,
 }
