@@ -198,7 +198,6 @@ dependencies = [
  "chrono",
  "data-encoding",
  "governor",
- "hex",
  "lazy_static",
  "rand",
  "reqwest",
