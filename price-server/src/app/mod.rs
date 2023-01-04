@@ -6,7 +6,7 @@ use tracing::{info_span, instrument, Instrument};
 use shared::{
     exchanges_config::ExchangeConfigAll,
     health::HealthCheckTrigger,
-    payload::{PriceStreamPayload, OKEX_EXCHANGE_ID},
+    payload::{PriceStreamPayload, KOLLIDER_EXCHANGE_ID, OKEX_EXCHANGE_ID},
     pubsub::*,
 };
 
@@ -47,9 +47,15 @@ impl PriceApp {
         let mut price_mixer = PriceMixer::new();
 
         if let Some(config) = exchanges_cfg.okex.as_ref() {
-            let okex_price_cache = ExchangeTickCache::new(price_cache_config);
-            Self::subscribe_okex(subscriber, okex_price_cache.clone()).await?;
+            let okex_price_cache = ExchangeTickCache::new(price_cache_config.clone());
+            Self::subscribe_okex(subscriber.resubscribe(), okex_price_cache.clone()).await?;
             price_mixer.add_provider(OKEX_EXCHANGE_ID, okex_price_cache, config.weight);
+        }
+
+        if let Some(config) = exchanges_cfg.kollider.as_ref() {
+            let kollider_price_cache = ExchangeTickCache::new(price_cache_config);
+            Self::subscribe_kollider(subscriber, kollider_price_cache.clone()).await?;
+            price_mixer.add_provider(KOLLIDER_EXCHANGE_ID, kollider_price_cache, config.weight);
         }
 
         let fee_calculator = FeeCalculator::new(fee_calc_cfg);
@@ -70,6 +76,33 @@ impl PriceApp {
                 if let PriceStreamPayload::OkexBtcSwapPricePayload(price_msg) = msg.payload {
                     let span = info_span!(
                         "okex_price_tick_received",
+                        message_type = %msg.payload_type,
+                        correlation_id = %msg.meta.correlation_id
+                    );
+                    shared::tracing::inject_tracing_data(&span, &msg.meta.tracing_data);
+                    async {
+                        price_cache
+                            .apply_update(price_msg, msg.meta.correlation_id)
+                            .await;
+                    }
+                    .instrument(span)
+                    .await;
+                }
+            }
+        });
+
+        Ok(())
+    }
+
+    async fn subscribe_kollider(
+        mut subscriber: memory::Subscriber<PriceStreamPayload>,
+        price_cache: ExchangeTickCache,
+    ) -> Result<(), PriceAppError> {
+        let _ = tokio::spawn(async move {
+            while let Some(msg) = subscriber.next().await {
+                if let PriceStreamPayload::KolliderBtcUsdSwapPricePayload(price_msg) = msg.payload {
+                    let span = info_span!(
+                        "kollider_price_tick_received",
                         message_type = %msg.payload_type,
                         correlation_id = %msg.meta.correlation_id
                     );
