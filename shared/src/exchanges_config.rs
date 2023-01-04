@@ -59,12 +59,10 @@ mod test_super {
                   okex: 
                     weight: 0.8
                     config:
-                        type: okex
                         api_key: okex api key
                   kollider: 
                     weight: 0.2
                     config:
-                        type: kollider
                         api_key: kollider api key
                         url: url
              "#;
