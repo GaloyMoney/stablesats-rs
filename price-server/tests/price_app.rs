@@ -1,7 +1,7 @@
 use rust_decimal_macros::dec;
 use std::fs;
 
-use price_server::{app::*, ExchangePriceCacheError};
+use price_server::{app::*, ExchangePriceCacheConfig};
 use shared::{
     exchanges_config::{ExchangeConfig, ExchangeConfigAll, OkexConfig},
     payload::*,

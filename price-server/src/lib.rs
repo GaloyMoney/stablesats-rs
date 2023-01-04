@@ -10,20 +10,15 @@ mod fee_calculator;
 mod price_mixer;
 mod server;
 
-use shared::{health::HealthCheckTrigger, payload::*, pubsub::memory};
-
 use app::PriceApp;
-pub use app::PriceServerHealthCheckConfig;
-pub use exchange_price_cache::{ExchangePriceCacheConfig, ExchangePriceCacheError};
 use shared::{
-    exchanges_config::ExchangeConfigAll, health::HealthCheckTrigger, pubsub::PubSubConfig,
+    exchanges_config::ExchangeConfigAll, health::HealthCheckTrigger, payload::*, pubsub::memory,
 };
 
-use app::PriceApp;
+pub use app::PriceServerHealthCheckConfig;
+pub use cache_config::ExchangePriceCacheConfig;
 pub use fee_calculator::FeeCalculatorConfig;
 pub use server::*;
-
-pub use price_mixer::ExchangePriceCacheError;
 
 pub async fn run(
     health_check_trigger: HealthCheckTrigger,

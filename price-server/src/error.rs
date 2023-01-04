@@ -1,7 +1,7 @@
 use thiserror::Error;
 
-use crate::{currency::CurrencyError, price_mixer::ExchangePriceCacheError};
-use shared::pubsub::SubscriberError;
+use crate::currency::CurrencyError;
+use shared::{pubsub::SubscriberError, time::*};
 
 #[allow(clippy::large_enum_variant)]
 #[derive(Error, Debug)]
@@ -12,6 +12,8 @@ pub enum PriceAppError {
     SubscriberError(#[from] SubscriberError),
     #[error("PriceAppError - ExchangePriceCacheError: {0}")]
     ExchangePriceCacheError(#[from] ExchangePriceCacheError),
+    #[error("PriceAppError - DecimalConversion: {0}")]
+    DecimalConversion(#[from] rust_decimal::Error),
 }
 
 #[derive(Error, Debug)]

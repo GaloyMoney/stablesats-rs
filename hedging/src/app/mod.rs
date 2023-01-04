@@ -42,7 +42,7 @@ impl HedgingApp {
             funding: funding_config,
             ..
         }: HedgingAppConfig,
-        okex_client_config: OkexClientConfig,
+        okex_client_config: OkexConfig,
         galoy_client_cfg: GaloyClientConfig,
         pubsub_config: PubSubConfig,
         tick_receiver: memory::Subscriber<OkexBtcUsdSwapPricePayload>,

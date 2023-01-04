@@ -1,29 +1,25 @@
-mod error;
+mod config;
 
-use std::{collections::HashMap, sync::Arc};
+use std::collections::HashMap;
 
-use chrono::Duration;
 use futures::stream::StreamExt;
 use rust_decimal::Decimal;
-use tokio::sync::RwLock;
 use tracing::{info_span, instrument, Instrument};
 
 use shared::{
     exchanges_config::ExchangeConfigAll,
     health::HealthCheckTrigger,
-    payload::{
-        KolliderBtcUsdSwapPricePayload, OkexBtcUsdSwapPricePayload, KOLLIDER_EXCHANGE_ID,
-        OKEX_EXCHANGE_ID,
-    },
+    payload::{OkexBtcUsdSwapPricePayload, OKEX_EXCHANGE_ID},
     pubsub::*,
 };
 
-pub use crate::{currency::*, fee_calculator::*};
 use crate::{
+    cache_config::ExchangePriceCacheConfig,
     exchange_tick_cache::ExchangeTickCache,
     price_mixer::{PriceMixer, PriceProvider},
 };
-pub use error::*;
+pub use crate::{currency::*, error::*, fee_calculator::*};
+pub use config::*;
 
 pub struct PriceApp {
     price_mixer: PriceMixer,
@@ -35,37 +31,29 @@ impl PriceApp {
         mut health_check_trigger: HealthCheckTrigger,
         health_check_cfg: PriceServerHealthCheckConfig,
         fee_calc_cfg: FeeCalculatorConfig,
-        mut subscriber: memory::Subscriber<OkexBtcUsdSwapPricePayload>,
+        subscriber: memory::Subscriber<OkexBtcUsdSwapPricePayload>,
         price_cache_config: ExchangePriceCacheConfig,
         exchanges_cfg: ExchangeConfigAll,
     ) -> Result<Self, PriceAppError> {
-        let health_check_trigger = Arc::new(RwLock::new(health_check_trigger));
+        let health_subscriber = subscriber.resubscribe();
+        tokio::spawn(async move {
+            while let Some(check) = health_check_trigger.next().await {
+                check
+                    .send(
+                        health_subscriber
+                            .healthy(health_check_cfg.unhealthy_msg_interval_price)
+                            .await,
+                    )
+                    .expect("Couldn't send response");
+            }
+        });
 
         let mut providers: HashMap<String, (Box<dyn PriceProvider + Sync + Send>, Decimal)> =
             HashMap::new();
 
-        if let Some(config) = exchanges_cfg.kollider.as_ref() {
-            let kollider_price_cache = ExchangeTickCache::new(Duration::seconds(30));
-            Self::subscribe_kollider(
-                pubsub_cfg.clone(),
-                health_check_trigger.clone(),
-                kollider_price_cache.clone(),
-            )
-            .await?;
-            providers.insert(
-                KOLLIDER_EXCHANGE_ID.to_string(),
-                (Box::new(kollider_price_cache), config.weight),
-            );
-        }
-
         if let Some(config) = exchanges_cfg.okex.as_ref() {
-            let okex_price_cache = ExchangeTickCache::new(Duration::seconds(30));
-            Self::subscribe_okex(
-                pubsub_cfg.clone(),
-                health_check_trigger.clone(),
-                okex_price_cache.clone(),
-            )
-            .await?;
+            let okex_price_cache = ExchangeTickCache::new(price_cache_config);
+            Self::subscribe_okex(subscriber, okex_price_cache.clone()).await?;
             providers.insert(
                 OKEX_EXCHANGE_ID.to_string(),
                 (Box::new(okex_price_cache), config.weight),
@@ -82,61 +70,11 @@ impl PriceApp {
     }
 
     async fn subscribe_okex(
-        pubsub_cfg: PubSubConfig,
-        health_check_trigger: Arc<RwLock<HealthCheckTrigger>>,
+        mut subscriber: memory::Subscriber<OkexBtcUsdSwapPricePayload>,
         price_cache: ExchangeTickCache,
     ) -> Result<(), PriceAppError> {
-        let subscriber = Subscriber::new(pubsub_cfg).await?;
-        let mut stream = subscriber.subscribe::<OkexBtcUsdSwapPricePayload>().await?;
-        tokio::spawn(async move {
-            while let Some(check) = health_check_trigger.write().await.next().await {
-                check
-                    .send(subscriber.healthy(Duration::seconds(20)).await)
-                    .expect("Couldn't send response");
-            }
-        });
-
         let _ = tokio::spawn(async move {
-            while let Some(msg) = stream.next().await {
-                let span = info_span!(
-                    "price_tick_received",
-                    message_type = %msg.payload_type,
-                    correlation_id = %msg.meta.correlation_id
-                );
-                shared::tracing::inject_tracing_data(&span, &msg.meta.tracing_data);
-
-                async {
-                    price_cache
-                        .apply_update(msg.payload.0, msg.meta.correlation_id)
-                        .await;
-                }
-                .instrument(span)
-                .await;
-            }
-        });
-
-        Ok(())
-    }
-
-    async fn subscribe_kollider(
-        pubsub_cfg: PubSubConfig,
-        health_check_trigger: Arc<RwLock<HealthCheckTrigger>>,
-        price_cache: ExchangeTickCache,
-    ) -> Result<(), PriceAppError> {
-        let subscriber = Subscriber::new(pubsub_cfg).await?;
-        let mut stream = subscriber
-            .subscribe::<KolliderBtcUsdSwapPricePayload>()
-            .await?;
-        tokio::spawn(async move {
-            while let Some(check) = health_check_trigger.write().await.next().await {
-                check
-                    .send(subscriber.healthy(Duration::seconds(20)).await)
-                    .expect("Couldn't send response");
-            }
-        });
-
-        let _ = tokio::spawn(async move {
-            while let Some(msg) = stream.next().await {
+            while let Some(msg) = subscriber.next().await {
                 let span = info_span!(
                     "price_tick_received",
                     message_type = %msg.payload_type,

@@ -5,7 +5,7 @@ use tokio::sync::RwLock;
 use tracing::Span;
 use tracing_opentelemetry::OpenTelemetrySpanExt;
 
-use crate::{currency::*, price_mixer::*};
+use crate::{cache_config::ExchangePriceCacheConfig, currency::*, error::*, price_mixer::*};
 use shared::{payload::*, pubsub::CorrelationId, time::*};
 
 #[derive(Clone)]
@@ -35,13 +35,13 @@ impl PriceProvider for ExchangeTickCache {
         if let Some(mock_price) = self.config.dev_mock_price_btc_in_usd {
             let price = PriceRatioRaw::from_one_btc_in_usd_price(mock_price);
             let cent_price = UsdCents::try_from(price).expect("couldn't create mack UsdCents");
-            return Ok(BtcSatTick {
+            return Ok(Box::new(BtcSatTick {
                 timestamp: TimeStamp::now(),
                 correlation_id: CorrelationId::new(),
                 span_context: Span::current().context().span().span_context().clone(),
                 ask_price_of_one_sat: cent_price.clone(),
                 bid_price_of_one_sat: cent_price,
-            });
+            }));
         }
         let inner = self.inner.read().await;
         let tick = inner.latest_tick()?;

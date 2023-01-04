@@ -160,6 +160,28 @@ async fn run_cmd(
         }));
     }
 
+    if hedging.enabled {
+        println!("Starting hedging process");
+
+        let hedging_send = send.clone();
+        let pubsub = pubsub.clone();
+        let galoy = galoy.clone();
+        let (snd, recv) = futures::channel::mpsc::unbounded();
+        let tick = tick_recv.resubscribe();
+        checkers.insert("hedging", snd);
+
+        if let Some(okex_cfg) = exchanges.okex.as_ref() {
+            let okex_config = okex_cfg.config.clone();
+            handles.push(tokio::spawn(async move {
+                let _ = hedging_send.try_send(
+                    hedging::run(recv, hedging.config, okex_config, galoy, pubsub, tick)
+                        .await
+                        .context("Hedging error"),
+                );
+            }));
+        }
+    }
+
     if price_server.enabled {
         println!(
             "Starting price server on port {}",
@@ -179,33 +201,12 @@ async fn run_cmd(
                     price_server.fees,
                     tick,
                     price_server.price_cache,
+                    exchanges,
                 )
                 .await
                 .context("Price Server error"),
             );
         }));
-    }
-
-    if hedging.enabled {
-        println!("Starting hedging process");
-
-        let hedging_send = send.clone();
-        let pubsub = pubsub.clone();
-        let galoy = galoy.clone();
-        let (snd, recv) = futures::channel::mpsc::unbounded();
-        let tick = tick_recv.resubscribe();
-        checkers.insert("hedging", snd);
-        let exchanges = exchanges.clone();
-
-        if let Some(okex_cfg) = exchanges.okex {
-            handles.push(tokio::spawn(async move {
-                let _ = hedging_send.try_send(
-                    hedging::run(recv, hedging.config, okex_cfg.config, pubsub, tick)
-                        .await
-                        .context("Hedging error"),
-                );
-            }));
-        }
     }
     if user_trades.enabled {
         println!("Starting user trades process");

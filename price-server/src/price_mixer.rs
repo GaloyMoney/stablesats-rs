@@ -1,9 +1,7 @@
 use async_trait::async_trait;
 use rust_decimal::Decimal;
-use thiserror::Error;
 
-use crate::currency::VolumePicker;
-use shared::time::*;
+use crate::{currency::VolumePicker, error::ExchangePriceCacheError};
 use std::collections::HashMap;
 
 use super::currency::*;
@@ -57,14 +55,6 @@ impl PriceMixer {
     }
 }
 
-#[derive(Error, Debug)]
-pub enum ExchangePriceCacheError {
-    #[error("StalePrice: last update was at {0}")]
-    StalePrice(TimeStamp),
-    #[error("No price data available")]
-    NoPriceAvailable,
-}
-
 #[cfg(test)]
 mod tests {
     pub use std::collections::HashMap;
@@ -79,6 +69,7 @@ mod tests {
     pub use super::PriceProvider;
     pub use crate::currency::UsdCents;
     pub use crate::{
+        cache_config::ExchangePriceCacheConfig,
         currency::{Sats, VolumePicker},
         exchange_tick_cache::ExchangeTickCache,
     };
@@ -88,7 +79,7 @@ mod tests {
     async fn test_price_mixer() -> anyhow::Result<(), Error> {
         let mut providers: HashMap<String, (Box<dyn PriceProvider + Sync + Send>, Decimal)> =
             HashMap::new();
-        let cache = Box::new(ExchangeTickCache::new(Duration::seconds(3000)));
+        let cache = Box::new(ExchangeTickCache::new(ExchangePriceCacheConfig::default()));
         providers.insert("okex".to_string(), (cache.clone(), Decimal::from(1)));
         let price_mixer = PriceMixer::new(providers);
 
