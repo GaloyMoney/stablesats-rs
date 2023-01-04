@@ -18,14 +18,24 @@ pub trait PriceProvider {
 }
 
 pub struct PriceMixer {
-    providers: HashMap<String, (Box<dyn PriceProvider + Sync + Send>, Decimal)>,
+    providers: HashMap<&'static str, (Box<dyn PriceProvider + Sync + Send>, Decimal)>,
 }
 
 impl PriceMixer {
-    pub fn new(
-        providers: HashMap<String, (Box<dyn PriceProvider + Sync + Send>, Decimal)>,
-    ) -> Self {
-        Self { providers }
+    pub fn new() -> Self {
+        Self {
+            providers: HashMap::new(),
+        }
+    }
+
+    pub fn add_provider(
+        &mut self,
+        exchange_id: &'static str,
+        provider: impl PriceProvider + Sync + Send + 'static,
+        weight: Decimal,
+    ) {
+        self.providers
+            .insert(exchange_id, (Box::new(provider), weight));
     }
 
     pub async fn apply(
@@ -47,10 +57,10 @@ impl PriceMixer {
             total += f(&side_picker) * weight;
         }
 
-        if let Some(prev_error) = prev_error {
-            Err(prev_error)
-        } else {
+        if total > Decimal::ZERO && total_weights > Decimal::ZERO {
             Ok(total / total_weights)
+        } else {
+            Err(prev_error.unwrap_or(ExchangePriceCacheError::NoPriceAvailable))
         }
     }
 }
@@ -77,11 +87,9 @@ mod tests {
 
     #[tokio::test]
     async fn test_price_mixer() -> anyhow::Result<(), Error> {
-        let mut providers: HashMap<String, (Box<dyn PriceProvider + Sync + Send>, Decimal)> =
-            HashMap::new();
-        let cache = Box::new(ExchangeTickCache::new(ExchangePriceCacheConfig::default()));
-        providers.insert("okex".to_string(), (cache.clone(), Decimal::from(1)));
-        let price_mixer = PriceMixer::new(providers);
+        let cache = ExchangeTickCache::new(ExchangePriceCacheConfig::default());
+        let mut price_mixer = PriceMixer::new();
+        price_mixer.add_provider("okex", cache.clone(), Decimal::from(1));
 
         cache
             .apply_update(get_payload(), CorrelationId::new())

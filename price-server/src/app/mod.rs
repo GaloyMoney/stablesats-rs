@@ -48,21 +48,17 @@ impl PriceApp {
             }
         });
 
-        let mut providers: HashMap<String, (Box<dyn PriceProvider + Sync + Send>, Decimal)> =
-            HashMap::new();
+        let mut price_mixer = PriceMixer::new();
 
         if let Some(config) = exchanges_cfg.okex.as_ref() {
             let okex_price_cache = ExchangeTickCache::new(price_cache_config);
             Self::subscribe_okex(subscriber, okex_price_cache.clone()).await?;
-            providers.insert(
-                OKEX_EXCHANGE_ID.to_string(),
-                (Box::new(okex_price_cache), config.weight),
-            );
+            price_mixer.add_provider(OKEX_EXCHANGE_ID, okex_price_cache, config.weight);
         }
 
         let fee_calculator = FeeCalculator::new(fee_calc_cfg);
         let app = Self {
-            price_mixer: PriceMixer::new(providers),
+            price_mixer,
             fee_calculator,
         };
 
