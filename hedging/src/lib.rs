@@ -22,7 +22,7 @@ pub async fn run(
     okex_config: OkexConfig,
     galoy_config: GaloyClientConfig,
     pubsub_cfg: PubSubConfig,
-    tick_receiver: memory::Subscriber<OkexBtcUsdSwapPricePayload>,
+    tick_receiver: memory::Subscriber<PriceStreamPayload>,
 ) -> Result<(), HedgingError> {
     HedgingApp::run(
         health_check_trigger,

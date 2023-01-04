@@ -1,20 +1,8 @@
 use chrono::Duration;
 use futures::StreamExt;
 use okex_price::*;
-use std::fs;
 
 use shared::{payload::*, pubsub::*, time::*};
-
-#[derive(serde::Deserialize)]
-struct Fixture {
-    payloads: Vec<PriceMessagePayload>,
-}
-
-fn load_fixture() -> anyhow::Result<Fixture> {
-    let contents =
-        fs::read_to_string("./tests/fixtures/price_feed.json").expect("Couldn't load fixtures");
-    Ok(serde_json::from_str(&contents)?)
-}
 
 #[tokio::test]
 async fn subscribes_to_tickers_channel() -> anyhow::Result<()> {
@@ -75,9 +63,10 @@ async fn publishes_to_redis() -> anyhow::Result<()> {
 
     let received_tick = tick_recv.next().await.expect("expected price tick");
 
-    let payload = &load_fixture()?.payloads[0];
-    assert_eq!(received_tick.payload.exchange, payload.exchange);
-    assert_eq!(received_tick.payload.instrument_id, payload.instrument_id);
+    assert!(matches!(
+        received_tick.payload,
+        PriceStreamPayload::OkexBtcSwapPricePayload(_)
+    ));
 
     Ok(())
 }

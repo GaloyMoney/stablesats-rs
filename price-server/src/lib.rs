@@ -25,7 +25,7 @@ pub async fn run(
     health_check_cfg: PriceServerHealthCheckConfig,
     server_config: PriceServerConfig,
     fee_calc_cfg: FeeCalculatorConfig,
-    subscriber: memory::Subscriber<OkexBtcUsdSwapPricePayload>,
+    subscriber: memory::Subscriber<PriceStreamPayload>,
     price_cache_config: ExchangePriceCacheConfig,
     exchanges_cfg: ExchangeConfigAll,
 ) -> Result<(), PriceServerError> {

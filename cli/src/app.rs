@@ -1,4 +1,5 @@
 use anyhow::Context;
+use chrono::Duration;
 use clap::{Parser, Subcommand};
 use rust_decimal::Decimal;
 use std::{collections::HashMap, path::PathBuf};
@@ -131,7 +132,7 @@ async fn run_cmd(
     let (send, mut receive) = tokio::sync::mpsc::channel(1);
     let mut handles = Vec::new();
     let mut checkers = HashMap::new();
-    let (tick_send, tick_recv) = memory::channel(okex_price_feed.config.rate_limit_interval);
+    let (price_send, price_recv) = memory::channel(price_stream_throttle_period());
 
     if okex_price_feed.enabled {
         println!("Starting Okex price feed");
@@ -139,7 +140,7 @@ async fn run_cmd(
         let okex_send = send.clone();
         handles.push(tokio::spawn(async move {
             let _ = okex_send.try_send(
-                okex_price::run(okex_price_feed.config, tick_send)
+                okex_price::run(okex_price_feed.config, price_send)
                     .await
                     .context("Okex Price Feed error"),
             );
@@ -167,14 +168,14 @@ async fn run_cmd(
         let pubsub = pubsub.clone();
         let galoy = galoy.clone();
         let (snd, recv) = futures::channel::mpsc::unbounded();
-        let tick = tick_recv.resubscribe();
+        let price = price_recv.resubscribe();
         checkers.insert("hedging", snd);
 
         if let Some(okex_cfg) = exchanges.okex.as_ref() {
             let okex_config = okex_cfg.config.clone();
             handles.push(tokio::spawn(async move {
                 let _ = hedging_send.try_send(
-                    hedging::run(recv, hedging.config, okex_config, galoy, pubsub, tick)
+                    hedging::run(recv, hedging.config, okex_config, galoy, pubsub, price)
                         .await
                         .context("Hedging error"),
                 );
@@ -191,7 +192,7 @@ async fn run_cmd(
         let price_send = send.clone();
         let (snd, recv) = futures::channel::mpsc::unbounded();
         checkers.insert("price", snd);
-        let tick = tick_recv.resubscribe();
+        let price = price_recv.resubscribe();
         handles.push(tokio::spawn(async move {
             let _ = price_send.try_send(
                 price_server::run(
@@ -199,7 +200,7 @@ async fn run_cmd(
                     price_server.health,
                     price_server.server,
                     price_server.fees,
-                    tick,
+                    price,
                     price_server.price_cache,
                     exchanges,
                 )
@@ -241,4 +242,8 @@ async fn price_cmd(
             .unwrap_or_else(PriceClientConfig::default),
     );
     client.get_price(direction, expiry, amount).await
+}
+
+fn price_stream_throttle_period() -> Duration {
+    Duration::from_std(std::time::Duration::from_secs(2)).unwrap()
 }

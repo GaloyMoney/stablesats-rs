@@ -1,22 +1,18 @@
 mod config;
 
-use std::collections::HashMap;
-
 use futures::stream::StreamExt;
-use rust_decimal::Decimal;
 use tracing::{info_span, instrument, Instrument};
 
 use shared::{
     exchanges_config::ExchangeConfigAll,
     health::HealthCheckTrigger,
-    payload::{OkexBtcUsdSwapPricePayload, OKEX_EXCHANGE_ID},
+    payload::{PriceStreamPayload, OKEX_EXCHANGE_ID},
     pubsub::*,
 };
 
 use crate::{
-    cache_config::ExchangePriceCacheConfig,
-    exchange_tick_cache::ExchangeTickCache,
-    price_mixer::{PriceMixer, PriceProvider},
+    cache_config::ExchangePriceCacheConfig, exchange_tick_cache::ExchangeTickCache,
+    price_mixer::PriceMixer,
 };
 pub use crate::{currency::*, error::*, fee_calculator::*};
 pub use config::*;
@@ -31,7 +27,7 @@ impl PriceApp {
         mut health_check_trigger: HealthCheckTrigger,
         health_check_cfg: PriceServerHealthCheckConfig,
         fee_calc_cfg: FeeCalculatorConfig,
-        subscriber: memory::Subscriber<OkexBtcUsdSwapPricePayload>,
+        subscriber: memory::Subscriber<PriceStreamPayload>,
         price_cache_config: ExchangePriceCacheConfig,
         exchanges_cfg: ExchangeConfigAll,
     ) -> Result<Self, PriceAppError> {
@@ -66,25 +62,26 @@ impl PriceApp {
     }
 
     async fn subscribe_okex(
-        mut subscriber: memory::Subscriber<OkexBtcUsdSwapPricePayload>,
+        mut subscriber: memory::Subscriber<PriceStreamPayload>,
         price_cache: ExchangeTickCache,
     ) -> Result<(), PriceAppError> {
         let _ = tokio::spawn(async move {
             while let Some(msg) = subscriber.next().await {
-                let span = info_span!(
-                    "price_tick_received",
-                    message_type = %msg.payload_type,
-                    correlation_id = %msg.meta.correlation_id
-                );
-                shared::tracing::inject_tracing_data(&span, &msg.meta.tracing_data);
-
-                async {
-                    price_cache
-                        .apply_update(msg.payload.0, msg.meta.correlation_id)
-                        .await;
+                if let PriceStreamPayload::OkexBtcSwapPricePayload(price_msg) = msg.payload {
+                    let span = info_span!(
+                        "okex_price_tick_received",
+                        message_type = %msg.payload_type,
+                        correlation_id = %msg.meta.correlation_id
+                    );
+                    shared::tracing::inject_tracing_data(&span, &msg.meta.tracing_data);
+                    async {
+                        price_cache
+                            .apply_update(price_msg, msg.meta.correlation_id)
+                            .await;
+                    }
+                    .instrument(span)
+                    .await;
                 }
-                .instrument(span)
-                .await;
             }
         });
 

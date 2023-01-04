@@ -72,7 +72,7 @@ async fn price_app() -> anyhow::Result<()> {
     let mut payloads = load_fixture()?.payloads.into_iter();
     let mut payload = payloads.next().unwrap();
     tick_send
-        .publish(OkexBtcUsdSwapPricePayload(payload.clone()))
+        .publish(PriceStreamPayload::OkexBtcSwapPricePayload(payload.clone()))
         .await?;
     subscriber.next().await;
     tokio::time::sleep(std::time::Duration::from_millis(100)).await;
@@ -89,7 +89,7 @@ async fn price_app() -> anyhow::Result<()> {
 
     payload.timestamp = TimeStamp::now();
     publisher
-        .publish(OkexBtcUsdSwapPricePayload(payload))
+        .publish(PriceStreamPayload::OkexBtcSwapPricePayload(payload))
         .await?;
     subscriber.next().await;
     tokio::time::sleep(std::time::Duration::from_millis(100)).await;
