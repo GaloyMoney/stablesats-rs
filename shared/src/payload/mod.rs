@@ -21,23 +21,6 @@ pub struct PriceMessagePayload {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(transparent)]
-pub struct KolliderBtcUsdSwapPricePayload(pub PriceMessagePayload);
-impl From<KolliderBtcUsdSwapPricePayload> for PriceMessagePayload {
-    fn from(payload: KolliderBtcUsdSwapPricePayload) -> Self {
-        payload.0
-    }
-}
-impl std::ops::Deref for KolliderBtcUsdSwapPricePayload {
-    type Target = PriceMessagePayload;
-    fn deref(&self) -> &Self::Target {
-        &self.0
-    }
-}
-
-crate::payload! { KolliderBtcUsdSwapPricePayload, "price.kollider.btc-usd-swap" }
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(tag = "type")]
 pub enum PriceStreamPayload {
     OkexBtcSwapPricePayload(PriceMessagePayload),

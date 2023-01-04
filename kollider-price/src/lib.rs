@@ -1,26 +1,24 @@
-use futures::StreamExt;
+mod convert;
+mod error;
 mod price_feed;
+
+use futures::StreamExt;
 use price_feed::config::KolliderPriceFeedConfig;
 pub use price_feed::*;
-use shared::{
-    payload::KolliderBtcUsdSwapPricePayload,
-    pubsub::{PubSubConfig, Publisher},
-};
+use shared::{payload::PriceStreamPayload, pubsub::*};
 
-pub use price_feed::error::KolliderPriceFeedError;
-
-mod convert;
+pub use error::PriceFeedError;
 
 pub async fn run(
     price_feed_config: KolliderPriceFeedConfig,
-    pubsub_cfg: PubSubConfig,
-) -> Result<(), KolliderPriceFeedError> {
-    let publisher = Publisher::new(pubsub_cfg).await?;
-
+    price_stream_publisher: memory::Publisher<PriceStreamPayload>,
+) -> Result<(), PriceFeedError> {
     let mut stream = subscribe_price_feed(price_feed_config).await?;
     while let Some(tick) = stream.next().await {
-        if let Ok(payload) = KolliderBtcUsdSwapPricePayload::try_from(tick) {
-            publisher.throttle_publish(payload).await?;
+        if let Ok(payload) = PriceStreamPayload::try_from(tick) {
+            price_stream_publisher
+                .throttle_publish("KOLLIDER_PRICE", payload)
+                .await?;
         }
     }
 

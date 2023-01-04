@@ -138,6 +138,7 @@ async fn run_cmd(
         println!("Starting Okex price feed");
 
         let okex_send = send.clone();
+        let price_send = price_send.clone();
         handles.push(tokio::spawn(async move {
             let _ = okex_send.try_send(
                 okex_price::run(okex_price_feed.config, price_send)
@@ -151,10 +152,9 @@ async fn run_cmd(
         println!("Starting Kollider price feed");
 
         let kollider_send = send.clone();
-        let pubsub = pubsub.clone();
         handles.push(tokio::spawn(async move {
             let _ = kollider_send.try_send(
-                kollider_price::run(kollider_price_feed.config, pubsub)
+                kollider_price::run(kollider_price_feed.config, price_send)
                     .await
                     .context("Kollider Price Feed error"),
             );

@@ -53,7 +53,7 @@ async fn subscribe_to_order_book_channel() -> anyhow::Result<()> {
 }
 
 #[tokio::test]
-async fn publishes_to_redis() -> anyhow::Result<()> {
+async fn publishes_to_price_stream() -> anyhow::Result<()> {
     let (tick_send, mut tick_recv) =
         memory::channel(chrono::Duration::from_std(std::time::Duration::from_secs(2)).unwrap());
 
