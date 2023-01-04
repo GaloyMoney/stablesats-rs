@@ -2,11 +2,10 @@ mod bitfinex_response;
 mod error;
 mod primitives;
 
-use chrono::{SecondsFormat, Utc};
 use data_encoding::HEXLOWER;
 use reqwest::{
-    header::{HeaderMap, HeaderValue, CONTENT_TYPE},
-    Client as ReqwestClient, Response,
+    header::{HeaderMap, HeaderName, HeaderValue, CONTENT_TYPE},
+    Client as ReqwestClient, Response, StatusCode,
 };
 use ring::hmac;
 use rust_decimal::Decimal;
@@ -29,7 +28,7 @@ lazy_static::lazy_static! {
 }
 
 const REST_API_V2_URL: &str = "https://api.bitfinex.com/v2";
-const REST_API_SIGNATURE_PATH: &str = "/api/v2/auth/r/";
+const REST_API_SIGNATURE_PATH: &str = "/api/v2/auth/r";
 
 #[derive(Clone, Debug, Default, Deserialize, Serialize)]
 pub struct BitfinexClientConfig {
@@ -121,9 +120,9 @@ impl BitfinexClient {
         // );
         let request_body = serde_json::to_string(&body)?;
 
-        let endpoint = "/info/user";
+        let endpoint = "/info/funding";
         let params = format!("/{}", BitfinexInstrumentId::UsdSpot);
-        let headers = self.post_request_headers(endpoint, &request_body)?;
+        let headers = self.post_request_headers(endpoint, params.as_str(), &request_body)?;
 
         let response = self
             .rate_limit_client(endpoint)
@@ -156,91 +155,70 @@ impl BitfinexClient {
     async fn extract_response_data<T: serde::de::DeserializeOwned>(
         response: Response,
     ) -> Result<Option<T>, BitfinexClientError> {
-        let response_text = response.text().await?;
-        let BitfinexResponse {
-            message,
-            code,
-            data,
-        } = serde_json::from_str::<BitfinexResponse<T>>(&response_text)?;
-        if let Some(data) = data {
-            if let Some(first) = data.into_iter().next() {
-                return Ok(Some(first));
-            } else {
-                return Ok(None);
+        match response.status() {
+            StatusCode::OK => {
+                let response_text = response.text().await?;
+                match serde_json::from_str::<Option<T>>(&response_text) {
+                    Ok(data) => Ok(data),
+                    Err(..) => Err(BitfinexClientError::UnexpectedResponse {
+                        msg: "".to_string(),
+                        code: 0,
+                    }),
+                }
+            }
+            _ => {
+                let response_text = response.text().await?;
+                let data = serde_json::from_str::<BitfinexErrorResponse>(&response_text)?;
+                Err(BitfinexClientError::from((data.message, data.code)))
             }
         }
-        let msg = message.unwrap_or_default();
-        let code = code.unwrap_or_default();
-        Err(BitfinexClientError::from((msg, code)))
     }
-
-    // async fn extract_optional_response_data<T: serde::de::DeserializeOwned>(
-    //     response: Response,
-    // ) -> Result<Option<T>, BitfinexClientError> {
-    //     let response_text = response.text().await?;
-    //     let BitfinexResponse { code, msg, data } =
-    //         serde_json::from_str::<BitfinexResponse<T>>(&response_text)?;
-    //     if let Some(data) = data {
-    //         if let Some(first) = data.into_iter().next() {
-    //             return Ok(Some(first));
-    //         } else {
-    //             return Ok(None);
-    //         }
-    //     }
-    //     Err(BitfinexClientError::from((msg, code)))
-    // }
 
     fn url_for_path(endpoint: &str, params: &str) -> String {
         format!("{}{}{}", REST_API_V2_URL, endpoint, params)
     }
 
     fn url_for_auth_path(endpoint: &str, params: &str) -> String {
-        format!("{}/auth/r/{}{}", REST_API_V2_URL, endpoint, params)
+        format!("{}/auth/r{}{}", REST_API_V2_URL, endpoint, params)
     }
-
-    // pub async fn post_authenticated(
-    //     &self,
-    //     request_path: &str,
-    //     request_body: &str,
-    // ) -> Result<Response, reqwest::Error> {
-    //     let headers = self.post_request_headers(request_path, &request_body)?;
-    //     self.rate_limit_client(request_path)
-    //         .await
-    //         .post(Self::url_for_auth_path(request_path))
-    //         .headers(headers)
-    //         .body(request_body)
-    //         .query(&[])
-    //         .send()
-    //         .await
-    // }
 
     fn sign_request(&self, pre_hash: String) -> String {
         let key = hmac::Key::new(hmac::HMAC_SHA384, self.config.secret_key.as_bytes());
         let signature = hmac::sign(&key, pre_hash.as_bytes());
-        let sig = HEXLOWER.encode(signature.as_ref());
-        let expected = hex::encode(signature.as_ref());
-        assert_eq!(sig, expected);
-        // todo!()
-        sig
+        HEXLOWER.encode(signature.as_ref())
     }
 
     fn post_request_headers(
         &self,
         request: &str,
+        params: &str,
         body: &str,
     ) -> Result<HeaderMap, BitfinexClientError> {
-        let nonce = Utc::now().to_rfc3339_opts(SecondsFormat::Millis, true);
-        let pre_hash: String = format!("{}{}{}{}", REST_API_SIGNATURE_PATH, request, nonce, body);
+        let now = std::time::SystemTime::now();
+        let epoch = now.duration_since(std::time::UNIX_EPOCH).unwrap();
+        let timestamp = epoch.as_secs() * 1000 + epoch.subsec_nanos() as u64 / 1_000_000;
+        let nonce = timestamp.to_string();
+
+        let pre_hash: String = format!(
+            "{}{}{}{}{}",
+            REST_API_SIGNATURE_PATH, request, params, nonce, body
+        );
 
         let signature = self.sign_request(pre_hash);
 
         let mut headers = HeaderMap::new();
-        headers.insert("bfx-nonce", HeaderValue::from_str(nonce.as_str())?);
         headers.insert(
-            "bfx-apikey",
+            HeaderName::from_static("bfx-nonce"),
+            HeaderValue::from_str(nonce.as_str())?,
+        );
+        headers.insert(
+            HeaderName::from_static("bfx-apikey"),
             HeaderValue::from_str(self.config.api_key.as_str())?,
         );
-        headers.insert("bfx-signature", HeaderValue::from_str(signature.as_str())?);
+        headers.insert(
+            HeaderName::from_static("bfx-signature"),
+            HeaderValue::from_str(signature.as_str())?,
+        );
         headers.insert(CONTENT_TYPE, HeaderValue::from_static("application/json"));
 
         Ok(headers)

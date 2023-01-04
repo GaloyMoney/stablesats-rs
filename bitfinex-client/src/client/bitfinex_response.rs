@@ -2,10 +2,10 @@ use rust_decimal::Decimal;
 use serde::Deserialize;
 
 #[derive(Deserialize, Debug)]
-pub struct BitfinexResponse<T> {
-    pub message: Option<String>,
-    pub code: Option<String>,
-    pub data: Option<Vec<T>>,
+pub struct BitfinexErrorResponse {
+    pub error: String,
+    pub code: u32,
+    pub message: String,
 }
 
 #[derive(Deserialize, Debug)]

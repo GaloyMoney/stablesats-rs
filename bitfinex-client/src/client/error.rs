@@ -9,11 +9,11 @@ pub enum BitfinexClientError {
     #[error("BitfinexClientError - InvalidHeaderValue: {0}")]
     Header(#[from] reqwest::header::InvalidHeaderValue),
     #[error("BitfinexClientError - UnexpectedResponse: {code:?} - {msg:?}")]
-    UnexpectedResponse { msg: String, code: String },
+    UnexpectedResponse { msg: String, code: u32 },
     #[error("BitfinexClientError - ServiceUnavailable: {code:?} - {msg:?}")]
-    ServiceUnavailable { msg: String, code: String },
+    ServiceUnavailable { msg: String, code: u32 },
     #[error("BitfinexClientError - RequestParametersError: {code:?} - {msg:?}")]
-    RequestParametersError { msg: String, code: String },
+    RequestParametersError { msg: String, code: u32 },
     #[error("BitfinexClientError - OrderDoesNotExist")]
     OrderDoesNotExist,
     #[error("BitfinexClientError - ParameterClientIdError")]
@@ -28,10 +28,10 @@ pub enum BitfinexClientError {
     MisconfiguredAccount(String),
 }
 
-impl From<(String, String)> for BitfinexClientError {
-    fn from((msg, code): (String, String)) -> Self {
-        match code.as_str() {
-            "10020" => BitfinexClientError::RequestParametersError { msg, code },
+impl From<(String, u32)> for BitfinexClientError {
+    fn from((msg, code): (String, u32)) -> Self {
+        match code {
+            10020 => BitfinexClientError::RequestParametersError { msg, code },
             _ => BitfinexClientError::UnexpectedResponse { msg, code },
         }
     }

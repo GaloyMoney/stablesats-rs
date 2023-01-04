@@ -16,12 +16,12 @@ impl Display for BitfinexInstrumentId {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct LastPrice {
     pub usd_cents: Decimal,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct FundingInfo {
     pub key: String,
     pub symbol: String,
