@@ -2,9 +2,10 @@ mod bitfinex_response;
 mod error;
 mod primitives;
 
+use chrono::Utc;
 use data_encoding::HEXLOWER;
 use reqwest::{
-    header::{HeaderMap, HeaderName, HeaderValue, CONTENT_TYPE},
+    header::{HeaderMap, HeaderValue, CONTENT_TYPE},
     Client as ReqwestClient, Response, StatusCode,
 };
 use ring::hmac;
@@ -194,10 +195,7 @@ impl BitfinexClient {
         params: &str,
         body: &str,
     ) -> Result<HeaderMap, BitfinexClientError> {
-        let now = std::time::SystemTime::now();
-        let epoch = now.duration_since(std::time::UNIX_EPOCH).unwrap();
-        let timestamp = epoch.as_secs() * 1000 + epoch.subsec_nanos() as u64 / 1_000_000;
-        let nonce = timestamp.to_string();
+        let nonce = Utc::now().timestamp_millis().to_string();
 
         let pre_hash: String = format!(
             "{}{}{}{}{}",
@@ -207,18 +205,12 @@ impl BitfinexClient {
         let signature = self.sign_request(pre_hash);
 
         let mut headers = HeaderMap::new();
+        headers.insert("bfx-nonce", HeaderValue::from_str(nonce.as_str())?);
         headers.insert(
-            HeaderName::from_static("bfx-nonce"),
-            HeaderValue::from_str(nonce.as_str())?,
-        );
-        headers.insert(
-            HeaderName::from_static("bfx-apikey"),
+            "bfx-apikey",
             HeaderValue::from_str(self.config.api_key.as_str())?,
         );
-        headers.insert(
-            HeaderName::from_static("bfx-signature"),
-            HeaderValue::from_str(signature.as_str())?,
-        );
+        headers.insert("bfx-signature", HeaderValue::from_str(signature.as_str())?);
         headers.insert(CONTENT_TYPE, HeaderValue::from_static("application/json"));
 
         Ok(headers)
