@@ -10,7 +10,7 @@ pub enum BitfinexInstrumentId {
 impl Display for BitfinexInstrumentId {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match *self {
-            BitfinexInstrumentId::BtcUsdSwap => write!(f, "tBTCUSD"),
+            BitfinexInstrumentId::BtcUsdSwap => write!(f, "tBTCF0:USTF0"),
             BitfinexInstrumentId::UsdSpot => write!(f, "fUSD"),
         }
     }
