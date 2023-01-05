@@ -2,16 +2,21 @@
 #![cfg_attr(feature = "fail-on-warnings", deny(clippy::all))]
 
 pub mod app;
+mod cache_config;
 pub mod currency;
-mod exchange_price_cache;
+mod error;
+mod exchange_tick_cache;
 mod fee_calculator;
+mod price_mixer;
 mod server;
 
-use shared::{health::HealthCheckTrigger, payload::*, pubsub::memory};
-
 use app::PriceApp;
+use shared::{
+    exchanges_config::ExchangeConfigAll, health::HealthCheckTrigger, payload::*, pubsub::memory,
+};
+
 pub use app::PriceServerHealthCheckConfig;
-pub use exchange_price_cache::{ExchangePriceCacheConfig, ExchangePriceCacheError};
+pub use cache_config::ExchangePriceCacheConfig;
 pub use fee_calculator::FeeCalculatorConfig;
 pub use server::*;
 
@@ -20,8 +25,9 @@ pub async fn run(
     health_check_cfg: PriceServerHealthCheckConfig,
     server_config: PriceServerConfig,
     fee_calc_cfg: FeeCalculatorConfig,
-    subscriber: memory::Subscriber<OkexBtcUsdSwapPricePayload>,
+    subscriber: memory::Subscriber<PriceStreamPayload>,
     price_cache_config: ExchangePriceCacheConfig,
+    exchanges_cfg: ExchangeConfigAll,
 ) -> Result<(), PriceServerError> {
     let app = PriceApp::run(
         health_check_trigger,
@@ -29,6 +35,7 @@ pub async fn run(
         fee_calc_cfg,
         subscriber,
         price_cache_config,
+        exchanges_cfg,
     )
     .await?;
 

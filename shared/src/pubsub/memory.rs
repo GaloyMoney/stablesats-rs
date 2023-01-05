@@ -1,5 +1,5 @@
 use futures::{channel::mpsc::*, stream::StreamExt, SinkExt};
-use governor::{clock::DefaultClock, state::InMemoryState, state::NotKeyed, Quota, RateLimiter};
+use governor::{clock::DefaultClock, state::keyed::DefaultKeyedStateStore, Quota, RateLimiter};
 use tokio::sync::{broadcast, RwLock};
 use tracing::instrument;
 
@@ -14,7 +14,7 @@ pub fn channel<P: MessagePayload>(
     rate_limit_interval: chrono::Duration,
 ) -> (Publisher<P>, Subscriber<P>) {
     let (tx, rx) = broadcast::channel(1);
-    let rate_limiter = Arc::new(RateLimiter::direct(
+    let rate_limiter = Arc::new(RateLimiter::keyed(
         Quota::with_period(
             rate_limit_interval
                 .to_std()
@@ -50,15 +50,17 @@ pub fn channel<P: MessagePayload>(
 #[derive(Clone)]
 pub struct Publisher<P: MessagePayload> {
     inner: broadcast::Sender<Envelope<P>>,
-    rate_limiter: Arc<RateLimiter<NotKeyed, InMemoryState, DefaultClock>>,
+    rate_limiter:
+        Arc<RateLimiter<&'static str, DefaultKeyedStateStore<&'static str>, DefaultClock>>,
 }
 
 impl<P: MessagePayload> Publisher<P> {
     pub async fn throttle_publish(
         &self,
+        throttle_key: &'static str,
         payload: P,
     ) -> Result<bool, broadcast::error::SendError<Envelope<P>>> {
-        if self.rate_limiter.check().is_ok() {
+        if self.rate_limiter.check_key(&throttle_key).is_ok() {
             self.publish(payload).await?;
             Ok(true)
         } else {

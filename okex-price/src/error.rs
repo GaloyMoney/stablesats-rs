@@ -23,8 +23,8 @@ pub enum PriceFeedError {
     SerializationError(#[from] SerdeError),
     #[error("PriceFeedError - PublisherError: {0}")]
     PublisherError(#[from] PublisherError),
-    #[error("PriceFeedError - TickPublishError: {0}")]
-    TickPublishErrorError(#[from] SendError<Envelope<OkexBtcUsdSwapPricePayload>>),
+    #[error("PriceFeedError - PricePublish: {0}")]
+    PricePublish(#[from] SendError<Envelope<PriceStreamPayload>>),
     #[error("PriceFeedError - BookPublishError: {0}")]
     BookPublishErrorError(#[from] SendError<Envelope<OkexBtcUsdSwapOrderBookPayload>>),
     #[error("PriceFeedError - OrderBookConversion: {0}")]

@@ -107,8 +107,23 @@ macro_rules! currency {
 currency! { UsdCents, USD_CENT }
 currency! { Sats, SATOSHI }
 
+pub trait VolumePicker {
+    fn cents_from_sats(&self, volume: Sats) -> UsdCents;
+    fn sats_from_cents(&self, volume: UsdCents) -> Sats;
+}
+
 pub struct CurrencyConverter<'a> {
     price_of_one_sat: &'a UsdCents,
+}
+
+impl<'a> VolumePicker for CurrencyConverter<'a> {
+    fn cents_from_sats(&self, volume: Sats) -> UsdCents {
+        UsdCents::from_decimal(volume.amount() * self.price_of_one_sat.amount())
+    }
+
+    fn sats_from_cents(&self, volume: UsdCents) -> Sats {
+        Sats::from_decimal(volume.amount() / self.price_of_one_sat.amount())
+    }
 }
 
 impl<'a> CurrencyConverter<'a> {

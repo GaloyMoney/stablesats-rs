@@ -1,11 +1,16 @@
 use serde_json::Error as SerdeError;
-use shared::pubsub::PublisherError;
 use thiserror::Error;
-
+use tokio::sync::broadcast::error::SendError;
 use tokio_tungstenite::tungstenite::error::Error as TungsteniteError;
 
+use shared::{
+    payload::*,
+    pubsub::{Envelope, PublisherError},
+};
+
+#[allow(clippy::large_enum_variant)]
 #[derive(Error, Debug)]
-pub enum KolliderPriceFeedError {
+pub enum PriceFeedError {
     #[error("KolliderPriceFeedError - SerdeError: {0}")]
     SerializationError(#[from] SerdeError),
 
@@ -14,4 +19,7 @@ pub enum KolliderPriceFeedError {
 
     #[error("KolliderPriceFeedError - TungsteniteError: {0}")]
     TungsteniteError(#[from] TungsteniteError),
+
+    #[error("PriceFeedError - PricePublish: {0}")]
+    PricePublish(#[from] SendError<Envelope<PriceStreamPayload>>),
 }

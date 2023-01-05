@@ -9,9 +9,7 @@ impl From<PriceAppError> for tonic::Status {
             ExchangePriceCacheError(err) => {
                 tonic::Status::new(tonic::Code::Unknown, format!("{}", err))
             }
-            StdDurationConversionError(err) => {
-                tonic::Status::new(tonic::Code::Unknown, format!("{}", err))
-            }
+            DecimalConversion(err) => tonic::Status::new(tonic::Code::Unknown, format!("{}", err)),
         }
     }
 }

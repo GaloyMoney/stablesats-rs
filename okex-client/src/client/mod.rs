@@ -11,7 +11,7 @@ use reqwest::{
 use ring::hmac;
 use rust_decimal::Decimal;
 use rust_decimal_macros::dec;
-use serde::{Deserialize, Serialize};
+use shared::exchanges_config::OkexConfig;
 use tracing::instrument;
 
 use std::{collections::HashMap, time::Duration};
@@ -38,26 +38,14 @@ pub const OKEX_MAXIMUM_WITHDRAWAL_FEE: Decimal = dec!(0.0004);
 pub const OKEX_MINIMUM_WITHDRAWAL_AMOUNT: Decimal = dec!(0.001);
 pub const OKEX_MAXIMUM_WITHDRAWAL_AMOUNT: Decimal = dec!(500);
 
-#[derive(Clone, Debug, Default, Deserialize, Serialize)]
-pub struct OkexClientConfig {
-    #[serde(default)]
-    pub api_key: String,
-    #[serde(default)]
-    pub passphrase: String,
-    #[serde(default)]
-    pub secret_key: String,
-    #[serde(default)]
-    pub simulated: bool,
-}
-
 #[derive(Clone)]
 pub struct OkexClient {
     client: ReqwestClient,
-    config: OkexClientConfig,
+    config: OkexConfig,
 }
 
 impl OkexClient {
-    pub async fn new(config: OkexClientConfig) -> Result<Self, OkexClientError> {
+    pub async fn new(config: OkexConfig) -> Result<Self, OkexClientError> {
         let client = Self {
             client: ReqwestClient::builder().use_rustls_tls().build()?,
             config,
