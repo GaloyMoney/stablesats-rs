@@ -138,8 +138,8 @@ async fn hedging() -> anyhow::Result<()> {
                 ..Default::default()
             },
             okex_client_config(),
-            galoy_client_config(),
             bitfinex_client_config(),
+            galoy_client_config(),
             pubsub_config.clone(),
             tick_recv.resubscribe(),
         )
@@ -155,8 +155,8 @@ async fn hedging() -> anyhow::Result<()> {
                     ..Default::default()
                 },
                 okex_client_config(),
-                galoy_client_config(),
                 bitfinex_client_config(),
+                galoy_client_config(),
                 pubsub_config,
                 tick_recv,
             )
