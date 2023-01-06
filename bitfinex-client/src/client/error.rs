@@ -4,28 +4,19 @@ use thiserror::Error;
 pub enum BitfinexClientError {
     #[error("BitfinexClientError - Reqwest: {0}")]
     Reqwest(#[from] reqwest::Error),
-    #[error("BitfinexClientError - SerdeJson: {0}")]
-    Deserialization(#[from] serde_json::Error),
     #[error("BitfinexClientError - InvalidHeaderValue: {0}")]
     Header(#[from] reqwest::header::InvalidHeaderValue),
-    #[error("BitfinexClientError - UnexpectedResponse: {code:?} - {msg:?}")]
-    UnexpectedResponse { msg: String, code: u32 },
-    #[error("BitfinexClientError - ServiceUnavailable: {code:?} - {msg:?}")]
-    ServiceUnavailable { msg: String, code: u32 },
-    #[error("BitfinexClientError - RequestParametersError: {code:?} - {msg:?}")]
-    RequestParametersError { msg: String, code: u32 },
-    #[error("BitfinexClientError - OrderDoesNotExist")]
-    OrderDoesNotExist,
-    #[error("BitfinexClientError - ParameterClientIdError")]
-    ParameterClientIdError,
-    #[error("BitfinexClientError - WithdrawalIdDoesNotExist")]
-    WithdrawalIdDoesNotExist,
-    #[error("BitfinexClientError - NoLastPriceAvailable")]
-    NoLastPriceAvailable,
+    #[error("BitfinexClientError - SerdeJson: {0}")]
+    Deserialization(#[from] serde_json::Error),
     #[error("BitfinexClientError - DecimalConversion: {0}")]
     DecimalConversion(#[from] rust_decimal::Error),
-    #[error("BitfinexClientError - MisconfiguredAccount: {0}")]
-    MisconfiguredAccount(String),
+
+    #[error("BitfinexClientError - UnexpectedResponse: {code:?} - {msg:?}")]
+    UnexpectedResponse { msg: String, code: u32 },
+    #[error("BitfinexClientError - RequestParametersError: {code:?} - {msg:?}")]
+    RequestParametersError { msg: String, code: u32 },
+    #[error("BitfinexClientError - NoLastPriceAvailable")]
+    NoLastPriceAvailable,
 }
 
 impl From<(String, u32)> for BitfinexClientError {
