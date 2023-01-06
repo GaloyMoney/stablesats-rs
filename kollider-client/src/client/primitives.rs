@@ -55,7 +55,6 @@ pub struct Product {
     pub contract_size: String,
     pub max_leverage: String,
     pub base_margin: String,
-    pub maintenance_margin: String,
     pub is_inverse_priced: bool,
     pub price_dp: i64,
     pub underlying_symbol: String,
