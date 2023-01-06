@@ -5,6 +5,7 @@ use std::fmt::Debug;
 #[derive(Serialize, Deserialize, Debug, Clone, Default)]
 pub struct ExchangeConfigs {
     pub okex: Option<ExchangeConfig<OkexConfig>>,
+    pub bitfinex: Option<ExchangeConfig<BitfinexConfig>>,
     pub kollider: Option<ExchangeConfig<KolliderConfig>>,
 }
 
@@ -27,6 +28,16 @@ pub struct OkexConfig {
     pub api_key: String,
     #[serde(default)]
     pub passphrase: String,
+    #[serde(default)]
+    pub secret_key: String,
+    #[serde(default)]
+    pub simulated: bool,
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone, Default)]
+pub struct BitfinexConfig {
+    #[serde(default)]
+    pub api_key: String,
     #[serde(default)]
     pub secret_key: String,
     #[serde(default)]
@@ -89,6 +100,15 @@ mod test_super {
             },
         };
 
+        let bit = ExchangeConfig {
+            weight: dec!(0.8),
+            config: BitfinexConfig {
+                api_key: "bitfinex api key".to_string(),
+                secret_key: "bitfinex secret key".to_string(),
+                simulated: false,
+            },
+        };
+
         let kollider = ExchangeConfig {
             weight: dec!(0.8),
             config: KolliderConfig {
@@ -99,6 +119,7 @@ mod test_super {
 
         let data = ExchangeConfigs {
             okex: Some(ok),
+            bitfinex: Some(bit),
             kollider: Some(kollider),
         };
         let result = serde_yaml::to_string(&data)?;
@@ -113,6 +134,10 @@ mod test_super {
                     weight: 1
                     config:
                         api_key: okex api
+                  bitfinex:
+                    weight: 3
+                    config:
+                        api_key: bitfinex api
                   kollider:
                     weight: 2
                     config:
@@ -124,6 +149,8 @@ mod test_super {
         assert_eq!(dec!(1), okex_cfg.weight);
         let kollider_cfg = ex.kollider.expect("Kollider-config not found");
         assert_eq!(dec!(2), kollider_cfg.weight);
+        let bitfinex_cfg = ex.bitfinex.expect("Bitfinex-config not found");
+        assert_eq!(dec!(3), bitfinex_cfg.weight);
         Ok(())
     }
 }

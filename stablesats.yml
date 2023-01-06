@@ -75,6 +75,11 @@
 #     config:
 #       api_key: okex api
 #       simulated: false
+#   bitfinex:
+#     weight: 0.0
+#     config:
+#       api_key: bitfinex api
+#       simulated: false
 #   kollider:
 #     weight: 0.0
 #     config:

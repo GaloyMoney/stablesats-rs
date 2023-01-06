@@ -9,7 +9,7 @@ async fn configured_client() -> anyhow::Result<BitfinexClient> {
     let api_key = env::var("BITFINEX_API_KEY").expect("BITFINEX_API_KEY not set");
     let secret_key = env::var("BITFINEX_SECRET_KEY").expect("BITFINEX_SECRET_KEY not set");
 
-    let client = BitfinexClient::new(BitfinexClientConfig {
+    let client = BitfinexClient::new(BitfinexConfig {
         api_key,
         secret_key,
         simulated: true,
