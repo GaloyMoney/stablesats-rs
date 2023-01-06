@@ -3,7 +3,7 @@ use std::fs;
 
 use price_server::{app::*, ExchangePriceCacheConfig};
 use shared::{
-    exchanges_config::{ExchangeConfig, ExchangesConfig, OkexConfig},
+    exchanges_config::{ExchangeConfig, ExchangeConfigs, OkexConfig},
     payload::*,
     pubsub::*,
     time::*,
@@ -39,7 +39,7 @@ async fn price_app() -> anyhow::Result<()> {
         },
     };
 
-    let ex_cfgs = ExchangesConfig {
+    let ex_cfgs = ExchangeConfigs {
         okex: Some(okex),
         kollider: None,
     };
