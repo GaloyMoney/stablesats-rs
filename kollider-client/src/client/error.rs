@@ -17,6 +17,6 @@ pub enum KolliderClientError {
     #[error("KolliderClientError - SerdeError: {0}")]
     SerdeError(#[from] SerdeError),
 
-    #[error("KolliderClientError - UnexcpectedResponse: {0}")]
+    #[error("KolliderClientError - UnexpectedResponse: {0}")]
     UnexpectedResponse(String),
 }
