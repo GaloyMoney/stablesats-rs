@@ -10,7 +10,7 @@ use reqwest::{
 };
 use ring::hmac;
 use rust_decimal::Decimal;
-use serde::{Deserialize, Serialize};
+use shared::exchanges_config::BitfinexConfig;
 use tracing::instrument;
 
 use std::{collections::HashMap, time::Duration};
@@ -32,24 +32,14 @@ const REST_API_V2_URL: &str = "https://api.bitfinex.com/v2";
 const REST_API_R_SIGNATURE_PATH: &str = "/api/v2/auth/r";
 const REST_API_W_SIGNATURE_PATH: &str = "/api/v2/auth/w";
 
-#[derive(Clone, Debug, Default, Deserialize, Serialize)]
-pub struct BitfinexClientConfig {
-    #[serde(default)]
-    pub api_key: String,
-    #[serde(default)]
-    pub secret_key: String,
-    #[serde(default)]
-    pub simulated: bool,
-}
-
 #[derive(Clone)]
 pub struct BitfinexClient {
     client: ReqwestClient,
-    config: BitfinexClientConfig,
+    config: BitfinexConfig,
 }
 
 impl BitfinexClient {
-    pub async fn new(config: BitfinexClientConfig) -> Result<Self, BitfinexClientError> {
+    pub async fn new(config: BitfinexConfig) -> Result<Self, BitfinexClientError> {
         let client = Self {
             client: ReqwestClient::builder().use_rustls_tls().build()?,
             config,
