@@ -1,0 +1,23 @@
+[package]
+name = "kollider-client"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+chrono = { version = "0.4", features = ["clock", "serde"], default-features = false }
+data-encoding = "2.3.3"
+json = "0.12.4"
+reqwest = { version = "0.11.13", features = ["json"] }
+ring = "0.16.20"
+serde = "1.0.152"
+serde_derive = "1.0.147"
+serde_json = "1.0.91"
+thiserror = "1.0.38"
+tokio = { version = "1.24.0", features = ["full"] }
+governor = "0.5.1"
+lazy_static = "1.4.0"
+
+[dev-dependencies]
+anyhow = "1.0.68"
