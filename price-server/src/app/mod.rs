@@ -4,7 +4,7 @@ use futures::stream::StreamExt;
 use tracing::{info_span, instrument, Instrument};
 
 use shared::{
-    exchanges_config::ExchangeConfigAll,
+    exchanges_config::ExchangeConfigs,
     health::HealthCheckTrigger,
     payload::{PriceStreamPayload, KOLLIDER_EXCHANGE_ID, OKEX_EXCHANGE_ID},
     pubsub::*,
@@ -29,7 +29,7 @@ impl PriceApp {
         fee_calc_cfg: FeeCalculatorConfig,
         subscriber: memory::Subscriber<PriceStreamPayload>,
         price_cache_config: ExchangePriceCacheConfig,
-        exchanges_cfg: ExchangeConfigAll,
+        exchanges_cfg: ExchangeConfigs,
     ) -> Result<Self, PriceAppError> {
         let health_subscriber = subscriber.resubscribe();
         tokio::spawn(async move {

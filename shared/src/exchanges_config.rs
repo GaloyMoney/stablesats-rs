@@ -3,12 +3,12 @@ use serde::{de::DeserializeOwned, Deserialize, Serialize};
 use std::fmt::Debug;
 
 #[derive(Serialize, Deserialize, Debug, Clone, Default)]
-pub struct ExchangeConfigAll {
+pub struct ExchangeConfigs {
     pub okex: Option<ExchangeConfig<OkexConfig>>,
     pub kollider: Option<ExchangeConfig<KolliderConfig>>,
 }
 
-impl ExchangeConfigAll {
+impl ExchangeConfigs {
     pub fn is_valid(&self) -> bool {
         self.okex.is_some() || self.kollider.is_some()
     }
@@ -48,7 +48,7 @@ mod test_super {
 
     #[test]
     fn test_default() {
-        let config = ExchangeConfigAll::default();
+        let config = ExchangeConfigs::default();
         assert!(config.okex.is_none());
         assert!(config.kollider.is_none());
     }
@@ -66,7 +66,7 @@ mod test_super {
                         api_key: kollider api key
                         url: url
              "#;
-        let ex: ExchangeConfigAll = serde_yaml::from_str(str).expect("Couldn't deserialize yaml");
+        let ex: ExchangeConfigs = serde_yaml::from_str(str).expect("Couldn't deserialize yaml");
 
         let okex = ex.okex.expect("Okex-config not found");
         assert_eq!(dec!(0.8), okex.weight);
@@ -97,7 +97,7 @@ mod test_super {
             },
         };
 
-        let data = ExchangeConfigAll {
+        let data = ExchangeConfigs {
             okex: Some(ok),
             kollider: Some(kollider),
         };
@@ -119,7 +119,7 @@ mod test_super {
                         api_key: kollider key
                         url: url
              "#;
-        let ex: ExchangeConfigAll = serde_yaml::from_str(str)?;
+        let ex: ExchangeConfigs = serde_yaml::from_str(str)?;
         let okex_cfg = ex.okex.expect("Okex-config not found");
         assert_eq!(dec!(1), okex_cfg.weight);
         let kollider_cfg = ex.kollider.expect("Kollider-config not found");

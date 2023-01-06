@@ -9,7 +9,7 @@ use okex_price::PriceFeedConfig;
 use price_server::{
     ExchangePriceCacheConfig, FeeCalculatorConfig, PriceServerConfig, PriceServerHealthCheckConfig,
 };
-use shared::{exchanges_config::ExchangeConfigAll, pubsub::PubSubConfig};
+use shared::{exchanges_config::ExchangeConfigs, pubsub::PubSubConfig};
 use user_trades::UserTradesConfig;
 
 use super::tracing::TracingConfig;
@@ -33,7 +33,7 @@ pub struct Config {
     #[serde(default)]
     pub kollider_price_feed: KolliderPriceFeedConfigWrapper,
     #[serde(default)]
-    pub exchanges: ExchangeConfigAll,
+    pub exchanges: ExchangeConfigs,
 }
 
 pub struct EnvOverride {

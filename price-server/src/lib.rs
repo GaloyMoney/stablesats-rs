@@ -12,7 +12,7 @@ mod server;
 
 use app::PriceApp;
 use shared::{
-    exchanges_config::ExchangeConfigAll, health::HealthCheckTrigger, payload::*, pubsub::memory,
+    exchanges_config::ExchangeConfigs, health::HealthCheckTrigger, payload::*, pubsub::memory,
 };
 
 pub use app::PriceServerHealthCheckConfig;
@@ -27,7 +27,7 @@ pub async fn run(
     fee_calc_cfg: FeeCalculatorConfig,
     subscriber: memory::Subscriber<PriceStreamPayload>,
     price_cache_config: ExchangePriceCacheConfig,
-    exchanges_cfg: ExchangeConfigAll,
+    exchanges_cfg: ExchangeConfigs,
 ) -> Result<(), PriceServerError> {
     let app = PriceApp::run(
         health_check_trigger,
