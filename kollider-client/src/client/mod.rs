@@ -88,17 +88,6 @@ impl KolliderClient {
         Self::create_headers(self, &timestamp, &sig)
     }
 
-    fn create_get_headers_with_body(
-        &self,
-        path: &str,
-        auth_body: &str,
-    ) -> Result<HeaderMap, KolliderClientError> {
-        let timestamp = Utc::now().to_rfc3339_opts(SecondsFormat::Millis, true);
-        let pre_hash = format!("{}{}{}{}", timestamp, "GET", path, auth_body);
-        let sig = Self::generate_signature(&self.config.secret, &pre_hash)?;
-        Self::create_headers(self, &timestamp, &sig)
-    }
-
     fn create_post_headers(
         &self,
         path: &str,
