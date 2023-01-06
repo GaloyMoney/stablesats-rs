@@ -43,6 +43,7 @@ pub struct EnvOverride {
     pub okex_secret_key: String,
     pub okex_passphrase: String,
     pub galoy_phone_code: String,
+    pub bitfinex_secret_key: String,
 }
 
 impl Config {
@@ -55,6 +56,7 @@ impl Config {
             okex_passphrase,
             okex_secret_key,
             hedging_pg_con,
+            bitfinex_secret_key,
         }: EnvOverride,
     ) -> anyhow::Result<Self> {
         let config_file = std::fs::read_to_string(path).context("Couldn't read config file")?;
@@ -71,6 +73,10 @@ impl Config {
         if let Some(okex) = config.exchanges.okex.as_mut() {
             okex.config.secret_key = okex_secret_key;
             okex.config.passphrase = okex_passphrase;
+        };
+
+        if let Some(bitfinex) = config.exchanges.bitfinex.as_mut() {
+            bitfinex.config.secret_key = bitfinex_secret_key;
         };
 
         Ok(config)
