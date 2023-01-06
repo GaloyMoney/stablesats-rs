@@ -41,6 +41,7 @@ async fn price_app() -> anyhow::Result<()> {
 
     let ex_cfgs = ExchangeConfigs {
         okex: Some(okex),
+        bitfinex: None,
         kollider: None,
     };
 
