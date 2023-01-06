@@ -9,6 +9,8 @@ use reqwest::Client;
 use reqwest::header::HeaderMap;
 use reqwest::header::HeaderValue;
 use reqwest::header::CONTENT_TYPE;
+use reqwest::Response;
+use reqwest::StatusCode;
 use ring::hmac;
 use serde_derive::Deserialize;
 use serde_derive::Serialize;
@@ -99,6 +101,31 @@ impl KolliderClient {
         Self::create_headers(self, &timestamp, &sig)
     }
 
+    async fn extract_response_data<T: serde::de::DeserializeOwned>(
+        response: Response,
+    ) -> Result<T, KolliderClientError> {
+        dbg!(&response.status());
+        match response.status() {
+            StatusCode::OK | StatusCode::CREATED => {
+                let response_text = response.text().await?;
+                dbg!(response_text.clone());
+                match serde_json::from_str::<T>(&response_text) {
+                    Ok(data) => Ok(data),
+                    Err(err) => Err(KolliderClientError::UnexpectedResponse(err.to_string())),
+                }
+            }
+            _ => {
+                let response_text = response.text().await?;
+                dbg!(response_text.clone());
+                let data = serde_json::from_str::<KolliderErrorResponse>(&response_text)?;
+                Err(KolliderClientError::UnexpectedResponse(format!(
+                    "{} {}",
+                    data.error, data.message
+                )))
+            }
+        }
+    }
+
     pub async fn get_user_balances(&self) -> Result<UserBalances, KolliderClientError> {
         let path = "/user/balances";
         let res = self
@@ -108,7 +135,7 @@ impl KolliderClient {
             .headers(Self::create_get_headers(self, path)?)
             .send()
             .await?;
-        Ok(res.json::<UserBalances>().await?)
+        Self::extract_response_data::<UserBalances>(res).await
     }
 
     pub async fn get_products(&self) -> Result<Products, KolliderClientError> {
@@ -120,7 +147,7 @@ impl KolliderClient {
             .send()
             .await?;
 
-        Ok(res.json::<Products>().await?)
+        Self::extract_response_data::<Products>(res).await
     }
 
     pub async fn make_deposit(&self, sats: i32) -> Result<PaymentRequest, KolliderClientError> {
@@ -140,7 +167,7 @@ impl KolliderClient {
             .body(request_body)
             .send()
             .await?;
-        Ok(res.json::<PaymentRequest>().await?)
+        Self::extract_response_data::<PaymentRequest>(res).await
     }
 
     pub async fn make_withdrawal(
@@ -197,7 +224,7 @@ impl KolliderClient {
             .send()
             .await?;
 
-        Ok(res.json::<PlaceOrderResult>().await?)
+        Self::extract_response_data::<PlaceOrderResult>(res).await
     }
 
     pub async fn get_open_positions(&self) -> Result<OpenPositions, KolliderClientError> {
@@ -209,7 +236,7 @@ impl KolliderClient {
             .headers(Self::create_get_headers(self, path)?)
             .send()
             .await?;
-        Ok(res.json::<OpenPositions>().await?)
+        Self::extract_response_data::<OpenPositions>(res).await
     }
 
     pub async fn get_open_orders(&self) -> Result<OpenOrders, KolliderClientError> {
@@ -223,6 +250,6 @@ impl KolliderClient {
             .headers(Self::create_get_headers(self, path)?)
             .send()
             .await?;
-        Ok(res.json::<OpenOrders>().await?)
+        Self::extract_response_data::<OpenOrders>(res).await
     }
 }

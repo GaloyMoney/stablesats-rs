@@ -3,6 +3,13 @@ use std::fmt::Display;
 
 use serde_derive::Deserialize;
 
+#[derive(Deserialize, Debug)]
+pub struct KolliderErrorResponse {
+    pub error: String,
+    #[serde(rename = "msg")]
+    pub message: String,
+}
+
 #[derive(Debug, Deserialize)]
 pub struct UserBalances {
     pub cash: Cash,
