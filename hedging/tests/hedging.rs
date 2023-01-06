@@ -9,7 +9,11 @@ use serial_test::serial;
 use std::{env, fs};
 
 use okex_client::*;
-use shared::{exchanges_config::OkexConfig, payload::*, pubsub::*};
+use shared::{
+    exchanges_config::{BitfinexConfig, OkexConfig},
+    payload::*,
+    pubsub::*,
+};
 
 use hedging::*;
 
