@@ -35,6 +35,17 @@ fn okex_client_config() -> OkexConfig {
     }
 }
 
+fn bitfinex_client_config() -> BitfinexConfig {
+    let api_key = env::var("BITFINEX_API_KEY").expect("BITFINEX_API_KEY not set");
+    let secret_key = env::var("BITFINEX_SECRET_KEY").expect("BITFINEX_SECRET_KEY not set");
+
+    BitfinexConfig {
+        api_key,
+        secret_key,
+        simulated: true,
+    }
+}
+
 fn galoy_client_config() -> GaloyClientConfig {
     let api = env::var("GALOY_GRAPHQL_URI").expect("GALOY_GRAPHQL_URI not set");
     let phone_number = env::var("PHONE_NUMBER").expect("PHONE_NUMBER not set");
@@ -128,6 +139,7 @@ async fn hedging() -> anyhow::Result<()> {
             },
             okex_client_config(),
             galoy_client_config(),
+            bitfinex_client_config(),
             pubsub_config.clone(),
             tick_recv.resubscribe(),
         )
@@ -144,6 +156,7 @@ async fn hedging() -> anyhow::Result<()> {
                 },
                 okex_client_config(),
                 galoy_client_config(),
+                bitfinex_client_config(),
                 pubsub_config,
                 tick_recv,
             )

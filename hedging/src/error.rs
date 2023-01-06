@@ -22,6 +22,8 @@ pub enum HedgingError {
     OkexClient(#[from] okex_client::OkexClientError),
     #[error("HedgingError - GaloyClient: {0}")]
     GaloyClient(#[from] galoy_client::GaloyClientError),
+    #[error("HedgingError - BitfinexClient: {0}")]
+    BitfinextClient(#[from] bitfinex_client::BitfinexClientError),
 }
 
 impl JobExecutionError for HedgingError {}

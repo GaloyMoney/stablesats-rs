@@ -208,6 +208,7 @@ dependencies = [
  "serde_json",
  "serde_yaml",
  "serial_test",
+ "stablesats-shared",
  "thiserror",
  "tokio",
  "tracing",
@@ -1127,6 +1128,7 @@ name = "hedging"
 version = "0.3.28-dev"
 dependencies = [
  "anyhow",
+ "bitfinex-client",
  "chrono",
  "futures",
  "galoy-client",
