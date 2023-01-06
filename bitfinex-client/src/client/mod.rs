@@ -29,7 +29,8 @@ lazy_static::lazy_static! {
 }
 
 const REST_API_V2_URL: &str = "https://api.bitfinex.com/v2";
-const REST_API_SIGNATURE_PATH: &str = "/api/v2/auth/r";
+const REST_API_R_SIGNATURE_PATH: &str = "/api/v2/auth/r";
+const REST_API_W_SIGNATURE_PATH: &str = "/api/v2/auth/w";
 
 #[derive(Clone, Debug, Default, Deserialize, Serialize)]
 pub struct BitfinexClientConfig {
@@ -53,33 +54,7 @@ impl BitfinexClient {
             client: ReqwestClient::builder().use_rustls_tls().build()?,
             config,
         };
-        // let path = "/api/v5/account/config";
-        // let config_url = Self::url_for_path(path);
-        // let headers = client.get_request_headers(path)?;
 
-        // let response = client
-        //     .rate_limit_client(path)
-        //     .await
-        //     .get(config_url)
-        //     .headers(headers)
-        //     .send()
-        //     .await?;
-        // let config_data =
-        //     Self::extract_response_data::<BitfinexAccountConfigurationData>(response).await?;
-
-        // if &config_data.pos_mode != "net_mode" {
-        //     return Err(BitfinexClientError::MisconfiguredAccount(format!(
-        //         "Expected `net_mode`, got `{}`",
-        //         config_data.pos_mode
-        //     )));
-        // }
-
-        // if &config_data.acct_lv != "2" {
-        //     return Err(BitfinexClientError::MisconfiguredAccount(format!(
-        //         "Expected `acct_lv: 2`, got `{}`",
-        //         config_data.acct_lv
-        //     )));
-        // }
         Ok(client)
     }
 
@@ -89,10 +64,9 @@ impl BitfinexClient {
         &self.client
     }
 
-    #[instrument(skip(self), err)]
     pub async fn get_last_price_in_usd_cents(&self) -> Result<LastPrice, BitfinexClientError> {
         let endpoint = "/ticker";
-        let params = format!("/{}", BitfinexInstrumentId::BtcUsdSwap);
+        let params = format!("/{}", Instrument::BtcUsdSwap);
 
         let response = self
             .rate_limit_client(endpoint)
@@ -101,65 +75,436 @@ impl BitfinexClient {
             .send()
             .await?;
 
-        if let Some(LastPriceData { last_price, .. }) =
-            Self::extract_response_data::<LastPriceData>(response).await?
-        {
-            Ok(LastPrice {
-                usd_cents: last_price * Decimal::ONE_HUNDRED,
-            })
-        } else {
-            Err(BitfinexClientError::NoLastPriceAvailable)
-        }
+        let data = Self::extract_response_data::<LastPriceData>(response).await?;
+        Ok(LastPrice {
+            usd_cents: data.last_price * Decimal::ONE_HUNDRED,
+        })
     }
 
     #[instrument(skip(self), err)]
     pub async fn funding_info(&self) -> Result<FundingInfo, BitfinexClientError> {
         let body: HashMap<String, String> = HashMap::new();
-        // body.insert(
-        //     "instId".to_string(),
-        //     BitfinexInstrumentId::BtcUsdSwap.to_string(),
-        // );
         let request_body = serde_json::to_string(&body)?;
 
         let endpoint = "/info/funding";
-        let params = format!("/{}", BitfinexInstrumentId::UsdSpot);
-        let headers = self.post_request_headers(endpoint, params.as_str(), &request_body)?;
+        let params = format!("/{}", Instrument::UsdSpot);
+        let headers = self.post_r_request_headers(endpoint, params.as_str(), &request_body)?;
 
         let response = self
             .rate_limit_client(endpoint)
             .await
-            .post(Self::url_for_auth_path(endpoint, params.as_str()))
+            .post(Self::url_for_auth_r_path(endpoint, params.as_str()))
             .headers(headers)
             .body(request_body)
             .send()
             .await?;
 
-        if let Some(FundingInfoData {
+        let FundingInfoData {
             key,
             symbol,
             funding,
-        }) = Self::extract_response_data::<FundingInfoData>(response).await?
-        {
-            Ok(FundingInfo {
-                key,
-                symbol,
-                yield_loan: funding.yield_loan,
-                yield_lend: funding.yield_lend,
-                duration_loan: funding.duration_loan,
-                duration_lend: funding.duration_lend,
-            })
-        } else {
-            Err(BitfinexClientError::NoLastPriceAvailable)
+        } = Self::extract_response_data::<FundingInfoData>(response).await?;
+        Ok(FundingInfo {
+            key,
+            symbol,
+            yield_loan: funding.yield_loan,
+            yield_lend: funding.yield_lend,
+            duration_loan: funding.duration_loan,
+            duration_lend: funding.duration_lend,
+        })
+    }
+
+    #[instrument(skip(self), err)]
+    pub async fn get_orders(&self) -> Result<Vec<OrderDetails>, BitfinexClientError> {
+        let body: HashMap<String, String> = HashMap::new();
+        let request_body = serde_json::to_string(&body)?;
+
+        let endpoint = "/orders";
+        let params = format!("/{}/hist", Instrument::BtcUsdSwap);
+        let headers = self.post_r_request_headers(endpoint, params.as_str(), &request_body)?;
+
+        let response = self
+            .rate_limit_client(endpoint)
+            .await
+            .post(Self::url_for_auth_r_path(endpoint, params.as_str()))
+            .headers(headers)
+            .body(request_body)
+            .send()
+            .await?;
+
+        let mut orders = Self::extract_response_data::<Vec<OrderDetails>>(response).await?;
+        for mut details in &mut orders {
+            if let Some(status) = details.order_status.clone() {
+                if status == "EXECUTED" || status == "CANCELED" {
+                    details.complete = true;
+                }
+            }
         }
+        Ok(orders)
+    }
+
+    #[instrument(skip(self), err)]
+    pub async fn get_wallets(&self) -> Result<Vec<WalletDetails>, BitfinexClientError> {
+        let body: HashMap<String, String> = HashMap::new();
+        let request_body = serde_json::to_string(&body)?;
+
+        let endpoint = "/wallets";
+        let params = "";
+        let headers = self.post_r_request_headers(endpoint, params, &request_body)?;
+
+        let response = self
+            .rate_limit_client(endpoint)
+            .await
+            .post(Self::url_for_auth_r_path(endpoint, params))
+            .headers(headers)
+            .body(request_body)
+            .send()
+            .await?;
+
+        let wallets = Self::extract_response_data::<Vec<WalletDetails>>(response).await?;
+        Ok(wallets)
+    }
+
+    #[instrument(skip(self), err)]
+    pub async fn get_positions(&self) -> Result<Vec<PositionDetails>, BitfinexClientError> {
+        let body: HashMap<String, String> = HashMap::new();
+        let request_body = serde_json::to_string(&body)?;
+
+        let endpoint = "/positions";
+        let params = "";
+        let headers = self.post_r_request_headers(endpoint, params, &request_body)?;
+
+        let response = self
+            .rate_limit_client(endpoint)
+            .await
+            .post(Self::url_for_auth_r_path(endpoint, params))
+            .headers(headers)
+            .body(request_body)
+            .send()
+            .await?;
+
+        let positions = Self::extract_response_data::<Vec<PositionDetails>>(response).await?;
+        Ok(positions)
+    }
+
+    #[instrument(skip(self), err)]
+    pub async fn get_btc_on_chain_deposit_address(
+        &self,
+    ) -> Result<DepositAddress, BitfinexClientError> {
+        let mut body: HashMap<String, String> = HashMap::new();
+        body.insert("wallet".to_string(), Wallet::FUNDING.to_string());
+        body.insert("method".to_string(), AddressMethod::BITCOIN.to_string());
+        let request_body = serde_json::to_string(&body)?;
+
+        let endpoint = "/deposit/address";
+        let params = "";
+        let headers = self.post_w_request_headers(endpoint, params, &request_body)?;
+
+        let response = self
+            .rate_limit_client(endpoint)
+            .await
+            .post(Self::url_for_auth_w_path(endpoint, params))
+            .headers(headers)
+            .body(request_body)
+            .send()
+            .await?;
+
+        let details = Self::extract_response_data::<DepositAddressDetails>(response).await?;
+        Ok(details.address)
+    }
+
+    #[instrument(skip(self), err)]
+    pub async fn get_ln_deposit_address(&self) -> Result<DepositAddress, BitfinexClientError> {
+        let mut body: HashMap<String, String> = HashMap::new();
+        body.insert("wallet".to_string(), Wallet::EXCHANGE.to_string());
+        body.insert("method".to_string(), AddressMethod::LNX.to_string());
+        let request_body = serde_json::to_string(&body)?;
+
+        let endpoint = "/deposit/address";
+        let params = "";
+        let headers = self.post_w_request_headers(endpoint, params, &request_body)?;
+
+        let response = self
+            .rate_limit_client(endpoint)
+            .await
+            .post(Self::url_for_auth_w_path(endpoint, params))
+            .headers(headers)
+            .body(request_body)
+            .send()
+            .await?;
+
+        let details = Self::extract_response_data::<DepositAddressDetails>(response).await?;
+        Ok(details.address)
+    }
+
+    #[instrument(skip(self), err)]
+    pub async fn get_ln_invoice(
+        &self,
+        client_id: ClientId,
+        amount: Decimal,
+    ) -> Result<InvoiceDetails, BitfinexClientError> {
+        let mut body: HashMap<String, String> = HashMap::new();
+        body.insert("wallet".to_string(), Wallet::EXCHANGE.to_string());
+        body.insert("currency".to_string(), Currency::LNX.to_string());
+        body.insert("amount".to_string(), amount.to_string());
+        let request_body = serde_json::to_string(&body)?;
+
+        let endpoint = "/deposit/invoice";
+        let params = "";
+        let headers = self.post_w_request_headers(endpoint, params, &request_body)?;
+
+        let response = self
+            .rate_limit_client(endpoint)
+            .await
+            .post(Self::url_for_auth_w_path(endpoint, params))
+            .headers(headers)
+            .body(request_body)
+            .send()
+            .await?;
+
+        let invoice = Self::extract_response_data::<InvoiceDetails>(response).await?;
+        Ok(invoice)
+    }
+
+    #[instrument(skip(self), err)]
+    pub async fn transfer_funding_to_trading(
+        &self,
+        client_id: ClientId,
+        amount: Decimal,
+    ) -> Result<MessageId, BitfinexClientError> {
+        let mut body: HashMap<String, String> = HashMap::new();
+        body.insert("from".to_string(), Wallet::FUNDING.to_string());
+        body.insert("to".to_string(), Wallet::TRADING.to_string());
+        body.insert("currency".to_string(), Currency::UST.to_string());
+        body.insert("currency_to".to_string(), Currency::USTF0.to_string());
+        body.insert("amount".to_string(), amount.to_string());
+        let request_body = serde_json::to_string(&body)?;
+
+        let endpoint = "/transfer";
+        let params = "";
+        let headers = self.post_w_request_headers(endpoint, params, &request_body)?;
+
+        let response = self
+            .rate_limit_client(endpoint)
+            .await
+            .post(Self::url_for_auth_w_path(endpoint, params))
+            .headers(headers)
+            .body(request_body)
+            .send()
+            .await?;
+
+        let transfer = Self::extract_response_data::<TransferDetails>(response).await?;
+        Ok(transfer.message_id)
+    }
+
+    #[instrument(skip(self), err)]
+    pub async fn transfer_trading_to_funding(
+        &self,
+        client_id: ClientId,
+        amount: Decimal,
+    ) -> Result<MessageId, BitfinexClientError> {
+        let mut body: HashMap<String, String> = HashMap::new();
+        body.insert("from".to_string(), Wallet::TRADING.to_string());
+        body.insert("to".to_string(), Wallet::FUNDING.to_string());
+        body.insert("currency".to_string(), Currency::USTF0.to_string());
+        body.insert("currency_to".to_string(), Currency::UST.to_string());
+        body.insert("amount".to_string(), amount.to_string());
+        let request_body = serde_json::to_string(&body)?;
+
+        let endpoint = "/transfer";
+        let params = "";
+        let headers = self.post_w_request_headers(endpoint, params, &request_body)?;
+
+        let response = self
+            .rate_limit_client(endpoint)
+            .await
+            .post(Self::url_for_auth_w_path(endpoint, params))
+            .headers(headers)
+            .body(request_body)
+            .send()
+            .await?;
+
+        let transfer = Self::extract_response_data::<TransferDetails>(response).await?;
+        Ok(transfer.message_id)
+    }
+
+    #[instrument(skip(self), err)]
+    pub async fn withdraw_btc_onchain(
+        &self,
+        client_id: ClientId,
+        amount: Decimal,
+        fee: Decimal,
+        address: String,
+    ) -> Result<MessageId, BitfinexClientError> {
+        let mut body: HashMap<String, String> = HashMap::new();
+        body.insert("wallet".to_string(), Wallet::FUNDING.to_string());
+        body.insert("method".to_string(), AddressMethod::BITCOIN.to_string());
+        body.insert("amount".to_string(), amount.to_string());
+        body.insert("address".to_string(), address.to_string());
+        body.insert("payment_id".to_string(), client_id.0.to_string());
+        body.insert("fee_deduct".to_string(), 0.to_string());
+        let request_body = serde_json::to_string(&body)?;
+
+        let endpoint = "/withdraw";
+        let params = "";
+        let headers = self.post_w_request_headers(endpoint, params, &request_body)?;
+
+        let response = self
+            .rate_limit_client(endpoint)
+            .await
+            .post(Self::url_for_auth_w_path(endpoint, params))
+            .headers(headers)
+            .body(request_body)
+            .send()
+            .await?;
+
+        let transfer = Self::extract_response_data::<WithdrawDetails>(response).await?;
+        Ok(transfer.message_id)
+    }
+
+    #[instrument(skip(self), err)]
+    pub async fn withdraw_btc_on_ln(
+        &self,
+        client_id: ClientId,
+        invoice: String,
+    ) -> Result<MessageId, BitfinexClientError> {
+        let mut body: HashMap<String, String> = HashMap::new();
+        body.insert("wallet".to_string(), Wallet::FUNDING.to_string());
+        body.insert("method".to_string(), AddressMethod::LNX.to_string());
+        body.insert("invoice".to_string(), invoice.to_string());
+        body.insert("payment_id".to_string(), client_id.0.to_string());
+        body.insert("fee_deduct".to_string(), 0.to_string());
+        let request_body = serde_json::to_string(&body)?;
+
+        let endpoint = "/withdraw";
+        let params = "";
+        let headers = self.post_w_request_headers(endpoint, params, &request_body)?;
+
+        let response = self
+            .rate_limit_client(endpoint)
+            .await
+            .post(Self::url_for_auth_w_path(endpoint, params))
+            .headers(headers)
+            .body(request_body)
+            .send()
+            .await?;
+
+        let transfer = Self::extract_response_data::<WithdrawDetails>(response).await?;
+        Ok(transfer.message_id)
+    }
+
+    #[instrument(skip(self), err)]
+    pub async fn get_ln_transactions(
+        &self,
+        client_id: ClientId,
+    ) -> Result<Vec<TransactionDetails>, BitfinexClientError> {
+        let body: HashMap<String, String> = HashMap::new();
+        let request_body = serde_json::to_string(&body)?;
+
+        let endpoint = "/movements";
+        let params = format!("/{}/hist", Currency::LNX);
+        let headers = self.post_r_request_headers(endpoint, params.as_str(), &request_body)?;
+
+        let response = self
+            .rate_limit_client(endpoint)
+            .await
+            .post(Self::url_for_auth_r_path(endpoint, params.as_str()))
+            .headers(headers)
+            .body(request_body)
+            .send()
+            .await?;
+
+        let transactions = Self::extract_response_data::<Vec<TransactionDetails>>(response).await?;
+        Ok(transactions)
+    }
+
+    #[instrument(skip(self), err)]
+    pub async fn get_btc_on_chain_transactions(
+        &self,
+        client_id: ClientId,
+    ) -> Result<Vec<TransactionDetails>, BitfinexClientError> {
+        let body: HashMap<String, String> = HashMap::new();
+        let request_body = serde_json::to_string(&body)?;
+
+        let endpoint = "/movements";
+        let params = format!("/{}/hist", Currency::BTC);
+        let headers = self.post_r_request_headers(endpoint, params.as_str(), &request_body)?;
+
+        let response = self
+            .rate_limit_client(endpoint)
+            .await
+            .post(Self::url_for_auth_r_path(endpoint, params.as_str()))
+            .headers(headers)
+            .body(request_body)
+            .send()
+            .await?;
+
+        let transactions = Self::extract_response_data::<Vec<TransactionDetails>>(response).await?;
+        Ok(transactions)
+    }
+
+    #[instrument(skip(self), err)]
+    pub async fn submit_order(
+        &self,
+        client_id: ClientId,
+        amount: Decimal,
+        leverage: Decimal,
+    ) -> Result<SubmittedOrderDetails, BitfinexClientError> {
+        let mut body: HashMap<String, String> = HashMap::new();
+        body.insert("cid".to_string(), client_id.0.to_string());
+        body.insert("type".to_string(), OrderType::MARKET.to_string());
+        body.insert("symbol".to_string(), Instrument::BtcUsdSwap.to_string());
+        body.insert("amount".to_string(), amount.to_string());
+        body.insert("lev".to_string(), leverage.to_string());
+        let request_body = serde_json::to_string(&body)?;
+
+        let endpoint = "/order/submit";
+        let params = "";
+        let headers = self.post_w_request_headers(endpoint, params, &request_body)?;
+
+        let response = self
+            .rate_limit_client(endpoint)
+            .await
+            .post(Self::url_for_auth_w_path(endpoint, params))
+            .headers(headers)
+            .body(request_body)
+            .send()
+            .await?;
+
+        let order = Self::extract_response_data::<SubmittedOrderDetails>(response).await?;
+        Ok(order)
+    }
+
+    #[instrument(skip(self), err)]
+    pub async fn get_api_key_permissions(&self) -> Result<Vec<ApiKeyDetails>, BitfinexClientError> {
+        let body: HashMap<String, String> = HashMap::new();
+        let request_body = serde_json::to_string(&body)?;
+
+        let endpoint = "/permissions";
+        let params = "";
+        let headers = self.post_r_request_headers(endpoint, params, &request_body)?;
+
+        let response = self
+            .rate_limit_client(endpoint)
+            .await
+            .post(Self::url_for_auth_r_path(endpoint, params))
+            .headers(headers)
+            .body(request_body)
+            .send()
+            .await?;
+
+        let transactions = Self::extract_response_data::<Vec<ApiKeyDetails>>(response).await?;
+        Ok(transactions)
     }
 
     async fn extract_response_data<T: serde::de::DeserializeOwned>(
         response: Response,
-    ) -> Result<Option<T>, BitfinexClientError> {
+    ) -> Result<T, BitfinexClientError> {
         match response.status() {
             StatusCode::OK => {
                 let response_text = response.text().await?;
-                match serde_json::from_str::<Option<T>>(&response_text) {
+                dbg!(response_text.clone());
+                match serde_json::from_str::<T>(&response_text) {
                     Ok(data) => Ok(data),
                     Err(..) => Err(BitfinexClientError::UnexpectedResponse {
                         msg: "".to_string(),
@@ -169,6 +514,7 @@ impl BitfinexClient {
             }
             _ => {
                 let response_text = response.text().await?;
+                dbg!(response_text.clone());
                 let data = serde_json::from_str::<BitfinexErrorResponse>(&response_text)?;
                 Err(BitfinexClientError::from((data.message, data.code)))
             }
@@ -179,8 +525,12 @@ impl BitfinexClient {
         format!("{}{}{}", REST_API_V2_URL, endpoint, params)
     }
 
-    fn url_for_auth_path(endpoint: &str, params: &str) -> String {
+    fn url_for_auth_r_path(endpoint: &str, params: &str) -> String {
         format!("{}/auth/r{}{}", REST_API_V2_URL, endpoint, params)
+    }
+
+    fn url_for_auth_w_path(endpoint: &str, params: &str) -> String {
+        format!("{}/auth/w{}{}", REST_API_V2_URL, endpoint, params)
     }
 
     fn sign_request(&self, pre_hash: String) -> String {
@@ -191,16 +541,14 @@ impl BitfinexClient {
 
     fn post_request_headers(
         &self,
+        sig_path: &str,
         request: &str,
         params: &str,
         body: &str,
     ) -> Result<HeaderMap, BitfinexClientError> {
         let nonce = Utc::now().timestamp_millis().to_string();
 
-        let pre_hash: String = format!(
-            "{}{}{}{}{}",
-            REST_API_SIGNATURE_PATH, request, params, nonce, body
-        );
+        let pre_hash: String = format!("{}{}{}{}{}", sig_path, request, params, nonce, body);
 
         let signature = self.sign_request(pre_hash);
 
@@ -214,5 +562,23 @@ impl BitfinexClient {
         headers.insert(CONTENT_TYPE, HeaderValue::from_static("application/json"));
 
         Ok(headers)
+    }
+
+    fn post_r_request_headers(
+        &self,
+        request: &str,
+        params: &str,
+        body: &str,
+    ) -> Result<HeaderMap, BitfinexClientError> {
+        self.post_request_headers(REST_API_R_SIGNATURE_PATH, request, params, body)
+    }
+
+    fn post_w_request_headers(
+        &self,
+        request: &str,
+        params: &str,
+        body: &str,
+    ) -> Result<HeaderMap, BitfinexClientError> {
+        self.post_request_headers(REST_API_W_SIGNATURE_PATH, request, params, body)
     }
 }
