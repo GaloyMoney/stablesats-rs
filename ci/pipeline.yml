@@ -62,6 +62,8 @@ jobs:
         OKEX_API_KEY: #@ data.values.okex_api_key
         OKEX_PASSPHRASE: #@ data.values.okex_passphrase
         OKEX_SECRET_KEY: #@ data.values.okex_secret_key
+        BITFINEX_API_KEY: #@ data.values.bitfinex_api_key
+        BITFINEX_SECRET_KEY: #@ data.values.bitfinex_secret_key
         PHONE_NUMBER: #@ data.values.phone_number
         AUTH_CODE: #@ data.values.auth_code
       run:
