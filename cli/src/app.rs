@@ -50,6 +50,9 @@ enum Command {
         /// Okex passphrase
         #[clap(env = "OKEX_PASSPHRASE", default_value = "")]
         okex_passphrase: String,
+        /// Bitfinex secret key
+        #[clap(env = "BITFINEX_SECRET_KEY", default_value = "")]
+        bitfinex_secret_key: String,
     },
     /// Gets a quote from the price server
     Price {
@@ -76,6 +79,7 @@ pub async fn run() -> anyhow::Result<()> {
             galoy_phone_code,
             okex_passphrase,
             okex_secret_key,
+            bitfinex_secret_key,
             hedging_pg_con,
         } => {
             let config = Config::from_path(
@@ -87,6 +91,7 @@ pub async fn run() -> anyhow::Result<()> {
                     okex_passphrase,
                     okex_secret_key,
                     hedging_pg_con,
+                    bitfinex_secret_key,
                 },
             )?;
             match (run_cmd(config.clone()).await, crash_report_config) {
@@ -171,15 +176,27 @@ async fn run_cmd(
         let price = price_recv.resubscribe();
         checkers.insert("hedging", snd);
 
+        // TODO: fix this nesting
         if let Some(okex_cfg) = exchanges.okex.as_ref() {
             let okex_config = okex_cfg.config.clone();
-            handles.push(tokio::spawn(async move {
-                let _ = hedging_send.try_send(
-                    hedging::run(recv, hedging.config, okex_config, galoy, pubsub, price)
+            if let Some(bitfinex_cfg) = exchanges.bitfinex.as_ref() {
+                let bitfinex_config = bitfinex_cfg.config.clone();
+                handles.push(tokio::spawn(async move {
+                    let _ = hedging_send.try_send(
+                        hedging::run(
+                            recv,
+                            hedging.config,
+                            okex_config,
+                            bitfinex_config,
+                            galoy,
+                            pubsub,
+                            price,
+                        )
                         .await
                         .context("Hedging error"),
-                );
-            }));
+                    );
+                }));
+            }
         }
     }
 

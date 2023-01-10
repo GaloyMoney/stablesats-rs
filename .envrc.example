@@ -6,6 +6,10 @@ export OKEX_API_KEY="OKX trading API key"
 export OKEX_SECRET_KEY="OKX trading secret key"
 export OKEX_PASSPHRASE="OKX trading API passphrase"
 
+# Bitfinex Exchange
+export BITFINEX_API_KEY="Bitfinex trading API key"
+export BITFINEX_SECRET_KEY="Bitfinex trading secret key"
+
 # Galoy Backend
 export GALOY_PHONE_NUMBER="Galoy phone number"
 export GALOY_PHONE_CODE="Galoy phone code"
