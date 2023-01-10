@@ -75,6 +75,13 @@ pub enum Currency {
     USD,
     UST,
     USTF0,
+
+    TESTBTC,
+    TESTUSD,
+    TESTUSDT,
+    TESTAAA,
+    TESTBBB,
+    TESTUSDTF0,
 }
 
 impl Display for Currency {
@@ -85,6 +92,13 @@ impl Display for Currency {
             Currency::USD => write!(f, "USD"),
             Currency::UST => write!(f, "UST"),
             Currency::USTF0 => write!(f, "USTF0"),
+
+            Currency::TESTBTC => write!(f, "TESTBTC"),
+            Currency::TESTUSD => write!(f, "TESTUSD"),
+            Currency::TESTUSDT => write!(f, "TESTUSDT"),
+            Currency::TESTAAA => write!(f, "TESTAAA"),
+            Currency::TESTBBB => write!(f, "TESTBBB"),
+            Currency::TESTUSDTF0 => write!(f, "TESTUSDTF0"),
         }
     }
 }
