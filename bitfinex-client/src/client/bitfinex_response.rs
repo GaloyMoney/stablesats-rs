@@ -104,9 +104,8 @@ pub struct WalletDetails {
     pub currency: Currency,
     pub balance: Decimal,
     pub unsettled_interest: Decimal,
-    pub balance_available: Option<Decimal>,
-    pub last_change: String,
-    #[serde(skip)]
+    pub balance_available: Decimal,
+    pub last_change: Option<String>,
     pub trade_details: Option<String>,
 }
 
@@ -351,7 +350,7 @@ fn boolean<'de, D: serde::Deserializer<'de>>(deserializer: D) -> Result<bool, D:
         serde_json::Value::String(s) => s == "yes",
         serde_json::Value::Number(num) => {
             num.as_i64()
-                .ok_or(serde::de::Error::custom("Invalid number"))?
+                .ok_or_else(|| serde::de::Error::custom("Invalid number"))?
                 != 0
         }
         serde_json::Value::Null => false,
@@ -394,5 +393,12 @@ mod tests {
         assert_eq!(details.invoice_hash, "hash");
         assert_eq!(details.invoice, "invoice");
         assert_eq!(details.amount, dec!(0.001));
+    }
+
+    #[test]
+    fn wallet_details() {
+        // let response_text = "[[\"exchange\",\"TESTBTC\",0.01,0,0.01,null,null],[\"exchange\",\"TESTUSD\",100,0,100,null,null],[\"exchange\",\"TESTUSDT\",200,0,200,null,null]]";
+        let response_text = "[[\"exchange\",\"TESTBTC\",0.005,0,0.005,null,null],[\"exchange\",\"TESTUSD\",100,0,100,null,null],[\"exchange\",\"TESTUSDT\",200,0,200,null,null],[\"margin\",\"TESTBTC\",0.005,0,0.005,null,null]]";
+        let _details = serde_json::from_str::<Vec<WalletDetails>>(response_text).unwrap();
     }
 }
