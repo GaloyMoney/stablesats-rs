@@ -56,7 +56,10 @@ impl BitfinexClient {
 
     pub async fn get_last_price_in_usd_cents(&self) -> Result<LastPrice, BitfinexClientError> {
         let endpoint = "/ticker";
-        let params = format!("/{}", Instrument::BtcUsdSwap);
+        let mut params = format!("/{}", Instrument::BtcUsdSwap);
+        if self.config.simulated {
+            params = format!("/{}", Instrument::TestBtcUsdSwap);
+        }
 
         let response = self
             .rate_limit_client(endpoint)
@@ -110,7 +113,10 @@ impl BitfinexClient {
         let request_body = serde_json::to_string(&body)?;
 
         let endpoint = "/orders";
-        let params = format!("/{}/hist", Instrument::BtcUsdSwap);
+        let mut params = format!("/{}/hist", Instrument::BtcUsdSwap);
+        if self.config.simulated {
+            params = format!("/{}/hist", Instrument::TestBtcUsdSwap);
+        }
         let headers = self.post_r_request_headers(endpoint, params.as_str(), &request_body)?;
 
         let response = self
@@ -443,7 +449,11 @@ impl BitfinexClient {
         let mut body: HashMap<String, String> = HashMap::new();
         body.insert("cid".to_string(), client_id.0.to_string());
         body.insert("type".to_string(), OrderType::MARKET.to_string());
-        body.insert("symbol".to_string(), Instrument::BtcUsdSwap.to_string());
+        if self.config.simulated {
+            body.insert("symbol".to_string(), Instrument::TestBtcUsdSwap.to_string());
+        } else {
+            body.insert("symbol".to_string(), Instrument::BtcUsdSwap.to_string());
+        }
         body.insert("amount".to_string(), amount.to_string());
         body.insert("lev".to_string(), leverage.to_string());
         let request_body = serde_json::to_string(&body)?;
