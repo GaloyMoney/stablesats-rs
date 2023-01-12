@@ -22,7 +22,7 @@ async fn configured_client() -> anyhow::Result<BitfinexClient> {
 
 #[tokio::test]
 #[serial]
-async fn last_price_ok() -> anyhow::Result<()> {
+async fn get_last_price_in_usd_cents() -> anyhow::Result<()> {
     let client = configured_client().await?;
 
     let last_price = client.get_last_price_in_usd_cents().await?;
