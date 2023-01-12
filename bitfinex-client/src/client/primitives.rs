@@ -30,7 +30,7 @@ impl Default for ClientId {
 #[serde(transparent)]
 pub struct MessageId(pub(super) i64);
 
-#[derive(Debug, Clone)]
+#[derive(serde::Deserialize, Debug, Clone, PartialEq, Eq)]
 pub enum Instrument {
     TestBtcUsdSwap,
     BtcUsdSwap,

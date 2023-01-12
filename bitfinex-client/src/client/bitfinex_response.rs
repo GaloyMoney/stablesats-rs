@@ -1,16 +1,16 @@
 use rust_decimal::Decimal;
 use serde::Deserialize;
 
-use crate::{AddressMethod, ClientId, Currency, MessageId, Wallet};
+use crate::{AddressMethod, ClientId, Currency, Instrument, MessageId, Wallet};
 
-#[derive(Deserialize, Debug)]
+#[derive(Deserialize, Debug, Clone)]
 pub struct BitfinexErrorResponse {
     pub error: String,
     pub code: u32,
     pub message: String,
 }
 
-#[derive(Deserialize, Debug)]
+#[derive(Deserialize, Debug, Clone)]
 pub struct LastPriceData {
     pub bid: Decimal,
     pub bid_size: Decimal,
@@ -24,14 +24,14 @@ pub struct LastPriceData {
     pub low: Decimal,
 }
 
-#[derive(Deserialize, Debug)]
+#[derive(Deserialize, Debug, Clone)]
 pub struct FundingInfoData {
     pub key: String,
     pub symbol: String,
     pub funding: FundingData,
 }
 
-#[derive(Deserialize, Debug)]
+#[derive(Deserialize, Debug, Clone)]
 pub struct FundingData {
     pub yield_loan: Decimal,
     pub yield_lend: Decimal,
@@ -39,11 +39,12 @@ pub struct FundingData {
     pub duration_lend: Decimal,
 }
 
-#[derive(Deserialize, Debug)]
+#[derive(Deserialize, Debug, Clone)]
 pub struct OrderDetails {
     pub id: u64,
     pub group_id: Option<u64>,
     pub client_id: ClientId,
+    // pub symbol: Instrument, TODO!
     pub symbol: String,
     pub creation_timestamp: u64,
     pub update_timestamp: u64,
@@ -51,7 +52,7 @@ pub struct OrderDetails {
     pub amount_original: Decimal,
     pub order_type: String,
     pub previous_order_type: Option<String>,
-    pub time_in_force: u64,
+    pub time_in_force: Option<u64>,
 
     #[serde(skip_serializing)]
     _placeholder_0: Option<String>,
@@ -76,7 +77,9 @@ pub struct OrderDetails {
     #[serde(skip_serializing)]
     _placeholder_5: Option<String>,
 
+    #[serde(deserialize_with = "boolean")]
     pub notify: bool,
+    #[serde(deserialize_with = "boolean")]
     pub hidden: bool,
     pub placed_id: Option<u64>,
 
@@ -98,7 +101,7 @@ pub struct OrderDetails {
     pub complete: bool,
 }
 
-#[derive(Deserialize, Debug)]
+#[derive(Deserialize, Debug, Clone)]
 pub struct WalletDetails {
     pub wallet_type: String,
     pub currency: Currency,
@@ -109,13 +112,15 @@ pub struct WalletDetails {
     pub trade_details: Option<String>,
 }
 
-#[derive(Deserialize, Debug)]
+#[derive(Deserialize, Debug, Clone)]
 pub struct PositionDetails {
+    // pub symbol: Instrument, TODO!
     pub symbol: String,
     pub status: String,
     pub amount: Decimal,
     pub base_price: Decimal,
     pub funding: Decimal,
+    #[serde(deserialize_with = "boolean")]
     pub funding_type: bool,
     pub pl: Decimal,
     pub pl_perc: Decimal,
@@ -126,8 +131,8 @@ pub struct PositionDetails {
     _placeholder_0: Option<String>,
 
     pub position_id: u64,
-    pub mts_create: u64,
-    pub mts_update: u64,
+    pub mts_create: Option<u64>,
+    pub mts_update: Option<u64>,
 
     #[serde(skip_serializing)]
     _placeholder_1: Option<String>,
@@ -144,7 +149,7 @@ pub struct PositionDetails {
     pub meta: String,
 }
 
-#[derive(Deserialize, Debug)]
+#[derive(Deserialize, Debug, Clone)]
 pub struct DepositAddressDetails {
     pub mts: u64,
     pub address_type: String,
@@ -160,7 +165,7 @@ pub struct DepositAddressDetails {
     pub text: String,
 }
 
-#[derive(Deserialize, Debug)]
+#[derive(Deserialize, Debug, Clone)]
 pub struct DepositAddress {
     #[serde(skip_serializing)]
     _placeholder_0: Option<String>,
@@ -175,7 +180,7 @@ pub struct DepositAddress {
     pub pool_address: Option<String>,
 }
 
-#[derive(Deserialize, Debug)]
+#[derive(Deserialize, Debug, Clone)]
 pub struct TransferDetails {
     pub mts: u64,
     pub transfer_type: String,
@@ -191,7 +196,7 @@ pub struct TransferDetails {
     pub text: String,
 }
 
-#[derive(Deserialize, Debug)]
+#[derive(Deserialize, Debug, Clone)]
 pub struct Transfer {
     #[serde(skip_serializing)]
     _placeholder_0: Option<String>,
@@ -212,7 +217,7 @@ pub struct Transfer {
     pub amount: Decimal,
 }
 
-#[derive(Deserialize, Debug)]
+#[derive(Deserialize, Debug, Clone)]
 pub struct WithdrawDetails {
     pub mts: u64,
     pub withdraw_type: String,
@@ -228,7 +233,7 @@ pub struct WithdrawDetails {
     pub text: String,
 }
 
-#[derive(Deserialize, Debug)]
+#[derive(Deserialize, Debug, Clone)]
 pub struct Withdraw {
     pub id: u64,
 
@@ -248,7 +253,7 @@ pub struct Withdraw {
     pub fee: Decimal,
 }
 
-#[derive(Deserialize, Debug)]
+#[derive(Deserialize, Debug, Clone)]
 pub struct InvoiceDetails {
     pub invoice_hash: String,
     pub invoice: String,
@@ -261,12 +266,12 @@ pub struct InvoiceDetails {
     pub amount: Decimal,
 }
 
-#[derive(Deserialize, Debug)]
+#[derive(Deserialize, Debug, Clone)]
 pub struct TransactionDetails {
     pub transactions: Vec<Transaction>,
 }
 
-#[derive(Deserialize, Debug)]
+#[derive(Deserialize, Debug, Clone)]
 pub struct Transaction {
     pub id: u64,
     pub currency: Currency,
@@ -319,7 +324,7 @@ pub struct Transaction {
     pub withdraw_transaction_note: String,
 }
 
-#[derive(Deserialize, Debug)]
+#[derive(Deserialize, Debug, Clone)]
 pub struct SubmittedOrderDetails {
     pub mts: u64,
     pub order_type: String,
@@ -335,7 +340,7 @@ pub struct SubmittedOrderDetails {
     pub text: String,
 }
 
-#[derive(Deserialize, Debug)]
+#[derive(Deserialize, Debug, Clone)]
 pub struct ApiKeyDetails {
     pub scope: String,
     #[serde(deserialize_with = "boolean")]
@@ -400,5 +405,17 @@ mod tests {
         // let response_text = "[[\"exchange\",\"TESTBTC\",0.01,0,0.01,null,null],[\"exchange\",\"TESTUSD\",100,0,100,null,null],[\"exchange\",\"TESTUSDT\",200,0,200,null,null]]";
         let response_text = "[[\"exchange\",\"TESTBTC\",0.005,0,0.005,null,null],[\"exchange\",\"TESTUSD\",100,0,100,null,null],[\"exchange\",\"TESTUSDT\",200,0,200,null,null],[\"margin\",\"TESTBTC\",0.005,0,0.005,null,null]]";
         let _details = serde_json::from_str::<Vec<WalletDetails>>(response_text).unwrap();
+    }
+
+    #[test]
+    fn position_details() {
+        let response_text = "[[\"tTESTBTCF0:TESTUSDTF0\",\"ACTIVE\",-0.005,18132,0.0025,0,-0.005,-0.005515111405250387,22574.34,4,null,158113685,null,null,null,1,null,22.665,0.9066,{\"reason\":\"TRADE\",\"order_id\":111255440777,\"order_id_oppo\":111281195197,\"liq_stage\":null,\"trade_price\":\"18132.0\",\"trade_amount\":\"-0.005\",\"order_cid\":1673504788796,\"order_gid\":null}]]";
+        let _details = serde_json::from_str::<Vec<PositionDetails>>(response_text).unwrap();
+    }
+
+    #[test]
+    fn order_details() {
+        let response_text = "[[111255440777,null,1673504788796,\"tTESTBTCF0:TESTUSDTF0\",1673504788796,1673504788799,0,-0.005,\"MARKET\",null,null,null,0,\"EXECUTED @ 18132.0(-0.005)\",null,null,18131,18132,0,0,null,null,null,0,0,null,null,null,\"BFX\",null,null,{\"lev\":4,\"_$F33\":4}]]";
+        let _details = serde_json::from_str::<Vec<OrderDetails>>(response_text).unwrap();
     }
 }

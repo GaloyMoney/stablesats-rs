@@ -188,7 +188,7 @@ impl BitfinexClient {
         &self,
     ) -> Result<DepositAddress, BitfinexClientError> {
         let mut body: HashMap<String, String> = HashMap::new();
-        body.insert("wallet".to_string(), Wallet::FUNDING.to_string());
+        body.insert("wallet".to_string(), Wallet::EXCHANGE.to_string());
         body.insert("method".to_string(), AddressMethod::BITCOIN.to_string());
         let request_body = serde_json::to_string(&body)?;
 
@@ -269,7 +269,7 @@ impl BitfinexClient {
         amount: Decimal,
     ) -> Result<MessageId, BitfinexClientError> {
         let mut body: HashMap<String, String> = HashMap::new();
-        body.insert("from".to_string(), Wallet::FUNDING.to_string());
+        body.insert("from".to_string(), Wallet::EXCHANGE.to_string());
         body.insert("to".to_string(), Wallet::TRADING.to_string());
         body.insert("currency".to_string(), Currency::UST.to_string());
         body.insert("currency_to".to_string(), Currency::USTF0.to_string());
@@ -301,7 +301,7 @@ impl BitfinexClient {
     ) -> Result<MessageId, BitfinexClientError> {
         let mut body: HashMap<String, String> = HashMap::new();
         body.insert("from".to_string(), Wallet::TRADING.to_string());
-        body.insert("to".to_string(), Wallet::FUNDING.to_string());
+        body.insert("to".to_string(), Wallet::EXCHANGE.to_string());
         body.insert("currency".to_string(), Currency::USTF0.to_string());
         body.insert("currency_to".to_string(), Currency::UST.to_string());
         body.insert("amount".to_string(), amount.to_string());
@@ -333,7 +333,7 @@ impl BitfinexClient {
         address: String,
     ) -> Result<MessageId, BitfinexClientError> {
         let mut body: HashMap<String, String> = HashMap::new();
-        body.insert("wallet".to_string(), Wallet::FUNDING.to_string());
+        body.insert("wallet".to_string(), Wallet::EXCHANGE.to_string());
         body.insert("method".to_string(), AddressMethod::BITCOIN.to_string());
         body.insert("amount".to_string(), amount.to_string());
         body.insert("address".to_string(), address.to_string());
@@ -365,7 +365,7 @@ impl BitfinexClient {
         invoice: String,
     ) -> Result<MessageId, BitfinexClientError> {
         let mut body: HashMap<String, String> = HashMap::new();
-        body.insert("wallet".to_string(), Wallet::FUNDING.to_string());
+        body.insert("wallet".to_string(), Wallet::EXCHANGE.to_string());
         body.insert("method".to_string(), AddressMethod::LNX.to_string());
         body.insert("invoice".to_string(), invoice.to_string());
         body.insert("payment_id".to_string(), client_id.0.to_string());
