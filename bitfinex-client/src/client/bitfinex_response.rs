@@ -427,7 +427,7 @@ mod tests {
 
     #[test]
     fn transfer_details() {
-        let response_text = "[1673598113447,\"acc_tf\",null,null,[1673598113447,\"margin\",\"exchange\",null,\"TESTUSDTF0\",\"TESTUSDT\",null,97.069107],null,\"SUCCESS\",\"97.069107 TESTUSDTF0 transfered from Margin to Exchange\"]";
+        let response_text = "[1673598113447,\"acc_tf\",null,null,[1673598113447,\"margin\",\"exchange\",null,\"TESTUSDTF0\",\"TESTUSDT\",null,97.069107],null,\"SUCCESS\",\"97.069107 TESTUSDTF0 transferred from Margin to Exchange\"]";
         let _details = serde_json::from_str::<TransferDetails>(response_text).unwrap();
     }
 }
