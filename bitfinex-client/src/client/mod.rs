@@ -10,6 +10,7 @@ use reqwest::{
 };
 use ring::hmac;
 use rust_decimal::Decimal;
+use serde_json::{json, Value};
 use shared::exchanges_config::BitfinexConfig;
 use tracing::instrument;
 
@@ -267,12 +268,17 @@ impl BitfinexClient {
         &self,
         client_id: ClientId,
         amount: Decimal,
-    ) -> Result<MessageId, BitfinexClientError> {
+    ) -> Result<TransferDetails, BitfinexClientError> {
         let mut body: HashMap<String, String> = HashMap::new();
         body.insert("from".to_string(), Wallet::EXCHANGE.to_string());
-        body.insert("to".to_string(), Wallet::TRADING.to_string());
-        body.insert("currency".to_string(), Currency::UST.to_string());
-        body.insert("currency_to".to_string(), Currency::USTF0.to_string());
+        body.insert("to".to_string(), Wallet::MARGIN.to_string());
+        if self.config.simulated {
+            body.insert("currency".to_string(), Currency::TESTUSDT.to_string());
+            body.insert("currency_to".to_string(), Currency::TESTUSDTF0.to_string());
+        } else {
+            body.insert("currency".to_string(), Currency::UST.to_string());
+            body.insert("currency_to".to_string(), Currency::USTF0.to_string());
+        }
         body.insert("amount".to_string(), amount.to_string());
         let request_body = serde_json::to_string(&body)?;
 
@@ -290,7 +296,7 @@ impl BitfinexClient {
             .await?;
 
         let transfer = Self::extract_response_data::<TransferDetails>(response).await?;
-        Ok(transfer.message_id)
+        Ok(transfer)
     }
 
     #[instrument(skip(self), err)]
@@ -298,12 +304,17 @@ impl BitfinexClient {
         &self,
         client_id: ClientId,
         amount: Decimal,
-    ) -> Result<MessageId, BitfinexClientError> {
+    ) -> Result<TransferDetails, BitfinexClientError> {
         let mut body: HashMap<String, String> = HashMap::new();
-        body.insert("from".to_string(), Wallet::TRADING.to_string());
+        body.insert("from".to_string(), Wallet::MARGIN.to_string());
         body.insert("to".to_string(), Wallet::EXCHANGE.to_string());
-        body.insert("currency".to_string(), Currency::USTF0.to_string());
-        body.insert("currency_to".to_string(), Currency::UST.to_string());
+        if self.config.simulated {
+            body.insert("currency".to_string(), Currency::TESTUSDTF0.to_string());
+            body.insert("currency_to".to_string(), Currency::TESTUSDT.to_string());
+        } else {
+            body.insert("currency".to_string(), Currency::USTF0.to_string());
+            body.insert("currency_to".to_string(), Currency::UST.to_string());
+        }
         body.insert("amount".to_string(), amount.to_string());
         let request_body = serde_json::to_string(&body)?;
 
@@ -321,7 +332,7 @@ impl BitfinexClient {
             .await?;
 
         let transfer = Self::extract_response_data::<TransferDetails>(response).await?;
-        Ok(transfer.message_id)
+        Ok(transfer)
     }
 
     #[instrument(skip(self), err)]
@@ -331,14 +342,13 @@ impl BitfinexClient {
         amount: Decimal,
         fee: Decimal,
         address: String,
-    ) -> Result<MessageId, BitfinexClientError> {
+    ) -> Result<WithdrawDetails, BitfinexClientError> {
         let mut body: HashMap<String, String> = HashMap::new();
         body.insert("wallet".to_string(), Wallet::EXCHANGE.to_string());
         body.insert("method".to_string(), AddressMethod::BITCOIN.to_string());
         body.insert("amount".to_string(), amount.to_string());
         body.insert("address".to_string(), address.to_string());
         body.insert("payment_id".to_string(), client_id.0.to_string());
-        body.insert("fee_deduct".to_string(), 0.to_string());
         let request_body = serde_json::to_string(&body)?;
 
         let endpoint = "/withdraw";
@@ -355,7 +365,7 @@ impl BitfinexClient {
             .await?;
 
         let transfer = Self::extract_response_data::<WithdrawDetails>(response).await?;
-        Ok(transfer.message_id)
+        Ok(transfer)
     }
 
     #[instrument(skip(self), err)]
@@ -363,13 +373,12 @@ impl BitfinexClient {
         &self,
         client_id: ClientId,
         invoice: String,
-    ) -> Result<MessageId, BitfinexClientError> {
+    ) -> Result<WithdrawDetails, BitfinexClientError> {
         let mut body: HashMap<String, String> = HashMap::new();
         body.insert("wallet".to_string(), Wallet::EXCHANGE.to_string());
         body.insert("method".to_string(), AddressMethod::LNX.to_string());
         body.insert("invoice".to_string(), invoice.to_string());
         body.insert("payment_id".to_string(), client_id.0.to_string());
-        body.insert("fee_deduct".to_string(), 0.to_string());
         let request_body = serde_json::to_string(&body)?;
 
         let endpoint = "/withdraw";
@@ -386,7 +395,7 @@ impl BitfinexClient {
             .await?;
 
         let transfer = Self::extract_response_data::<WithdrawDetails>(response).await?;
-        Ok(transfer.message_id)
+        Ok(transfer)
     }
 
     #[instrument(skip(self), err)]
@@ -446,16 +455,22 @@ impl BitfinexClient {
         amount: Decimal,
         leverage: Decimal,
     ) -> Result<SubmittedOrderDetails, BitfinexClientError> {
-        let mut body: HashMap<String, String> = HashMap::new();
-        body.insert("cid".to_string(), client_id.0.to_string());
-        body.insert("type".to_string(), OrderType::MARKET.to_string());
+        let mut body: HashMap<String, Value> = HashMap::new();
+        body.insert("cid".to_string(), json!(client_id.0));
+        body.insert("type".to_string(), json!(OrderType::MARKET.to_string()));
         if self.config.simulated {
-            body.insert("symbol".to_string(), Instrument::TestBtcUsdSwap.to_string());
+            body.insert(
+                "symbol".to_string(),
+                json!(Instrument::TestBtcUsdSwap.to_string()),
+            );
         } else {
-            body.insert("symbol".to_string(), Instrument::BtcUsdSwap.to_string());
+            body.insert(
+                "symbol".to_string(),
+                json!((Instrument::BtcUsdSwap.to_string())),
+            );
         }
-        body.insert("amount".to_string(), amount.to_string());
-        body.insert("lev".to_string(), leverage.to_string());
+        body.insert("amount".to_string(), json!((amount.to_string())));
+        body.insert("lev".to_string(), json!((leverage)));
         let request_body = serde_json::to_string(&body)?;
 
         let endpoint = "/order/submit";
