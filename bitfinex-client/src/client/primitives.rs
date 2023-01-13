@@ -52,8 +52,6 @@ pub enum Wallet {
     EXCHANGE,
     MARGIN,
     FUNDING,
-    TRADING,
-    DEPOSIT,
 }
 
 impl Display for Wallet {
@@ -62,13 +60,11 @@ impl Display for Wallet {
             Wallet::EXCHANGE => write!(f, "exchange"),
             Wallet::MARGIN => write!(f, "margin"),
             Wallet::FUNDING => write!(f, "funding"),
-            Wallet::TRADING => write!(f, "trading"),
-            Wallet::DEPOSIT => write!(f, "deposit"),
         }
     }
 }
 
-#[derive(serde::Deserialize, Debug, Clone)]
+#[derive(serde::Deserialize, Debug, Clone, PartialEq, Eq)]
 pub enum Currency {
     BTC,
     LNX,
@@ -127,8 +123,8 @@ pub enum OrderType {
 impl Display for OrderType {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match *self {
-            OrderType::LIMIT => write!(f, "limit"),
-            OrderType::MARKET => write!(f, "market"),
+            OrderType::LIMIT => write!(f, "LIMIT"),
+            OrderType::MARKET => write!(f, "MARKET"),
         }
     }
 }
