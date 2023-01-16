@@ -1,3 +1,25 @@
+# [stablesats release v0.3.27](https://github.com/GaloyMoney/stablesats/releases/tag/v0.3.27)
+
+
+### Bug Fixes
+
+- Await timestamp_sender for health check
+
+# [stablesats release v0.3.26](https://github.com/GaloyMoney/stablesats/releases/tag/v0.3.26)
+
+
+### Miscellaneous Tasks
+
+- Dev mock price is configured directly in price_cache
+
+# [stablesats release v0.3.25](https://github.com/GaloyMoney/stablesats/releases/tag/v0.3.25)
+
+
+### Miscellaneous Tasks
+
+- Add mock dev price
+- Switch price feed to in-memory pubsub (#230)
+
 # [stablesats release v0.3.24](https://github.com/GaloyMoney/stablesats/releases/tag/v0.3.24)
 
 

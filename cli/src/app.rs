@@ -1,10 +1,12 @@
 use anyhow::Context;
+use chrono::Duration;
 use clap::{Parser, Subcommand};
 use rust_decimal::Decimal;
 use std::{collections::HashMap, path::PathBuf};
 use url::Url;
 
 use super::{config::*, price_client::*};
+use shared::pubsub::memory;
 
 #[derive(Parser)]
 #[clap(version, long_about = None)]
@@ -115,50 +117,31 @@ async fn run_cmd(
         user_trades,
         tracing,
         galoy,
-        okex,
         hedging,
         kollider_price_feed,
+        exchanges,
     }: Config,
 ) -> anyhow::Result<()> {
+    if !exchanges.is_valid() {
+        Err(anyhow::anyhow!(
+            "Invalid exchanges config - at least one exchange has to be configured"
+        ))?;
+    }
     println!("Starting server process");
     crate::tracing::init_tracer(tracing)?;
     let (send, mut receive) = tokio::sync::mpsc::channel(1);
     let mut handles = Vec::new();
     let mut checkers = HashMap::new();
+    let (price_send, price_recv) = memory::channel(price_stream_throttle_period());
 
-    if price_server.enabled {
-        println!(
-            "Starting price server on port {}",
-            price_server.server.listen_port
-        );
-
-        let price_send = send.clone();
-        let pubsub = pubsub.clone();
-        let (snd, recv) = futures::channel::mpsc::unbounded();
-        checkers.insert("price", snd);
-        handles.push(tokio::spawn(async move {
-            let _ = price_send.try_send(
-                price_server::run(
-                    recv,
-                    price_server.health,
-                    price_server.server,
-                    price_server.fees,
-                    pubsub,
-                    price_server.price_cache,
-                )
-                .await
-                .context("Price Server error"),
-            );
-        }));
-    }
     if okex_price_feed.enabled {
         println!("Starting Okex price feed");
 
         let okex_send = send.clone();
-        let pubsub = pubsub.clone();
+        let price_send = price_send.clone();
         handles.push(tokio::spawn(async move {
             let _ = okex_send.try_send(
-                okex_price::run(okex_price_feed.config, pubsub)
+                okex_price::run(okex_price_feed.config, price_send)
                     .await
                     .context("Okex Price Feed error"),
             );
@@ -169,10 +152,9 @@ async fn run_cmd(
         println!("Starting Kollider price feed");
 
         let kollider_send = send.clone();
-        let pubsub = pubsub.clone();
         handles.push(tokio::spawn(async move {
             let _ = kollider_send.try_send(
-                kollider_price::run(kollider_price_feed.config, pubsub)
+                kollider_price::run(kollider_price_feed.config, price_send)
                     .await
                     .context("Kollider Price Feed error"),
             );
@@ -181,16 +163,49 @@ async fn run_cmd(
 
     if hedging.enabled {
         println!("Starting hedging process");
+
         let hedging_send = send.clone();
         let pubsub = pubsub.clone();
         let galoy = galoy.clone();
         let (snd, recv) = futures::channel::mpsc::unbounded();
+        let price = price_recv.resubscribe();
         checkers.insert("hedging", snd);
+
+        if let Some(okex_cfg) = exchanges.okex.as_ref() {
+            let okex_config = okex_cfg.config.clone();
+            handles.push(tokio::spawn(async move {
+                let _ = hedging_send.try_send(
+                    hedging::run(recv, hedging.config, okex_config, galoy, pubsub, price)
+                        .await
+                        .context("Hedging error"),
+                );
+            }));
+        }
+    }
+
+    if price_server.enabled {
+        println!(
+            "Starting price server on port {}",
+            price_server.server.listen_port
+        );
+
+        let price_send = send.clone();
+        let (snd, recv) = futures::channel::mpsc::unbounded();
+        checkers.insert("price", snd);
+        let price = price_recv.resubscribe();
         handles.push(tokio::spawn(async move {
-            let _ = hedging_send.try_send(
-                hedging::run(recv, hedging.config, okex, galoy, pubsub)
-                    .await
-                    .context("Hedging error"),
+            let _ = price_send.try_send(
+                price_server::run(
+                    recv,
+                    price_server.health,
+                    price_server.server,
+                    price_server.fees,
+                    price,
+                    price_server.price_cache,
+                    exchanges,
+                )
+                .await
+                .context("Price Server error"),
             );
         }));
     }
@@ -227,4 +242,8 @@ async fn price_cmd(
             .unwrap_or_else(PriceClientConfig::default),
     );
     client.get_price(direction, expiry, amount).await
+}
+
+fn price_stream_throttle_period() -> Duration {
+    Duration::from_std(std::time::Duration::from_secs(2)).unwrap()
 }

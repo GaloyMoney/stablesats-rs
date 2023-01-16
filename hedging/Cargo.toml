@@ -1,6 +1,6 @@
 [package]
 name = "hedging"
-version = "0.3.25-dev"
+version = "0.3.28-dev"
 edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
@@ -15,9 +15,9 @@ okex-client = { path = "../okex-client" }
 galoy-client = { path = "../galoy-client" }
 
 rust_decimal_macros = "1.26.1"
-serde = "1.0.150"
+serde = "1.0.152"
 serde_json = "1.0.91"
-tokio = "1.23.0"
+tokio = "1.24.1"
 futures = "0.3.25"
 thiserror = "1.0.38"
 opentelemetry = { version = "0.18.0", features = ["trace"] }
@@ -28,7 +28,7 @@ sqlx = { version = "0.6", features = [ "offline", "runtime-tokio-rustls", "postg
 sqlxmq = { version = "0.4.1", default-features = false, features = [ "runtime-tokio-rustls" ] }
 rust_decimal = "1.26.1"
 uuid = "1.2.2"
-serde_with = { version = "2.1.0", features = ["chrono_0_4"] }
+serde_with = { version = "2.2.0", features = ["chrono_0_4"] }
 
 [dev-dependencies]
 anyhow = "1.0.68"

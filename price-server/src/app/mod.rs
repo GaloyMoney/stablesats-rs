@@ -1,21 +1,24 @@
 mod config;
-mod error;
 
-use chrono::Duration;
 use futures::stream::StreamExt;
 use tracing::{info_span, instrument, Instrument};
 
-use shared::{health::HealthCheckTrigger, payload::OkexBtcUsdSwapPricePayload, pubsub::*};
+use shared::{
+    exchanges_config::ExchangeConfigs,
+    health::HealthCheckTrigger,
+    payload::{PriceStreamPayload, KOLLIDER_EXCHANGE_ID, OKEX_EXCHANGE_ID},
+    pubsub::*,
+};
 
-use super::exchange_price_cache::ExchangePriceCache;
-
-use crate::ExchangePriceCacheConfig;
-pub use crate::{currency::*, fee_calculator::*};
+use crate::{
+    cache_config::ExchangePriceCacheConfig, exchange_tick_cache::ExchangeTickCache,
+    price_mixer::PriceMixer,
+};
+pub use crate::{currency::*, error::*, fee_calculator::*};
 pub use config::*;
-pub use error::*;
 
 pub struct PriceApp {
-    price_cache: ExchangePriceCache,
+    price_mixer: PriceMixer,
     fee_calculator: FeeCalculator,
 }
 
@@ -24,16 +27,16 @@ impl PriceApp {
         mut health_check_trigger: HealthCheckTrigger,
         health_check_cfg: PriceServerHealthCheckConfig,
         fee_calc_cfg: FeeCalculatorConfig,
-        pubsub_cfg: PubSubConfig,
+        subscriber: memory::Subscriber<PriceStreamPayload>,
         price_cache_config: ExchangePriceCacheConfig,
+        exchanges_cfg: ExchangeConfigs,
     ) -> Result<Self, PriceAppError> {
-        let mut subscriber = Subscriber::new(pubsub_cfg.clone()).await?;
-        let mut stream = subscriber.subscribe::<OkexBtcUsdSwapPricePayload>().await?;
+        let health_subscriber = subscriber.resubscribe();
         tokio::spawn(async move {
             while let Some(check) = health_check_trigger.next().await {
                 check
                     .send(
-                        subscriber
+                        health_subscriber
                             .healthy(health_check_cfg.unhealthy_msg_interval_price)
                             .await,
                     )
@@ -41,31 +44,81 @@ impl PriceApp {
             }
         });
 
-        let price_cache =
-            ExchangePriceCache::new(Duration::from_std(price_cache_config.stale_after)?);
+        let mut price_mixer = PriceMixer::new();
+
+        if let Some(config) = exchanges_cfg.okex.as_ref() {
+            let okex_price_cache = ExchangeTickCache::new(price_cache_config.clone());
+            Self::subscribe_okex(subscriber.resubscribe(), okex_price_cache.clone()).await?;
+            price_mixer.add_provider(OKEX_EXCHANGE_ID, okex_price_cache, config.weight);
+        }
+
+        if let Some(config) = exchanges_cfg.kollider.as_ref() {
+            let kollider_price_cache = ExchangeTickCache::new(price_cache_config);
+            Self::subscribe_kollider(subscriber, kollider_price_cache.clone()).await?;
+            price_mixer.add_provider(KOLLIDER_EXCHANGE_ID, kollider_price_cache, config.weight);
+        }
+
         let fee_calculator = FeeCalculator::new(fee_calc_cfg);
         let app = Self {
-            price_cache: price_cache.clone(),
+            price_mixer,
             fee_calculator,
         };
 
-        let _ = tokio::spawn(async move {
-            while let Some(msg) = stream.next().await {
-                let span = info_span!(
-                    "price_tick_received",
-                    message_type = %msg.payload_type,
-                    correlation_id = %msg.meta.correlation_id
-                );
-                shared::tracing::inject_tracing_data(&span, &msg.meta.tracing_data);
+        Ok(app)
+    }
 
-                async {
-                    price_cache.apply_update(msg).await;
+    async fn subscribe_okex(
+        mut subscriber: memory::Subscriber<PriceStreamPayload>,
+        price_cache: ExchangeTickCache,
+    ) -> Result<(), PriceAppError> {
+        let _ = tokio::spawn(async move {
+            while let Some(msg) = subscriber.next().await {
+                if let PriceStreamPayload::OkexBtcSwapPricePayload(price_msg) = msg.payload {
+                    let span = info_span!(
+                        "okex_price_tick_received",
+                        message_type = %msg.payload_type,
+                        correlation_id = %msg.meta.correlation_id
+                    );
+                    shared::tracing::inject_tracing_data(&span, &msg.meta.tracing_data);
+                    async {
+                        price_cache
+                            .apply_update(price_msg, msg.meta.correlation_id)
+                            .await;
+                    }
+                    .instrument(span)
+                    .await;
                 }
-                .instrument(span)
-                .await;
             }
         });
-        Ok(app)
+
+        Ok(())
+    }
+
+    async fn subscribe_kollider(
+        mut subscriber: memory::Subscriber<PriceStreamPayload>,
+        price_cache: ExchangeTickCache,
+    ) -> Result<(), PriceAppError> {
+        let _ = tokio::spawn(async move {
+            while let Some(msg) = subscriber.next().await {
+                if let PriceStreamPayload::KolliderBtcUsdSwapPricePayload(price_msg) = msg.payload {
+                    let span = info_span!(
+                        "kollider_price_tick_received",
+                        message_type = %msg.payload_type,
+                        correlation_id = %msg.meta.correlation_id
+                    );
+                    shared::tracing::inject_tracing_data(&span, &msg.meta.tracing_data);
+                    async {
+                        price_cache
+                            .apply_update(price_msg, msg.meta.correlation_id)
+                            .await;
+                    }
+                    .instrument(span)
+                    .await;
+                }
+            }
+        });
+
+        Ok(())
     }
 
     #[instrument(skip_all, fields(correlation_id, amount = %sats.amount()), ret, err)]
@@ -73,12 +126,12 @@ impl PriceApp {
         &self,
         sats: Sats,
     ) -> Result<UsdCents, PriceAppError> {
-        let cents = self
-            .price_cache
-            .latest_tick()
-            .await?
-            .buy_usd()
-            .cents_from_sats(sats);
+        let cents = UsdCents::from_decimal(
+            self.price_mixer
+                .apply(|p| *p.buy_usd().cents_from_sats(sats.clone()).amount())
+                .await?,
+        );
+
         Ok(self.fee_calculator.decrease_by_immediate_fee(cents).floor())
     }
 
@@ -87,12 +140,11 @@ impl PriceApp {
         &self,
         sats: Sats,
     ) -> Result<UsdCents, PriceAppError> {
-        let cents = self
-            .price_cache
-            .latest_tick()
-            .await?
-            .sell_usd()
-            .cents_from_sats(sats);
+        let cents = UsdCents::from_decimal(
+            self.price_mixer
+                .apply(|p| *p.sell_usd().cents_from_sats(sats.clone()).amount())
+                .await?,
+        );
         Ok(self.fee_calculator.increase_by_immediate_fee(cents).ceil())
     }
 
@@ -101,12 +153,11 @@ impl PriceApp {
         &self,
         sats: Sats,
     ) -> Result<UsdCents, PriceAppError> {
-        let cents = self
-            .price_cache
-            .latest_tick()
-            .await?
-            .buy_usd()
-            .cents_from_sats(sats);
+        let cents = UsdCents::from_decimal(
+            self.price_mixer
+                .apply(|p| *p.buy_usd().cents_from_sats(sats.clone()).amount())
+                .await?,
+        );
         Ok(self.fee_calculator.decrease_by_delayed_fee(cents).floor())
     }
 
@@ -115,12 +166,11 @@ impl PriceApp {
         &self,
         sats: Sats,
     ) -> Result<UsdCents, PriceAppError> {
-        let cents = self
-            .price_cache
-            .latest_tick()
-            .await?
-            .sell_usd()
-            .cents_from_sats(sats);
+        let cents = UsdCents::from_decimal(
+            self.price_mixer
+                .apply(|p| *p.sell_usd().cents_from_sats(sats.clone()).amount())
+                .await?,
+        );
         Ok(self.fee_calculator.increase_by_delayed_fee(cents).ceil())
     }
 
@@ -129,12 +179,11 @@ impl PriceApp {
         &self,
         cents: UsdCents,
     ) -> Result<Sats, PriceAppError> {
-        let sats = self
-            .price_cache
-            .latest_tick()
-            .await?
-            .buy_usd()
-            .sats_from_cents(cents);
+        let sats = Sats::from_decimal(
+            self.price_mixer
+                .apply(|p| *p.buy_usd().sats_from_cents(cents.clone()).amount())
+                .await?,
+        );
         Ok(self.fee_calculator.increase_by_immediate_fee(sats).ceil())
     }
 
@@ -143,12 +192,12 @@ impl PriceApp {
         &self,
         cents: UsdCents,
     ) -> Result<Sats, PriceAppError> {
-        let sats = self
-            .price_cache
-            .latest_tick()
-            .await?
-            .sell_usd()
-            .sats_from_cents(cents);
+        let sats = Sats::from_decimal(
+            self.price_mixer
+                .apply(|p| *p.sell_usd().sats_from_cents(cents.clone()).amount())
+                .await?,
+        );
+
         Ok(self.fee_calculator.decrease_by_immediate_fee(sats).floor())
     }
 
@@ -157,12 +206,12 @@ impl PriceApp {
         &self,
         cents: UsdCents,
     ) -> Result<Sats, PriceAppError> {
-        let sats = self
-            .price_cache
-            .latest_tick()
-            .await?
-            .buy_usd()
-            .sats_from_cents(cents);
+        let sats = Sats::from_decimal(
+            self.price_mixer
+                .apply(|p| *p.buy_usd().sats_from_cents(cents.clone()).amount())
+                .await?,
+        );
+
         Ok(self.fee_calculator.increase_by_delayed_fee(sats).ceil())
     }
 
@@ -171,18 +220,20 @@ impl PriceApp {
         &self,
         cents: UsdCents,
     ) -> Result<Sats, PriceAppError> {
-        let sats = self
-            .price_cache
-            .latest_tick()
-            .await?
-            .sell_usd()
-            .sats_from_cents(cents);
+        let sats = Sats::from_decimal(
+            self.price_mixer
+                .apply(|p| *p.sell_usd().sats_from_cents(cents.clone()).amount())
+                .await?,
+        );
         Ok(self.fee_calculator.decrease_by_delayed_fee(sats).floor())
     }
 
     #[instrument(skip_all, fields(correlation_id), ret, err)]
     pub async fn get_cents_per_sat_exchange_mid_rate(&self) -> Result<f64, PriceAppError> {
-        let cents_per_sat = self.price_cache.latest_tick().await?.mid_price_of_one_sat();
+        let cents_per_sat = self
+            .price_mixer
+            .apply(|p| *p.mid_price_of_one_sat().amount())
+            .await?;
         Ok(f64::try_from(cents_per_sat)?)
     }
 }

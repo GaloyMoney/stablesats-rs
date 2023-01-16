@@ -5,12 +5,11 @@ use std::path::Path;
 
 use galoy_client::GaloyClientConfig;
 use hedging::HedgingAppConfig;
-use okex_client::OkexClientConfig;
 use okex_price::PriceFeedConfig;
 use price_server::{
     ExchangePriceCacheConfig, FeeCalculatorConfig, PriceServerConfig, PriceServerHealthCheckConfig,
 };
-use shared::pubsub::PubSubConfig;
+use shared::{exchanges_config::ExchangeConfigs, pubsub::PubSubConfig};
 use user_trades::UserTradesConfig;
 
 use super::tracing::TracingConfig;
@@ -30,11 +29,11 @@ pub struct Config {
     #[serde(default)]
     pub galoy: GaloyClientConfig,
     #[serde(default)]
-    pub okex: OkexClientConfig,
-    #[serde(default)]
     pub hedging: HedgingConfigWrapper,
     #[serde(default)]
     pub kollider_price_feed: KolliderPriceFeedConfigWrapper,
+    #[serde(default)]
+    pub exchanges: ExchangeConfigs,
 }
 
 pub struct EnvOverride {
@@ -68,8 +67,11 @@ impl Config {
         config.user_trades.config.pg_con = user_trades_pg_con;
         config.galoy.auth_code = galoy_phone_code;
         config.hedging.config.pg_con = hedging_pg_con;
-        config.okex.secret_key = okex_secret_key;
-        config.okex.passphrase = okex_passphrase;
+
+        if let Some(okex) = config.exchanges.okex.as_mut() {
+            okex.config.secret_key = okex_secret_key;
+            okex.config.passphrase = okex_passphrase;
+        };
 
         Ok(config)
     }

@@ -1,6 +1,6 @@
 [package]
 name = "user-trades"
-version = "0.3.25-dev"
+version = "0.3.28-dev"
 edition = "2021"
 
 [features]
@@ -13,18 +13,18 @@ galoy_client = { path = "../galoy-client", package = "galoy-client" }
 
 thiserror = "1.0.38"
 chrono = "0.4"
-tokio = "1.23.0"
+tokio = "1.24.1"
 sqlx = { version = "0.6", features = [ "offline", "runtime-tokio-rustls", "postgres", "decimal", "uuid", "chrono", "json" ] }
 sqlxmq = { version = "0.4.1", default-features = false, features = [ "runtime-tokio-rustls" ] }
 serde_json = "1.0.91"
 uuid = "1.2.2"
 tracing = "0.1.37"
-serde = "1.0.150"
+serde = "1.0.152"
 anyhow = "1.0.68"
 rust_decimal = "1.26.1"
 rust_decimal_macros = "1.26.1"
 futures = "0.3.25"
-serde_with = "2.1.0"
+serde_with = "2.2.0"
 
 [dev-dependencies]
 anyhow = "1.0.68"

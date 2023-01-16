@@ -11,11 +11,13 @@ use tracing_opentelemetry::OpenTelemetrySpanExt;
 use galoy_client::*;
 use okex_client::*;
 use shared::{
+    exchanges_config::OkexConfig,
     health::HealthCheckTrigger,
     payload::{
-        OkexBtcUsdSwapPositionPayload, OkexBtcUsdSwapPricePayload, SynthUsdLiabilityPayload,
+        OkexBtcUsdSwapPositionPayload, PriceMessagePayload, PriceStreamPayload,
+        SynthUsdLiabilityPayload,
     },
-    pubsub::{CorrelationId, PubSubConfig, Publisher, Subscriber},
+    pubsub::{memory, CorrelationId, PubSubConfig, Publisher, Subscriber},
 };
 
 use crate::{
@@ -41,9 +43,10 @@ impl HedgingApp {
             funding: funding_config,
             ..
         }: HedgingAppConfig,
-        okex_client_config: OkexClientConfig,
+        okex_client_config: OkexConfig,
         galoy_client_cfg: GaloyClientConfig,
         pubsub_config: PubSubConfig,
+        price_receiver: memory::Subscriber<PriceStreamPayload>,
     ) -> Result<Self, HedgingError> {
         let pool = sqlx::PgPool::connect(&pg_con).await?;
         if migrate_on_start {
@@ -80,12 +83,12 @@ impl HedgingApp {
             hedging_adjustment,
         )
         .await?;
-        let price_sub = Self::spawn_okex_price_listener(
-            pubsub_config,
+        Self::spawn_okex_price_listener(
             pool.clone(),
             synth_usd_liability,
             okex,
             funding_adjustment,
+            price_receiver.resubscribe(),
         )
         .await?;
         Self::spawn_health_checker(
@@ -93,7 +96,7 @@ impl HedgingApp {
             health_cfg,
             liability_sub,
             position_sub,
-            price_sub,
+            price_receiver,
         )
         .await;
         Self::spawn_non_stop_polling(pool.clone(), okex_poll_delay).await?;
@@ -104,43 +107,43 @@ impl HedgingApp {
     }
 
     async fn spawn_okex_price_listener(
-        config: PubSubConfig,
         pool: sqlx::PgPool,
         synth_usd_liability: SynthUsdLiability,
         okex: OkexClient,
         funding_adjustment: FundingAdjustment,
-    ) -> Result<Subscriber, HedgingError> {
-        let mut subscriber = Subscriber::new(config).await?;
-        let mut stream = subscriber.subscribe::<OkexBtcUsdSwapPricePayload>().await?;
+        mut tick_recv: memory::Subscriber<PriceStreamPayload>,
+    ) -> Result<(), HedgingError> {
         let _ = tokio::spawn(async move {
-            while let Some(msg) = stream.next().await {
-                let correlation_id = msg.meta.correlation_id;
-                let span = info_span!(
-                    "okex_btc_usd_swap_price_received",
-                    message_type = %msg.payload_type,
-                    correlation_id = %correlation_id,
-                    error = tracing::field::Empty,
-                    error.level = tracing::field::Empty,
-                    error.message = tracing::field::Empty,
-                );
-                shared::tracing::inject_tracing_data(&span, &msg.meta.tracing_data);
-                let _ = Self::handle_received_okex_price(
-                    msg.payload,
-                    correlation_id,
-                    &pool,
-                    &synth_usd_liability,
-                    &okex,
-                    funding_adjustment.clone(),
-                )
-                .instrument(span)
-                .await;
+            while let Some(msg) = tick_recv.next().await {
+                if let PriceStreamPayload::OkexBtcSwapPricePayload(price_msg) = msg.payload {
+                    let correlation_id = msg.meta.correlation_id;
+                    let span = info_span!(
+                        "okex_btc_usd_swap_price_received",
+                        message_type = %msg.payload_type,
+                        correlation_id = %correlation_id,
+                        error = tracing::field::Empty,
+                        error.level = tracing::field::Empty,
+                        error.message = tracing::field::Empty,
+                    );
+                    shared::tracing::inject_tracing_data(&span, &msg.meta.tracing_data);
+                    let _ = Self::handle_received_okex_price(
+                        price_msg,
+                        correlation_id,
+                        &pool,
+                        &synth_usd_liability,
+                        &okex,
+                        funding_adjustment.clone(),
+                    )
+                    .instrument(span)
+                    .await;
+                }
             }
         });
-        Ok(subscriber)
+        Ok(())
     }
 
     async fn handle_received_okex_price(
-        payload: OkexBtcUsdSwapPricePayload,
+        payload: PriceMessagePayload,
         correlation_id: CorrelationId,
         pool: &sqlx::PgPool,
         synth_usd_liability: &SynthUsdLiability,
@@ -251,7 +254,7 @@ impl HedgingApp {
         health_cfg: HedgingAppHealthConfig,
         liability_sub: Subscriber,
         position_sub: Subscriber,
-        price_sub: Subscriber,
+        price_sub: memory::Subscriber<PriceStreamPayload>,
     ) {
         tokio::spawn(async move {
             while let Some(check) = health_check_trigger.next().await {

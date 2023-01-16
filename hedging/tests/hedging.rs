@@ -9,7 +9,7 @@ use serial_test::serial;
 use std::{env, fs};
 
 use okex_client::*;
-use shared::{payload::*, pubsub::*};
+use shared::{exchanges_config::OkexConfig, payload::*, pubsub::*};
 
 use hedging::*;
 
@@ -23,11 +23,11 @@ fn load_fixture(path: &str) -> anyhow::Result<Fixture> {
     Ok(serde_json::from_str(&contents)?)
 }
 
-fn okex_client_config() -> OkexClientConfig {
+fn okex_client_config() -> OkexConfig {
     let api_key = env::var("OKEX_API_KEY").expect("OKEX_API_KEY not set");
     let passphrase = env::var("OKEX_PASSPHRASE").expect("OKEX_PASS_PHRASE not set");
     let secret_key = env::var("OKEX_SECRET_KEY").expect("OKEX_SECRET_KEY not set");
-    OkexClientConfig {
+    OkexConfig {
         api_key,
         passphrase,
         secret_key,
@@ -97,6 +97,9 @@ async fn expect_exposure_equal(
 #[tokio::test]
 #[serial]
 async fn hedging() -> anyhow::Result<()> {
+    let (_, tick_recv) = memory::channel(chrono::Duration::from_std(
+        std::time::Duration::from_secs(1),
+    )?);
     let redis_host = std::env::var("REDIS_HOST").unwrap_or("localhost".to_string());
     let pubsub_config = PubSubConfig {
         host: Some(redis_host),
@@ -126,6 +129,7 @@ async fn hedging() -> anyhow::Result<()> {
             okex_client_config(),
             galoy_client_config(),
             pubsub_config.clone(),
+            tick_recv.resubscribe(),
         )
         .await
         {
@@ -141,6 +145,7 @@ async fn hedging() -> anyhow::Result<()> {
                 okex_client_config(),
                 galoy_client_config(),
                 pubsub_config,
+                tick_recv,
             )
             .await
             .expect("Hedging app failed");
