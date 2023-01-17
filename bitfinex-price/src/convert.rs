@@ -7,7 +7,7 @@ impl TryFrom<BitfinexPriceTick> for PriceStreamPayload {
     type Error = PriceFeedError;
 
     fn try_from(BitfinexPriceTick { tick, .. }: BitfinexPriceTick) -> Result<Self, Self::Error> {
-        Ok(PriceStreamPayload::BitfinexBtcSwapPricePayload(
+        Ok(PriceStreamPayload::BitfinexBtcUsdSwapPricePayload(
             PriceMessagePayload {
                 exchange: ExchangeIdRaw::from(BITFINEX_EXCHANGE_ID),
                 instrument_id: InstrumentIdRaw::from(BTC_USD_SWAP),
