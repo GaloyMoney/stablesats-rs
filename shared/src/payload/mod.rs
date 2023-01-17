@@ -24,6 +24,7 @@ pub struct PriceMessagePayload {
 #[serde(tag = "type")]
 pub enum PriceStreamPayload {
     OkexBtcSwapPricePayload(PriceMessagePayload),
+    BitfinexBtcSwapPricePayload(PriceMessagePayload),
     KolliderBtcUsdSwapPricePayload(PriceMessagePayload),
 }
 
