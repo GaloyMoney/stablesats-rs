@@ -16,11 +16,6 @@ pub struct TickerChannelData {
 }
 
 #[derive(Clone, Deserialize, Debug)]
-pub struct TickerChannelHeartbeat {
-    pub hb: String,
-}
-
-#[derive(Clone, Deserialize, Debug)]
 pub struct BitfinexPriceTick {
     pub channel_id: u64,
     pub tick: TickerChannelData,
