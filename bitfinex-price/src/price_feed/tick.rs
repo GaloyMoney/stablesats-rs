@@ -16,8 +16,27 @@ pub struct TickerChannelData {
 }
 
 #[derive(Clone, Deserialize, Debug)]
+pub struct TickerChannelHeartbeat {
+    pub hb: String,
+}
+
+#[derive(Clone, Deserialize, Debug)]
 pub struct BitfinexPriceTick {
     pub channel_id: u64,
-    pub heartbeat: Option<String>,
-    pub tick: Option<TickerChannelData>,
+    pub tick: TickerChannelData,
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use rust_decimal_macros::dec;
+
+    #[test]
+    fn bitfinex_price_tick() {
+        let response_text =
+            "[225440,[21099,66.42015405,21101,36.16639035,-3,-0.0001,21101,2780.23882622,21469,20639]]";
+        let details = serde_json::from_str::<BitfinexPriceTick>(response_text).unwrap();
+        dbg!(details.clone());
+        assert_eq!(details.tick.bid, dec!(21099));
+    }
 }

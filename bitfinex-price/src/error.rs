@@ -8,6 +8,7 @@ use shared::{
     pubsub::{Envelope, PublisherError},
 };
 
+#[allow(clippy::large_enum_variant)]
 #[derive(Error, Debug)]
 pub enum PriceFeedError {
     #[error("BitfinexPriceFeedError - SerdeError: {0}")]
