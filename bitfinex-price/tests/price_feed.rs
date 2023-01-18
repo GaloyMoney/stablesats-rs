@@ -1,5 +1,4 @@
 use bitfinex_price::config::PriceFeedConfig;
-use url::Url;
 
 use bitfinex_price::*;
 use futures::StreamExt;
@@ -23,9 +22,7 @@ async fn publishes_to_price_stream() -> anyhow::Result<()> {
         memory::channel(chrono::Duration::from_std(std::time::Duration::from_secs(2)).unwrap());
 
     let _ = tokio::spawn(async move {
-        let config = PriceFeedConfig {
-            url: Url::parse("wss://testnet.bitfinex.xyz/v1/ws/").unwrap(),
-        };
+        let config = PriceFeedConfig::default();
         let _ = bitfinex_price::run(config, tick_send).await;
     });
 
