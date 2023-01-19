@@ -114,6 +114,7 @@ async fn run_cmd(
         pubsub,
         price_server,
         okex_price_feed,
+        bitfinex_price_feed,
         user_trades,
         tracing,
         galoy,
@@ -144,6 +145,20 @@ async fn run_cmd(
                 okex_price::run(okex_price_feed.config, price_send)
                     .await
                     .context("Okex Price Feed error"),
+            );
+        }));
+    }
+
+    if bitfinex_price_feed.enabled {
+        println!("Starting Bitfinex price feed");
+
+        let bitfinex_send = send.clone();
+        let price_send = price_send.clone();
+        handles.push(tokio::spawn(async move {
+            let _ = bitfinex_send.try_send(
+                bitfinex_price::run(bitfinex_price_feed.config, price_send)
+                    .await
+                    .context("Bitfinex Price Feed error"),
             );
         }));
     }

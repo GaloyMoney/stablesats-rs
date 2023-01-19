@@ -2866,6 +2866,7 @@ version = "0.3.28-dev"
 dependencies = [
  "anyhow",
  "axum",
+ "bitfinex-price",
  "chrono",
  "clap",
  "futures",
