@@ -33,7 +33,6 @@ async fn get_last_price_in_usd_cents() -> anyhow::Result<()> {
     Ok(())
 }
 
-#[ignore = "until api key is setup"]
 #[tokio::test]
 #[serial]
 async fn funding_info() -> anyhow::Result<()> {
@@ -46,7 +45,6 @@ async fn funding_info() -> anyhow::Result<()> {
     Ok(())
 }
 
-#[ignore = "until api key is setup"]
 #[tokio::test]
 #[serial]
 async fn get_orders() -> anyhow::Result<()> {
@@ -57,7 +55,6 @@ async fn get_orders() -> anyhow::Result<()> {
     Ok(())
 }
 
-#[ignore = "until api key is setup"]
 #[tokio::test]
 #[serial]
 async fn get_wallets() -> anyhow::Result<()> {
@@ -68,7 +65,6 @@ async fn get_wallets() -> anyhow::Result<()> {
     Ok(())
 }
 
-#[ignore = "until api key is setup"]
 #[tokio::test]
 #[serial]
 async fn get_positions() -> anyhow::Result<()> {
@@ -79,7 +75,6 @@ async fn get_positions() -> anyhow::Result<()> {
     Ok(())
 }
 
-#[ignore = "until api key is setup"]
 #[tokio::test]
 #[serial]
 async fn get_btc_on_chain_deposit_address() -> anyhow::Result<()> {
@@ -90,7 +85,6 @@ async fn get_btc_on_chain_deposit_address() -> anyhow::Result<()> {
     Ok(())
 }
 
-#[ignore = "until api key is setup"]
 #[tokio::test]
 #[serial]
 async fn get_ln_deposit_address() -> anyhow::Result<()> {
@@ -101,7 +95,6 @@ async fn get_ln_deposit_address() -> anyhow::Result<()> {
     Ok(())
 }
 
-#[ignore = "until api key is setup"]
 #[tokio::test]
 #[serial]
 async fn get_ln_invoice() -> anyhow::Result<()> {
@@ -114,7 +107,6 @@ async fn get_ln_invoice() -> anyhow::Result<()> {
     Ok(())
 }
 
-#[ignore = "until api key is setup"]
 #[tokio::test]
 #[serial]
 async fn get_ln_transactions() -> anyhow::Result<()> {
@@ -126,7 +118,6 @@ async fn get_ln_transactions() -> anyhow::Result<()> {
     Ok(())
 }
 
-#[ignore = "until api key is setup"]
 #[tokio::test]
 #[serial]
 async fn get_btc_on_chain_transactions() -> anyhow::Result<()> {
@@ -138,7 +129,6 @@ async fn get_btc_on_chain_transactions() -> anyhow::Result<()> {
     Ok(())
 }
 
-#[ignore = "until api key is setup"]
 #[tokio::test]
 #[serial]
 async fn get_api_key_permissions() -> anyhow::Result<()> {
