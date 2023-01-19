@@ -192,7 +192,6 @@ checksum = "9e1b586273c5702936fe7b7d6896644d8be71e6314cfe09d3167c95f712589e8"
 
 [[package]]
 name = "bitfinex-client"
-name = "bitfinex-price"
 version = "0.1.0"
 dependencies = [
  "anyhow",
@@ -203,9 +202,6 @@ dependencies = [
  "rand",
  "reqwest",
  "ring",
- "crc32fast",
- "futures",
- "itertools",
  "rust_decimal",
  "rust_decimal_macros",
  "serde",
@@ -216,7 +212,25 @@ dependencies = [
  "thiserror",
  "tokio",
  "tracing",
+]
+
+[[package]]
+name = "bitfinex-price"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "chrono",
+ "crc32fast",
+ "futures",
+ "itertools",
+ "rust_decimal",
+ "rust_decimal_macros",
+ "serde",
+ "serde_json",
  "serde_with",
+ "stablesats-shared",
+ "thiserror",
+ "tokio",
  "tokio-tungstenite",
  "tracing",
  "url",
