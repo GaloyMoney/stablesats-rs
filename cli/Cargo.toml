@@ -18,7 +18,7 @@ okex-price = { path = "../okex-price" }
 kollider-price = { path = "../kollider-price" }
 
 anyhow = "1.0.68"
-clap = { version = "4.0", features = ["derive", "env"] }
+clap = { version = "4.1", features = ["derive", "env"] }
 serde = { version = "1.0.152", features = ["derive"] }
 serde_yaml = "0.9.16"
 tokio = "1.24.1"
