@@ -6,7 +6,7 @@ use tracing::{info_span, instrument, Instrument};
 use shared::{
     exchanges_config::ExchangeConfigs,
     health::HealthCheckTrigger,
-    payload::{PriceStreamPayload, KOLLIDER_EXCHANGE_ID, OKEX_EXCHANGE_ID},
+    payload::{PriceStreamPayload, BITFINEX_EXCHANGE_ID, KOLLIDER_EXCHANGE_ID, OKEX_EXCHANGE_ID},
     pubsub::*,
 };
 
@@ -52,6 +52,13 @@ impl PriceApp {
             price_mixer.add_provider(OKEX_EXCHANGE_ID, okex_price_cache, config.weight);
         }
 
+        if let Some(config) = exchanges_cfg.bitfinex.as_ref() {
+            let bitfinex_price_cache = ExchangeTickCache::new(price_cache_config.clone());
+            Self::subscribe_bitfinex(subscriber.resubscribe(), bitfinex_price_cache.clone())
+                .await?;
+            price_mixer.add_provider(BITFINEX_EXCHANGE_ID, bitfinex_price_cache, config.weight);
+        }
+
         if let Some(config) = exchanges_cfg.kollider.as_ref() {
             let kollider_price_cache = ExchangeTickCache::new(price_cache_config);
             Self::subscribe_kollider(subscriber, kollider_price_cache.clone()).await?;
@@ -76,6 +83,33 @@ impl PriceApp {
                 if let PriceStreamPayload::OkexBtcSwapPricePayload(price_msg) = msg.payload {
                     let span = info_span!(
                         "okex_price_tick_received",
+                        message_type = %msg.payload_type,
+                        correlation_id = %msg.meta.correlation_id
+                    );
+                    shared::tracing::inject_tracing_data(&span, &msg.meta.tracing_data);
+                    async {
+                        price_cache
+                            .apply_update(price_msg, msg.meta.correlation_id)
+                            .await;
+                    }
+                    .instrument(span)
+                    .await;
+                }
+            }
+        });
+
+        Ok(())
+    }
+
+    async fn subscribe_bitfinex(
+        mut subscriber: memory::Subscriber<PriceStreamPayload>,
+        price_cache: ExchangeTickCache,
+    ) -> Result<(), PriceAppError> {
+        let _ = tokio::spawn(async move {
+            while let Some(msg) = subscriber.next().await {
+                if let PriceStreamPayload::BitfinexBtcUsdSwapPricePayload(price_msg) = msg.payload {
+                    let span = info_span!(
+                        "bitfinex_price_tick_received",
                         message_type = %msg.payload_type,
                         correlation_id = %msg.meta.correlation_id
                     );

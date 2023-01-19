@@ -147,6 +147,8 @@ mod test_super {
         let ex: ExchangeConfigs = serde_yaml::from_str(str)?;
         let okex_cfg = ex.okex.expect("Okex-config not found");
         assert_eq!(dec!(1), okex_cfg.weight);
+        let bitfinex_cfg = ex.bitfinex.expect("Bitfinex-config not found");
+        assert_eq!(dec!(3), bitfinex_cfg.weight);
         let kollider_cfg = ex.kollider.expect("Kollider-config not found");
         assert_eq!(dec!(2), kollider_cfg.weight);
         let bitfinex_cfg = ex.bitfinex.expect("Bitfinex-config not found");

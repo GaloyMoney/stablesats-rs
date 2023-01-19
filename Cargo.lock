@@ -192,6 +192,7 @@ checksum = "9e1b586273c5702936fe7b7d6896644d8be71e6314cfe09d3167c95f712589e8"
 
 [[package]]
 name = "bitfinex-client"
+name = "bitfinex-price"
 version = "0.1.0"
 dependencies = [
  "anyhow",
@@ -202,6 +203,9 @@ dependencies = [
  "rand",
  "reqwest",
  "ring",
+ "crc32fast",
+ "futures",
+ "itertools",
  "rust_decimal",
  "rust_decimal_macros",
  "serde",
@@ -212,6 +216,10 @@ dependencies = [
  "thiserror",
  "tokio",
  "tracing",
+ "serde_with",
+ "tokio-tungstenite",
+ "tracing",
+ "url",
 ]
 
 [[package]]
@@ -362,9 +370,9 @@ dependencies = [
 
 [[package]]
 name = "clap"
-version = "4.0.32"
+version = "4.1.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a7db700bc935f9e43e88d00b0850dae18a63773cfbec6d8e070fccf7fef89a39"
+checksum = "4ec7a4128863c188deefe750ac1d1dfe66c236909f845af04beed823638dc1b2"
 dependencies = [
  "bitflags",
  "clap_derive",
@@ -377,9 +385,9 @@ dependencies = [
 
 [[package]]
 name = "clap_derive"
-version = "4.0.21"
+version = "4.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0177313f9f02afc995627906bbd8967e2be069f5261954222dac78290c2b9014"
+checksum = "684a277d672e91966334af371f1a7b5833f9aa00b07c84e92fbce95e00208ce8"
 dependencies = [
  "heck",
  "proc-macro-error",
@@ -2616,9 +2624,9 @@ dependencies = [
 
 [[package]]
 name = "serial_test"
-version = "0.10.0"
+version = "1.0.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1c789ec87f4687d022a2405cf46e0cd6284889f1839de292cadeb6c6019506f2"
+checksum = "538c30747ae860d6fb88330addbbd3e0ddbe46d662d032855596d8a8ca260611"
 dependencies = [
  "dashmap",
  "futures",
@@ -2630,9 +2638,9 @@ dependencies = [
 
 [[package]]
 name = "serial_test_derive"
-version = "0.10.0"
+version = "1.0.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b64f9e531ce97c88b4778aad0ceee079216071cffec6ac9b904277f8f92e7fe3"
+checksum = "079a83df15f85d89a68d64ae1238f142f172b1fa915d0d76b26a7cba1b659a69"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -2869,6 +2877,7 @@ version = "0.3.28-dev"
 dependencies = [
  "anyhow",
  "axum",
+ "bitfinex-price",
  "chrono",
  "clap",
  "futures",
@@ -3087,9 +3096,9 @@ checksum = "cda74da7e1a664f795bb1f8a87ec406fb89a02522cf6e50620d016add6dbbf5c"
 
 [[package]]
 name = "tokio"
-version = "1.24.1"
+version = "1.24.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1d9f76183f91ecfb55e1d7d5602bd1d979e38a3a522fe900241cf195624d67ae"
+checksum = "597a12a59981d9e3c38d216785b0c37399f6e415e8d0712047620f189371b0bb"
 dependencies = [
  "autocfg",
  "bytes",

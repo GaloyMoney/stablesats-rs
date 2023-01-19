@@ -21,7 +21,7 @@ chrono = { version = "0.4", features = [
 prost = "0.11"
 tonic = "0.8"
 axum-core = "0.3.1"
-tokio = "1.24.1"
+tokio = "1.24.2"
 futures = "0.3.25"
 thiserror = "1.0.38"
 serde = { version = "1.0.152", features = ["derive"] }
