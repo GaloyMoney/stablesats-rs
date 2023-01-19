@@ -59,7 +59,12 @@
   # config:
   #   url: "wss://ws.okx.com:8443/ws/v5/public"
 
-  # kollider_price_feed:
+# bitfinex_price_feed:
+  # enabled: true
+  # config:
+  #   url: "wss://api-pub.bitfinex.com/ws/2"
+
+# kollider_price_feed:
   # enabled: false
   # config:
   #   url: "wss://testnet.kollider.xyz/v1/ws/"
@@ -74,6 +79,11 @@
 #     weight: 1.0
 #     config:
 #       api_key: okex api
+#       simulated: false
+#   bitfinex:
+#     weight: 0.0
+#     config:
+#       api_key: bitfinex api
 #       simulated: false
 #   kollider:
 #     weight: 0.0
