@@ -64,7 +64,7 @@
   # config:
   #   url: "wss://api-pub.bitfinex.com/ws/2"
 
-  # kollider_price_feed:
+# kollider_price_feed:
   # enabled: false
   # config:
   #   url: "wss://testnet.kollider.xyz/v1/ws/"
