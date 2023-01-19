@@ -20,7 +20,6 @@ async fn configured_client() -> anyhow::Result<BitfinexClient> {
     Ok(client)
 }
 
-#[ignore = "until api key is setup"]
 #[tokio::test]
 #[serial]
 async fn get_last_price_in_usd_cents() -> anyhow::Result<()> {
