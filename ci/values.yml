@@ -16,6 +16,8 @@ osxcross_repository: ((osxcross-image.repository))
 okex_api_key: ((okex-creds.api_key))
 okex_passphrase: ((okex-creds.passphrase))
 okex_secret_key: ((okex-creds.secret_key))
+bitfinex_api_key: ((bitfinex-creds.api_key))
+bitfinex_secret_key: ((bitfinex-creds.secret_key))
 phone_number: ((galoy-creds.phone_number))
 auth_code: ((galoy-creds.auth_code))
 

@@ -16,4 +16,6 @@ jobs:
           OKEX_API_KEY: ${{ secrets.OKEX_API_KEY }}
           OKEX_PASSPHRASE: ${{ secrets.OKEX_PASSPHRASE }}
           OKEX_SECRET_KEY: ${{ secrets.OKEX_SECRET_KEY }}
+          BITFINEX_API_KEY: ${{ secrets.BITFINEX_API_KEY }}
+          BITFINEX_SECRET_KEY: ${{ secrets.BITFINEX_SECRET_KEY }}
         run: docker compose -f docker-compose.yml run integration-tests
