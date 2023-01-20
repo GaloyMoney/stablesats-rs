@@ -151,8 +151,6 @@ mod test_super {
         assert_eq!(dec!(3), bitfinex_cfg.weight);
         let kollider_cfg = ex.kollider.expect("Kollider-config not found");
         assert_eq!(dec!(2), kollider_cfg.weight);
-        let bitfinex_cfg = ex.bitfinex.expect("Bitfinex-config not found");
-        assert_eq!(dec!(3), bitfinex_cfg.weight);
         Ok(())
     }
 }
