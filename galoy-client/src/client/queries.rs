@@ -16,40 +16,11 @@ pub struct GraphqlTimeStamp(#[serde(with = "chrono::serde::ts_seconds")] pub(sup
 #[derive(GraphQLQuery)]
 #[graphql(
     schema_path = "src/client/graphql/schema.graphql",
-    query_path = "src/client/graphql/mutations/user_request_auth_code.graphql",
-    response_derives = "Debug, PartialEq, Eq"
-)]
-pub struct StablesatsAuthCode;
-pub type Phone = String;
-pub type StablesatsAuthenticationCode = stablesats_auth_code::StablesatsAuthCodeUserRequestAuthCode;
-impl TryFrom<stablesats_auth_code::ResponseData> for StablesatsAuthenticationCode {
-    type Error = GaloyClientError;
-
-    fn try_from(response: stablesats_auth_code::ResponseData) -> Result<Self, Self::Error> {
-        let auth_code = response.user_request_auth_code;
-        if let Some(is_success) = auth_code.success {
-            if !is_success {
-                return Err(GaloyClientError::Authentication(
-                    "Authentication failed".to_string(),
-                ));
-            } else {
-                return Ok(auth_code);
-            }
-        }
-
-        Err(GaloyClientError::Authentication(
-            "Empty authentication code".to_string(),
-        ))
-    }
-}
-
-#[derive(GraphQLQuery)]
-#[graphql(
-    schema_path = "src/client/graphql/schema.graphql",
     query_path = "src/client/graphql/mutations/user_login.graphql",
     response_derives = "Debug, PartialEq, Eq, Clone"
 )]
 pub struct StablesatsUserLogin;
+pub type Phone = String;
 pub type AuthToken = String;
 pub type OneTimeAuthCode = String;
 

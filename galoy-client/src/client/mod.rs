@@ -70,33 +70,6 @@ impl GaloyClient {
         })
     }
 
-    #[instrument(name = "galoy_authentication_code", err)]
-    pub async fn authentication_code(
-        &self,
-    ) -> Result<StablesatsAuthenticationCode, GaloyClientError> {
-        let phone_number = stablesats_auth_code::Variables {
-            input: stablesats_auth_code::UserRequestAuthCodeInput {
-                phone: self.config.phone_number.clone(),
-            },
-        };
-        let response = GaloyClient::traced_gql_request::<StablesatsAuthCode, _>(
-            &self.client,
-            &self.config.api,
-            phone_number,
-        )
-        .await?;
-        let response_data = response
-            .data
-            .ok_or_else(|| GaloyClientError::GraphQLNested {
-                message: "Empty authentication code response data".to_string(),
-                path: None,
-            })?;
-
-        let auth_code = StablesatsAuthenticationCode::try_from(response_data)?;
-
-        Ok(auth_code)
-    }
-
     #[instrument(name = "galoy_login_jwt", skip_all, err)]
     async fn login_jwt(config: GaloyClientConfig) -> Result<StablesatsAuthToken, GaloyClientError> {
         let variables = stablesats_user_login::Variables {
