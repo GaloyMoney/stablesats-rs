@@ -7,7 +7,7 @@ edition = "2021"
 
 [dependencies]
 shared = { path = "../shared", package = "stablesats-shared" }
-reqwest = { version = "0.11.13", default-features = false, features = ["json", "rustls-tls"] }
+reqwest = { version = "0.11.14", default-features = false, features = ["json", "rustls-tls"] }
 thiserror = "1.0.38"
 tokio = "1.24.2"
 ring = "0.16.20"
