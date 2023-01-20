@@ -14,19 +14,15 @@ pub struct UserTradesApp {
 
 impl UserTradesApp {
     pub async fn run(
+        pool: sqlx::PgPool,
         UserTradesConfig {
-            pg_con,
-            migrate_on_start,
             balance_publish_frequency,
             galoy_poll_frequency,
+            ..
         }: UserTradesConfig,
         pubsub_cfg: PubSubConfig,
         galoy_client_cfg: GaloyClientConfig,
     ) -> Result<Self, UserTradesError> {
-        let pool = sqlx::PgPool::connect(&pg_con).await?;
-        if migrate_on_start {
-            sqlx::migrate!().run(&pool).await?;
-        }
         let units = UserTradeUnits::load(&pool).await?;
         let user_trade_balances = UserTradeBalances::new(pool.clone(), units.clone()).await?;
         let user_trades = UserTrades::new(pool.clone(), units);

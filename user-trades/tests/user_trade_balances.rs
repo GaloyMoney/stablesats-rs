@@ -6,9 +6,9 @@ use ::user_trades::{user_trade_balances::*, user_trade_unit::*, user_trades::*};
 
 lazy_static::lazy_static! {
     static ref POOL: PgPool = {
-        let pg_host = std::env::var("USER_TRADES_PG_HOST").unwrap_or("localhost".to_string());
+        let pg_host = std::env::var("PG_HOST").unwrap_or("localhost".to_string());
         let pg_con = format!(
-            "postgres://stablesats:stablesats@{}:5432/stablesats-user-trades",
+            "postgres://stablesats:stablesats@{}:5432/stablesats",
             pg_host
         );
         PgPool::connect_lazy(&pg_con).expect("connect to db in user_trade test")

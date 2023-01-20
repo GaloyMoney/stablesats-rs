@@ -16,10 +16,11 @@ pub use app::*;
 pub use error::*;
 
 pub async fn run(
+    pool: sqlx::PgPool,
     config: UserTradesConfig,
     pubsub_cfg: PubSubConfig,
     galoy_client_cfg: GaloyClientConfig,
 ) -> Result<(), UserTradesError> {
-    UserTradesApp::run(config, pubsub_cfg, galoy_client_cfg).await?;
+    UserTradesApp::run(pool, config, pubsub_cfg, galoy_client_cfg).await?;
     Ok(())
 }

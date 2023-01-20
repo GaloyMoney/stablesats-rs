@@ -120,11 +120,9 @@ async fn hedging() -> anyhow::Result<()> {
         host: Some(redis_host),
         ..PubSubConfig::default()
     };
-    let user_trades_pg_host = std::env::var("HEDGING_PG_HOST").unwrap_or("localhost".to_string());
-    let user_trades_pg_port = std::env::var("HEDGING_PG_PORT").unwrap_or("5433".to_string());
-    let pg_con = format!(
-        "postgres://stablesats:stablesats@{user_trades_pg_host}:{user_trades_pg_port}/stablesats-hedging"
-    );
+    let pg_host = std::env::var("PG_HOST").unwrap_or("localhost".to_string());
+    let pg_con = format!("postgres://stablesats:stablesats@{pg_host}:5432/stablesats");
+    let pool = sqlx::PgPool::connect(&pg_con).await?;
 
     let publisher = Publisher::new(pubsub_config.clone()).await?;
     let mut subscriber = Subscriber::new(pubsub_config.clone()).await?;
@@ -135,6 +133,7 @@ async fn hedging() -> anyhow::Result<()> {
     tokio::spawn(async move {
         let (_, recv) = futures::channel::mpsc::unbounded();
         if let Err(_) = HedgingApp::run(
+            pool.clone(),
             recv,
             HedgingAppConfig {
                 pg_con: pg_con.clone(),
@@ -152,6 +151,7 @@ async fn hedging() -> anyhow::Result<()> {
             tokio::time::sleep(std::time::Duration::from_secs(2)).await;
             let (_, recv) = futures::channel::mpsc::unbounded();
             HedgingApp::run(
+                pool,
                 recv,
                 HedgingAppConfig {
                     pg_con,

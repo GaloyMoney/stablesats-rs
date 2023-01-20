@@ -13,6 +13,7 @@ check-code:
 	SQLX_OFFLINE=true cargo audit
 
 test-in-ci:
+	DATABASE_URL=postgres://stablesats:stablesats@postgres:5432/stablesats cargo sqlx migrate run
 	SQLX_OFFLINE=true cargo nextest run --verbose --locked
 
 cli-run:
@@ -40,3 +41,4 @@ reset-deps-local: clean-deps start-deps-local setup-db
 setup-db:
 	cd user-trades && cargo sqlx migrate run
 	cd hedging && cargo sqlx migrate run
+	cargo sqlx migrate run

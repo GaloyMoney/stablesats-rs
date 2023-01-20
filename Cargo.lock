@@ -2912,6 +2912,7 @@ dependencies = [
  "rust_decimal",
  "serde",
  "serde_yaml",
+ "sqlx",
  "stablesats-shared",
  "tokio",
  "tonic",

@@ -6,4 +6,5 @@ pub mod config;
 mod health;
 mod tracing;
 
+mod db;
 mod price_client;
