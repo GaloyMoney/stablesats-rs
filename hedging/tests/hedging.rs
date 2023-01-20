@@ -40,8 +40,8 @@ fn okex_client_config() -> OkexConfig {
 }
 
 fn bitfinex_client_config() -> BitfinexConfig {
-    let api_key = env::var("BITFINEX_API_KEY").expect("BITFINEX_API_KEY not set");
-    let secret_key = env::var("BITFINEX_SECRET_KEY").expect("BITFINEX_SECRET_KEY not set");
+    let api_key = env::var("BITFINEX_API_KEY").unwrap_or("dummy".to_string());
+    let secret_key = env::var("BITFINEX_SECRET_KEY").unwrap_or("dummy".to_string());
 
     BitfinexConfig {
         api_key,
