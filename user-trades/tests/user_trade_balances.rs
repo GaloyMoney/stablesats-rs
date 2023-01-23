@@ -1,27 +1,19 @@
 use chrono::Utc;
 use rust_decimal_macros::dec;
-use sqlx::PgPool;
 
 use ::user_trades::{user_trade_balances::*, user_trade_unit::*, user_trades::*};
 
-lazy_static::lazy_static! {
-    static ref POOL: PgPool = {
-        let pg_host = std::env::var("PG_HOST").unwrap_or("localhost".to_string());
-        let pg_con = format!(
-            "postgres://stablesats:stablesats@{}:5432/stablesats",
-            pg_host
-        );
-        PgPool::connect_lazy(&pg_con).expect("connect to db in user_trade test")
-    };
-}
-
 #[tokio::test]
 async fn user_trade_balances() -> anyhow::Result<()> {
-    let units = UserTradeUnits::load(&POOL).await?;
-    let balances = UserTradeBalances::new(POOL.clone(), units.clone()).await?;
+    let pg_host = std::env::var("PG_HOST").unwrap_or("localhost".to_string());
+    let pg_con = format!("postgres://stablesats:stablesats@{pg_host}:5432/stablesats");
+    let pool = sqlx::PgPool::connect(&pg_con).await?;
+
+    let units = UserTradeUnits::load(&pool).await?;
+    let balances = UserTradeBalances::new(pool.clone(), units.clone()).await?;
     let original_balances = balances.fetch_all().await?;
 
-    let trades = UserTrades::new(POOL.clone(), units);
+    let trades = UserTrades::new(pool.clone(), units);
 
     let sat_amount = dec!(1000);
     let cent_amount = dec!(10);
@@ -30,7 +22,7 @@ async fn user_trade_balances() -> anyhow::Result<()> {
         btc_tx_id: "btc_tx_id".to_string(),
         usd_tx_id: "usd_tx_id".to_string(),
     });
-    let mut tx = POOL.begin().await?;
+    let mut tx = pool.begin().await?;
     trades
         .persist_all(
             &mut tx,

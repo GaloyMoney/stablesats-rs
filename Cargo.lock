@@ -3550,7 +3550,6 @@ dependencies = [
  "chrono",
  "futures",
  "galoy-client",
- "lazy_static",
  "rust_decimal",
  "rust_decimal_macros",
  "serde",
