@@ -67,6 +67,11 @@
   # config:
   #   url: "wss://api-pub.bitfinex.com/ws/2"
 
+# deribit_price_feed:
+  # enabled: true
+  # config:
+  #   url: "wss://www.deribit.com/ws/api/v2/"
+
 # kollider_price_feed:
   # enabled: false
   # config:
@@ -87,6 +92,11 @@
 #     weight: 0.0
 #     config:
 #       api_key: bitfinex api
+#       simulated: false
+#   deribit:
+#     weight: 0.0
+#     config:
+#       api_key: deribit api
 #       simulated: false
 #   kollider:
 #     weight: 0.0

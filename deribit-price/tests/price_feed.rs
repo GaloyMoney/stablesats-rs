@@ -1,0 +1,37 @@
+use deribit_price::config::PriceFeedConfig;
+
+use deribit_price::*;
+use futures::StreamExt;
+use shared::{payload::*, pubsub::*};
+
+#[tokio::test]
+async fn subscribes_to_tickers_channel() -> anyhow::Result<()> {
+    let config = PriceFeedConfig::default();
+    let mut received = subscribe_btc_usd_swap_price_tick(config)
+        .await
+        .expect("subscribe_btc_usd_swap");
+    let price_tick = received.next().await.expect("expected price tick");
+
+    assert!(price_tick.params.data.best_ask_price >= price_tick.params.data.best_bid_price);
+    Ok(())
+}
+
+#[tokio::test]
+async fn publishes_to_price_stream() -> anyhow::Result<()> {
+    let (tick_send, mut tick_recv) =
+        memory::channel(chrono::Duration::from_std(std::time::Duration::from_secs(2)).unwrap());
+
+    let _ = tokio::spawn(async move {
+        let config = PriceFeedConfig::default();
+        let _ = deribit_price::run(config, tick_send).await;
+    });
+
+    let received_tick = tick_recv.next().await.expect("expected price tick");
+
+    assert!(matches!(
+        received_tick.payload,
+        PriceStreamPayload::DeribitBtcUsdSwapPricePayload(_)
+    ));
+
+    Ok(())
+}
