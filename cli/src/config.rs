@@ -29,6 +29,8 @@ pub struct Config {
     #[serde(default)]
     pub bitfinex_price_feed: BitfinexPriceFeedConfigWrapper,
     #[serde(default)]
+    pub deribit_price_feed: DeribitPriceFeedConfigWrapper,
+    #[serde(default)]
     pub user_trades: UserTradesConfigWrapper,
     #[serde(default)]
     pub galoy: GaloyClientConfig,
@@ -138,6 +140,22 @@ impl Default for BitfinexPriceFeedConfigWrapper {
         Self {
             enabled: true,
             config: bitfinex_price::PriceFeedConfig::default(),
+        }
+    }
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct DeribitPriceFeedConfigWrapper {
+    #[serde(default = "bool_true")]
+    pub enabled: bool,
+    #[serde(default)]
+    pub config: deribit_price::PriceFeedConfig,
+}
+impl Default for DeribitPriceFeedConfigWrapper {
+    fn default() -> Self {
+        Self {
+            enabled: true,
+            config: deribit_price::PriceFeedConfig::default(),
         }
     }
 }

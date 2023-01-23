@@ -7,7 +7,10 @@ use tracing::{info_span, instrument, Instrument};
 use shared::{
     exchanges_config::ExchangeConfigs,
     health::HealthCheckTrigger,
-    payload::{PriceStreamPayload, BITFINEX_EXCHANGE_ID, KOLLIDER_EXCHANGE_ID, OKEX_EXCHANGE_ID},
+    payload::{
+        PriceStreamPayload, BITFINEX_EXCHANGE_ID, DERIBIT_EXCHANGE_ID, KOLLIDER_EXCHANGE_ID,
+        OKEX_EXCHANGE_ID,
+    },
     pubsub::*,
 };
 
@@ -60,6 +63,12 @@ impl PriceApp {
                     .await?;
                 price_mixer.add_provider(BITFINEX_EXCHANGE_ID, bitfinex_price_cache, config.weight);
             }
+        }
+
+        if let Some(config) = exchanges_cfg.deribit.as_ref() {
+            let deribit_price_cache = ExchangeTickCache::new(price_cache_config.clone());
+            Self::subscribe_deribit(subscriber.resubscribe(), deribit_price_cache.clone()).await?;
+            price_mixer.add_provider(DERIBIT_EXCHANGE_ID, deribit_price_cache, config.weight);
         }
 
         if let Some(config) = exchanges_cfg.kollider.as_ref() {
@@ -115,6 +124,33 @@ impl PriceApp {
                 if let PriceStreamPayload::BitfinexBtcUsdSwapPricePayload(price_msg) = msg.payload {
                     let span = info_span!(
                         "price_server.bitfinex_price_tick_received",
+                        message_type = %msg.payload_type,
+                        correlation_id = %msg.meta.correlation_id
+                    );
+                    shared::tracing::inject_tracing_data(&span, &msg.meta.tracing_data);
+                    async {
+                        price_cache
+                            .apply_update(price_msg, msg.meta.correlation_id)
+                            .await;
+                    }
+                    .instrument(span)
+                    .await;
+                }
+            }
+        });
+
+        Ok(())
+    }
+
+    async fn subscribe_deribit(
+        mut subscriber: memory::Subscriber<PriceStreamPayload>,
+        price_cache: ExchangeTickCache,
+    ) -> Result<(), PriceAppError> {
+        let _ = tokio::spawn(async move {
+            while let Some(msg) = subscriber.next().await {
+                if let PriceStreamPayload::DeribitBtcUsdSwapPricePayload(price_msg) = msg.payload {
+                    let span = info_span!(
+                        "deribit_price_tick_received",
                         message_type = %msg.payload_type,
                         correlation_id = %msg.meta.correlation_id
                     );
