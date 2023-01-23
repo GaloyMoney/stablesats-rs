@@ -35,4 +35,4 @@ lazy_static = "1.4.0"
 
 [dev-dependencies]
 anyhow = "1.0.68"
-serde_yaml = "0.9.14"
+serde_yaml = "0.9.17"
