@@ -17,9 +17,14 @@ impl ExchangeConfigs {
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct ExchangeConfig<T: DeserializeOwned + Serialize> {
+    #[serde(default = "decimal_one")]
     pub weight: Decimal,
     #[serde(bound = "T: DeserializeOwned")]
     pub config: T,
+}
+
+fn decimal_one() -> Decimal {
+    Decimal::ONE
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, Default)]
