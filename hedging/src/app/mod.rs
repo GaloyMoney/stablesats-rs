@@ -34,11 +34,11 @@ pub struct HedgingApp {
 }
 
 impl HedgingApp {
+    #[allow(clippy::too_many_arguments)]
     pub async fn run(
+        pool: sqlx::PgPool,
         health_check_trigger: HealthCheckTrigger,
         HedgingAppConfig {
-            pg_con,
-            migrate_on_start,
             okex_poll_frequency: okex_poll_delay,
             health: health_cfg,
             hedging: hedging_config,
@@ -51,10 +51,6 @@ impl HedgingApp {
         pubsub_config: PubSubConfig,
         price_receiver: memory::Subscriber<PriceStreamPayload>,
     ) -> Result<Self, HedgingError> {
-        let pool = sqlx::PgPool::connect(&pg_con).await?;
-        if migrate_on_start {
-            sqlx::migrate!().run(&pool).await?;
-        }
         let synth_usd_liability = SynthUsdLiability::new(pool.clone());
         let okex_orders = OkexOrders::new(pool.clone()).await?;
         let okex_transfers = OkexTransfers::new(pool.clone()).await?;

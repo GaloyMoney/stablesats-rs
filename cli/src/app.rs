@@ -35,9 +35,14 @@ enum Command {
         /// Output config on crash
         #[clap(env = "CRASH_REPORT_CONFIG")]
         crash_report_config: Option<bool>,
+        #[clap(env = "MIGRATE_TO_UNIFIED_DB")]
+        migrate_to_unified_db: Option<bool>,
         /// Connection string for the user-trades database
         #[clap(env = "USER_TRADES_PG_CON", default_value = "")]
         user_trades_pg_con: String,
+        /// Connection string for the stablesats database
+        #[clap(env = "PG_CON", default_value = "")]
+        stablesats_pg_con: String,
         /// Phone code for the galoy client
         #[clap(env = "GALOY_PHONE_CODE", default_value = "")]
         galoy_phone_code: String,
@@ -73,6 +78,7 @@ pub async fn run() -> anyhow::Result<()> {
 
     match cli.command {
         Command::Run {
+            migrate_to_unified_db,
             redis_password,
             crash_report_config,
             user_trades_pg_con,
@@ -81,6 +87,7 @@ pub async fn run() -> anyhow::Result<()> {
             okex_secret_key,
             bitfinex_secret_key,
             hedging_pg_con,
+            stablesats_pg_con,
         } => {
             let config = Config::from_path(
                 cli.config,
@@ -91,10 +98,14 @@ pub async fn run() -> anyhow::Result<()> {
                     okex_passphrase,
                     okex_secret_key,
                     hedging_pg_con,
+                    stablesats_pg_con,
                     bitfinex_secret_key,
                 },
             )?;
-            match (run_cmd(config.clone()).await, crash_report_config) {
+            match (
+                run_cmd(migrate_to_unified_db, config.clone()).await,
+                crash_report_config,
+            ) {
                 (Err(e), Some(true)) => {
                     println!("Stablesats was started with the following config:");
                     println!("{}", serde_yaml::to_string(&config).unwrap());
@@ -115,7 +126,9 @@ pub async fn run() -> anyhow::Result<()> {
 }
 
 async fn run_cmd(
+    migrate_to_unified_db: Option<bool>,
     Config {
+        db,
         pubsub,
         price_server,
         okex_price_feed,
@@ -135,6 +148,15 @@ async fn run_cmd(
     }
     println!("Starting server process");
     crate::tracing::init_tracer(tracing)?;
+    let pool = crate::db::init_pool(db).await?;
+    if migrate_to_unified_db.unwrap_or(false) {
+        crate::db::migrate_to_unified_db(
+            pool.clone(),
+            &user_trades.config.pg_con,
+            &hedging.config.pg_con,
+        )
+        .await?;
+    }
     let (send, mut receive) = tokio::sync::mpsc::channel(1);
     let mut handles = Vec::new();
     let mut checkers = HashMap::new();
@@ -194,11 +216,13 @@ async fn run_cmd(
         // TODO: fix this nesting
         if let Some(okex_cfg) = exchanges.okex.as_ref() {
             let okex_config = okex_cfg.config.clone();
+            let pool = pool.clone();
             if let Some(bitfinex_cfg) = exchanges.bitfinex.as_ref() {
                 let bitfinex_config = bitfinex_cfg.config.clone();
                 handles.push(tokio::spawn(async move {
                     let _ = hedging_send.try_send(
                         hedging::run(
+                            pool,
                             recv,
                             hedging.config,
                             okex_config,
@@ -247,7 +271,7 @@ async fn run_cmd(
         let user_trades_send = send.clone();
         handles.push(tokio::spawn(async move {
             let _ = user_trades_send.try_send(
-                user_trades::run(user_trades.config, pubsub, galoy)
+                user_trades::run(pool, user_trades.config, pubsub, galoy)
                     .await
                     .context("User Trades error"),
             );

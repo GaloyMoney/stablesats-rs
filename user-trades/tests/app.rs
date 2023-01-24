@@ -32,13 +32,14 @@ async fn publishes_liability() -> anyhow::Result<()> {
         ..PubSubConfig::default()
     };
     let mut subscriber = Subscriber::new(pubsub_config.clone()).await?;
-    let user_trades_pg_host =
-        std::env::var("USER_TRADES_PG_HOST").unwrap_or("localhost".to_string());
+    let user_trades_pg_host = std::env::var("PG_HOST").unwrap_or("localhost".to_string());
     let pg_con = format!(
-        "postgres://stablesats:stablesats@{}:5432/stablesats-user-trades",
+        "postgres://stablesats:stablesats@{}:5432/stablesats",
         user_trades_pg_host
     );
+    let pool = sqlx::PgPool::connect(&pg_con).await?;
     let _ = tokio::spawn(UserTradesApp::run(
+        pool,
         UserTradesConfig {
             migrate_on_start: true,
             pg_con,

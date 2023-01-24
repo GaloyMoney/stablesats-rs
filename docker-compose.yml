@@ -7,6 +7,7 @@ services:
     - otel-agent
     - user-trades-db
     - hedging-db
+    - postgres
   user-trades-db:
     image: postgres:14.1
     environment:
@@ -19,6 +20,12 @@ services:
       - POSTGRES_USER=stablesats
       - POSTGRES_PASSWORD=stablesats
       - POSTGRES_DB=stablesats-hedging
+  postgres:
+    image: postgres:14.1
+    environment:
+      - POSTGRES_USER=stablesats
+      - POSTGRES_PASSWORD=stablesats
+      - POSTGRES_DB=stablesats
   redis:
     image: bitnami/redis:6.2
     environment:
@@ -40,6 +47,8 @@ services:
     - RUST_BACKTRACE=1
     - HEDGING_PG_HOST=hedging-db
     - HEDGING_PG_PORT=5432
+    - PG_HOST=postgres
+    - PG_PORT=5432
     - GALOY_GRAPHQL_URI=https://api.staging.galoy.io/graphql
     - PHONE_NUMBER=${PHONE_NUMBER}
     - AUTH_CODE=${AUTH_CODE}

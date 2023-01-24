@@ -9,7 +9,10 @@ services:
       - "6832:6832/udp" # Jaeger receiver
   user-trades-db:
     ports:
-    - "5432:5432"
+    - "5434:5432"
   hedging-db:
     ports:
     - "5433:5432"
+  postgres:
+    ports:
+    - "5432:5432"

@@ -21,7 +21,9 @@ use shared::{
 pub use app::*;
 pub use error::*;
 
+#[allow(clippy::too_many_arguments)]
 pub async fn run(
+    pool: sqlx::PgPool,
     health_check_trigger: HealthCheckTrigger,
     config: HedgingAppConfig,
     okex_config: OkexConfig,
@@ -31,6 +33,7 @@ pub async fn run(
     tick_receiver: memory::Subscriber<PriceStreamPayload>,
 ) -> Result<(), HedgingError> {
     HedgingApp::run(
+        pool,
         health_check_trigger,
         config,
         okex_config,

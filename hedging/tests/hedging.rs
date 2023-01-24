@@ -68,7 +68,7 @@ async fn expect_exposure_between(
     upper: Decimal,
 ) {
     let mut passed = false;
-    for _ in 0..=10 {
+    for _ in 0..=20 {
         let pos = stream.next().await.unwrap().payload.signed_usd_exposure;
         passed = pos < upper && pos > lower;
         if passed {
@@ -99,7 +99,7 @@ async fn expect_exposure_equal(
     expected: Decimal,
 ) {
     let mut passed = false;
-    for _ in 0..=10 {
+    for _ in 0..=20 {
         let pos = stream.next().await.unwrap().payload.signed_usd_exposure;
         passed = pos == expected;
         if passed {
@@ -120,11 +120,9 @@ async fn hedging() -> anyhow::Result<()> {
         host: Some(redis_host),
         ..PubSubConfig::default()
     };
-    let user_trades_pg_host = std::env::var("HEDGING_PG_HOST").unwrap_or("localhost".to_string());
-    let user_trades_pg_port = std::env::var("HEDGING_PG_PORT").unwrap_or("5433".to_string());
-    let pg_con = format!(
-        "postgres://stablesats:stablesats@{user_trades_pg_host}:{user_trades_pg_port}/stablesats-hedging"
-    );
+    let pg_host = std::env::var("PG_HOST").unwrap_or("localhost".to_string());
+    let pg_con = format!("postgres://stablesats:stablesats@{pg_host}:5432/stablesats");
+    let pool = sqlx::PgPool::connect(&pg_con).await?;
 
     let publisher = Publisher::new(pubsub_config.clone()).await?;
     let mut subscriber = Subscriber::new(pubsub_config.clone()).await?;
@@ -134,7 +132,8 @@ async fn hedging() -> anyhow::Result<()> {
 
     tokio::spawn(async move {
         let (_, recv) = futures::channel::mpsc::unbounded();
-        if let Err(_) = HedgingApp::run(
+        HedgingApp::run(
+            pool.clone(),
             recv,
             HedgingAppConfig {
                 pg_con: pg_con.clone(),
@@ -148,25 +147,7 @@ async fn hedging() -> anyhow::Result<()> {
             tick_recv.resubscribe(),
         )
         .await
-        {
-            tokio::time::sleep(std::time::Duration::from_secs(2)).await;
-            let (_, recv) = futures::channel::mpsc::unbounded();
-            HedgingApp::run(
-                recv,
-                HedgingAppConfig {
-                    pg_con,
-                    okex_poll_frequency: std::time::Duration::from_secs(2),
-                    ..Default::default()
-                },
-                okex_client_config(),
-                bitfinex_client_config(),
-                galoy_client_config(),
-                pubsub_config,
-                tick_recv,
-            )
-            .await
-            .expect("Hedging app failed");
-        }
+        .expect("HedgingApp failed");
     });
     tokio::time::sleep(std::time::Duration::from_secs(5)).await;
 

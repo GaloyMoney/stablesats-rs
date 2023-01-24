@@ -12,10 +12,12 @@ use price_server::{
 use shared::{exchanges_config::ExchangeConfigs, pubsub::PubSubConfig};
 use user_trades::UserTradesConfig;
 
-use super::tracing::TracingConfig;
+use super::{db::DbConfig, tracing::TracingConfig};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Config {
+    #[serde(default)]
+    pub db: DbConfig,
     #[serde(default)]
     pub pubsub: PubSubConfig,
     #[serde(default)]
@@ -42,6 +44,7 @@ pub struct EnvOverride {
     pub redis_password: Option<String>,
     pub user_trades_pg_con: String,
     pub hedging_pg_con: String,
+    pub stablesats_pg_con: String,
     pub okex_secret_key: String,
     pub okex_passphrase: String,
     pub galoy_phone_code: String,
@@ -58,6 +61,7 @@ impl Config {
             okex_passphrase,
             okex_secret_key,
             hedging_pg_con,
+            stablesats_pg_con,
             bitfinex_secret_key,
         }: EnvOverride,
     ) -> anyhow::Result<Self> {
@@ -80,6 +84,8 @@ impl Config {
         if let Some(bitfinex) = config.exchanges.bitfinex.as_mut() {
             bitfinex.config.secret_key = bitfinex_secret_key;
         };
+
+        config.db.pg_con = stablesats_pg_con;
 
         Ok(config)
     }

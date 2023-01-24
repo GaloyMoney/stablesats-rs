@@ -62,6 +62,7 @@ pub async fn spawn_poll_okex(
     duration: std::time::Duration,
 ) -> Result<(), HedgingError> {
     match JobBuilder::new_with_id(POLL_OKEX_ID, "poll_okex")
+        .set_channel_name("poll_okex")
         .set_delay(duration)
         .spawn(pool)
         .await
@@ -88,6 +89,7 @@ pub async fn spawn_adjust_hedge<'a>(
     correlation_id: CorrelationId,
 ) -> Result<(), HedgingError> {
     match JobBuilder::new_with_id(Uuid::from(correlation_id), "adjust_hedge")
+        .set_channel_name("adjust_hedge")
         .set_ordered(true)
         .set_json(&AdjustHedgeData {
             tracing_data: shared::tracing::extract_tracing_data(),
