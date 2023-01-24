@@ -1,0 +1,537 @@
+{
+  "db": "PostgreSQL",
+  "07345a11c24b2e9578e304a75215f7692fe57f529bca3a24c4e1f3f18589bc14": {
+    "describe": {
+      "columns": [
+        {
+          "name": "id",
+          "ordinal": 0,
+          "type_info": "Int4"
+        },
+        {
+          "name": "name",
+          "ordinal": 1,
+          "type_info": "Varchar"
+        },
+        {
+          "name": "created_at",
+          "ordinal": 2,
+          "type_info": "Timestamp"
+        }
+      ],
+      "nullable": [
+        false,
+        false,
+        false
+      ],
+      "parameters": {
+        "Left": []
+      }
+    },
+    "query": "SELECT * FROM user_trade_units"
+  },
+  "0ff954440543eda5443304784e4e0be075cb32244b9561c36020fbfc0b539cbe": {
+    "describe": {
+      "columns": [],
+      "nullable": [],
+      "parameters": {
+        "Left": []
+      }
+    },
+    "query": "DELETE FROM user_trade_balances"
+  },
+  "1663aff00a7d185310ef4e64c713793c96776e894571543d819ebf8b7eea0bf3": {
+    "describe": {
+      "columns": [
+        {
+          "name": "id",
+          "ordinal": 0,
+          "type_info": "Varchar"
+        },
+        {
+          "name": "cursor",
+          "ordinal": 1,
+          "type_info": "Varchar"
+        },
+        {
+          "name": "is_paired",
+          "ordinal": 2,
+          "type_info": "Bool"
+        },
+        {
+          "name": "settlement_amount",
+          "ordinal": 3,
+          "type_info": "Numeric"
+        },
+        {
+          "name": "settlement_currency",
+          "ordinal": 4,
+          "type_info": "Varchar"
+        },
+        {
+          "name": "settlement_method",
+          "ordinal": 5,
+          "type_info": "Varchar"
+        },
+        {
+          "name": "cents_per_unit",
+          "ordinal": 6,
+          "type_info": "Numeric"
+        },
+        {
+          "name": "amount_in_usd_cents",
+          "ordinal": 7,
+          "type_info": "Numeric"
+        },
+        {
+          "name": "created_at",
+          "ordinal": 8,
+          "type_info": "Timestamptz"
+        }
+      ],
+      "nullable": [
+        false,
+        false,
+        true,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false
+      ],
+      "parameters": {
+        "Left": [
+          "Text"
+        ]
+      }
+    },
+    "query": "SELECT * FROM galoy_transactions WHERE id > $1 ORDER BY id LIMIT 1000"
+  },
+  "26286bc1d542954b8a5d08bdab564d9d3fdc84eb47355d8a919bfd4d3eff4c04": {
+    "describe": {
+      "columns": [
+        {
+          "name": "client_order_id",
+          "ordinal": 0,
+          "type_info": "Varchar"
+        },
+        {
+          "name": "correlation_id",
+          "ordinal": 1,
+          "type_info": "Uuid"
+        },
+        {
+          "name": "instrument",
+          "ordinal": 2,
+          "type_info": "Varchar"
+        },
+        {
+          "name": "action",
+          "ordinal": 3,
+          "type_info": "Varchar"
+        },
+        {
+          "name": "unit",
+          "ordinal": 4,
+          "type_info": "Varchar"
+        },
+        {
+          "name": "size",
+          "ordinal": 5,
+          "type_info": "Numeric"
+        },
+        {
+          "name": "size_usd_value",
+          "ordinal": 6,
+          "type_info": "Numeric"
+        },
+        {
+          "name": "target_usd_value",
+          "ordinal": 7,
+          "type_info": "Numeric"
+        },
+        {
+          "name": "position_usd_value_before_order",
+          "ordinal": 8,
+          "type_info": "Numeric"
+        },
+        {
+          "name": "complete",
+          "ordinal": 9,
+          "type_info": "Bool"
+        },
+        {
+          "name": "lost",
+          "ordinal": 10,
+          "type_info": "Bool"
+        },
+        {
+          "name": "created_at",
+          "ordinal": 11,
+          "type_info": "Timestamptz"
+        },
+        {
+          "name": "order_id",
+          "ordinal": 12,
+          "type_info": "Varchar"
+        },
+        {
+          "name": "avg_price",
+          "ordinal": 13,
+          "type_info": "Numeric"
+        },
+        {
+          "name": "fee",
+          "ordinal": 14,
+          "type_info": "Numeric"
+        },
+        {
+          "name": "state",
+          "ordinal": 15,
+          "type_info": "Varchar"
+        }
+      ],
+      "nullable": [
+        false,
+        false,
+        false,
+        false,
+        false,
+        true,
+        true,
+        false,
+        false,
+        false,
+        false,
+        false,
+        true,
+        true,
+        true,
+        true
+      ],
+      "parameters": {
+        "Left": [
+          "Text"
+        ]
+      }
+    },
+    "query": "SELECT * FROM okex_orders WHERE client_order_id > $1 ORDER BY client_order_id LIMIT 1000"
+  },
+  "53da8170618570123db17942181c74bda8622755da07891d25493aa016c5b496": {
+    "describe": {
+      "columns": [
+        {
+          "name": "id",
+          "ordinal": 0,
+          "type_info": "Int4"
+        },
+        {
+          "name": "buy_amount",
+          "ordinal": 1,
+          "type_info": "Numeric"
+        },
+        {
+          "name": "buy_unit_id",
+          "ordinal": 2,
+          "type_info": "Int4"
+        },
+        {
+          "name": "sell_amount",
+          "ordinal": 3,
+          "type_info": "Numeric"
+        },
+        {
+          "name": "sell_unit_id",
+          "ordinal": 4,
+          "type_info": "Int4"
+        },
+        {
+          "name": "external_ref",
+          "ordinal": 5,
+          "type_info": "Jsonb"
+        },
+        {
+          "name": "created_at",
+          "ordinal": 6,
+          "type_info": "Timestamptz"
+        }
+      ],
+      "nullable": [
+        false,
+        false,
+        false,
+        false,
+        false,
+        true,
+        false
+      ],
+      "parameters": {
+        "Left": [
+          "Int4"
+        ]
+      }
+    },
+    "query": "SELECT * FROM user_trades WHERE id >= $1 ORDER BY id LIMIT 1000"
+  },
+  "66de33605ca48dfecd459a7da46084d3ae36b2ec964924ab579db321e0f36d47": {
+    "describe": {
+      "columns": [
+        {
+          "name": "setval",
+          "ordinal": 0,
+          "type_info": "Int8"
+        }
+      ],
+      "nullable": [
+        null
+      ],
+      "parameters": {
+        "Left": []
+      }
+    },
+    "query": "SELECT setval('user_trade_units_id_seq', (SELECT MAX(id) FROM user_trade_units))"
+  },
+  "6887fed24de18730a3c4f7024cbc5c774d7544202f5fce96204845b2de9ad9f0": {
+    "describe": {
+      "columns": [
+        {
+          "name": "setval",
+          "ordinal": 0,
+          "type_info": "Int8"
+        }
+      ],
+      "nullable": [
+        null
+      ],
+      "parameters": {
+        "Left": []
+      }
+    },
+    "query": "SELECT setval('synth_usd_liability_idx_seq', (SELECT MAX(idx) FROM synth_usd_liability))"
+  },
+  "a53fefd81a2b56b7c9032a698f0aee39d021a90389e928b894f93c0bd6838628": {
+    "describe": {
+      "columns": [],
+      "nullable": [],
+      "parameters": {
+        "Left": []
+      }
+    },
+    "query": "DELETE FROM user_trade_units"
+  },
+  "b19d30cb059ade48e55d7e6c7d9889d9e50cb1da3261935e2627a6ae97f08c34": {
+    "describe": {
+      "columns": [
+        {
+          "name": "client_transfer_id",
+          "ordinal": 0,
+          "type_info": "Varchar"
+        },
+        {
+          "name": "correlation_id",
+          "ordinal": 1,
+          "type_info": "Uuid"
+        },
+        {
+          "name": "action",
+          "ordinal": 2,
+          "type_info": "Varchar"
+        },
+        {
+          "name": "currency",
+          "ordinal": 3,
+          "type_info": "Varchar"
+        },
+        {
+          "name": "amount",
+          "ordinal": 4,
+          "type_info": "Numeric"
+        },
+        {
+          "name": "fee",
+          "ordinal": 5,
+          "type_info": "Numeric"
+        },
+        {
+          "name": "transfer_from",
+          "ordinal": 6,
+          "type_info": "Varchar"
+        },
+        {
+          "name": "transfer_to",
+          "ordinal": 7,
+          "type_info": "Varchar"
+        },
+        {
+          "name": "target_usd_exposure",
+          "ordinal": 8,
+          "type_info": "Numeric"
+        },
+        {
+          "name": "current_usd_exposure",
+          "ordinal": 9,
+          "type_info": "Numeric"
+        },
+        {
+          "name": "trading_btc_used_balance",
+          "ordinal": 10,
+          "type_info": "Numeric"
+        },
+        {
+          "name": "trading_btc_total_balance",
+          "ordinal": 11,
+          "type_info": "Numeric"
+        },
+        {
+          "name": "current_usd_btc_price",
+          "ordinal": 12,
+          "type_info": "Numeric"
+        },
+        {
+          "name": "funding_btc_total_balance",
+          "ordinal": 13,
+          "type_info": "Numeric"
+        },
+        {
+          "name": "lost",
+          "ordinal": 14,
+          "type_info": "Bool"
+        },
+        {
+          "name": "transfer_id",
+          "ordinal": 15,
+          "type_info": "Varchar"
+        },
+        {
+          "name": "state",
+          "ordinal": 16,
+          "type_info": "Varchar"
+        },
+        {
+          "name": "created_at",
+          "ordinal": 17,
+          "type_info": "Timestamptz"
+        }
+      ],
+      "nullable": [
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        true,
+        true,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        true,
+        false,
+        false
+      ],
+      "parameters": {
+        "Left": [
+          "Text"
+        ]
+      }
+    },
+    "query": "SELECT * FROM okex_transfers WHERE client_transfer_id > $1 ORDER BY client_transfer_id LIMIT 1000"
+  },
+  "b6a982f1ca8658cf4d987f96842711f1a0abed279dc83c081fa4c2ed7a5a8bd5": {
+    "describe": {
+      "columns": [
+        {
+          "name": "unit_id",
+          "ordinal": 0,
+          "type_info": "Int4"
+        },
+        {
+          "name": "current_balance",
+          "ordinal": 1,
+          "type_info": "Numeric"
+        },
+        {
+          "name": "last_trade_id",
+          "ordinal": 2,
+          "type_info": "Int4"
+        },
+        {
+          "name": "updated_at",
+          "ordinal": 3,
+          "type_info": "Timestamptz"
+        }
+      ],
+      "nullable": [
+        false,
+        false,
+        true,
+        false
+      ],
+      "parameters": {
+        "Left": []
+      }
+    },
+    "query": "SELECT * FROM user_trade_balances"
+  },
+  "bab6a9161d7e87bd792f5b36cf8fa5033c0f57f6033bb25d1c2c10e10439c941": {
+    "describe": {
+      "columns": [
+        {
+          "name": "idx",
+          "ordinal": 0,
+          "type_info": "Int4"
+        },
+        {
+          "name": "correlation_id",
+          "ordinal": 1,
+          "type_info": "Uuid"
+        },
+        {
+          "name": "amount",
+          "ordinal": 2,
+          "type_info": "Numeric"
+        },
+        {
+          "name": "recorded_at",
+          "ordinal": 3,
+          "type_info": "Timestamptz"
+        }
+      ],
+      "nullable": [
+        false,
+        false,
+        false,
+        false
+      ],
+      "parameters": {
+        "Left": [
+          "Int4"
+        ]
+      }
+    },
+    "query": "SELECT * FROM synth_usd_liability WHERE idx >= $1 ORDER BY idx LIMIT 1000"
+  },
+  "fbf76b355e990f4a43da4109075006fc8bb79a6f98ffbb55f86e3ceca69b9c9c": {
+    "describe": {
+      "columns": [
+        {
+          "name": "setval",
+          "ordinal": 0,
+          "type_info": "Int8"
+        }
+      ],
+      "nullable": [
+        null
+      ],
+      "parameters": {
+        "Left": []
+      }
+    },
+    "query": "SELECT setval('user_trades_id_seq', (SELECT MAX(id) FROM user_trades))"
+  }
+}
