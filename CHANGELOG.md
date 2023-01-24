@@ -1,3 +1,53 @@
+# [stablesats release v0.4.0](https://github.com/GaloyMoney/stablesats/releases/tag/v0.4.0)
+
+
+### Bug Fixes
+
+- Typo in tests/price_app
+
+### Features
+
+- Bitfinex client  (#229)
+- Bitfinex price (#247)
+
+### Miscellaneous Tasks
+
+- Default weight is 1.0
+- Bump async-trait from 0.1.61 to 0.1.63 (#252)
+- Bump serde_yaml from 0.9.16 to 0.9.17 (#254)
+- Bump rust_decimal_macros from 1.27.0 to 1.28.0 (#255)
+- Bump axum-core from 0.3.1 to 0.3.2 (#256)
+- Comment bitfinex vars in docker-compose
+- Remove redundant galoy-client query
+- Delete unused graphql
+- Bump reqwest from 0.11.13 to 0.11.14 (#250)
+- Bump tokio from 1.24.1 to 1.24.2 (#248)
+- Bump serial_test from 0.10.0 to 1.0.0 (#249)
+- Bump clap from 4.0.32 to 4.1.1 (#246)
+- Bump graphql_client from 0.11.0 to 0.12.0 (#245)
+- Bump axum from 0.6.1 to 0.6.2 (#244)
+- Bump prost from 0.11.5 to 0.11.6 (#243)
+- Bump tokio from 1.24.0 to 1.24.1 (#239)
+- Bump async-trait from 0.1.60 to 0.1.61 (#240)
+- Bump serde_with from 2.1.0 to 2.2.0 (#241)
+- Bump axum-core from 0.3.0 to 0.3.1 (#242)
+- Bump async-trait from 0.1.58 to 0.1.60 (#236)
+- Bump tokio from 1.23.0 to 1.24.0 (#237)
+- Bump prost from 0.11.3 to 0.11.5 (#226)
+- Bump clap from 4.0.29 to 4.0.32 (#231)
+- Bump serde from 1.0.151 to 1.0.152 (#233)
+
+### Refactor
+
+- [**breaking**] Introduce single unified database (#251)
+- Rename ExchangeConfigs
+
+### Testing
+
+- Ignore hedging - too unstable
+- Ignore okex tests
+- Pass withouth BITFINEX creds
+
 # [stablesats release v0.3.27](https://github.com/GaloyMoney/stablesats/releases/tag/v0.3.27)
 
 
