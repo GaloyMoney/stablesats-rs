@@ -68,7 +68,7 @@ async fn expect_exposure_between(
     upper: Decimal,
 ) {
     let mut passed = false;
-    for _ in 0..=10 {
+    for _ in 0..=20 {
         let pos = stream.next().await.unwrap().payload.signed_usd_exposure;
         passed = pos < upper && pos > lower;
         if passed {
@@ -99,7 +99,7 @@ async fn expect_exposure_equal(
     expected: Decimal,
 ) {
     let mut passed = false;
-    for _ in 0..=10 {
+    for _ in 0..=20 {
         let pos = stream.next().await.unwrap().payload.signed_usd_exposure;
         passed = pos == expected;
         if passed {
@@ -132,7 +132,7 @@ async fn hedging() -> anyhow::Result<()> {
 
     tokio::spawn(async move {
         let (_, recv) = futures::channel::mpsc::unbounded();
-        if let Err(_) = HedgingApp::run(
+        HedgingApp::run(
             pool.clone(),
             recv,
             HedgingAppConfig {
@@ -147,26 +147,7 @@ async fn hedging() -> anyhow::Result<()> {
             tick_recv.resubscribe(),
         )
         .await
-        {
-            tokio::time::sleep(std::time::Duration::from_secs(2)).await;
-            let (_, recv) = futures::channel::mpsc::unbounded();
-            HedgingApp::run(
-                pool,
-                recv,
-                HedgingAppConfig {
-                    pg_con,
-                    okex_poll_frequency: std::time::Duration::from_secs(2),
-                    ..Default::default()
-                },
-                okex_client_config(),
-                bitfinex_client_config(),
-                galoy_client_config(),
-                pubsub_config,
-                tick_recv,
-            )
-            .await
-            .expect("Hedging app failed");
-        }
+        .expect("HedgingApp failed");
     });
     tokio::time::sleep(std::time::Duration::from_secs(5)).await;
 
