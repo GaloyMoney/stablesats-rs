@@ -25,6 +25,7 @@ async fn configured_okex_client() -> anyhow::Result<OkexClient> {
 
 #[tokio::test]
 #[serial]
+#[ignore = "avoid rate limit"]
 async fn get_deposit_address_data() -> anyhow::Result<()> {
     let client = configured_okex_client().await?;
     let address = client.get_funding_deposit_address().await?;
@@ -35,6 +36,7 @@ async fn get_deposit_address_data() -> anyhow::Result<()> {
 
 #[tokio::test]
 #[serial]
+#[ignore = "avoid rate limit"]
 async fn get_onchain_fees_data() -> anyhow::Result<()> {
     let client = configured_okex_client().await?;
     let fees = client.get_onchain_fees().await?;
@@ -50,6 +52,7 @@ async fn get_onchain_fees_data() -> anyhow::Result<()> {
 
 #[tokio::test]
 #[serial]
+#[ignore = "avoid rate limit"]
 async fn client_is_missing_header() -> anyhow::Result<()> {
     let client = OkexClient::new(OkexConfig {
         api_key: "".to_string(),
@@ -72,6 +75,7 @@ async fn client_is_missing_header() -> anyhow::Result<()> {
 
 #[tokio::test]
 #[serial]
+#[ignore = "avoid rate limit"]
 async fn funding_account_balance() -> anyhow::Result<()> {
     let client = configured_okex_client().await?;
     let avail_balance = client.funding_account_balance().await?;
@@ -84,6 +88,7 @@ async fn funding_account_balance() -> anyhow::Result<()> {
 
 #[tokio::test]
 #[serial]
+#[ignore = "avoid rate limit"]
 async fn trading_account_balance() -> anyhow::Result<()> {
     let client = configured_okex_client().await?;
     let avail_balance = client.trading_account_balance().await?;
@@ -198,7 +203,7 @@ async fn transfer_state_by_client_id() -> anyhow::Result<()> {
 
 #[tokio::test]
 #[serial]
-#[ignore = "calls exercised from hedging crate"]
+#[ignore = "avoid rate limit"]
 async fn open_close_position() -> anyhow::Result<()> {
     let client = configured_okex_client().await?;
 
@@ -224,6 +229,7 @@ async fn open_close_position() -> anyhow::Result<()> {
 
 #[tokio::test]
 #[serial]
+#[ignore = "avoid rate limit"]
 async fn last_price() -> anyhow::Result<()> {
     let client = configured_okex_client().await?;
 
