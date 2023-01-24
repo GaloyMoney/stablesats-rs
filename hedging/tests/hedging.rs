@@ -111,6 +111,7 @@ async fn expect_exposure_equal(
 
 #[tokio::test]
 #[serial]
+#[ignore = "okex is very unstable"]
 async fn hedging() -> anyhow::Result<()> {
     let (_, tick_recv) = memory::channel(chrono::Duration::from_std(
         std::time::Duration::from_secs(1),
