@@ -5,7 +5,10 @@ use tracing::{instrument, Span};
 
 use std::{collections::HashMap, time::Duration};
 
-pub trait JobExecutionError: std::fmt::Display + From<sqlx::Error> {}
+pub trait JobExecutionError:
+    std::fmt::Display + From<sqlx::Error> + From<serde_json::Error>
+{
+}
 
 #[derive(Builder)]
 #[builder(pattern = "owned")]
@@ -38,7 +41,7 @@ impl<'a> JobExecutor<'a> {
         F: FnOnce(Option<T>) -> R,
     {
         let mut data = JobData::<T>::from_raw_payload(self.job.raw_json()).unwrap();
-        let completed = self.checkpoint_attempt(&mut data).await?;
+        let completed = self.checkpoint_attempt::<T, E>(&mut data).await?;
         let result = func(data.data).await;
         if let Err(ref e) = result {
             self.handle_error(data.job_meta, e).await;
@@ -64,10 +67,10 @@ impl<'a> JobExecutor<'a> {
         }
     }
 
-    async fn checkpoint_attempt<T: Serialize>(
+    async fn checkpoint_attempt<T: Serialize, E: JobExecutionError>(
         &mut self,
         data: &mut JobData<T>,
-    ) -> Result<bool, sqlx::Error> {
+    ) -> Result<bool, E> {
         let span = Span::current();
 
         if let Some(tracing_data) = data.job_meta.tracing_data.as_ref() {
@@ -87,7 +90,7 @@ impl<'a> JobExecutor<'a> {
         span.record("attempt", &tracing::field::display(data.job_meta.attempts));
         span.record(
             "checkpoint_json",
-            &tracing::field::display(serde_json::to_string(&data).expect("Couldn't checkpoint")),
+            &tracing::field::display(serde_json::to_string(&data)?),
         );
 
         let mut checkpoint =
@@ -100,7 +103,7 @@ impl<'a> JobExecutor<'a> {
             checkpoint.set_extra_retries(1);
         }
 
-        checkpoint.set_json(&data).expect("Couldn't update tracker");
+        checkpoint.set_json(&data)?;
         self.job.checkpoint(&checkpoint).await?;
 
         if data.job_meta.attempts >= self.max_attempts {

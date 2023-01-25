@@ -7,6 +7,8 @@ use shared::{pubsub::PublisherError, sqlxmq::JobExecutionError};
 pub enum UserTradesError {
     #[error("UserTradesError - Sqlx: {0}")]
     Sqlx(#[from] sqlx::Error),
+    #[error("UserTradesError - SerdeJson: {0}")]
+    SerdeJson(#[from] serde_json::Error),
     #[error("UserTradesError - Migrate: {0}")]
     Migrate(#[from] sqlx::migrate::MigrateError),
     #[error("UserTradesError - Publisher: {0}")]
