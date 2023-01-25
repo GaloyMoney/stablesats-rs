@@ -134,7 +134,7 @@ impl Default for PriceFeedConfigWrapper {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct BitfinexPriceFeedConfigWrapper {
-    #[serde(default = "bool_true")]
+    #[serde(default)]
     pub enabled: bool,
     #[serde(default)]
     pub config: bitfinex_price::PriceFeedConfig,
