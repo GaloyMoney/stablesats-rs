@@ -1,3 +1,15 @@
+# [stablesats release v0.4.3](https://github.com/GaloyMoney/stablesats/releases/tag/v0.4.3)
+
+
+### Bug Fixes
+
+- Wipe 0 attempt static jobs on startup
+
+### Miscellaneous Tasks
+
+- Fix adjust_hedge retries
+- Improve poll_galoy_transactions retries
+
 # [stablesats release v0.4.2](https://github.com/GaloyMoney/stablesats/releases/tag/v0.4.2)
 
 
