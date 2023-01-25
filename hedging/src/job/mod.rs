@@ -147,7 +147,7 @@ async fn adjust_hedge(
         .build()
         .expect("couldn't build JobExecutor")
         .execute(|data| async move {
-            let data: AdjustHedgeData = data.expect("no AdjustHedgeData available");
+            let data: AdjustHedgeData = data.ok_or(HedgingError::NoJobDataPresent)?;
             adjust_hedge::execute(
                 data.correlation_id,
                 synth_usd_liability,
@@ -206,7 +206,7 @@ async fn adjust_funding(
         .build()
         .expect("couldn't build JobExecutor")
         .execute(|data| async move {
-            let data: AdjustFundingData = data.expect("no AdjustFundingData available");
+            let data: AdjustFundingData = data.ok_or(HedgingError::NoJobDataPresent)?;
             adjust_funding::execute(
                 data.correlation_id,
                 synth_usd_liability,

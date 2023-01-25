@@ -24,6 +24,8 @@ pub enum HedgingError {
     GaloyClient(#[from] galoy_client::GaloyClientError),
     #[error("HedgingError - BitfinexClient: {0}")]
     BitfinextClient(#[from] bitfinex_client::BitfinexClientError),
+    #[error("HedgingError - NoJobDataPresent")]
+    NoJobDataPresent,
 }
 
 impl JobExecutionError for HedgingError {}
