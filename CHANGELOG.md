@@ -1,3 +1,10 @@
+# [stablesats release v0.4.2](https://github.com/GaloyMoney/stablesats/releases/tag/v0.4.2)
+
+
+### Miscellaneous Tasks
+
+- More retries for critical jobs
+
 # [stablesats release v0.4.1](https://github.com/GaloyMoney/stablesats/releases/tag/v0.4.1)
 
 
