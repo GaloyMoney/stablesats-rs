@@ -63,7 +63,7 @@ pub async fn spawn_poll_okex(
 ) -> Result<(), HedgingError> {
     match JobBuilder::new_with_id(POLL_OKEX_ID, "poll_okex")
         .set_channel_name("poll_okex")
-        .set_retries(20)
+        .set_retries(6)
         .set_delay(duration)
         .spawn(pool)
         .await
@@ -109,7 +109,7 @@ pub async fn spawn_adjust_hedge<'a>(
     }
 }
 
-#[job(name = "poll_okex", channel_name = "hedging", retries = 20)]
+#[job(name = "poll_okex")]
 async fn poll_okex(
     mut current_job: CurrentJob,
     OkexPollDelay(delay): OkexPollDelay,
@@ -134,7 +134,7 @@ async fn poll_okex(
     name = "adjust_hedge",
     channel_name = "adjust_hedging",
     ordered,
-    retries = 20
+    retries = 6
 )]
 async fn adjust_hedge(
     mut current_job: CurrentJob,
@@ -193,7 +193,7 @@ pub async fn spawn_adjust_funding<'a>(
     }
 }
 
-#[job(name = "adjust_funding", channel_name = "hedging", ordered)]
+#[job(name = "adjust_funding")]
 async fn adjust_funding(
     mut current_job: CurrentJob,
     synth_usd_liability: SynthUsdLiability,

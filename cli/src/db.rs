@@ -9,7 +9,10 @@ pub struct DbConfig {
 }
 
 pub async fn init_pool(config: DbConfig) -> anyhow::Result<sqlx::PgPool> {
-    let pool = sqlx::PgPool::connect(&config.pg_con).await?;
+    let pool = sqlx::postgres::PgPoolOptions::new()
+        .max_connections(30)
+        .connect(&config.pg_con)
+        .await?;
     if config.migrate_on_start {
         sqlx::migrate!("../migrations").run(&pool).await?;
     }

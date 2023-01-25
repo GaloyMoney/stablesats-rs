@@ -53,7 +53,7 @@ pub async fn spawn_publish_liability(
     duration: Duration,
 ) -> Result<(), UserTradesError> {
     match JobBuilder::new_with_id(PUBLISH_LIABILITY_ID, "publish_liability")
-        .set_retries(20)
+        .set_retries(6)
         .set_channel_name("publish_liability")
         .set_delay(duration)
         .spawn(pool)
@@ -71,8 +71,7 @@ pub async fn spawn_poll_galoy_transactions(
     duration: Duration,
 ) -> Result<(), UserTradesError> {
     match JobBuilder::new_with_id(POLL_GALOY_TRANSACTIONS_ID, "poll_galoy_transactions")
-        .set_retries(20)
-        .set_retry_backoff(Duration::from_secs(5))
+        .set_retries(6)
         .set_channel_name("poll_galoy_transactions")
         .set_delay(duration)
         .spawn(pool)
