@@ -9,11 +9,7 @@ use serial_test::serial;
 use std::{env, fs};
 
 use okex_client::*;
-use shared::{
-    exchanges_config::{BitfinexConfig, OkexConfig},
-    payload::*,
-    pubsub::*,
-};
+use shared::{exchanges_config::OkexConfig, payload::*, pubsub::*};
 
 use hedging::*;
 
@@ -34,17 +30,6 @@ fn okex_client_config() -> OkexConfig {
     OkexConfig {
         api_key,
         passphrase,
-        secret_key,
-        simulated: true,
-    }
-}
-
-fn bitfinex_client_config() -> BitfinexConfig {
-    let api_key = env::var("BITFINEX_API_KEY").unwrap_or("dummy".to_string());
-    let secret_key = env::var("BITFINEX_SECRET_KEY").unwrap_or("dummy".to_string());
-
-    BitfinexConfig {
-        api_key,
         secret_key,
         simulated: true,
     }
@@ -142,7 +127,6 @@ async fn hedging() -> anyhow::Result<()> {
                 ..Default::default()
             },
             okex_client_config(),
-            bitfinex_client_config(),
             galoy_client_config(),
             pubsub_config.clone(),
             tick_recv.resubscribe(),
