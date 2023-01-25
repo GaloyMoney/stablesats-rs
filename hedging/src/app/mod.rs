@@ -8,11 +8,9 @@ use sqlxmq::OwnedHandle;
 use tracing::{info_span, Instrument};
 use tracing_opentelemetry::OpenTelemetrySpanExt;
 
-use bitfinex_client::*;
 use galoy_client::*;
 use okex_client::*;
 use shared::{
-    exchanges_config::BitfinexConfig,
     exchanges_config::OkexConfig,
     health::HealthCheckTrigger,
     payload::{
@@ -46,7 +44,6 @@ impl HedgingApp {
             ..
         }: HedgingAppConfig,
         okex_client_config: OkexConfig,
-        bitfinex_client_config: BitfinexConfig,
         galoy_client_cfg: GaloyClientConfig,
         pubsub_config: PubSubConfig,
         price_receiver: memory::Subscriber<PriceStreamPayload>,
@@ -55,7 +52,6 @@ impl HedgingApp {
         let okex_orders = OkexOrders::new(pool.clone()).await?;
         let okex_transfers = OkexTransfers::new(pool.clone()).await?;
         let okex = OkexClient::new(okex_client_config).await?;
-        let _bitfinex = BitfinexClient::new(bitfinex_client_config).await?;
         let funding_adjustment =
             FundingAdjustment::new(funding_config.clone(), hedging_config.clone());
         let hedging_adjustment = HedgingAdjustment::new(hedging_config);

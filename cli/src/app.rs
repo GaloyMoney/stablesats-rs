@@ -216,25 +216,21 @@ async fn run_cmd(
         if let Some(okex_cfg) = exchanges.okex.as_ref() {
             let okex_config = okex_cfg.config.clone();
             let pool = pool.clone();
-            if let Some(bitfinex_cfg) = exchanges.bitfinex.as_ref() {
-                let bitfinex_config = bitfinex_cfg.config.clone();
-                handles.push(tokio::spawn(async move {
-                    let _ = hedging_send.try_send(
-                        hedging::run(
-                            pool,
-                            recv,
-                            hedging.config,
-                            okex_config,
-                            bitfinex_config,
-                            galoy,
-                            pubsub,
-                            price,
-                        )
-                        .await
-                        .context("Hedging error"),
-                    );
-                }));
-            }
+            handles.push(tokio::spawn(async move {
+                let _ = hedging_send.try_send(
+                    hedging::run(
+                        pool,
+                        recv,
+                        hedging.config,
+                        okex_config,
+                        galoy,
+                        pubsub,
+                        price,
+                    )
+                    .await
+                    .context("Hedging error"),
+                );
+            }));
         }
     }
 

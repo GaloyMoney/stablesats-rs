@@ -55,7 +55,10 @@ impl Subscriber {
                 ))
             }
         } else {
-            Err("No messages received".to_string())
+            Err(format!(
+                "No '{}' messages received",
+                self.subscribed_to.as_ref().expect("No subscription"),
+            ))
         }
     }
 

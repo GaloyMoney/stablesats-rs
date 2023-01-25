@@ -18,7 +18,7 @@ async fn health_check(
             eprintln!("Couldn't send health check: {}", e);
             return health_check_error(name, n_errors, e).await;
         }
-        match tokio::time::timeout(std::time::Duration::from_millis(100), recv).await {
+        match tokio::time::timeout(std::time::Duration::from_millis(500), recv).await {
             Err(e) => {
                 eprintln!("Health check timed out");
                 return health_check_error(name, n_errors, e).await;
