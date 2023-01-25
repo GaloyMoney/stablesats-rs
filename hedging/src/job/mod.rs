@@ -169,6 +169,7 @@ pub async fn spawn_adjust_funding<'a>(
     correlation_id: CorrelationId,
 ) -> Result<(), HedgingError> {
     match JobBuilder::new_with_id(Uuid::from(correlation_id), "adjust_funding")
+        .set_channel_name("adjust_funding")
         .set_json(&AdjustFundingData {
             tracing_data: shared::tracing::extract_tracing_data(),
             correlation_id,
