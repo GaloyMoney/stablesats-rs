@@ -89,8 +89,8 @@ pub async fn spawn_adjust_hedge<'a>(
     tx: impl Executor<'a, Database = Postgres>,
     correlation_id: CorrelationId,
 ) -> Result<(), HedgingError> {
-    match JobBuilder::new_with_id(Uuid::from(correlation_id), "adjust_hedge")
-        .set_channel_name("adjust_hedge")
+    match adjust_hedge
+        .builder()
         .set_ordered(true)
         .set_json(&AdjustHedgeData {
             tracing_data: shared::tracing::extract_tracing_data(),
@@ -130,7 +130,12 @@ async fn poll_okex(
     Ok(())
 }
 
-#[job(name = "adjust_hedge", channel_name = "hedging", ordered)]
+#[job(
+    name = "adjust_hedge",
+    channel_name = "adjust_hedging",
+    ordered,
+    retries = 20
+)]
 async fn adjust_hedge(
     mut current_job: CurrentJob,
     synth_usd_liability: SynthUsdLiability,
