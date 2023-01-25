@@ -30,7 +30,7 @@ impl<'a> JobExecutor<'a> {
     }
 
     #[instrument(name = "execute_job", skip_all, fields(
-            job_id, job_name, checkpoint_json, attempt, last_attempt,
+            job_id, job_name, checkpoint_json, attempt, last_attempt, stage,
             error, error.level, error.message
     ), err)]
     pub async fn execute<T, E, R, F>(mut self, func: F) -> Result<T, E>
@@ -40,13 +40,20 @@ impl<'a> JobExecutor<'a> {
         R: std::future::Future<Output = Result<T, E>>,
         F: FnOnce(Option<T>) -> R,
     {
-        let mut data = JobData::<T>::from_raw_payload(self.job.raw_json()).unwrap();
+        Span::current().record("stage", &tracing::field::display("execute"));
+        let mut data = JobData::<T>::from_raw_payload(self.job.raw_json())?;
+        Span::current().record("stage", &tracing::field::display("from_raw_payload"));
         let completed = self.checkpoint_attempt::<T, E>(&mut data).await?;
+        Span::current().record("stage", &tracing::field::display("checkpoint_attempt"));
         let result = func(data.data).await;
+        Span::current().record("stage", &tracing::field::display("func"));
         if let Err(ref e) = result {
+            Span::current().record("stage", &tracing::field::display("errored"));
             self.handle_error(data.job_meta, e).await;
         } else if !completed {
+            Span::current().record("stage", &tracing::field::display("succeeded"));
             self.job.complete().await?;
+            Span::current().record("stage", &tracing::field::display("completed"));
         }
         result
     }
