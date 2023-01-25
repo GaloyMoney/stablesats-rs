@@ -1,3 +1,10 @@
+# [stablesats release v0.4.4](https://github.com/GaloyMoney/stablesats/releases/tag/v0.4.4)
+
+
+### Miscellaneous Tasks
+
+- Reduce retries increase connections
+
 # [stablesats release v0.4.3](https://github.com/GaloyMoney/stablesats/releases/tag/v0.4.3)
 
 
