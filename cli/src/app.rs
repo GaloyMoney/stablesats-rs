@@ -213,7 +213,6 @@ async fn run_cmd(
         let price = price_recv.resubscribe();
         checkers.insert("hedging", snd);
 
-        // TODO: fix this nesting
         if let Some(okex_cfg) = exchanges.okex.as_ref() {
             let okex_config = okex_cfg.config.clone();
             let pool = pool.clone();
