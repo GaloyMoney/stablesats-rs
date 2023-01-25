@@ -63,6 +63,7 @@ pub async fn spawn_poll_okex(
 ) -> Result<(), HedgingError> {
     match JobBuilder::new_with_id(POLL_OKEX_ID, "poll_okex")
         .set_channel_name("poll_okex")
+        .set_retries(20)
         .set_delay(duration)
         .spawn(pool)
         .await
