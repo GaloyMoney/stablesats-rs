@@ -1,3 +1,21 @@
+# [stablesats release v0.4.1](https://github.com/GaloyMoney/stablesats/releases/tag/v0.4.1)
+
+
+### Bug Fixes
+
+- Remove bitfinex from hedging + more resilient health check
+- Non-overlapping job ids between user-trades and hedging
+- Disable bitfinex price by default
+- Remove comment
+
+### Miscellaneous Tasks
+
+- Set correct channel_name for adjust_funding
+
+### Testing
+
+- Remove bitfinex from hedging test
+
 # [stablesats release v0.4.0](https://github.com/GaloyMoney/stablesats/releases/tag/v0.4.0)
 
 
