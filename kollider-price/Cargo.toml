@@ -1,6 +1,6 @@
 [package]
 name = "kollider-price"
-version = "0.4.5-dev"
+version = "0.4.5"
 edition = "2021"
 
 [dependencies]

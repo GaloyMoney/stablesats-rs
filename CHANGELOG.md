@@ -1,3 +1,12 @@
+# [stablesats release v0.4.5](https://github.com/GaloyMoney/stablesats/releases/tag/v0.4.5)
+
+
+### Miscellaneous Tasks
+
+- Do not expect job data to be present
+- Better job execution visibility
+- Remove expects in JobExecutor
+
 # [stablesats release v0.4.4](https://github.com/GaloyMoney/stablesats/releases/tag/v0.4.4)
 
 
