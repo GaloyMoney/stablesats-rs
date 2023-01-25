@@ -4,11 +4,12 @@
 mod adjustment_action;
 mod app;
 mod error;
-mod job;
 mod okex_orders;
 mod okex_transfers;
 mod rebalance_action;
 mod synth_usd_liability;
+
+pub mod job;
 
 use galoy_client::GaloyClientConfig;
 use shared::{exchanges_config::OkexConfig, health::HealthCheckTrigger, payload::*, pubsub::*};

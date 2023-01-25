@@ -516,6 +516,30 @@
     },
     "query": "SELECT * FROM synth_usd_liability WHERE idx >= $1 ORDER BY idx LIMIT 1000"
   },
+  "e47386e960c3603cdfdbc31775b98bdd421451ca1cdfcd5fb5aadbd7d03bc094": {
+    "describe": {
+      "columns": [],
+      "nullable": [],
+      "parameters": {
+        "Left": [
+          "UuidArray"
+        ]
+      }
+    },
+    "query": "DELETE FROM mq_msgs WHERE id IN (SELECT id FROM mq_msgs WHERE attempts = 0 AND id = ANY($1))"
+  },
+  "e76b888962cff7089e6b90354f7e9091dc2ede8eae230e8eba1296afd5ab7983": {
+    "describe": {
+      "columns": [],
+      "nullable": [],
+      "parameters": {
+        "Left": [
+          "UuidArray"
+        ]
+      }
+    },
+    "query": "DELETE FROM mq_payloads WHERE id IN (SELECT id FROM mq_msgs WHERE attempts = 0 AND id = ANY($1))"
+  },
   "fbf76b355e990f4a43da4109075006fc8bb79a6f98ffbb55f86e3ceca69b9c9c": {
     "describe": {
       "columns": [

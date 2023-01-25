@@ -19,8 +19,8 @@ use crate::{
     user_trades::UserTrades,
 };
 
-const PUBLISH_LIABILITY_ID: Uuid = uuid!("00000000-0000-0000-0000-000000000001");
-const POLL_GALOY_TRANSACTIONS_ID: Uuid = uuid!("00000000-0000-0000-0000-000000000002");
+pub const PUBLISH_LIABILITY_ID: Uuid = uuid!("00000000-0000-0000-0000-000000000001");
+pub const POLL_GALOY_TRANSACTIONS_ID: Uuid = uuid!("00000000-0000-0000-0000-000000000002");
 
 #[derive(Debug, Clone)]
 struct LiabilityPublishDelay(Duration);

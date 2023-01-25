@@ -13,6 +13,27 @@ pub async fn init_pool(config: DbConfig) -> anyhow::Result<sqlx::PgPool> {
     if config.migrate_on_start {
         sqlx::migrate!("../migrations").run(&pool).await?;
     }
+    let mut tx = pool.begin().await?;
+    sqlx::query!(
+        "DELETE FROM mq_payloads WHERE id IN (SELECT id FROM mq_msgs WHERE attempts = 0 AND id = ANY($1))",
+        &[
+        hedging::job::POLL_OKEX_ID,
+        user_trades::job::POLL_GALOY_TRANSACTIONS_ID,
+        user_trades::job::PUBLISH_LIABILITY_ID,
+        ]
+    )
+        .execute(&mut *tx)
+        .await?;
+    sqlx::query!("DELETE FROM mq_msgs WHERE id IN (SELECT id FROM mq_msgs WHERE attempts = 0 AND id = ANY($1))",
+        &[
+        hedging::job::POLL_OKEX_ID,
+        user_trades::job::POLL_GALOY_TRANSACTIONS_ID,
+        user_trades::job::PUBLISH_LIABILITY_ID,
+        ]
+    )
+        .execute(&mut *tx)
+        .await?;
+    tx.commit().await?;
     Ok(pool)
 }
 
@@ -173,8 +194,8 @@ pub async fn migrate_to_unified_db(
             "SELECT * FROM okex_orders WHERE client_order_id > $1 ORDER BY client_order_id LIMIT 1000",
             first_row
         )
-        .fetch_all(&hedging_pool)
-        .await?;
+            .fetch_all(&hedging_pool)
+            .await?;
         if rows.is_empty() {
             break;
         }
@@ -208,8 +229,8 @@ pub async fn migrate_to_unified_db(
             "SELECT * FROM okex_transfers WHERE client_transfer_id > $1 ORDER BY client_transfer_id LIMIT 1000",
             first_row
         )
-        .fetch_all(&hedging_pool)
-        .await?;
+            .fetch_all(&hedging_pool)
+            .await?;
         if rows.is_empty() {
             break;
         }

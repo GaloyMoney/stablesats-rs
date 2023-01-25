@@ -22,7 +22,7 @@ use crate::{
     okex_transfers::OkexTransfers, rebalance_action::*, synth_usd_liability::*,
 };
 
-const POLL_OKEX_ID: Uuid = uuid!("10000000-0000-0000-0000-000000000001");
+pub const POLL_OKEX_ID: Uuid = uuid!("10000000-0000-0000-0000-000000000001");
 
 #[derive(Debug, Clone)]
 struct OkexPollDelay(std::time::Duration);
