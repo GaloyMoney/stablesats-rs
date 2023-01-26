@@ -41,8 +41,6 @@ async fn publishes_liability() -> anyhow::Result<()> {
     let _ = tokio::spawn(UserTradesApp::run(
         pool,
         UserTradesConfig {
-            migrate_on_start: true,
-            pg_con,
             balance_publish_frequency: std::time::Duration::from_millis(100),
             galoy_poll_frequency: std::time::Duration::from_secs(1),
         },

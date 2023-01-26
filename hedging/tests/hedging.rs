@@ -122,7 +122,6 @@ async fn hedging() -> anyhow::Result<()> {
             pool.clone(),
             recv,
             HedgingAppConfig {
-                pg_con: pg_con.clone(),
                 okex_poll_frequency: std::time::Duration::from_secs(2),
                 ..Default::default()
             },
