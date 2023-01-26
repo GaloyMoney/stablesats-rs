@@ -5,21 +5,7 @@ services:
     depends_on:
     - redis
     - otel-agent
-    - user-trades-db
-    - hedging-db
     - postgres
-  user-trades-db:
-    image: postgres:14.1
-    environment:
-      - POSTGRES_USER=stablesats
-      - POSTGRES_PASSWORD=stablesats
-      - POSTGRES_DB=stablesats-user-trades
-  hedging-db:
-    image: postgres:14.1
-    environment:
-      - POSTGRES_USER=stablesats
-      - POSTGRES_PASSWORD=stablesats
-      - POSTGRES_DB=stablesats-hedging
   postgres:
     image: postgres:14.1
     environment:
@@ -38,15 +24,12 @@ services:
     command: ["make","test-in-ci"]
     environment:
     - REDIS_HOST=redis
-    - USER_TRADES_PG_HOST=user-trades-db
     - OKEX_API_KEY=${OKEX_API_KEY}
     - OKEX_PASSPHRASE=${OKEX_PASSPHRASE}
     - OKEX_SECRET_KEY=${OKEX_SECRET_KEY}
     # - BITFINEX_API_KEY=${BITFINEX_API_KEY}
     # - BITFINEX_SECRET_KEY=${BITFINEX_SECRET_KEY}
     - RUST_BACKTRACE=1
-    - HEDGING_PG_HOST=hedging-db
-    - HEDGING_PG_PORT=5432
     - PG_HOST=postgres
     - PG_PORT=5432
     - GALOY_GRAPHQL_URI=https://api.staging.galoy.io/graphql

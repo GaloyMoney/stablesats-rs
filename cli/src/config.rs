@@ -42,9 +42,7 @@ pub struct Config {
 
 pub struct EnvOverride {
     pub redis_password: Option<String>,
-    pub user_trades_pg_con: String,
-    pub hedging_pg_con: String,
-    pub stablesats_pg_con: String,
+    pub pg_con: String,
     pub okex_secret_key: String,
     pub okex_passphrase: String,
     pub galoy_phone_code: String,
@@ -56,12 +54,10 @@ impl Config {
         path: impl AsRef<Path>,
         EnvOverride {
             redis_password,
-            user_trades_pg_con,
             galoy_phone_code,
             okex_passphrase,
             okex_secret_key,
-            hedging_pg_con,
-            stablesats_pg_con,
+            pg_con: stablesats_pg_con,
             bitfinex_secret_key,
         }: EnvOverride,
     ) -> anyhow::Result<Self> {
@@ -72,9 +68,7 @@ impl Config {
             config.pubsub.password = Some(redis_password);
         }
 
-        config.user_trades.config.pg_con = user_trades_pg_con;
         config.galoy.auth_code = galoy_phone_code;
-        config.hedging.config.pg_con = hedging_pg_con;
 
         if let Some(okex) = config.exchanges.okex.as_mut() {
             okex.config.secret_key = okex_secret_key;

@@ -35,20 +35,12 @@ enum Command {
         /// Output config on crash
         #[clap(env = "CRASH_REPORT_CONFIG")]
         crash_report_config: Option<bool>,
-        #[clap(env = "MIGRATE_TO_UNIFIED_DB")]
-        migrate_to_unified_db: Option<bool>,
-        /// Connection string for the user-trades database
-        #[clap(env = "USER_TRADES_PG_CON", default_value = "")]
-        user_trades_pg_con: String,
         /// Connection string for the stablesats database
         #[clap(env = "PG_CON", default_value = "")]
-        stablesats_pg_con: String,
+        pg_con: String,
         /// Phone code for the galoy client
         #[clap(env = "GALOY_PHONE_CODE", default_value = "")]
         galoy_phone_code: String,
-        /// Connection string for the hedging database
-        #[clap(env = "HEDGING_PG_CON", default_value = "")]
-        hedging_pg_con: String,
         /// Okex secret key
         #[clap(env = "OKEX_SECRET_KEY", default_value = "")]
         okex_secret_key: String,
@@ -78,34 +70,26 @@ pub async fn run() -> anyhow::Result<()> {
 
     match cli.command {
         Command::Run {
-            migrate_to_unified_db,
             redis_password,
             crash_report_config,
-            user_trades_pg_con,
             galoy_phone_code,
             okex_passphrase,
             okex_secret_key,
             bitfinex_secret_key,
-            hedging_pg_con,
-            stablesats_pg_con,
+            pg_con,
         } => {
             let config = Config::from_path(
                 cli.config,
                 EnvOverride {
                     redis_password,
-                    user_trades_pg_con,
                     galoy_phone_code,
                     okex_passphrase,
                     okex_secret_key,
-                    hedging_pg_con,
-                    stablesats_pg_con,
+                    pg_con,
                     bitfinex_secret_key,
                 },
             )?;
-            match (
-                run_cmd(migrate_to_unified_db, config.clone()).await,
-                crash_report_config,
-            ) {
+            match (run_cmd(config.clone()).await, crash_report_config) {
                 (Err(e), Some(true)) => {
                     println!("Stablesats was started with the following config:");
                     println!("{}", serde_yaml::to_string(&config).unwrap());
@@ -126,7 +110,6 @@ pub async fn run() -> anyhow::Result<()> {
 }
 
 async fn run_cmd(
-    migrate_to_unified_db: Option<bool>,
     Config {
         db,
         pubsub,
@@ -141,22 +124,9 @@ async fn run_cmd(
         exchanges,
     }: Config,
 ) -> anyhow::Result<()> {
-    if !exchanges.is_valid() {
-        Err(anyhow::anyhow!(
-            "Invalid exchanges config - at least one exchange has to be configured"
-        ))?;
-    }
     println!("Starting server process");
     crate::tracing::init_tracer(tracing)?;
-    let pool = crate::db::init_pool(db).await?;
-    if migrate_to_unified_db.unwrap_or(false) {
-        crate::db::migrate_to_unified_db(
-            pool.clone(),
-            &user_trades.config.pg_con,
-            &hedging.config.pg_con,
-        )
-        .await?;
-    }
+
     let (send, mut receive) = tokio::sync::mpsc::channel(1);
     let mut handles = Vec::new();
     let mut checkers = HashMap::new();
@@ -203,6 +173,36 @@ async fn run_cmd(
         }));
     }
 
+    if price_server.enabled {
+        println!(
+            "Starting price server on port {}",
+            price_server.server.listen_port
+        );
+
+        let price_send = send.clone();
+        let (snd, recv) = futures::channel::mpsc::unbounded();
+        checkers.insert("price", snd);
+        let price = price_recv.resubscribe();
+        let exchanges = exchanges.clone();
+        handles.push(tokio::spawn(async move {
+            let _ = price_send.try_send(
+                price_server::run(
+                    recv,
+                    price_server.health,
+                    price_server.server,
+                    price_server.fees,
+                    price,
+                    price_server.price_cache,
+                    exchanges,
+                )
+                .await
+                .context("Price Server error"),
+            );
+        }));
+    }
+
+    let mut pool = None;
+
     if hedging.enabled {
         println!("Starting hedging process");
 
@@ -215,7 +215,8 @@ async fn run_cmd(
 
         if let Some(okex_cfg) = exchanges.okex.as_ref() {
             let okex_config = okex_cfg.config.clone();
-            let pool = pool.clone();
+            pool = Some(crate::db::init_pool(&db).await?);
+            let pool = pool.as_ref().unwrap().clone();
             handles.push(tokio::spawn(async move {
                 let _ = hedging_send.try_send(
                     hedging::run(
@@ -234,36 +235,15 @@ async fn run_cmd(
         }
     }
 
-    if price_server.enabled {
-        println!(
-            "Starting price server on port {}",
-            price_server.server.listen_port
-        );
-
-        let price_send = send.clone();
-        let (snd, recv) = futures::channel::mpsc::unbounded();
-        checkers.insert("price", snd);
-        let price = price_recv.resubscribe();
-        handles.push(tokio::spawn(async move {
-            let _ = price_send.try_send(
-                price_server::run(
-                    recv,
-                    price_server.health,
-                    price_server.server,
-                    price_server.fees,
-                    price,
-                    price_server.price_cache,
-                    exchanges,
-                )
-                .await
-                .context("Price Server error"),
-            );
-        }));
-    }
     if user_trades.enabled {
         println!("Starting user trades process");
 
         let user_trades_send = send.clone();
+        let pool = if let Some(pool) = pool {
+            pool
+        } else {
+            crate::db::init_pool(&db).await?
+        };
         handles.push(tokio::spawn(async move {
             let _ = user_trades_send.try_send(
                 user_trades::run(pool, user_trades.config, pubsub, galoy)
@@ -272,6 +252,7 @@ async fn run_cmd(
             );
         }));
     }
+
     handles.push(tokio::spawn(async move {
         let _ = send.try_send(crate::health::run(checkers).await);
     }));

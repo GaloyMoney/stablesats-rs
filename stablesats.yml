@@ -4,6 +4,11 @@
   # host: localhost
   # rate_limit_duration: 2
 
+# db:
+#   pool_size: 20
+#   migrate_on_start: true
+#
+
 # galoy:
 #   api: galoy-endpoint
 #   phone_number: "+0123456"
@@ -11,14 +16,12 @@
 # user_trades:
 #   enabled: true
 #   config:
-#     migrate_on_start: true
 #     balance_publish_frequency: 5
 #     galoy_poll_frequency: 5
 #
 # hedging:
 #   enabled: true
 #   config:
-#     migrate_on_start: true
 #     okex_poll_frequency: 10
 #     health:
 #       unhealthy_msg_interval_liability: 20

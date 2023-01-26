@@ -9,22 +9,12 @@ pub struct ExchangeConfigs {
     pub kollider: Option<ExchangeConfig<KolliderConfig>>,
 }
 
-impl ExchangeConfigs {
-    pub fn is_valid(&self) -> bool {
-        self.okex.is_some() || self.kollider.is_some()
-    }
-}
-
 #[derive(Serialize, Deserialize, Debug, Clone)]
-pub struct ExchangeConfig<T: DeserializeOwned + Serialize> {
-    #[serde(default = "decimal_one")]
+pub struct ExchangeConfig<T: DeserializeOwned + Serialize + Default> {
     pub weight: Decimal,
     #[serde(bound = "T: DeserializeOwned")]
+    #[serde(default)]
     pub config: T,
-}
-
-fn decimal_one() -> Decimal {
-    Decimal::ONE
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, Default)]
