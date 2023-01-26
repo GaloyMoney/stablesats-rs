@@ -10,7 +10,7 @@ pub struct DbConfig {
     pub migrate_on_start: bool,
 }
 
-pub async fn init_pool(config: DbConfig) -> anyhow::Result<sqlx::PgPool> {
+pub async fn init_pool(config: &DbConfig) -> anyhow::Result<sqlx::PgPool> {
     let pool = sqlx::postgres::PgPoolOptions::new()
         .max_connections(config.pool_size)
         .connect(&config.pg_con)

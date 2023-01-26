@@ -1,6 +1,7 @@
 mod config;
 
 use futures::stream::StreamExt;
+use rust_decimal::Decimal;
 use tracing::{info_span, instrument, Instrument};
 
 use shared::{
@@ -47,22 +48,28 @@ impl PriceApp {
         let mut price_mixer = PriceMixer::new();
 
         if let Some(config) = exchanges_cfg.okex.as_ref() {
-            let okex_price_cache = ExchangeTickCache::new(price_cache_config.clone());
-            Self::subscribe_okex(subscriber.resubscribe(), okex_price_cache.clone()).await?;
-            price_mixer.add_provider(OKEX_EXCHANGE_ID, okex_price_cache, config.weight);
+            if config.weight > Decimal::ZERO {
+                let okex_price_cache = ExchangeTickCache::new(price_cache_config.clone());
+                Self::subscribe_okex(subscriber.resubscribe(), okex_price_cache.clone()).await?;
+                price_mixer.add_provider(OKEX_EXCHANGE_ID, okex_price_cache, config.weight);
+            }
         }
 
         if let Some(config) = exchanges_cfg.bitfinex.as_ref() {
-            let bitfinex_price_cache = ExchangeTickCache::new(price_cache_config.clone());
-            Self::subscribe_bitfinex(subscriber.resubscribe(), bitfinex_price_cache.clone())
-                .await?;
-            price_mixer.add_provider(BITFINEX_EXCHANGE_ID, bitfinex_price_cache, config.weight);
+            if config.weight > Decimal::ZERO {
+                let bitfinex_price_cache = ExchangeTickCache::new(price_cache_config.clone());
+                Self::subscribe_bitfinex(subscriber.resubscribe(), bitfinex_price_cache.clone())
+                    .await?;
+                price_mixer.add_provider(BITFINEX_EXCHANGE_ID, bitfinex_price_cache, config.weight);
+            }
         }
 
         if let Some(config) = exchanges_cfg.kollider.as_ref() {
-            let kollider_price_cache = ExchangeTickCache::new(price_cache_config);
-            Self::subscribe_kollider(subscriber, kollider_price_cache.clone()).await?;
-            price_mixer.add_provider(KOLLIDER_EXCHANGE_ID, kollider_price_cache, config.weight);
+            if config.weight > Decimal::ZERO {
+                let kollider_price_cache = ExchangeTickCache::new(price_cache_config);
+                Self::subscribe_kollider(subscriber, kollider_price_cache.clone()).await?;
+                price_mixer.add_provider(KOLLIDER_EXCHANGE_ID, kollider_price_cache, config.weight);
+            }
         }
 
         let fee_calculator = FeeCalculator::new(fee_calc_cfg);
