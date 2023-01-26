@@ -1,3 +1,15 @@
+# [stablesats release v0.5.0](https://github.com/GaloyMoney/stablesats/releases/tag/v0.5.0)
+
+
+### Features
+
+- [**breaking**] Ensure standalone price server (#264)
+
+### Miscellaneous Tasks
+
+- Bump axum from 0.6.2 to 0.6.4 (#258)
+- Bump clap from 4.1.1 to 4.1.4 (#259)
+
 # [stablesats release v0.4.5](https://github.com/GaloyMoney/stablesats/releases/tag/v0.4.5)
 
 
