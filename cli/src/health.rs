@@ -12,10 +12,10 @@ async fn health_check(
     n_errors: Arc<RwLock<usize>>,
 ) -> StatusCode {
     for (name, checker) in checkers.iter() {
-        println!("Executing '{}' health check:", name);
+        println!("Executing '{name}' health check:");
         let (snd, recv) = futures::channel::oneshot::channel();
         if let Err(e) = checker.clone().send(snd).await {
-            eprintln!("Couldn't send health check: {}", e);
+            eprintln!("Couldn't send health check: {e}");
             return health_check_error(name, n_errors, e).await;
         }
         match tokio::time::timeout(std::time::Duration::from_millis(500), recv).await {
@@ -24,11 +24,11 @@ async fn health_check(
                 return health_check_error(name, n_errors, e).await;
             }
             Ok(Err(e)) => {
-                eprintln!("Error receiving return {}", e);
+                eprintln!("Error receiving return {e}");
                 return health_check_error(name, n_errors, e).await;
             }
             Ok(Ok(Err(e))) => {
-                eprintln!("FAILED: '{}'", e);
+                eprintln!("FAILED: '{e}'");
                 return health_check_error(name, n_errors, e).await;
             }
             _ => {

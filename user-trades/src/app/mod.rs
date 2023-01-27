@@ -48,7 +48,7 @@ impl UserTradesApp {
         pool: sqlx::PgPool,
         delay: std::time::Duration,
     ) -> Result<(), UserTradesError> {
-        let _ = tokio::spawn(async move {
+        tokio::spawn(async move {
             loop {
                 let _ =
                     job::spawn_publish_liability(&pool, std::time::Duration::from_secs(1)).await;

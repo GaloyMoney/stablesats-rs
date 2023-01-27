@@ -21,16 +21,16 @@ impl std::fmt::Display for RebalanceAction {
         match self {
             RebalanceAction::DoNothing => write!(f, "DoNothing"),
             RebalanceAction::TransferTradingToFunding(amount_in_btc) => {
-                write!(f, "TransferTradingToFunding({})", amount_in_btc)
+                write!(f, "TransferTradingToFunding({amount_in_btc})")
             }
             RebalanceAction::TransferFundingToTrading(amount_in_btc) => {
-                write!(f, "TransferFundingToTrading({})", amount_in_btc)
+                write!(f, "TransferFundingToTrading({amount_in_btc})")
             }
             RebalanceAction::OnchainDeposit(amount_in_btc) => {
-                write!(f, "OnchainDeposit({})", amount_in_btc)
+                write!(f, "OnchainDeposit({amount_in_btc})")
             }
             RebalanceAction::OnchainWithdraw(amount_in_btc) => {
-                write!(f, "OnchainWithdraw({})", amount_in_btc)
+                write!(f, "OnchainWithdraw({amount_in_btc})")
             }
         }
     }

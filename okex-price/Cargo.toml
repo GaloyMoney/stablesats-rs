@@ -7,6 +7,10 @@ license = "MIT"
 repository = "https://github.com/GaloyMoney/stablesats-rs"
 description = "Publishes okex price feed to redis"
 
+[features]
+
+fail-on-warnings = []
+
 [dependencies]
 shared = { path = "../shared", package = "stablesats-shared" }
 

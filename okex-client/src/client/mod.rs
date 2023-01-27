@@ -265,7 +265,7 @@ impl OkexClient {
         transfer_id: TransferId,
     ) -> Result<TransferState, OkexClientError> {
         let static_request_path = "/api/v5/asset/transfer-state?ccy=BTC&transId=";
-        let request_path = format!("{}{}", static_request_path, transfer_id.value);
+        let request_path = format!("{static_request_path}{}", transfer_id.value);
 
         let headers = self.get_request_headers(&request_path)?;
 
@@ -388,7 +388,7 @@ impl OkexClient {
             })
         } else {
             Err(OkexClientError::UnexpectedResponse {
-                msg: format!("No deposit of {} made to {}", amt_in_btc, depo_addr),
+                msg: format!("No deposit of {amt_in_btc} made to {depo_addr}"),
                 code: "0".to_string(),
             })
         }
@@ -652,7 +652,7 @@ impl OkexClient {
     }
 
     fn url_for_path(path: &str) -> String {
-        format!("{}{}", OKEX_API_URL, path)
+        format!("{OKEX_API_URL}{path}")
     }
 
     fn post_request_headers(
@@ -661,13 +661,13 @@ impl OkexClient {
         request_body: &str,
     ) -> Result<HeaderMap, OkexClientError> {
         let timestamp = Utc::now().to_rfc3339_opts(SecondsFormat::Millis, true);
-        let pre_hash = format!("{}POST{}{}", timestamp, request_path, request_body);
+        let pre_hash = format!("{timestamp}POST{request_path}{request_body}");
         self.request_headers(timestamp, pre_hash)
     }
 
     fn get_request_headers(&self, request_path: &str) -> Result<HeaderMap, OkexClientError> {
         let timestamp = Utc::now().to_rfc3339_opts(SecondsFormat::Millis, true);
-        let pre_hash = format!("{}GET{}", timestamp, request_path);
+        let pre_hash = format!("{timestamp}GET{request_path}");
         self.request_headers(timestamp, pre_hash)
     }
 

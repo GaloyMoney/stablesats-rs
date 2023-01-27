@@ -94,6 +94,7 @@ impl TryFrom<OrderBookIncrement> for CompleteOrderBook {
 }
 
 impl CompleteOrderBook {
+    #[allow(clippy::result_large_err)]
     fn verify_checksum(&self) -> Result<(), PriceFeedError> {
         let cs_res = self.calculate_checksum();
         if cs_res != self.checksum {
@@ -102,6 +103,7 @@ impl CompleteOrderBook {
         Ok(())
     }
 
+    #[allow(clippy::result_large_err)]
     fn try_merge(&self, increment: OrderBookIncrement) -> Result<Self, PriceFeedError> {
         let new_book = match increment.action {
             OrderBookAction::Snapshot => CompleteOrderBook::try_from(increment)?,
@@ -199,6 +201,7 @@ impl OrderBookCache {
         Self { current: book }
     }
 
+    #[allow(clippy::result_large_err)]
     pub fn update_order_book(&mut self, book: OrderBookIncrement) -> Result<(), PriceFeedError> {
         self.current = self.current.try_merge(book)?;
         Ok(())

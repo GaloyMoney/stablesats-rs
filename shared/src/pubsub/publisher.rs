@@ -25,7 +25,7 @@ impl Publisher {
                 .allow_burst(NonZeroU32::new(MAX_BURST).unwrap()),
         ));
         let client = RedisClient::new(config.into());
-        let _ = client.connect(None);
+        tokio::spawn(client.connect(None));
         client
             .wait_for_connect()
             .await

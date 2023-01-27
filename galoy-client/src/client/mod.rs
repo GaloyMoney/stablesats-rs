@@ -55,7 +55,7 @@ impl GaloyClient {
             .default_headers(
                 std::iter::once((
                     AUTHORIZATION,
-                    HeaderValue::from_str(&format!("Bearer {}", jwt)).unwrap(),
+                    HeaderValue::from_str(&format!("Bearer {jwt}")).unwrap(),
                 ))
                 .collect(),
             )

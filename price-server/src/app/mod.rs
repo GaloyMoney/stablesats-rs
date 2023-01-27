@@ -85,7 +85,7 @@ impl PriceApp {
         mut subscriber: memory::Subscriber<PriceStreamPayload>,
         price_cache: ExchangeTickCache,
     ) -> Result<(), PriceAppError> {
-        let _ = tokio::spawn(async move {
+        tokio::spawn(async move {
             while let Some(msg) = subscriber.next().await {
                 if let PriceStreamPayload::OkexBtcSwapPricePayload(price_msg) = msg.payload {
                     let span = info_span!(
@@ -112,7 +112,7 @@ impl PriceApp {
         mut subscriber: memory::Subscriber<PriceStreamPayload>,
         price_cache: ExchangeTickCache,
     ) -> Result<(), PriceAppError> {
-        let _ = tokio::spawn(async move {
+        tokio::spawn(async move {
             while let Some(msg) = subscriber.next().await {
                 if let PriceStreamPayload::BitfinexBtcUsdSwapPricePayload(price_msg) = msg.payload {
                     let span = info_span!(
@@ -139,7 +139,7 @@ impl PriceApp {
         mut subscriber: memory::Subscriber<PriceStreamPayload>,
         price_cache: ExchangeTickCache,
     ) -> Result<(), PriceAppError> {
-        let _ = tokio::spawn(async move {
+        tokio::spawn(async move {
             while let Some(msg) = subscriber.next().await {
                 if let PriceStreamPayload::KolliderBtcUsdSwapPricePayload(price_msg) = msg.payload {
                     let span = info_span!(

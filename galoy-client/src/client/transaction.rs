@@ -27,7 +27,7 @@ impl std::fmt::Display for SettlementCurrency {
         match self {
             Self::BTC => write!(f, "BTC"),
             Self::USD => write!(f, "USD"),
-            Self::Other(other) => write!(f, "{}", other),
+            Self::Other(other) => write!(f, "{other}"),
         }
     }
 }

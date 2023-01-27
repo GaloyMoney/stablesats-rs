@@ -109,7 +109,7 @@ impl HedgingApp {
         funding_adjustment: FundingAdjustment,
         mut tick_recv: memory::Subscriber<PriceStreamPayload>,
     ) -> Result<(), HedgingError> {
-        let _ = tokio::spawn(async move {
+        tokio::spawn(async move {
             while let Some(msg) = tick_recv.next().await {
                 if let PriceStreamPayload::OkexBtcSwapPricePayload(price_msg) = msg.payload {
                     let correlation_id = msg.meta.correlation_id;
@@ -185,7 +185,7 @@ impl HedgingApp {
     ) -> Result<Subscriber, HedgingError> {
         let mut subscriber = Subscriber::new(config).await?;
         let mut stream = subscriber.subscribe::<SynthUsdLiabilityPayload>().await?;
-        let _ = tokio::spawn(async move {
+        tokio::spawn(async move {
             let propagator = TraceContextPropagator::new();
 
             while let Some(msg) = stream.next().await {
@@ -219,7 +219,7 @@ impl HedgingApp {
         let mut stream = subscriber
             .subscribe::<OkexBtcUsdSwapPositionPayload>()
             .await?;
-        let _ = tokio::spawn(async move {
+        tokio::spawn(async move {
             while let Some(msg) = stream.next().await {
                 let correlation_id = msg.meta.correlation_id;
                 let span = info_span!(

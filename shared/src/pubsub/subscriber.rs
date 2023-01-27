@@ -16,12 +16,12 @@ pub struct Subscriber {
 impl Subscriber {
     pub async fn new(config: PubSubConfig) -> Result<Self, SubscriberError> {
         let client = SubscriberClient::new(config.into());
-        let _ = client.connect(None);
+        tokio::spawn(client.connect(None));
         client
             .wait_for_connect()
             .await
             .map_err(SubscriberError::InitialConnection)?;
-        let _ = client.manage_subscriptions();
+        tokio::spawn(client.manage_subscriptions());
         let last_msg_timestamp = Arc::new(RwLock::new(None));
         let ts = Arc::clone(&last_msg_timestamp);
         let (timestamp_sender, mut rcv) = unbounded();

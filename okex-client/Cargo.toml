@@ -3,7 +3,9 @@ name = "okex-client"
 version = "0.5.2-dev"
 edition = "2021"
 
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+[features]
+
+fail-on-warnings = []
 
 [dependencies]
 shared = { path = "../shared", package = "stablesats-shared" }

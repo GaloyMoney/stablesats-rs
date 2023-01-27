@@ -20,8 +20,8 @@ impl std::fmt::Display for AdjustmentAction {
         match self {
             AdjustmentAction::DoNothing => write!(f, "DoNothing"),
             AdjustmentAction::ClosePosition => write!(f, "ClosePosition"),
-            AdjustmentAction::Sell(contracts) => write!(f, "Sell({})", contracts),
-            AdjustmentAction::Buy(contracts) => write!(f, "Buy({})", contracts),
+            AdjustmentAction::Sell(contracts) => write!(f, "Sell({contracts})"),
+            AdjustmentAction::Buy(contracts) => write!(f, "Buy({contracts})"),
         }
     }
 }

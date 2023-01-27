@@ -537,15 +537,15 @@ impl BitfinexClient {
     }
 
     fn url_for_path(endpoint: &str, params: &str) -> String {
-        format!("{}{}{}", REST_API_V2_URL, endpoint, params)
+        format!("{REST_API_V2_URL}{endpoint}{params}")
     }
 
     fn url_for_auth_r_path(endpoint: &str, params: &str) -> String {
-        format!("{}/auth/r{}{}", REST_API_V2_URL, endpoint, params)
+        format!("{REST_API_V2_URL}/auth/r{endpoint}{params}")
     }
 
     fn url_for_auth_w_path(endpoint: &str, params: &str) -> String {
-        format!("{}/auth/w{}{}", REST_API_V2_URL, endpoint, params)
+        format!("{REST_API_V2_URL}/auth/w{endpoint}{params}")
     }
 
     fn sign_request(&self, pre_hash: String) -> String {
@@ -563,7 +563,7 @@ impl BitfinexClient {
     ) -> Result<HeaderMap, BitfinexClientError> {
         let nonce = Utc::now().timestamp_millis().to_string();
 
-        let pre_hash: String = format!("{}{}{}{}{}", sig_path, request, params, nonce, body);
+        let pre_hash: String = format!("{sig_path}{request}{params}{nonce}{body}");
 
         let signature = self.sign_request(pre_hash);
 

@@ -115,12 +115,10 @@ impl PriceClient {
 fn print_price(direction: Direction, expiry: Option<u64>, original_amount: Decimal, amount: u64) {
     match expiry {
         Some(expiry) => println!(
-            "Price to {:?} {} sats within {} seconds - {} cents",
-            direction, original_amount, expiry, amount
+            "Price to {direction:?} {original_amount} sats within {expiry} seconds - {amount} cents",
         ),
-        None => println!(
-            "Price to {:?} {} sats immediately - {} cents",
-            direction, original_amount, amount
-        ),
+        None => {
+            println!("Price to {direction:?} {original_amount} sats immediately - {amount} cents",)
+        }
     }
 }
