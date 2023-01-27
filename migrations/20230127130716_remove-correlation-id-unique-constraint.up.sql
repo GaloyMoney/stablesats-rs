@@ -1,0 +1,1 @@
+ALTER TABLE okex_orders DROP CONSTRAINT okex_orders_correlation_id_key;
