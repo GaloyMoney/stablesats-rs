@@ -44,7 +44,11 @@ pub async fn start_job_runner(
     registry.set_context(galoy_client);
     registry.set_context(PollGaloyTransactionsDelay(galoy_poll_delay));
 
-    Ok(registry.runner(&pool).run().await?)
+    Ok(registry
+        .runner(&pool)
+        .set_channel_names(&["user_trades"])
+        .run()
+        .await?)
 }
 
 #[instrument(skip_all, err)]
@@ -53,8 +57,8 @@ pub async fn spawn_publish_liability(
     duration: Duration,
 ) -> Result<(), UserTradesError> {
     match JobBuilder::new_with_id(PUBLISH_LIABILITY_ID, "publish_liability")
-        .set_retries(6)
-        .set_channel_name("publish_liability")
+        .set_channel_name("user_trades")
+        .set_channel_args("publish_liability")
         .set_delay(duration)
         .spawn(pool)
         .await
@@ -71,8 +75,8 @@ pub async fn spawn_poll_galoy_transactions(
     duration: Duration,
 ) -> Result<(), UserTradesError> {
     match JobBuilder::new_with_id(POLL_GALOY_TRANSACTIONS_ID, "poll_galoy_transactions")
-        .set_retries(6)
-        .set_channel_name("poll_galoy_transactions")
+        .set_channel_name("user_trades")
+        .set_channel_args("poll_galoy_transactions")
         .set_delay(duration)
         .spawn(pool)
         .await
@@ -117,11 +121,7 @@ async fn publish_liability(
     Ok(())
 }
 
-#[job(
-    name = "poll_galoy_transactions",
-    channel_name = "user_trades",
-    backoff_secs = 5
-)]
+#[job(name = "poll_galoy_transactions")]
 async fn poll_galoy_transactions(
     mut current_job: CurrentJob,
     user_trades: UserTrades,

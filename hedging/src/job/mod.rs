@@ -53,7 +53,11 @@ pub async fn start_job_runner(
     registry.set_context(hedging_adjustment);
     registry.set_context(funding_config);
 
-    Ok(registry.runner(&pool).run().await?)
+    Ok(registry
+        .runner(&pool)
+        .set_channel_names(&["hedging"])
+        .run()
+        .await?)
 }
 
 #[instrument(skip_all, fields(error, error.level, error.message), err)]
@@ -62,8 +66,8 @@ pub async fn spawn_poll_okex(
     duration: std::time::Duration,
 ) -> Result<(), HedgingError> {
     match JobBuilder::new_with_id(POLL_OKEX_ID, "poll_okex")
-        .set_channel_name("poll_okex")
-        .set_retries(6)
+        .set_channel_name("hedging")
+        .set_channel_args("poll_okex")
         .set_delay(duration)
         .spawn(pool)
         .await
@@ -89,9 +93,10 @@ pub async fn spawn_adjust_hedge<'a>(
     tx: impl Executor<'a, Database = Postgres>,
     correlation_id: CorrelationId,
 ) -> Result<(), HedgingError> {
-    match adjust_hedge
-        .builder()
+    match JobBuilder::new_with_id(Uuid::from(correlation_id), "adjust_hedge")
         .set_ordered(true)
+        .set_channel_name("hedging")
+        .set_channel_args("adjust_hedge")
         .set_json(&AdjustHedgeData {
             tracing_data: shared::tracing::extract_tracing_data(),
             correlation_id,
@@ -130,12 +135,7 @@ async fn poll_okex(
     Ok(())
 }
 
-#[job(
-    name = "adjust_hedge",
-    channel_name = "adjust_hedging",
-    ordered,
-    retries = 6
-)]
+#[job(name = "adjust_hedge")]
 async fn adjust_hedge(
     mut current_job: CurrentJob,
     synth_usd_liability: SynthUsdLiability,
@@ -175,7 +175,9 @@ pub async fn spawn_adjust_funding<'a>(
     correlation_id: CorrelationId,
 ) -> Result<(), HedgingError> {
     match JobBuilder::new_with_id(Uuid::from(correlation_id), "adjust_funding")
-        .set_channel_name("adjust_funding")
+        .set_ordered(true)
+        .set_channel_name("hedging")
+        .set_channel_args("adjust_funding")
         .set_json(&AdjustFundingData {
             tracing_data: shared::tracing::extract_tracing_data(),
             correlation_id,
