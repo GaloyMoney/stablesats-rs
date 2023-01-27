@@ -32,7 +32,7 @@ start-deps:
 	docker compose up -d integration-deps
 
 start-deps-local:
-	docker compose up -d postgresql
+	docker compose up -d postgres
 
 reset-deps: clean-deps start-deps setup-db
 
