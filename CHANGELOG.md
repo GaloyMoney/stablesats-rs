@@ -1,3 +1,12 @@
+# [stablesats release v0.5.1](https://github.com/GaloyMoney/stablesats/releases/tag/v0.5.1)
+
+
+### Bug Fixes
+
+- Remove unique constraint (#266)
+- Typo in Makefile
+- Remove keys from docker-compose.override.yml
+
 # [stablesats release v0.5.0](https://github.com/GaloyMoney/stablesats/releases/tag/v0.5.0)
 
 
