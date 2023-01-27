@@ -1,3 +1,14 @@
+# [stablesats release v0.5.2](https://github.com/GaloyMoney/stablesats/releases/tag/v0.5.2)
+
+
+### Bug Fixes
+
+- Pin channel_name to job runner per module
+
+### Miscellaneous Tasks
+
+- Clippy
+
 # [stablesats release v0.5.1](https://github.com/GaloyMoney/stablesats/releases/tag/v0.5.1)
 
 
