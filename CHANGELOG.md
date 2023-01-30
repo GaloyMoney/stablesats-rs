@@ -1,3 +1,15 @@
+# [stablesats release v0.5.3](https://github.com/GaloyMoney/stablesats/releases/tag/v0.5.3)
+
+
+### Bug Fixes
+
+- DoNothing instead of ClosePosition
+
+### Miscellaneous Tasks
+
+- Clippy
+- Simplify listening to balance updates
+
 # [stablesats release v0.5.2](https://github.com/GaloyMoney/stablesats/releases/tag/v0.5.2)
 
 
