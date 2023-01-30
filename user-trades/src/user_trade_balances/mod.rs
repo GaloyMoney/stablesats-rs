@@ -32,12 +32,7 @@ impl UserTradeBalances {
             units,
         };
         let user_trade_balances = ret.clone();
-        tokio::spawn(async move {
-            loop {
-                let _ = Self::listen_to_events(pool.clone(), user_trade_balances.clone()).await;
-                tokio::time::sleep(std::time::Duration::from_secs(5)).await;
-            }
-        });
+        Self::listen_to_events(pool.clone(), user_trade_balances.clone()).await?;
         Ok(ret)
     }
 
@@ -45,54 +40,36 @@ impl UserTradeBalances {
         pool: PgPool,
         user_trade_balances: Self,
     ) -> Result<(), UserTradesError> {
-        let span = info_span!(
-            "spawn_listen_to_user_trades_notifications",
-            error = tracing::field::Empty,
-            error.level = tracing::field::Empty,
-            error.message = tracing::field::Empty,
-        );
-        let (send, recv) = tokio::sync::oneshot::channel();
-        shared::tracing::record_error::<(), UserTradesError, _, _>(
-            tracing::Level::ERROR,
-            || async move {
-                let mut listener = PgListener::connect_with(&pool).await?;
-                listener.listen("user_trades").await?;
-                user_trade_balances.update_balances().await?;
-                tokio::spawn(async move {
-                    loop {
-                        match listener.recv().await {
-                            Ok(_) => {
-                                let span = info_span!(
-                                    "user_trades_notification_received",
-                                    error = tracing::field::Empty,
-                                    error.level = tracing::field::Empty,
-                                    error.message = tracing::field::Empty,
-                                );
-                                let repo = user_trade_balances.clone();
-                                if let Err(e) = shared::tracing::record_error(
-                                    tracing::Level::WARN,
-                                    || async move { repo.update_balances().await },
-                                )
-                                .instrument(span)
-                                .await
-                                {
-                                    let _ = send.send(e);
-                                    break;
-                                }
-                            }
-                            Err(e) => {
-                                let _ = send.send(e.into());
-                                break;
-                            }
-                        }
+        let mut listener = PgListener::connect_with(&pool).await?;
+        listener.listen("user_trades").await?;
+        tokio::spawn(async move {
+            let mut num_errors = 0;
+            loop {
+                if num_errors > 0 || listener.recv().await.is_ok() {
+                    let span = info_span!(
+                        "user_trades_notification_received",
+                        error = tracing::field::Empty,
+                        error.message = tracing::field::Empty,
+                    );
+                    let repo = user_trade_balances.clone();
+                    if let Err(_) =
+                        shared::tracing::record_error(tracing::Level::WARN, || async move {
+                            repo.update_balances().await
+                        })
+                        .instrument(span)
+                        .await
+                    {
+                        tokio::time::sleep(std::time::Duration::from_secs(1 << num_errors)).await;
+                    } else {
+                        num_errors = 0;
                     }
-                });
-                Ok(())
-            },
-        )
-        .instrument(span)
-        .await?;
-        let _ = recv.await;
+                } else {
+                    tokio::time::sleep(std::time::Duration::from_secs(1 << num_errors)).await;
+                    num_errors += 1;
+                }
+            }
+        });
+
         Ok(())
     }
 
