@@ -52,12 +52,12 @@ impl UserTradeBalances {
                         error.message = tracing::field::Empty,
                     );
                     let repo = user_trade_balances.clone();
-                    if let Err(_) =
-                        shared::tracing::record_error(tracing::Level::WARN, || async move {
-                            repo.update_balances().await
-                        })
-                        .instrument(span)
-                        .await
+                    if shared::tracing::record_error(tracing::Level::WARN, || async move {
+                        repo.update_balances().await
+                    })
+                    .instrument(span)
+                    .await
+                    .is_err()
                     {
                         tokio::time::sleep(std::time::Duration::from_secs(1 << num_errors)).await;
                     } else {
