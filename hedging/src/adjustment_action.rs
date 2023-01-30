@@ -74,7 +74,11 @@ impl HedgingAdjustment {
         if abs_liability >= Decimal::ZERO
             && abs_liability < self.config.minimum_liability_threshold_cents
         {
-            AdjustmentAction::ClosePosition
+            if signed_exposure == Decimal::ZERO {
+                AdjustmentAction::DoNothing
+            } else {
+                AdjustmentAction::ClosePosition
+            }
         } else {
             let signed_liability = abs_liability * Decimal::NEGATIVE_ONE;
             let abs_exposure = Decimal::from(signed_exposure).abs();
@@ -299,6 +303,18 @@ mod tests {
 
         let adjustment = hedging_adjustment.determine_action(liability, exposure);
         assert_eq!(adjustment, AdjustmentAction::ClosePosition);
+    }
+
+    #[test]
+    fn min_liability_threshold_below_with_zero_exposure() {
+        let hedging_adjustment = HedgingAdjustment {
+            config: HedgingSectionConfig::default(),
+        };
+        let liability = SyntheticCentLiability::try_from(dec!(4900)).unwrap();
+        let exposure = SyntheticCentExposure::from(dec!(0));
+
+        let adjustment = hedging_adjustment.determine_action(liability, exposure);
+        assert_eq!(adjustment, AdjustmentAction::DoNothing);
     }
 
     #[test]
