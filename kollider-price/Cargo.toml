@@ -4,7 +4,7 @@ version = "0.5.5-dev"
 edition = "2021"
 
 [dependencies]
-futures = "0.3.25"
+futures = "0.3.26"
 serde = { version = "1.0.152", features = ["derive"] }
 serde_json = "1.0.91"
 tokio = { version = "1.25.0", features = ["full"] }

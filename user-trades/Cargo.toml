@@ -23,7 +23,7 @@ serde = "1.0.152"
 anyhow = "1.0.68"
 rust_decimal = "1.26.1"
 rust_decimal_macros = "1.28.0"
-futures = "0.3.25"
+futures = "0.3.26"
 serde_with = "2.2.0"
 
 [dev-dependencies]
