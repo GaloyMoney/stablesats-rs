@@ -43,9 +43,13 @@ pub struct BitfinexConfig {
 #[derive(Serialize, Deserialize, Debug, Clone, Default)]
 pub struct DeribitConfig {
     #[serde(default)]
-    pub api_key: String,
+    pub funding_api_key: String,
     #[serde(default)]
-    pub secret_key: String,
+    pub funding_secret_key: String,
+    #[serde(default)]
+    pub trading_api_key: String,
+    #[serde(default)]
+    pub trading_secret_key: String,
     #[serde(default)]
     pub simulated: bool,
 }
@@ -84,7 +88,8 @@ mod test_super {
                   deribit: 
                     weight: 0.8
                     config:
-                        api_key: deribit client id
+                        funding_api_key: funding account deribit client id
+                        trading_api_key: trading account deribit client id
                   kollider: 
                     weight: 0.2
                     config:
@@ -103,7 +108,14 @@ mod test_super {
 
         let deribit = ex.deribit.expect("Deribit-config not found");
         assert_eq!(dec!(0.8), deribit.weight);
-        assert_eq!("deribit api key", deribit.config.api_key);
+        assert_eq!(
+            "funding account deribit client id",
+            deribit.config.funding_api_key
+        );
+        assert_eq!(
+            "trading account deribit client id",
+            deribit.config.trading_api_key
+        );
 
         let kollider = ex.kollider.expect("Kollider-config not found");
         assert_eq!(dec!(0.2), kollider.weight);
@@ -134,8 +146,10 @@ mod test_super {
         let deribit = ExchangeConfig {
             weight: dec!(0.8),
             config: DeribitConfig {
-                api_key: "deribit client id".to_string(),
-                secret_key: "deribit secret key".to_string(),
+                funding_api_key: "funding account deribit client id".to_string(),
+                funding_secret_key: "funding account deribit secret key".to_string(),
+                trading_api_key: "trading account deribit client id".to_string(),
+                trading_secret_key: "trading account deribit secret key".to_string(),
                 simulated: false,
             },
         };
