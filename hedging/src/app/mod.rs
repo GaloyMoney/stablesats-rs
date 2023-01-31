@@ -2,8 +2,6 @@ mod config;
 
 use futures::stream::StreamExt;
 use opentelemetry::{propagation::TextMapPropagator, sdk::propagation::TraceContextPropagator};
-use rust_decimal::Decimal;
-use rust_decimal_macros::dec;
 use sqlxmq::OwnedHandle;
 use tracing::{info_span, Instrument};
 use tracing_opentelemetry::OpenTelemetrySpanExt;
@@ -13,10 +11,7 @@ use okex_client::*;
 use shared::{
     exchanges_config::OkexConfig,
     health::HealthCheckTrigger,
-    payload::{
-        OkexBtcUsdSwapPositionPayload, PriceMessagePayload, PriceStreamPayload,
-        SynthUsdLiabilityPayload,
-    },
+    payload::{OkexBtcUsdSwapPositionPayload, PriceStreamPayload, SynthUsdLiabilityPayload},
     pubsub::{memory, CorrelationId, PubSubConfig, Publisher, Subscriber},
 };
 
@@ -111,7 +106,7 @@ impl HedgingApp {
     ) -> Result<(), HedgingError> {
         tokio::spawn(async move {
             while let Some(msg) = tick_recv.next().await {
-                if let PriceStreamPayload::OkexBtcSwapPricePayload(price_msg) = msg.payload {
+                if let PriceStreamPayload::OkexBtcSwapPricePayload(_) = msg.payload {
                     let correlation_id = msg.meta.correlation_id;
                     let span = info_span!(
                         "okex_btc_usd_swap_price_received",
@@ -123,7 +118,6 @@ impl HedgingApp {
                     );
                     shared::tracing::inject_tracing_data(&span, &msg.meta.tracing_data);
                     let _ = Self::handle_received_okex_price(
-                        price_msg,
                         correlation_id,
                         &pool,
                         &synth_usd_liability,
@@ -139,7 +133,6 @@ impl HedgingApp {
     }
 
     async fn handle_received_okex_price(
-        payload: PriceMessagePayload,
         correlation_id: CorrelationId,
         pool: &sqlx::PgPool,
         synth_usd_liability: &SynthUsdLiability,
@@ -148,18 +141,16 @@ impl HedgingApp {
     ) -> Result<(), HedgingError> {
         let target_liability_in_cents = synth_usd_liability.get_latest_liability().await?;
         let current_position_in_cents = okex.get_position_in_signed_usd_cents().await?.usd_cents;
+        let last_price_in_usd_cents = okex.get_last_price_in_usd_cents().await?.usd_cents;
         let trading_available_balance = okex.trading_account_balance().await?;
         let funding_available_balance = okex.funding_account_balance().await?;
-
-        let mid_price_in_cents: Decimal =
-            (payload.bid_price.numerator_amount() + payload.ask_price.numerator_amount()) / dec!(2);
 
         if funding_adjustment
             .determine_action(
                 target_liability_in_cents,
                 current_position_in_cents.into(),
                 trading_available_balance.total_amt_in_btc,
-                mid_price_in_cents,
+                last_price_in_usd_cents,
                 funding_available_balance.total_amt_in_btc,
             )
             .action_required()
