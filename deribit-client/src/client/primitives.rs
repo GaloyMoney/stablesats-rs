@@ -1,21 +1,21 @@
-use chrono::Utc;
 use rust_decimal::Decimal;
 use std::fmt::Display;
 
 #[derive(serde::Deserialize, Debug, Clone)]
 #[serde(transparent)]
-pub struct ClientId(pub(super) i64);
+pub struct ClientId(pub(super) String);
 impl ClientId {
     pub fn new() -> Self {
-        Self(Utc::now().timestamp_millis())
+        use rand::distributions::{Alphanumeric, DistString};
+        Self(Alphanumeric.sample_string(&mut rand::thread_rng(), 32))
     }
 }
 impl From<String> for ClientId {
     fn from(s: String) -> Self {
-        Self(s.parse::<i64>().unwrap())
+        Self(s)
     }
 }
-impl From<ClientId> for i64 {
+impl From<ClientId> for String {
     fn from(id: ClientId) -> Self {
         id.0
     }
@@ -29,6 +29,12 @@ impl Default for ClientId {
 #[derive(serde::Deserialize, Debug, Clone)]
 #[serde(transparent)]
 pub struct MessageId(pub(super) i64);
+
+#[derive(serde::Deserialize, Debug, Clone, PartialEq, Eq)]
+pub enum KeyUsage {
+    ForFunding,
+    ForTrading,
+}
 
 #[derive(serde::Deserialize, Debug, Clone, PartialEq, Eq)]
 pub enum Instrument {
@@ -94,8 +100,7 @@ mod tests {
 
     #[test]
     fn client_order_id() {
-        let ts = Utc::now().timestamp_millis();
         let id = ClientId::new();
-        assert!(id.0 >= ts);
+        assert_eq!(id.0.len(), 32);
     }
 }

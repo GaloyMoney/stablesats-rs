@@ -75,7 +75,7 @@ impl DeribitClient {
         let endpoint = "/private/get_current_deposit_address";
         let params = format!("?currency={}", Currency::BTC);
 
-        let headers = self.get_private_request_headers()?;
+        let headers = self.get_private_request_headers(KeyUsage::ForFunding)?;
 
         let response = self
             .rate_limit_client(endpoint)
@@ -102,7 +102,7 @@ impl DeribitClient {
         let endpoint = "/private/get_deposits";
         let params = format!("?currency={}", Currency::BTC);
 
-        let headers = self.get_private_request_headers()?;
+        let headers = self.get_private_request_headers(KeyUsage::ForFunding)?;
 
         let response = self
             .rate_limit_client(endpoint)
@@ -122,7 +122,7 @@ impl DeribitClient {
         let endpoint = "/private/get_transfers";
         let params = format!("?currency={}", Currency::BTC);
 
-        let headers = self.get_private_request_headers()?;
+        let headers = self.get_private_request_headers(KeyUsage::ForFunding)?;
 
         let response = self
             .rate_limit_client(endpoint)
@@ -142,7 +142,7 @@ impl DeribitClient {
         let endpoint = "/private/get_withdrawals";
         let params = format!("?currency={}", Currency::BTC);
 
-        let headers = self.get_private_request_headers()?;
+        let headers = self.get_private_request_headers(KeyUsage::ForFunding)?;
 
         let response = self
             .rate_limit_client(endpoint)
@@ -174,7 +174,7 @@ impl DeribitClient {
             Priority::VeryHigh,
         );
 
-        let headers = self.get_private_request_headers()?;
+        let headers = self.get_private_request_headers(KeyUsage::ForFunding)?;
 
         let response = self
             .rate_limit_client(endpoint)
@@ -187,6 +187,182 @@ impl DeribitClient {
         let details = Self::extract_response_data::<TransferDetails>(response).await?;
 
         Ok(details.result.data)
+    }
+
+    #[instrument(skip(self), err)]
+    pub async fn buy(
+        &self,
+        client_id: ClientId,
+        amount: Decimal,
+    ) -> Result<Order, DeribitClientError> {
+        let endpoint = "/private/buy";
+        let params = format!(
+            "?instrument_name={}&amount={}&type=market&label={}",
+            Instrument::BtcUsdSwap,
+            amount,
+            client_id.0,
+        );
+
+        let headers = self.get_private_request_headers(KeyUsage::ForTrading)?;
+
+        let response = self
+            .rate_limit_client(endpoint)
+            .await
+            .get(self.url_for_path(endpoint, params.as_str()))
+            .headers(headers)
+            .send()
+            .await?;
+
+        let details = Self::extract_response_data::<OrderDetails>(response).await?;
+
+        Ok(details.result.order)
+    }
+
+    #[instrument(skip(self), err)]
+    pub async fn sell(
+        &self,
+        client_id: ClientId,
+        amount: Decimal,
+    ) -> Result<Order, DeribitClientError> {
+        let endpoint = "/private/sell";
+        let params = format!(
+            "?instrument_name={}&amount={}&type=market&label={}",
+            Instrument::BtcUsdSwap,
+            amount,
+            client_id.0,
+        );
+
+        let headers = self.get_private_request_headers(KeyUsage::ForTrading)?;
+
+        let response = self
+            .rate_limit_client(endpoint)
+            .await
+            .get(self.url_for_path(endpoint, params.as_str()))
+            .headers(headers)
+            .send()
+            .await?;
+
+        let details = Self::extract_response_data::<OrderDetails>(response).await?;
+
+        Ok(details.result.order)
+    }
+
+    #[instrument(skip(self), err)]
+    pub async fn close_position(
+        &self,
+        client_id: ClientId,
+        amount: Decimal,
+    ) -> Result<Order, DeribitClientError> {
+        let endpoint = "/private/close_position";
+        let params = format!(
+            "?instrument_name={}&amount={}&type=market&label={}",
+            Instrument::BtcUsdSwap,
+            amount,
+            client_id.0,
+        );
+
+        let headers = self.get_private_request_headers(KeyUsage::ForTrading)?;
+
+        let response = self
+            .rate_limit_client(endpoint)
+            .await
+            .get(self.url_for_path(endpoint, params.as_str()))
+            .headers(headers)
+            .send()
+            .await?;
+
+        let details = Self::extract_response_data::<OrderDetails>(response).await?;
+
+        Ok(details.result.order)
+    }
+
+    #[instrument(skip(self), err)]
+    pub async fn get_order_state(
+        &self,
+        client_id: ClientId,
+        amount: Decimal,
+    ) -> Result<Order, DeribitClientError> {
+        let endpoint = "/private/get_order_state";
+        let params = format!(
+            "?instrument_name={}&amount={}&type=market&label={}",
+            Instrument::BtcUsdSwap,
+            amount,
+            client_id.0,
+        );
+
+        let headers = self.get_private_request_headers(KeyUsage::ForTrading)?;
+
+        let response = self
+            .rate_limit_client(endpoint)
+            .await
+            .get(self.url_for_path(endpoint, params.as_str()))
+            .headers(headers)
+            .send()
+            .await?;
+
+        let details = Self::extract_response_data::<OrderStateDetails>(response).await?;
+
+        Ok(details.result)
+    }
+
+    #[instrument(skip(self), err)]
+    pub async fn get_position(&self) -> Result<Position, DeribitClientError> {
+        let endpoint = "/private/get_position";
+        let params = format!("?instrument_name={}", Instrument::BtcUsdSwap,);
+
+        let headers = self.get_private_request_headers(KeyUsage::ForTrading)?;
+
+        let response = self
+            .rate_limit_client(endpoint)
+            .await
+            .get(self.url_for_path(endpoint, params.as_str()))
+            .headers(headers)
+            .send()
+            .await?;
+
+        let details = Self::extract_response_data::<PositionDetails>(response).await?;
+
+        Ok(details.result)
+    }
+
+    #[instrument(skip(self), err)]
+    pub async fn get_funding_account_summary(&self) -> Result<AccountSummary, DeribitClientError> {
+        let endpoint = "/private/get_account_summary";
+        let params = format!("?currency={}", Currency::BTC,);
+
+        let headers = self.get_private_request_headers(KeyUsage::ForFunding)?;
+
+        let response = self
+            .rate_limit_client(endpoint)
+            .await
+            .get(self.url_for_path(endpoint, params.as_str()))
+            .headers(headers)
+            .send()
+            .await?;
+
+        let details = Self::extract_response_data::<AccountSummaryDetails>(response).await?;
+
+        Ok(details.result)
+    }
+
+    #[instrument(skip(self), err)]
+    pub async fn get_trading_account_summary(&self) -> Result<AccountSummary, DeribitClientError> {
+        let endpoint = "/private/get_account_summary";
+        let params = format!("?currency={}", Currency::BTC,);
+
+        let headers = self.get_private_request_headers(KeyUsage::ForTrading)?;
+
+        let response = self
+            .rate_limit_client(endpoint)
+            .await
+            .get(self.url_for_path(endpoint, params.as_str()))
+            .headers(headers)
+            .send()
+            .await?;
+
+        let details = Self::extract_response_data::<AccountSummaryDetails>(response).await?;
+
+        Ok(details.result)
     }
 
     async fn extract_response_data<T: serde::de::DeserializeOwned>(
@@ -224,8 +400,20 @@ impl DeribitClient {
         }
     }
 
-    fn get_private_request_headers(&self) -> Result<HeaderMap, DeribitClientError> {
-        let token = format!("{}:{}", self.config.api_key, self.config.secret_key);
+    fn get_private_request_headers(
+        &self,
+        key_usage: KeyUsage,
+    ) -> Result<HeaderMap, DeribitClientError> {
+        let mut token = format!(
+            "{}:{}",
+            self.config.funding_api_key, self.config.funding_secret_key
+        );
+        if key_usage == KeyUsage::ForTrading {
+            token = format!(
+                "{}:{}",
+                self.config.trading_api_key, self.config.trading_secret_key
+            );
+        }
         let auth = format!("Basic {}", BASE64.encode(token.as_ref()));
 
         let mut headers = HeaderMap::new();

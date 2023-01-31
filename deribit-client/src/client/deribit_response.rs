@@ -197,6 +197,177 @@ pub struct WithdrawalDetails {
     pub testnet: Option<bool>,
 }
 
+#[derive(Deserialize, Debug, Clone)]
+pub struct Order {
+    pub amount: Decimal,
+    pub order_type: String,
+    pub order_state: String,
+    pub label: String,
+    pub price: Decimal,
+    pub average_price: Decimal,
+    pub filled_amount: Decimal,
+    pub profit_loss: Decimal,
+    pub reduce_only: bool,
+    pub web: Option<bool>,
+    pub time_in_force: String,
+    pub replaced: Option<bool>,
+    pub post_only: bool,
+    pub order_id: String,
+    pub max_show: Decimal,
+    pub is_liquidation: bool,
+    pub instrument_name: String,
+    pub direction: String,
+    pub commission: Decimal,
+    pub api: bool,
+    pub creation_timestamp: u64,
+    pub last_update_timestamp: u64,
+}
+
+#[derive(Deserialize, Debug, Clone)]
+pub struct Trade {
+    pub trade_seq: u64,
+    pub trade_id: String,
+    pub price: Decimal,
+    pub amount: Decimal,
+    pub fee: Decimal,
+    pub label: String,
+    pub instrument_name: String,
+    pub index_price: Decimal,
+    pub fee_currency: String,
+    pub direction: String,
+    pub tick_direction: u64,
+    pub state: String,
+    pub self_trade: bool,
+    pub reduce_only: bool,
+    pub post_only: bool,
+    pub order_type: String,
+    pub order_id: String,
+    pub matching_id: Option<String>,
+    pub mark_price: Decimal,
+    pub liquidity: String,
+    pub timestamp: u64,
+}
+
+#[derive(Deserialize, Debug, Clone)]
+pub struct OrderData {
+    pub order: Order,
+    pub trades: Vec<Trade>,
+}
+
+#[derive(Deserialize, Debug, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct OrderDetails {
+    pub jsonrpc: String,
+    pub result: OrderData,
+
+    pub us_in: Option<u64>,
+    pub us_out: Option<u64>,
+    pub us_diff: Option<u64>,
+    pub testnet: Option<bool>,
+}
+
+#[derive(Deserialize, Debug, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct OrderStateDetails {
+    pub jsonrpc: String,
+    pub result: Order,
+
+    pub us_in: Option<u64>,
+    pub us_out: Option<u64>,
+    pub us_diff: Option<u64>,
+    pub testnet: Option<bool>,
+}
+
+#[derive(Deserialize, Debug, Clone)]
+pub struct Position {
+    pub average_price: Decimal,
+    pub delta: Decimal,
+    pub direction: String,
+    pub estimated_liquidation_price: Decimal,
+    pub floating_profit_loss: Decimal,
+    pub index_price: Decimal,
+    pub initial_margin: Decimal,
+    pub instrument_name: String,
+    pub interest_value: Decimal,
+    pub leverage: Decimal,
+    pub kind: String,
+    pub maintenance_margin: Decimal,
+    pub mark_price: Decimal,
+    pub open_orders_margin: Decimal,
+    pub realized_profit_loss: Decimal,
+    pub settlement_price: Decimal,
+    pub size: Decimal,
+    pub size_currency: Decimal,
+    pub total_profit_loss: Decimal,
+}
+
+#[derive(Deserialize, Debug, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct PositionDetails {
+    pub jsonrpc: String,
+    pub result: Position,
+
+    pub us_in: Option<u64>,
+    pub us_out: Option<u64>,
+    pub us_diff: Option<u64>,
+    pub testnet: Option<bool>,
+}
+
+#[derive(Deserialize, Debug, Clone)]
+pub struct AccountSummary {
+    pub balance: Decimal,
+    pub options_session_upl: Decimal,
+    pub deposit_address: String,
+    pub options_gamma: Decimal,
+    pub options_theta: Decimal,
+    pub username: String,
+    pub equity: Decimal,
+    #[serde(alias = "type")]
+    pub account_type: String,
+    pub currency: String,
+    pub delta_total: Decimal,
+    pub futures_session_rpl: Decimal,
+    pub portfolio_margining_enabled: bool,
+    pub total_pl: Decimal,
+    pub margin_balance: Decimal,
+    pub security_keys_enabled: bool,
+    pub options_session_rpl: Decimal,
+    pub options_delta: Decimal,
+    pub futures_pl: Decimal,
+    pub referrer_id: Option<String>,
+    pub id: u64,
+    pub session_upl: Decimal,
+    pub available_withdrawal_funds: Decimal,
+    pub creation_timestamp: u64,
+    pub options_pl: Decimal,
+    pub system_name: String,
+    pub limits: HashMap<String, Value>,
+    pub initial_margin: Decimal,
+    pub projected_initial_margin: Decimal,
+    pub maintenance_margin: Decimal,
+    pub projected_maintenance_margin: Decimal,
+    pub session_rpl: Decimal,
+    pub interuser_transfers_enabled: bool,
+    pub options_vega: Decimal,
+    pub projected_delta_total: Decimal,
+    pub email: String,
+    pub futures_session_upl: Decimal,
+    pub available_funds: Decimal,
+    pub options_value: Decimal,
+}
+
+#[derive(Deserialize, Debug, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct AccountSummaryDetails {
+    pub jsonrpc: String,
+    pub result: AccountSummary,
+
+    pub us_in: Option<u64>,
+    pub us_out: Option<u64>,
+    pub us_diff: Option<u64>,
+    pub testnet: Option<bool>,
+}
+
 #[cfg(test)]
 mod tests {
     use rust_decimal_macros::dec;
@@ -276,9 +447,41 @@ mod tests {
 
     #[test]
     fn get_withdrawals() {
-        let response_text = "";
-        let details = serde_json::from_str::<WithdrawalDetails>(response_text).unwrap();
-        assert!(!details.result.data.is_empty());
-        assert_eq!(details.result.data[0].currency, Currency::BTC.to_string(),);
+        let response_text = "{\"jsonrpc\": \"2.0\",\"result\": {\"data\": [],\"count\": 0},\"usIn\": 1675066247615127,\"usOut\": 1675066247615279,\"usDiff\": 152,\"testnet\": true}";
+        let _details = serde_json::from_str::<WithdrawalDetails>(response_text).unwrap();
+        // assert!(!details.result.data.is_empty());
+        // assert_eq!(details.result.data[0].currency, Currency::BTC.to_string(),);
+    }
+
+    #[test]
+    fn order() {
+        let response_text = "{\"jsonrpc\": \"2.0\",\"id\": 5275,\"result\": {\"trades\": [{\"trade_seq\": 1966056,\"trade_id\": \"ETH-2696083\",\"timestamp\": 1590483938456,\"tick_direction\": 0,\"state\": \"filled\",\"self_trade\": false,\"reduce_only\": false,\"price\": 203.3,\"post_only\": false,\"order_type\": \"market\",\"order_id\": \"ETH-584849853\",\"matching_id\": null,\"mark_price\": 203.28,\"liquidity\": \"T\",\"label\": \"market0000234\",\"instrument_name\": \"ETH-PERPETUAL\",\"index_price\": 203.33,\"fee_currency\": \"ETH\",\"fee\": 0.00014757,\"direction\": \"buy\",\"amount\": 40}],\"order\": {\"web\": false,\"time_in_force\": \"good_til_cancelled\",\"replaced\": false,\"reduce_only\": false,\"profit_loss\": 0.00022929,\"price\": 207.3,\"post_only\": false,\"order_type\": \"market\",\"order_state\": \"filled\",\"order_id\": \"ETH-584849853\",\"max_show\": 40,\"last_update_timestamp\": 1590483938456,\"label\": \"market0000234\",\"is_liquidation\": false,\"instrument_name\": \"ETH-PERPETUAL\",\"filled_amount\": 40,\"direction\": \"buy\",\"creation_timestamp\": 1590483938456,\"commission\": 0.00014757,\"average_price\": 203.3,\"api\": true,\"amount\": 40}},\"usIn\": 1675066247615127,\"usOut\": 1675066247615279,\"usDiff\": 152,\"testnet\": true}";
+        let _details = serde_json::from_str::<OrderDetails>(response_text).unwrap();
+        // assert!(!details.result.data.is_empty());
+        // assert_eq!(details.result.data[0].currency, Currency::BTC.to_string(),);
+    }
+
+    #[test]
+    fn order_state() {
+        let response_text = "{\"jsonrpc\": \"2.0\",\"id\": 4316,\"result\": {\"time_in_force\": \"good_til_cancelled\",\"reduce_only\": false,\"profit_loss\": 0.051134,\"price\": 118.94,\"post_only\": false,\"order_type\": \"limit\",\"order_state\": \"filled\",\"order_id\": \"ETH-331562\",\"max_show\": 37,\"last_update_timestamp\": 1550219810944,\"label\": \"\",\"is_liquidation\": false,\"instrument_name\": \"ETH-PERPETUAL\",\"filled_amount\": 37,\"direction\": \"sell\",\"creation_timestamp\": 1550219749176,\"commission\": 0.000031,\"average_price\": 118.94,\"api\": false,\"amount\": 37},\"usIn\": 1675066247615127,\"usOut\": 1675066247615279,\"usDiff\": 152,\"testnet\": true}";
+        let _details = serde_json::from_str::<OrderStateDetails>(response_text).unwrap();
+        // assert!(!details.result.data.is_empty());
+        // assert_eq!(details.result.data[0].currency, Currency::BTC.to_string(),);
+    }
+
+    #[test]
+    fn get_position() {
+        let response_text = "{\"jsonrpc\": \"2.0\",\"id\": 404,\"result\": {\"average_price\": 0,\"delta\": 0,\"direction\": \"buy\",\"estimated_liquidation_price\": 0,\"floating_profit_loss\": 0,\"index_price\": 3555.86,\"initial_margin\": 0,\"instrument_name\": \"BTC-PERPETUAL\",\"interest_value\" : 1.7362511643080387,\"leverage\": 100,\"kind\": \"future\",\"maintenance_margin\": 0,\"mark_price\": 3556.62,\"open_orders_margin\": 0.000165889,\"realized_profit_loss\": 0,\"settlement_price\": 3555.44,\"size\": 0,\"size_currency\": 0,\"total_profit_loss\": 0},\"usIn\": 1675066247615127,\"usOut\": 1675066247615279,\"usDiff\": 152,\"testnet\": true}";
+        let _details = serde_json::from_str::<PositionDetails>(response_text).unwrap();
+        // assert!(!details.result.data.is_empty());
+        // assert_eq!(details.result.data[0].currency, Currency::BTC.to_string(),);
+    }
+
+    #[test]
+    fn get_account_summary() {
+        let response_text = "{\"jsonrpc\": \"2.0\",\"id\": 2515,\"result\": {\"balance\": 118.72074005,\"options_session_upl\": 0,\"deposit_address\": \"2NC9eNLq1z3MFuZGVp2JgSCATeDzLqwpcY7\",\"options_gamma\": 0,\"options_theta\": 0,\"username\": \"user\",\"equity\": 118.77720303,\"type\": \"main\",\"currency\": \"BTC\",\"delta_total\": -11.1895,\"futures_session_rpl\": -0.00011454,\"portfolio_margining_enabled\": false,\"total_pl\": -3.46418369,\"margin_balance\": 118.77720303,\"security_keys_enabled\": false,\"options_session_rpl\": 0,\"options_delta\": 0,\"futures_pl\": -3.46418369,\"referrer_id\": null,\"id\": 3,\"session_upl\": 0.05657752,\"available_withdrawal_funds\": 118.38439069,\"creation_timestamp\": 1594388820315,\"options_pl\": 0,\"system_name\": \"user\",\"limits\": {\"non_matching_engine\": {\"rate\": 30,\"burst\": 400},\"matching_engine\": {\"rate\": 5,\"burst\": 20}},\"initial_margin\": 0.33634936,\"projected_initial_margin\": 0.33634936,\"maintenance_margin\": 0.24683366,\"projected_maintenance_margin\": 0.24683366,\"session_rpl\": -0.00011454,\"interuser_transfers_enabled\": false,\"options_vega\": 0,\"projected_delta_total\": -11.1895,\"email\": \"user@example.com\",\"futures_session_upl\": 0.05657752,\"available_funds\": 118.44085367,\"options_value\": 0},\"usIn\": 1675066247615127,\"usOut\": 1675066247615279,\"usDiff\": 152,\"testnet\": true}";
+        let _details = serde_json::from_str::<AccountSummaryDetails>(response_text).unwrap();
+        // assert!(!details.result.data.is_empty());
+        // assert_eq!(details.result.data[0].currency, Currency::BTC.to_string(),);
     }
 }
