@@ -1,3 +1,10 @@
+# [stablesats release v0.5.4](https://github.com/GaloyMoney/stablesats/releases/tag/v0.5.4)
+
+
+### Miscellaneous Tasks
+
+- Replace mid price ratio with last price (#270)
+
 # [stablesats release v0.5.3](https://github.com/GaloyMoney/stablesats/releases/tag/v0.5.3)
 
 
