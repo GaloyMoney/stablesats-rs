@@ -193,13 +193,13 @@ impl DeribitClient {
     pub async fn buy(
         &self,
         client_id: ClientId,
-        amount: Decimal,
+        amount_in_usd: Decimal,
     ) -> Result<Order, DeribitClientError> {
         let endpoint = "/private/buy";
         let params = format!(
             "?instrument_name={}&amount={}&type=market&label={}",
             Instrument::BtcUsdSwap,
-            amount,
+            amount_in_usd,
             client_id.0,
         );
 
@@ -222,13 +222,13 @@ impl DeribitClient {
     pub async fn sell(
         &self,
         client_id: ClientId,
-        amount: Decimal,
+        amount_in_usd: Decimal,
     ) -> Result<Order, DeribitClientError> {
         let endpoint = "/private/sell";
         let params = format!(
             "?instrument_name={}&amount={}&type=market&label={}",
             Instrument::BtcUsdSwap,
-            amount,
+            amount_in_usd,
             client_id.0,
         );
 
@@ -248,16 +248,11 @@ impl DeribitClient {
     }
 
     #[instrument(skip(self), err)]
-    pub async fn close_position(
-        &self,
-        client_id: ClientId,
-        amount: Decimal,
-    ) -> Result<Order, DeribitClientError> {
+    pub async fn close_position(&self, client_id: ClientId) -> Result<Order, DeribitClientError> {
         let endpoint = "/private/close_position";
         let params = format!(
-            "?instrument_name={}&amount={}&type=market&label={}",
+            "?instrument_name={}&type=market&label={}",
             Instrument::BtcUsdSwap,
-            amount,
             client_id.0,
         );
 
@@ -277,18 +272,9 @@ impl DeribitClient {
     }
 
     #[instrument(skip(self), err)]
-    pub async fn get_order_state(
-        &self,
-        client_id: ClientId,
-        amount: Decimal,
-    ) -> Result<Order, DeribitClientError> {
+    pub async fn get_order_state(&self, order_id: String) -> Result<Order, DeribitClientError> {
         let endpoint = "/private/get_order_state";
-        let params = format!(
-            "?instrument_name={}&amount={}&type=market&label={}",
-            Instrument::BtcUsdSwap,
-            amount,
-            client_id.0,
-        );
+        let params = format!("?order_id={order_id}");
 
         let headers = self.get_private_request_headers(KeyUsage::ForTrading)?;
 

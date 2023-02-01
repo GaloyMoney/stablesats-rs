@@ -2,6 +2,7 @@ use std::env;
 
 use deribit_client::*;
 
+use rust_decimal_macros::dec;
 use serial_test::serial;
 use shared::exchanges_config::DeribitConfig;
 
@@ -89,6 +90,117 @@ async fn get_withdrawals() -> anyhow::Result<()> {
         if !withdrawals.is_empty() {
             assert_eq!(withdrawals[0].currency, Currency::BTC.to_string());
         }
+    } else {
+        panic!("Client not configured");
+    }
+
+    Ok(())
+}
+
+#[tokio::test]
+#[serial]
+async fn buy() -> anyhow::Result<()> {
+    if let Ok(client) = configured_client().await {
+        let client_id = ClientId::new();
+        let amount = dec!(10);
+        let buy = client.buy(client_id, amount).await?;
+
+        assert_eq!(buy.amount, amount);
+
+        let client_id = ClientId::new();
+        client.close_position(client_id).await?;
+    } else {
+        panic!("Client not configured");
+    }
+
+    Ok(())
+}
+
+#[tokio::test]
+#[serial]
+async fn sell() -> anyhow::Result<()> {
+    if let Ok(client) = configured_client().await {
+        let client_id = ClientId::new();
+        let amount = dec!(10);
+        let sell = client.sell(client_id, amount).await?;
+
+        assert_eq!(sell.amount, amount);
+
+        let client_id = ClientId::new();
+        client.close_position(client_id).await?;
+    } else {
+        panic!("Client not configured");
+    }
+
+    Ok(())
+}
+
+#[tokio::test]
+#[serial]
+async fn get_order_state() -> anyhow::Result<()> {
+    if let Ok(client) = configured_client().await {
+        let client_id = ClientId::new();
+        let amount = dec!(10);
+        let sell = client.sell(client_id, amount).await?;
+
+        assert_eq!(sell.amount, amount);
+
+        let order_state = client.get_order_state(sell.order_id).await?;
+        assert_eq!(order_state.amount, amount);
+
+        let client_id = ClientId::new();
+        client.close_position(client_id).await?;
+    } else {
+        panic!("Client not configured");
+    }
+
+    Ok(())
+}
+
+#[tokio::test]
+#[serial]
+async fn get_position() -> anyhow::Result<()> {
+    if let Ok(client) = configured_client().await {
+        let client_id = ClientId::new();
+        let _ = client.close_position(client_id).await;
+
+        let client_id = ClientId::new();
+        let amount = dec!(10);
+        let sell = client.sell(client_id.clone(), amount).await?;
+
+        assert_eq!(sell.amount, amount);
+
+        let position = client.get_position().await?;
+        assert_eq!(position.size.abs(), amount);
+
+        let client_id = ClientId::new();
+        client.close_position(client_id).await?;
+    } else {
+        panic!("Client not configured");
+    }
+
+    Ok(())
+}
+
+#[tokio::test]
+#[serial]
+async fn get_funding_account_summary() -> anyhow::Result<()> {
+    if let Ok(client) = configured_client().await {
+        let account_summary = client.get_funding_account_summary().await?;
+        assert_eq!(account_summary.currency, Currency::BTC.to_string());
+    } else {
+        panic!("Client not configured");
+    }
+
+    Ok(())
+}
+
+#[tokio::test]
+#[serial]
+async fn get_trading_account_summary() -> anyhow::Result<()> {
+    if let Ok(client) = configured_client().await {
+        let account_summary = client.get_trading_account_summary().await?;
+        assert_eq!(account_summary.currency, Currency::BTC.to_string());
     } else {
         panic!("Client not configured");
     }
