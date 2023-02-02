@@ -1,0 +1,163 @@
+#![cfg_attr(feature = "fail-on-warnings", deny(warnings))]
+#![cfg_attr(feature = "fail-on-warnings", deny(clippy::all))]
+
+use sqlx::{PgPool, Postgres, Transaction};
+use tracing::instrument;
+
+mod balances;
+mod constants;
+mod error;
+mod templates;
+
+use constants::*;
+pub use error::*;
+pub use templates::*;
+
+use sqlx_ledger::{
+    account::NewAccount, journal::*, Currency, DebitOrCredit, SqlxLedger, SqlxLedgerError,
+};
+
+#[derive(Debug, Clone)]
+pub struct Ledger {
+    inner: SqlxLedger,
+    usd: Currency,
+    btc: Currency,
+}
+
+impl Ledger {
+    pub fn new(pool: &PgPool) -> Self {
+        Self {
+            inner: SqlxLedger::new(pool),
+            usd: "USD".parse().unwrap(),
+            btc: "BTC".parse().unwrap(),
+        }
+    }
+
+    pub async fn init(pool: &PgPool) -> Result<Self, LedgerError> {
+        let inner = SqlxLedger::new(pool);
+
+        Self::create_stablesats_journal(&inner).await?;
+
+        Self::external_omnibus_account(&inner).await?;
+        Self::stablesats_btc_wallet_account(&inner).await?;
+        Self::stablesats_omnibus_account(&inner).await?;
+        Self::stablesats_liability_account(&inner).await?;
+
+        templates::UserBuysUsd::init(&inner).await?;
+        templates::UserSellsUsd::init(&inner).await?;
+
+        Ok(Self {
+            inner,
+            usd: "USD".parse().unwrap(),
+            btc: "BTC".parse().unwrap(),
+        })
+    }
+
+    pub fn balances(&'_ self) -> balances::Balances<'_> {
+        balances::Balances {
+            inner: &self.inner,
+            usd: self.usd,
+            btc: self.btc,
+        }
+    }
+
+    #[instrument(name = "ledger.user_buys_usd")]
+    pub async fn user_buys_usd(
+        &self,
+        tx: Transaction<'_, Postgres>,
+        params: UserBuysUsdParams,
+    ) -> Result<(), LedgerError> {
+        self.inner
+            .post_transaction_in_tx(tx, USER_BUYS_USD_CODE, Some(params))
+            .await?;
+        Ok(())
+    }
+
+    #[instrument(name = "ledger.user_sells_usd")]
+    pub async fn user_sells_usd(
+        &self,
+        tx: Transaction<'_, Postgres>,
+        params: UserSellsUsdParams,
+    ) -> Result<(), LedgerError> {
+        self.inner
+            .post_transaction_in_tx(tx, USER_SELLS_USD_CODE, Some(params))
+            .await?;
+        Ok(())
+    }
+
+    #[instrument(name = "ledger.create_stablesats_journal", skip(ledger))]
+    async fn create_stablesats_journal(ledger: &SqlxLedger) -> Result<(), LedgerError> {
+        let new_journal = NewJournal::builder()
+            .id(STABLESATS_JOURNAL_ID)
+            .description("Stablesats journal".to_string())
+            .name(STABLESATS_JOURNAL_NAME)
+            .build()
+            .expect("Couldn't build NewJournal");
+        match ledger.journals().create(new_journal).await {
+            Ok(_) | Err(SqlxLedgerError::DuplicateKey(_)) => Ok(()),
+            Err(e) => Err(e.into()),
+        }
+    }
+
+    #[instrument(name = "ledger.external_omnibus_account", skip_all)]
+    async fn external_omnibus_account(ledger: &SqlxLedger) -> Result<(), LedgerError> {
+        let new_account = NewAccount::builder()
+            .code(EXTERNAL_OMNIBUS_CODE)
+            .id(EXTERNAL_OMNIBUS_ID)
+            .name(EXTERNAL_OMNIBUS_CODE)
+            .description("Account for balancing btc coming into wallet".to_string())
+            .normal_balance_type(DebitOrCredit::Debit)
+            .build()
+            .expect("Couldn't create external omnibus account");
+        match ledger.accounts().create(new_account).await {
+            Ok(_) | Err(SqlxLedgerError::DuplicateKey(_)) => Ok(()),
+            Err(e) => Err(e.into()),
+        }
+    }
+
+    #[instrument(name = "ledger.stablesats_btc_wallet_account", skip_all)]
+    async fn stablesats_btc_wallet_account(ledger: &SqlxLedger) -> Result<(), LedgerError> {
+        let new_account = NewAccount::builder()
+            .code(STABLESATS_BTC_WALLET)
+            .id(STABLESATS_BTC_WALLET_ID)
+            .name(STABLESATS_BTC_WALLET)
+            .description("Account that records the stablesats btc balance".to_string())
+            .build()
+            .expect("Couldn't create stablesats btc wallet account");
+        match ledger.accounts().create(new_account).await {
+            Ok(_) | Err(SqlxLedgerError::DuplicateKey(_)) => Ok(()),
+            Err(e) => Err(e.into()),
+        }
+    }
+
+    #[instrument(name = "ledger.stablesats_omnibus_account", skip_all)]
+    async fn stablesats_omnibus_account(ledger: &SqlxLedger) -> Result<(), LedgerError> {
+        let new_account = NewAccount::builder()
+            .code(STABLESATS_OMNIBUS)
+            .id(STABLESATS_OMNIBUS_ID)
+            .name(STABLESATS_OMNIBUS)
+            .description("Omnibus account for all stablesats hedging".to_string())
+            .build()
+            .expect("Couldn't create stablesats omnibus account");
+        match ledger.accounts().create(new_account).await {
+            Ok(_) | Err(SqlxLedgerError::DuplicateKey(_)) => Ok(()),
+            Err(e) => Err(e.into()),
+        }
+    }
+
+    #[instrument(name = "ledger.stablesats_omnibus_account", skip_all)]
+    async fn stablesats_liability_account(ledger: &SqlxLedger) -> Result<(), LedgerError> {
+        let new_account = NewAccount::builder()
+            .code(STABLESATS_LIABILITY)
+            .id(STABLESATS_LIABILITY_ID)
+            .name(STABLESATS_LIABILITY)
+            .normal_balance_type(DebitOrCredit::Debit)
+            .description("Account for incoming stablesats liability".to_string())
+            .build()
+            .expect("Couldn't create stablesats liability account");
+        match ledger.accounts().create(new_account).await {
+            Ok(_) | Err(SqlxLedgerError::DuplicateKey(_)) => Ok(()),
+            Err(e) => Err(e.into()),
+        }
+    }
+}
