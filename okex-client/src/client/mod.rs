@@ -80,6 +80,35 @@ impl OkexClient {
         Ok(client)
     }
 
+    pub async fn check_leverage(&self, expected_leverage: Decimal) -> Result<(), OkexClientError> {
+        let leverage_info = self.leverage_info().await?;
+
+        if leverage_info.lever != expected_leverage {
+            return Err(OkexClientError::MisconfiguredAccount(format!(
+                "Expected `leverage: {}`, got `{}`",
+                expected_leverage, leverage_info.lever
+            )));
+        }
+        Ok(())
+    }
+
+    pub async fn leverage_info(&self) -> Result<OkexLeverageInfoData, OkexClientError> {
+        let path = "/api/v5/account/leverage-info";
+        let config_url = Self::url_for_path(path);
+        let headers = self.get_request_headers(path)?;
+
+        let response = self
+            .rate_limit_client(path)
+            .await
+            .get(config_url)
+            .headers(headers)
+            .send()
+            .await?;
+        let leverage_info = Self::extract_response_data::<OkexLeverageInfoData>(response).await?;
+
+        Ok(leverage_info)
+    }
+
     pub async fn rate_limit_client(&self, key: &'static str) -> &ReqwestClient {
         let jitter = Jitter::new(Duration::from_secs(1), Duration::from_secs(1));
         LIMITER.until_key_ready_with_jitter(&key, jitter).await;
