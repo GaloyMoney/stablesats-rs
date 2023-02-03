@@ -47,6 +47,8 @@ impl HedgingApp {
         let okex_orders = OkexOrders::new(pool.clone()).await?;
         let okex_transfers = OkexTransfers::new(pool.clone()).await?;
         let okex = OkexClient::new(okex_client_config).await?;
+        okex.check_leverage(funding_config.high_bound_ratio_leverage)
+            .await?;
         let funding_adjustment =
             FundingAdjustment::new(funding_config.clone(), hedging_config.clone());
         let hedging_adjustment = HedgingAdjustment::new(hedging_config);

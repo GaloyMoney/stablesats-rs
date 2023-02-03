@@ -248,3 +248,12 @@ pub struct OkexAccountConfigurationData {
     pub pos_mode: String,
     pub uid: String,
 }
+
+#[derive(Deserialize, Debug)]
+#[serde(rename_all = "camelCase")]
+pub struct OkexLeverageInfoData {
+    pub inst_id: String,
+    pub mgn_mode: String,
+    pub pos_side: String,
+    pub lever: Decimal,
+}
