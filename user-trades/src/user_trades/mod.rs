@@ -17,12 +17,11 @@ pub struct ExternalRef {
 
 #[derive(Debug, PartialEq, Eq)]
 pub struct NewUserTrade {
-    pub is_latest: Option<bool>,
     pub buy_unit: UserTradeUnit,
     pub buy_amount: Decimal,
     pub sell_unit: UserTradeUnit,
     pub sell_amount: Decimal,
-    pub external_ref: Option<ExternalRef>,
+    pub external_ref: ExternalRef,
 }
 
 #[derive(Clone)]
@@ -51,7 +50,6 @@ impl UserTrades {
             new_user_trades,
             |mut builder,
              NewUserTrade {
-                 is_latest: _,
                  buy_unit,
                  buy_amount,
                  sell_unit,
@@ -62,9 +60,9 @@ impl UserTrades {
                 builder.push_bind(buy_amount);
                 builder.push_bind(self.units.get_id(sell_unit));
                 builder.push_bind(sell_amount);
-                builder.push_bind(external_ref.map(|external_ref| {
-                    serde_json::to_value(external_ref).expect("failed to serialize external_ref")
-                }));
+                builder.push_bind(
+                    serde_json::to_value(external_ref).expect("failed to serialize external_ref"),
+                );
             },
         );
         let query = query_builder.build();

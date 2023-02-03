@@ -100,24 +100,21 @@ fn unify(unpaired_transactions: Vec<UnpairedTransaction>) -> (Vec<NewUserTrade>,
             paired_ids.push(external_ref.usd_tx_id.clone());
             if tx.settlement_amount < Decimal::ZERO {
                 user_trades.push(NewUserTrade {
-                    is_latest,
                     buy_unit: tx.settlement_currency.into(),
                     buy_amount: tx.settlement_amount.abs(),
                     sell_unit: other.settlement_currency.into(),
                     sell_amount: other.settlement_amount.abs(),
-                    external_ref: Some(external_ref),
+                    external_ref,
                 });
             } else {
                 user_trades.push(NewUserTrade {
-                    is_latest,
                     buy_unit: other.settlement_currency.into(),
                     buy_amount: other.settlement_amount.abs(),
                     sell_unit: tx.settlement_currency.into(),
                     sell_amount: tx.settlement_amount.abs(),
-                    external_ref: Some(external_ref),
+                    external_ref,
                 });
             }
-            is_latest = None;
         }
     }
     tracing::Span::current().record("n_unpaired_txs", &tracing::field::display(unpaired));
@@ -199,31 +196,29 @@ mod tests {
         assert_eq!(
             trade1,
             &NewUserTrade {
-                is_latest: Some(true),
                 buy_unit: UserTradeUnit::SynthCent,
                 buy_amount: dec!(10),
                 sell_unit: UserTradeUnit::Satoshi,
                 sell_amount: dec!(1000),
-                external_ref: Some(ExternalRef {
+                external_ref: ExternalRef {
                     timestamp: created_at,
                     btc_tx_id: "id1".to_string(),
                     usd_tx_id: "id2".to_string(),
-                }),
+                },
             }
         );
         assert_eq!(
             trade2,
             &NewUserTrade {
-                is_latest: None,
                 buy_unit: UserTradeUnit::Satoshi,
                 buy_amount: dec!(1000),
                 sell_unit: UserTradeUnit::SynthCent,
                 sell_amount: dec!(10),
-                external_ref: Some(ExternalRef {
+                external_ref: ExternalRef {
                     timestamp: created_earlier,
                     btc_tx_id: "id3".to_string(),
                     usd_tx_id: "id4".to_string(),
-                }),
+                },
             }
         );
     }
