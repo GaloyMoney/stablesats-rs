@@ -1,11 +1,22 @@
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use sqlx::{PgPool, Postgres, QueryBuilder, Transaction};
+use tracing::instrument;
+use uuid::Uuid;
 
 use crate::{error::UserTradesError, user_trade_unit::*};
 use rust_decimal::Decimal;
 
 use crate::user_trade_unit::UserTradeUnit;
+
+pub struct UnaccountedUserTrade {
+    pub buy_unit: UserTradeUnit,
+    pub buy_amount: Decimal,
+    pub sell_unit: UserTradeUnit,
+    pub sell_amount: Decimal,
+    pub external_ref: ExternalRef,
+    pub ledger_tx_id: ledger::LedgerTxId,
+}
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct ExternalRef {
@@ -68,5 +79,32 @@ impl UserTrades {
         let query = query_builder.build();
         query.execute(tx).await?;
         Ok(())
+    }
+
+    #[instrument(name = "user_trades.find_unaccounted_trade", skip_all)]
+    pub async fn find_unaccounted_trade(
+        &self,
+        tx: &mut Transaction<'_, Postgres>,
+    ) -> Result<Option<UnaccountedUserTrade>, UserTradesError> {
+        let tx_id = Uuid::new_v4();
+        let trade = sqlx::query!(
+            r#"UPDATE user_trades
+               SET ledger_tx_id = $1
+               WHERE id = (
+                 SELECT id FROM user_trades WHERE ledger_tx_id IS NULL ORDER BY id LIMIT 1
+               ) RETURNING id, buy_amount, buy_unit_id, sell_amount, sell_unit_id, external_ref"#,
+            tx_id
+        )
+        .fetch_optional(&mut *tx)
+        .await?;
+        Ok(trade.map(|trade| UnaccountedUserTrade {
+            buy_unit: self.units.from_id(trade.buy_unit_id),
+            buy_amount: trade.buy_amount,
+            sell_unit: self.units.from_id(trade.sell_unit_id),
+            sell_amount: trade.sell_amount,
+            external_ref: serde_json::from_value(trade.external_ref)
+                .expect("failed to deserialize external_ref"),
+            ledger_tx_id: ledger::LedgerTxId::from(tx_id),
+        }))
     }
 }

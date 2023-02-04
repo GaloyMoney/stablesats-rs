@@ -16,12 +16,15 @@ use crate::{
     fields(n_galoy_txs, n_unpaired_txs, n_user_trades, has_more)
 )]
 pub(super) async fn execute(
+    pool: &sqlx::PgPool,
     user_trades: &UserTrades,
     galoy_transactions: &GaloyTransactions,
     galoy: &GaloyClient,
+    ledger: &ledger::Ledger,
 ) -> Result<bool, UserTradesError> {
     let has_more = import_galoy_transactions(galoy_transactions, galoy.clone()).await?;
     update_user_trades(galoy_transactions, user_trades).await?;
+    update_ledger(pool, user_trades, ledger).await?;
 
     Ok(has_more)
 }
@@ -64,10 +67,65 @@ async fn update_user_trades(
     Ok(())
 }
 
+async fn update_ledger(
+    pool: &sqlx::PgPool,
+    user_trades: &UserTrades,
+    ledger: &ledger::Ledger,
+) -> Result<(), UserTradesError> {
+    loop {
+        let mut tx = pool.begin().await?;
+        if let Ok(Some(UnaccountedUserTrade {
+            buy_unit,
+            buy_amount,
+            sell_amount,
+            external_ref,
+            ledger_tx_id,
+            ..
+        })) = user_trades.find_unaccounted_trade(&mut tx).await
+        {
+            if buy_unit == UserTradeUnit::SynthCent {
+                ledger
+                    .user_buys_usd(
+                        tx,
+                        ledger_tx_id,
+                        ledger::UserBuysUsdParams {
+                            satoshi_amount: sell_amount,
+                            usd_cents_amount: buy_amount,
+                            meta: ledger::UserBuysUsdMeta {
+                                timestamp: external_ref.timestamp,
+                                btc_tx_id: external_ref.btc_tx_id,
+                                usd_tx_id: external_ref.usd_tx_id,
+                            },
+                        },
+                    )
+                    .await?;
+            } else {
+                ledger
+                    .user_sells_usd(
+                        tx,
+                        ledger_tx_id,
+                        ledger::UserSellsUsdParams {
+                            satoshi_amount: buy_amount,
+                            usd_cents_amount: sell_amount,
+                            meta: ledger::UserSellsUsdMeta {
+                                timestamp: external_ref.timestamp,
+                                btc_tx_id: external_ref.btc_tx_id,
+                                usd_tx_id: external_ref.usd_tx_id,
+                            },
+                        },
+                    )
+                    .await?;
+            }
+        } else {
+            break;
+        }
+    }
+    Ok(())
+}
+
 fn unify(unpaired_transactions: Vec<UnpairedTransaction>) -> (Vec<NewUserTrade>, Vec<String>) {
     let mut txs: BTreeMap<_, _> = unpaired_transactions.into_iter().enumerate().collect();
     let mut user_trades = Vec::new();
-    let mut is_latest = Some(true);
     let mut unpaired = 0;
     let mut paired_ids = Vec::new();
     for idx in 0..txs.len() {

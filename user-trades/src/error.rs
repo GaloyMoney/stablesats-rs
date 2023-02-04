@@ -15,6 +15,8 @@ pub enum UserTradesError {
     PubSub(#[from] PublisherError),
     #[error("UserTradesError - GaloyClient: {0}")]
     GaloyClient(#[from] galoy_client::GaloyClientError),
+    #[error("UserTradesError - Leger: {0}")]
+    Ledger(#[from] ledger::LedgerError),
 }
 
 impl JobExecutionError for UserTradesError {}

@@ -13,6 +13,7 @@ use constants::*;
 pub use error::*;
 pub use templates::*;
 
+pub use sqlx_ledger::TransactionId as LedgerTxId;
 use sqlx_ledger::{
     account::NewAccount, journal::*, Currency, DebitOrCredit, SqlxLedger, SqlxLedgerError,
 };
@@ -25,14 +26,6 @@ pub struct Ledger {
 }
 
 impl Ledger {
-    pub fn new(pool: &PgPool) -> Self {
-        Self {
-            inner: SqlxLedger::new(pool),
-            usd: "USD".parse().unwrap(),
-            btc: "BTC".parse().unwrap(),
-        }
-    }
-
     pub async fn init(pool: &PgPool) -> Result<Self, LedgerError> {
         let inner = SqlxLedger::new(pool);
 
@@ -61,26 +54,28 @@ impl Ledger {
         }
     }
 
-    #[instrument(name = "ledger.user_buys_usd")]
+    #[instrument(name = "ledger.user_buys_usd", skip(self, tx))]
     pub async fn user_buys_usd(
         &self,
         tx: Transaction<'_, Postgres>,
+        id: LedgerTxId,
         params: UserBuysUsdParams,
     ) -> Result<(), LedgerError> {
         self.inner
-            .post_transaction_in_tx(tx, USER_BUYS_USD_CODE, Some(params))
+            .post_transaction_in_tx(tx, id, USER_BUYS_USD_CODE, Some(params))
             .await?;
         Ok(())
     }
 
-    #[instrument(name = "ledger.user_sells_usd")]
+    #[instrument(name = "ledger.user_sells_usd", skip(self, tx))]
     pub async fn user_sells_usd(
         &self,
         tx: Transaction<'_, Postgres>,
+        id: LedgerTxId,
         params: UserSellsUsdParams,
     ) -> Result<(), LedgerError> {
         self.inner
-            .post_transaction_in_tx(tx, USER_SELLS_USD_CODE, Some(params))
+            .post_transaction_in_tx(tx, id, USER_SELLS_USD_CODE, Some(params))
             .await?;
         Ok(())
     }

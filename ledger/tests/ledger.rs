@@ -31,6 +31,7 @@ async fn user_buys_and_sells_usd() -> anyhow::Result<()> {
     ledger
         .user_buys_usd(
             pool.begin().await?,
+            LedgerTxId::new(),
             UserBuysUsdParams {
                 satoshi_amount: dec!(1000000),
                 usd_cents_amount: dec!(500),
@@ -61,6 +62,7 @@ async fn user_buys_and_sells_usd() -> anyhow::Result<()> {
     ledger
         .user_sells_usd(
             pool.begin().await?,
+            LedgerTxId::new(),
             UserSellsUsdParams {
                 satoshi_amount: dec!(1000000),
                 usd_cents_amount: dec!(500),

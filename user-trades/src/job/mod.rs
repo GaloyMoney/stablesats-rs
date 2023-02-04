@@ -27,9 +27,11 @@ struct LiabilityPublishDelay(Duration);
 #[derive(Debug, Clone)]
 struct PollGaloyTransactionsDelay(Duration);
 
+#[allow(clippy::too_many_arguments)]
 pub async fn start_job_runner(
     pool: sqlx::PgPool,
     publisher: Publisher,
+    ledger: ledger::Ledger,
     liability_publish_delay: Duration,
     user_trade_balances: UserTradeBalances,
     user_trades: UserTrades,
@@ -38,6 +40,7 @@ pub async fn start_job_runner(
 ) -> Result<OwnedHandle, UserTradesError> {
     let mut registry = JobRegistry::new(&[publish_liability, poll_galoy_transactions]);
     registry.set_context(publisher);
+    registry.set_context(ledger);
     registry.set_context(user_trade_balances);
     registry.set_context(LiabilityPublishDelay(liability_publish_delay));
     registry.set_context(user_trades);
@@ -127,6 +130,7 @@ async fn poll_galoy_transactions(
     user_trades: UserTrades,
     galoy: GaloyClient,
     PollGaloyTransactionsDelay(delay): PollGaloyTransactionsDelay,
+    ledger: ledger::Ledger,
 ) -> Result<(), UserTradesError> {
     let pool = current_job.pool().clone();
     let has_more = JobExecutor::builder(&mut current_job)
@@ -134,8 +138,15 @@ async fn poll_galoy_transactions(
         .build()
         .expect("couldn't build JobExecutor")
         .execute(|_| async move {
-            let galoy_transactions = GaloyTransactions::new(pool);
-            poll_galoy_transactions::execute(&user_trades, &galoy_transactions, &galoy).await
+            let galoy_transactions = GaloyTransactions::new(pool.clone());
+            poll_galoy_transactions::execute(
+                &pool,
+                &user_trades,
+                &galoy_transactions,
+                &galoy,
+                &ledger,
+            )
+            .await
         })
         .await?;
     if has_more {
