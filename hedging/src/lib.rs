@@ -7,7 +7,6 @@ mod error;
 mod okex_orders;
 mod okex_transfers;
 mod rebalance_action;
-mod synth_usd_liability;
 
 pub mod job;
 

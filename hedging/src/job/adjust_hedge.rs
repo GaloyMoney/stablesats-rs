@@ -4,19 +4,19 @@ use tracing::instrument;
 use okex_client::*;
 use shared::pubsub::CorrelationId;
 
-use crate::{adjustment_action::*, error::*, okex_orders::*, synth_usd_liability::*};
+use crate::{adjustment_action::*, error::*, okex_orders::*};
 
 #[instrument(name = "adjust_hedge", skip_all, fields(correlation_id = %correlation_id,
         target_liability, current_position, action, placed_order, client_order_id) err)]
 pub(super) async fn execute(
     correlation_id: CorrelationId,
-    synth_usd_liability: SynthUsdLiability,
+    ledger: ledger::Ledger,
     okex: OkexClient,
     okex_orders: OkexOrders,
     hedging_adjustment: HedgingAdjustment,
 ) -> Result<(), HedgingError> {
     let span = tracing::Span::current();
-    let target_liability = synth_usd_liability.get_latest_liability().await?;
+    let target_liability = ledger.balances().target_liability_in_cents().await?;
     span.record(
         "target_liability",
         &tracing::field::display(target_liability),

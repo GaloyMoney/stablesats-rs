@@ -6,7 +6,7 @@ use galoy_client::*;
 use okex_client::*;
 use shared::pubsub::CorrelationId;
 
-use crate::{error::*, okex_transfers::*, rebalance_action::*, synth_usd_liability::*};
+use crate::{error::*, okex_transfers::*, rebalance_action::*};
 
 const SATS_PER_BTC: Decimal = dec!(100_000_000);
 
@@ -16,7 +16,7 @@ const SATS_PER_BTC: Decimal = dec!(100_000_000);
         transferred_funding) err)]
 pub(super) async fn execute(
     correlation_id: CorrelationId,
-    synth_usd_liability: SynthUsdLiability,
+    ledger: ledger::Ledger,
     okex: OkexClient,
     okex_transfers: OkexTransfers,
     galoy: GaloyClient,
@@ -24,7 +24,7 @@ pub(super) async fn execute(
 ) -> Result<(), HedgingError> {
     let span = tracing::Span::current();
 
-    let target_liability_in_cents = synth_usd_liability.get_latest_liability().await?;
+    let target_liability_in_cents = ledger.balances().target_liability_in_cents().await?;
     span.record(
         "target_liability",
         &tracing::field::display(target_liability_in_cents),
