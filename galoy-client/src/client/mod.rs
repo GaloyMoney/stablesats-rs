@@ -70,7 +70,7 @@ impl GaloyClient {
         })
     }
 
-    #[instrument(name = "galoy_login_jwt", skip_all, err)]
+    #[instrument(name = "galoy_client.login_jwt", skip_all, err)]
     async fn login_jwt(config: GaloyClientConfig) -> Result<StablesatsAuthToken, GaloyClientError> {
         let variables = stablesats_user_login::Variables {
             input: stablesats_user_login::UserLoginInput {
@@ -111,7 +111,7 @@ impl GaloyClient {
         Ok(auth_token)
     }
 
-    #[instrument(name = "galoy_wallet_ids", skip_all, err)]
+    #[instrument(name = "galoy_client.wallet_ids", skip_all, err)]
     async fn wallet_ids(
         client: ReqwestClient,
         config: GaloyClientConfig,
@@ -147,7 +147,7 @@ impl GaloyClient {
         Ok(wallet_id)
     }
 
-    #[instrument(name = "galoy_transactions_list", skip(self), err)]
+    #[instrument(name = "galoy_client.transactions_list", skip(self), err)]
     pub async fn transactions_list(
         &self,
         cursor: Option<TxCursor>,
@@ -183,7 +183,7 @@ impl GaloyClient {
         GaloyTransactions::try_from(result)
     }
 
-    #[instrument(name = "galoy_wallet_balances", skip(self), err)]
+    #[instrument(name = "galoy_client.wallet_balances", skip(self), err)]
     pub async fn wallet_balances(&self) -> Result<WalletBalances, GaloyClientError> {
         let variables = stablesats_wallets::Variables;
         let response = GaloyClient::traced_gql_request::<StablesatsWallets, _>(
@@ -214,7 +214,7 @@ impl GaloyClient {
         WalletBalances::try_from(result)
     }
 
-    #[instrument(name = "galoy_onchain_address", skip(self), err)]
+    #[instrument(name = "galoy_client.onchain_address", skip(self), err)]
     pub async fn onchain_address(&self) -> Result<OnchainAddress, GaloyClientError> {
         let variables = stablesats_deposit_address::Variables {
             input: stablesats_deposit_address::OnChainAddressCurrentInput {
@@ -258,7 +258,7 @@ impl GaloyClient {
         Ok(OnchainAddress { address })
     }
 
-    #[instrument(name = "galoy_send_onchain_payment", skip(self), err)]
+    #[instrument(name = "galoy_client.send_onchain_payment", skip(self), err)]
     pub async fn send_onchain_payment(
         &self,
         address: String,
@@ -318,7 +318,7 @@ impl GaloyClient {
         Ok(status)
     }
 
-    #[instrument(name = "galoy_onchain_tx_fee", skip(self), err)]
+    #[instrument(name = "galoy_client.onchain_tx_fee", skip(self), err)]
     pub async fn onchain_tx_fee(
         &self,
         address: OnChainAddress,

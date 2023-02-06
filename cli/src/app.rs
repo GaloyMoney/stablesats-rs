@@ -246,7 +246,7 @@ async fn run_cmd(
         };
         handles.push(tokio::spawn(async move {
             let _ = user_trades_send.try_send(
-                user_trades::run(pool, user_trades.config, pubsub, galoy)
+                user_trades::run(pool, user_trades.config, galoy)
                     .await
                     .context("User Trades error"),
             );

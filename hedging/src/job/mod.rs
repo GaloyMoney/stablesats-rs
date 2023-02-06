@@ -19,7 +19,7 @@ use shared::{
 
 use crate::{
     adjustment_action::*, app::FundingSectionConfig, error::*, okex_orders::OkexOrders,
-    okex_transfers::OkexTransfers, rebalance_action::*, synth_usd_liability::*,
+    okex_transfers::OkexTransfers, rebalance_action::*,
 };
 
 pub const POLL_OKEX_ID: Uuid = uuid!("10000000-0000-0000-0000-000000000001");
@@ -30,7 +30,7 @@ struct OkexPollDelay(std::time::Duration);
 #[allow(clippy::too_many_arguments)]
 pub async fn start_job_runner(
     pool: sqlx::PgPool,
-    synth_usd_liability: SynthUsdLiability,
+    ledger: ledger::Ledger,
     okex: OkexClient,
     okex_orders: OkexOrders,
     okex_transfers: OkexTransfers,
@@ -42,7 +42,7 @@ pub async fn start_job_runner(
     funding_config: FundingSectionConfig,
 ) -> Result<OwnedHandle, HedgingError> {
     let mut registry = JobRegistry::new(&[adjust_hedge, poll_okex, adjust_funding]);
-    registry.set_context(synth_usd_liability);
+    registry.set_context(ledger);
     registry.set_context(okex);
     registry.set_context(okex_orders);
     registry.set_context(okex_transfers);
@@ -60,7 +60,7 @@ pub async fn start_job_runner(
         .await?)
 }
 
-#[instrument(skip_all, fields(error, error.level, error.message), err)]
+#[instrument(name = "hedging.job.spawn_poll_okex", skip_all, fields(error, error.level, error.message), err)]
 pub async fn spawn_poll_okex(
     pool: &sqlx::PgPool,
     duration: std::time::Duration,
@@ -88,18 +88,19 @@ struct AdjustHedgeData {
     tracing_data: HashMap<String, String>,
 }
 
-#[instrument(skip_all, fields(error, error.message) err)]
+#[instrument(name = "hedging.job.spawn_adjust_hedge", skip_all, fields(error, error.message) err)]
 pub async fn spawn_adjust_hedge<'a>(
     tx: impl Executor<'a, Database = Postgres>,
-    correlation_id: CorrelationId,
+    trigger_id: impl Into<Uuid>,
 ) -> Result<(), HedgingError> {
-    match JobBuilder::new_with_id(Uuid::from(correlation_id), "adjust_hedge")
+    let correlation_id = trigger_id.into();
+    match JobBuilder::new_with_id(correlation_id, "adjust_hedge")
         .set_ordered(true)
         .set_channel_name("hedging")
         .set_channel_args("adjust_hedge")
         .set_json(&AdjustHedgeData {
             tracing_data: shared::tracing::extract_tracing_data(),
-            correlation_id,
+            correlation_id: CorrelationId::from(correlation_id),
         })
         .expect("Couldn't set json")
         .spawn(tx)
@@ -138,7 +139,7 @@ async fn poll_okex(
 #[job(name = "adjust_hedge")]
 async fn adjust_hedge(
     mut current_job: CurrentJob,
-    synth_usd_liability: SynthUsdLiability,
+    ledger: ledger::Ledger,
     okex: OkexClient,
     okex_orders: OkexOrders,
     hedging_adjustment: HedgingAdjustment,
@@ -150,7 +151,7 @@ async fn adjust_hedge(
             let data: AdjustHedgeData = data.ok_or(HedgingError::NoJobDataPresent)?;
             adjust_hedge::execute(
                 data.correlation_id,
-                synth_usd_liability,
+                ledger,
                 okex,
                 okex_orders,
                 hedging_adjustment,
@@ -169,18 +170,19 @@ struct AdjustFundingData {
     tracing_data: HashMap<String, String>,
 }
 
-#[instrument(skip_all, fields(error, error.message) err)]
+#[instrument(name = "hedging.job.spawn_adjust_funding", skip_all, fields(error, error.message) err)]
 pub async fn spawn_adjust_funding<'a>(
     tx: impl Executor<'a, Database = Postgres>,
-    correlation_id: CorrelationId,
+    trigger_id: impl Into<Uuid>,
 ) -> Result<(), HedgingError> {
-    match JobBuilder::new_with_id(Uuid::from(correlation_id), "adjust_funding")
+    let correlation_id = trigger_id.into();
+    match JobBuilder::new_with_id(correlation_id, "adjust_funding")
         .set_ordered(true)
         .set_channel_name("hedging")
         .set_channel_args("adjust_funding")
         .set_json(&AdjustFundingData {
             tracing_data: shared::tracing::extract_tracing_data(),
-            correlation_id,
+            correlation_id: CorrelationId::from(correlation_id),
         })
         .expect("Couldn't set json")
         .spawn(tx)
@@ -198,7 +200,7 @@ pub async fn spawn_adjust_funding<'a>(
 #[job(name = "adjust_funding")]
 async fn adjust_funding(
     mut current_job: CurrentJob,
-    synth_usd_liability: SynthUsdLiability,
+    ledger: ledger::Ledger,
     okex: OkexClient,
     okex_transfers: OkexTransfers,
     galoy: GaloyClient,
@@ -211,7 +213,7 @@ async fn adjust_funding(
             let data: AdjustFundingData = data.ok_or(HedgingError::NoJobDataPresent)?;
             adjust_funding::execute(
                 data.correlation_id,
-                synth_usd_liability,
+                ledger,
                 okex,
                 okex_transfers,
                 galoy,

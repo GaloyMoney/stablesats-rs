@@ -2,6 +2,7 @@
 #![cfg_attr(feature = "fail-on-warnings", deny(clippy::all))]
 
 use sqlx::{PgPool, Postgres, Transaction};
+use tokio::sync::broadcast;
 use tracing::instrument;
 
 mod balances;
@@ -13,14 +14,23 @@ use constants::*;
 pub use error::*;
 pub use templates::*;
 
-pub use sqlx_ledger::TransactionId as LedgerTxId;
 use sqlx_ledger::{
-    account::NewAccount, journal::*, Currency, DebitOrCredit, SqlxLedger, SqlxLedgerError,
+    account::NewAccount,
+    event::{EventSubscriber, SqlxLedgerEvent},
+    journal::*,
+    Currency, DebitOrCredit, SqlxLedger, SqlxLedgerError,
 };
+pub use sqlx_ledger::{
+    event::{SqlxLedgerEvent as LedgerEvent, SqlxLedgerEventData as LedgerEventData},
+    TransactionId as LedgerTxId,
+};
+
+const DEFAULT_BUFFER_SIZE: usize = 100;
 
 #[derive(Debug, Clone)]
 pub struct Ledger {
     inner: SqlxLedger,
+    events: EventSubscriber,
     usd: Currency,
     btc: Currency,
 }
@@ -40,6 +50,7 @@ impl Ledger {
         templates::UserSellsUsd::init(&inner).await?;
 
         Ok(Self {
+            events: inner.events(DEFAULT_BUFFER_SIZE).await?,
             inner,
             usd: "USD".parse().unwrap(),
             btc: "BTC".parse().unwrap(),
@@ -78,6 +89,12 @@ impl Ledger {
             .post_transaction_in_tx(tx, id, USER_SELLS_USD_CODE, Some(params))
             .await?;
         Ok(())
+    }
+
+    pub async fn usd_liability_balance_events(&self) -> broadcast::Receiver<SqlxLedgerEvent> {
+        self.events
+            .account_balance(STABLESATS_JOURNAL_ID.into(), STABLESATS_LIABILITY_ID.into())
+            .await
     }
 
     #[instrument(name = "ledger.create_stablesats_journal", skip(ledger))]

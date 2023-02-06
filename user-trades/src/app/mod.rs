@@ -3,9 +3,8 @@ mod config;
 use sqlxmq::OwnedHandle;
 
 use galoy_client::{GaloyClient, GaloyClientConfig};
-use shared::pubsub::*;
 
-use crate::{error::*, job, user_trade_balances::*, user_trade_unit::*, user_trades::*};
+use crate::{error::*, job, user_trade_unit::*, user_trades::*};
 pub use config::*;
 
 pub struct UserTradesApp {
@@ -16,48 +15,25 @@ impl UserTradesApp {
     pub async fn run(
         pool: sqlx::PgPool,
         UserTradesConfig {
-            balance_publish_frequency,
             galoy_poll_frequency,
-            ..
         }: UserTradesConfig,
-        pubsub_cfg: PubSubConfig,
         galoy_client_cfg: GaloyClientConfig,
     ) -> Result<Self, UserTradesError> {
         let ledger = ledger::Ledger::init(&pool).await?;
         let units = UserTradeUnits::load(&pool).await?;
-        let user_trade_balances = UserTradeBalances::new(pool.clone(), units.clone()).await?;
         let user_trades = UserTrades::new(pool.clone(), units);
-        let publisher = Publisher::new(pubsub_cfg).await?;
         let job_runner = job::start_job_runner(
             pool.clone(),
-            publisher,
             ledger,
-            balance_publish_frequency,
-            user_trade_balances,
             user_trades,
             GaloyClient::connect(galoy_client_cfg).await?,
             galoy_poll_frequency,
         )
         .await?;
-        Self::spawn_publish_liability(pool.clone(), balance_publish_frequency).await?;
         Self::spawn_poll_galoy_transactions(pool, galoy_poll_frequency).await?;
         Ok(Self {
             _runner: job_runner,
         })
-    }
-
-    async fn spawn_publish_liability(
-        pool: sqlx::PgPool,
-        delay: std::time::Duration,
-    ) -> Result<(), UserTradesError> {
-        tokio::spawn(async move {
-            loop {
-                let _ =
-                    job::spawn_publish_liability(&pool, std::time::Duration::from_secs(1)).await;
-                tokio::time::sleep(delay).await;
-            }
-        });
-        Ok(())
     }
 
     async fn spawn_poll_galoy_transactions(

@@ -89,7 +89,7 @@ impl PriceApp {
             while let Some(msg) = subscriber.next().await {
                 if let PriceStreamPayload::OkexBtcSwapPricePayload(price_msg) = msg.payload {
                     let span = info_span!(
-                        "okex_price_tick_received",
+                        "price_server.okex_price_tick_received",
                         message_type = %msg.payload_type,
                         correlation_id = %msg.meta.correlation_id
                     );
@@ -116,7 +116,7 @@ impl PriceApp {
             while let Some(msg) = subscriber.next().await {
                 if let PriceStreamPayload::BitfinexBtcUsdSwapPricePayload(price_msg) = msg.payload {
                     let span = info_span!(
-                        "bitfinex_price_tick_received",
+                        "price_server.bitfinex_price_tick_received",
                         message_type = %msg.payload_type,
                         correlation_id = %msg.meta.correlation_id
                     );
@@ -143,7 +143,7 @@ impl PriceApp {
             while let Some(msg) = subscriber.next().await {
                 if let PriceStreamPayload::KolliderBtcUsdSwapPricePayload(price_msg) = msg.payload {
                     let span = info_span!(
-                        "kollider_price_tick_received",
+                        "price_server.kollider_price_tick_received",
                         message_type = %msg.payload_type,
                         correlation_id = %msg.meta.correlation_id
                     );
@@ -162,7 +162,7 @@ impl PriceApp {
         Ok(())
     }
 
-    #[instrument(skip_all, fields(correlation_id, amount = %sats.amount()), ret, err)]
+    #[instrument(name = "price_server.get_cents_from_sats_for_immediate_buy", skip_all, fields(correlation_id, amount = %sats.amount()), ret, err)]
     pub async fn get_cents_from_sats_for_immediate_buy(
         &self,
         sats: Sats,
@@ -176,7 +176,7 @@ impl PriceApp {
         Ok(self.fee_calculator.decrease_by_immediate_fee(cents).floor())
     }
 
-    #[instrument(skip_all, fields(correlation_id, amount = %sats.amount()), ret, err)]
+    #[instrument(name = "price_server.get_cents_from_sats_for_immediate_sell", skip_all, fields(correlation_id, amount = %sats.amount()), ret, err)]
     pub async fn get_cents_from_sats_for_immediate_sell(
         &self,
         sats: Sats,
@@ -189,7 +189,7 @@ impl PriceApp {
         Ok(self.fee_calculator.increase_by_immediate_fee(cents).ceil())
     }
 
-    #[instrument(skip_all, fields(correlation_id, amount = %sats.amount()), ret, err)]
+    #[instrument(name = "price_server.get_cents_from_sats_for_future_buy", skip_all, fields(correlation_id, amount = %sats.amount()), ret, err)]
     pub async fn get_cents_from_sats_for_future_buy(
         &self,
         sats: Sats,
@@ -202,7 +202,7 @@ impl PriceApp {
         Ok(self.fee_calculator.decrease_by_delayed_fee(cents).floor())
     }
 
-    #[instrument(skip_all, fields(correlation_id, amount = %sats.amount()), ret, err)]
+    #[instrument(name = "price_server.get_cents_from_sats_for_future_sell", skip_all, fields(correlation_id, amount = %sats.amount()), ret, err)]
     pub async fn get_cents_from_sats_for_future_sell(
         &self,
         sats: Sats,
@@ -215,7 +215,7 @@ impl PriceApp {
         Ok(self.fee_calculator.increase_by_delayed_fee(cents).ceil())
     }
 
-    #[instrument(skip_all, fields(correlation_id, amount = %cents.amount()), ret, err)]
+    #[instrument(name = "price_server.get_sats_from_cents_for_immediate_buy", skip_all, fields(correlation_id, amount = %cents.amount()), ret, err)]
     pub async fn get_sats_from_cents_for_immediate_buy(
         &self,
         cents: UsdCents,
@@ -228,7 +228,7 @@ impl PriceApp {
         Ok(self.fee_calculator.increase_by_immediate_fee(sats).ceil())
     }
 
-    #[instrument(skip_all, fields(correlation_id, amount = %cents.amount()), ret, err)]
+    #[instrument(name = "price_server.get_sats_from_cents_for_immediate_sell", skip_all, fields(correlation_id, amount = %cents.amount()), ret, err)]
     pub async fn get_sats_from_cents_for_immediate_sell(
         &self,
         cents: UsdCents,
@@ -242,7 +242,7 @@ impl PriceApp {
         Ok(self.fee_calculator.decrease_by_immediate_fee(sats).floor())
     }
 
-    #[instrument(skip_all, fields(correlation_id, amount = %cents.amount()), ret, err)]
+    #[instrument(name = "price_server.get_sats_from_cents_for_future_buy", skip_all, fields(correlation_id, amount = %cents.amount()), ret, err)]
     pub async fn get_sats_from_cents_for_future_buy(
         &self,
         cents: UsdCents,
@@ -256,7 +256,7 @@ impl PriceApp {
         Ok(self.fee_calculator.increase_by_delayed_fee(sats).ceil())
     }
 
-    #[instrument(skip_all, fields(correlation_id, amount = %cents.amount()), ret, err)]
+    #[instrument(name = "price_server.get_sats_from_cents_for_future_sell", skip_all, fields(correlation_id, amount = %cents.amount()), ret, err)]
     pub async fn get_sats_from_cents_for_future_sell(
         &self,
         cents: UsdCents,
@@ -269,7 +269,13 @@ impl PriceApp {
         Ok(self.fee_calculator.decrease_by_delayed_fee(sats).floor())
     }
 
-    #[instrument(skip_all, fields(correlation_id), ret, err)]
+    #[instrument(
+        name = "price_server.get_cents_per_sat_exchange_mid_rate",
+        skip_all,
+        fields(correlation_id),
+        ret,
+        err
+    )]
     pub async fn get_cents_per_sat_exchange_mid_rate(&self) -> Result<f64, PriceAppError> {
         let cents_per_sat = self
             .price_mixer

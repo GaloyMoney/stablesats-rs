@@ -26,6 +26,8 @@ pub enum HedgingError {
     BitfinextClient(#[from] bitfinex_client::BitfinexClientError),
     #[error("HedgingError - NoJobDataPresent")]
     NoJobDataPresent,
+    #[error("UserTradesError - Leger: {0}")]
+    Ledger(#[from] ledger::LedgerError),
 }
 
 impl JobExecutionError for HedgingError {}

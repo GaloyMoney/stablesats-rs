@@ -29,7 +29,7 @@ impl<'a> JobExecutor<'a> {
         JobExecutorBuilder::default().job(job)
     }
 
-    #[instrument(name = "execute_job", skip_all, fields(
+    #[instrument(name = "job.execute_job", skip_all, fields(
             job_id, job_name, checkpoint_json, attempt, last_attempt, stage,
             error, error.level, error.message
     ), err)]

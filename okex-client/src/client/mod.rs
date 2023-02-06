@@ -115,7 +115,7 @@ impl OkexClient {
         &self.client
     }
 
-    #[instrument(skip(self), err)]
+    #[instrument(name = "okex_client.get_funding_deposit_address", skip(self), err)]
     pub async fn get_funding_deposit_address(&self) -> Result<DepositAddress, OkexClientError> {
         if self.config.simulated {
             return Ok(DepositAddress {
@@ -141,7 +141,7 @@ impl OkexClient {
         })
     }
 
-    #[instrument(skip(self), err)]
+    #[instrument(name = "okex_client.get_onchain_fees", skip(self), err)]
     pub async fn get_onchain_fees(&self) -> Result<OnchainFees, OkexClientError> {
         let request_path = "/api/v5/asset/currencies?ccy=BTC";
 
@@ -167,7 +167,7 @@ impl OkexClient {
         })
     }
 
-    #[instrument(skip(self), err)]
+    #[instrument(name = "okex_client.transfer_funding_to_trading", skip(self), err)]
     pub async fn transfer_funding_to_trading(
         &self,
         client_id: ClientTransferId,
@@ -199,7 +199,7 @@ impl OkexClient {
         })
     }
 
-    #[instrument(skip(self), err)]
+    #[instrument(name = "okex_client.transfer_trading_to_funding", skip(self), err)]
     pub async fn transfer_trading_to_funding(
         &self,
         client_id: ClientTransferId,
@@ -232,7 +232,7 @@ impl OkexClient {
         })
     }
 
-    #[instrument(skip(self), err)]
+    #[instrument(name = "okex_client.funding_account_balance", skip(self), err)]
     pub async fn funding_account_balance(&self) -> Result<AvailableBalance, OkexClientError> {
         let request_path = "/api/v5/asset/balances?ccy=BTC";
 
@@ -255,7 +255,7 @@ impl OkexClient {
         })
     }
 
-    #[instrument(skip(self), err)]
+    #[instrument(name = "okex_client.trading_account_balance", skip(self), err)]
     pub async fn trading_account_balance(&self) -> Result<AvailableBalance, OkexClientError> {
         let request_path = "/api/v5/account/balance?ccy=BTC";
 
@@ -288,7 +288,7 @@ impl OkexClient {
         })
     }
 
-    #[instrument(skip(self), err)]
+    #[instrument(name = "okex_client.transfer_state", skip(self), err)]
     pub async fn transfer_state(
         &self,
         transfer_id: TransferId,
@@ -341,7 +341,7 @@ impl OkexClient {
         })
     }
 
-    #[instrument(skip(self), err)]
+    #[instrument(name = "okex_client.withdraw_btc_onchain", skip(self), err)]
     pub async fn withdraw_btc_onchain(
         &self,
         client_id: ClientTransferId,
@@ -378,7 +378,7 @@ impl OkexClient {
         })
     }
 
-    #[instrument(skip(self), err)]
+    #[instrument(name = "okex_client.fetch_deposit", skip(self), err)]
     pub async fn fetch_deposit(
         &self,
         depo_addr: String,
@@ -423,7 +423,7 @@ impl OkexClient {
         }
     }
 
-    #[instrument(skip(self), err)]
+    #[instrument(name = "okex_client.fetch_withdrawal_by_client_id", skip(self), err)]
     pub async fn fetch_withdrawal_by_client_id(
         &self,
         client_id: ClientTransferId,
@@ -460,7 +460,7 @@ impl OkexClient {
         })
     }
 
-    #[instrument(skip(self), err)]
+    #[instrument(name = "okex_client.place_order", skip(self), err)]
     pub async fn place_order(
         &self,
         id: ClientOrderId,
@@ -505,7 +505,7 @@ impl OkexClient {
         })
     }
 
-    #[instrument(skip(self), err)]
+    #[instrument(name = "okex_client.order_details", skip(self), err)]
     pub async fn order_details(&self, id: ClientOrderId) -> Result<OrderDetails, OkexClientError> {
         let static_request_path = "/api/v5/trade/order?instId=BTC-USD-SWAP&clOrdId=";
         let request_path = format!("{}{}", static_request_path, id.0);
@@ -549,7 +549,7 @@ impl OkexClient {
         }
     }
 
-    #[instrument(skip_all, err)]
+    #[instrument(name = "okex_client.get_position_in_signed_usd_cents", skip_all, err)]
     pub async fn get_position_in_signed_usd_cents(&self) -> Result<PositionSize, OkexClientError> {
         let request_path = "/api/v5/account/positions?instId=BTC-USD-SWAP";
         let headers = self.get_request_headers(request_path)?;
@@ -593,7 +593,7 @@ impl OkexClient {
         }
     }
 
-    #[instrument(skip(self), err)]
+    #[instrument(name = "okex_client.close_positions", skip(self), err)]
     pub async fn close_positions(&self, id: ClientOrderId) -> Result<(), OkexClientError> {
         let mut body: HashMap<String, String> = HashMap::new();
         body.insert(
