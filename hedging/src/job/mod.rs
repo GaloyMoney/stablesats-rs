@@ -94,7 +94,7 @@ pub async fn spawn_adjust_hedge<'a>(
     trigger_id: impl Into<Uuid>,
 ) -> Result<(), HedgingError> {
     let correlation_id = trigger_id.into();
-    match JobBuilder::new_with_id(Uuid::from(correlation_id), "adjust_hedge")
+    match JobBuilder::new_with_id(correlation_id, "adjust_hedge")
         .set_ordered(true)
         .set_channel_name("hedging")
         .set_channel_args("adjust_hedge")
