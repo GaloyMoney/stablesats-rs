@@ -1,3 +1,10 @@
+# [stablesats release v0.5.6](https://github.com/GaloyMoney/stablesats/releases/tag/v0.5.6)
+
+
+### Bug Fixes
+
+- Okex.check_leverage missing params
+
 # [stablesats release v0.5.5](https://github.com/GaloyMoney/stablesats/releases/tag/v0.5.5)
 
 
