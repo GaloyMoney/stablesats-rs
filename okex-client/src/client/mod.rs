@@ -93,7 +93,7 @@ impl OkexClient {
     }
 
     pub async fn leverage_info(&self) -> Result<OkexLeverageInfoData, OkexClientError> {
-        let path = "/api/v5/account/leverage-info";
+        let path = "/api/v5/account/leverage-info?instId=BTC-USD-SWAP&mgnMode=cross";
         let config_url = Self::url_for_path(path);
         let headers = self.get_request_headers(path)?;
 
