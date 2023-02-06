@@ -12,7 +12,7 @@ fail-on-warnings = []
 sqlx-ledger = "0.3"
 
 chrono = "0.4.23"
-rust_decimal = "1.28.0"
+rust_decimal = "1.28.1"
 rust_decimal_macros = "1.28.0"
 serde = "1.0.152"
 serde_json = "1.0.91"
