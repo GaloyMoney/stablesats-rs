@@ -27,7 +27,7 @@ pub struct Price {
 
 #[tonic::async_trait]
 impl PriceService for Price {
-    #[instrument(skip_all,
+    #[instrument(name = "price_server.get_cents_from_sats_for_immediate_buy", skip_all,
         fields(amount_in_satoshis = request.get_ref().amount_in_satoshis,
                error, error.level, error.message),
         err
@@ -51,7 +51,7 @@ impl PriceService for Price {
         .await
     }
 
-    #[instrument(skip_all,
+    #[instrument(name = "price_server.get_cents_from_sats_for_immediate_sell", skip_all,
         fields(amount_in_satoshis = request.get_ref().amount_in_satoshis,
                error, error.level, error.message),
         err
@@ -100,7 +100,7 @@ impl PriceService for Price {
         .await
     }
 
-    #[instrument(skip_all,
+    #[instrument(name = "price_server.get_cents_from_sats_for_future_sell", skip_all,
         fields(amount_in_satoshis = request.get_ref().amount_in_satoshis,
                 time_in_seconds = request.get_ref().time_in_seconds,
                 error, error.level, error.message),
@@ -125,7 +125,7 @@ impl PriceService for Price {
         .await
     }
 
-    #[instrument(skip_all,
+    #[instrument(name = "price_server.get_sats_from_cents_for_immediate_buy", skip_all,
         fields(amount_in_cents = request.get_ref().amount_in_cents,
             error, error.level, error.message),
         err
@@ -150,7 +150,7 @@ impl PriceService for Price {
         .await
     }
 
-    #[instrument(skip_all,
+    #[instrument(name = "price_server.get_sats_from_cents_for_immediate_sell", skip_all,
         fields(amount_in_cents = request.get_ref().amount_in_cents,
             error, error.level, error.message),
         err
@@ -175,7 +175,7 @@ impl PriceService for Price {
         .await
     }
 
-    #[instrument(skip_all,
+    #[instrument(name = "price_server.get_sats_from_cents_for_future_buy", skip_all,
         fields(amount_in_cents = request.get_ref().amount_in_cents,
                 time_in_seconds = request.get_ref().time_in_seconds,
                 error, error.level, error.message),
@@ -201,7 +201,7 @@ impl PriceService for Price {
         .await
     }
 
-    #[instrument(skip_all,
+    #[instrument(name = "price_server.get_sats_from_cents_for_future_sell", skip_all,
         fields(amount_in_cents = request.get_ref().amount_in_cents,
                 time_in_seconds = request.get_ref().time_in_seconds,
                 error, error.level, error.message),
@@ -227,7 +227,7 @@ impl PriceService for Price {
         .await
     }
 
-    #[instrument(skip_all, fields(error, error.level, error.message), err)]
+    #[instrument(name = "price_server.get_cents_per_sats_exchange_mid_rate", skip_all, fields(error, error.level, error.message), err)]
     async fn get_cents_per_sats_exchange_mid_rate(
         &self,
         request: Request<GetCentsPerSatsExchangeMidRateRequest>,

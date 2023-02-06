@@ -75,7 +75,7 @@ impl BitfinexClient {
         })
     }
 
-    #[instrument(skip(self), err)]
+    #[instrument(name = "bitfinex_client.funding_info", skip(self), err)]
     pub async fn funding_info(&self) -> Result<FundingInfo, BitfinexClientError> {
         let body: HashMap<String, String> = HashMap::new();
         let request_body = serde_json::to_string(&body)?;
@@ -108,7 +108,7 @@ impl BitfinexClient {
         })
     }
 
-    #[instrument(skip(self), err)]
+    #[instrument(name = "bitfinex_client.get_orders", skip(self), err)]
     pub async fn get_orders(&self) -> Result<Vec<OrderDetails>, BitfinexClientError> {
         let body: HashMap<String, String> = HashMap::new();
         let request_body = serde_json::to_string(&body)?;
@@ -140,7 +140,7 @@ impl BitfinexClient {
         Ok(orders)
     }
 
-    #[instrument(skip(self), err)]
+    #[instrument(name = "bitfinex_client.get_wallets", skip(self), err)]
     pub async fn get_wallets(&self) -> Result<Vec<WalletDetails>, BitfinexClientError> {
         let body: HashMap<String, String> = HashMap::new();
         let request_body = serde_json::to_string(&body)?;
@@ -162,7 +162,7 @@ impl BitfinexClient {
         Ok(wallets)
     }
 
-    #[instrument(skip(self), err)]
+    #[instrument(name = "bitfinex_client.get_positions", skip(self), err)]
     pub async fn get_positions(&self) -> Result<Vec<PositionDetails>, BitfinexClientError> {
         let body: HashMap<String, String> = HashMap::new();
         let request_body = serde_json::to_string(&body)?;
@@ -184,7 +184,11 @@ impl BitfinexClient {
         Ok(positions)
     }
 
-    #[instrument(skip(self), err)]
+    #[instrument(
+        name = "bitfinex_client.get_btc_on_chain_deposit_address",
+        skip(self),
+        err
+    )]
     pub async fn get_btc_on_chain_deposit_address(
         &self,
     ) -> Result<DepositAddress, BitfinexClientError> {
@@ -210,7 +214,7 @@ impl BitfinexClient {
         Ok(details.address)
     }
 
-    #[instrument(skip(self), err)]
+    #[instrument(name = "bitfinex_client.get_ln_deposit_address", skip(self), err)]
     pub async fn get_ln_deposit_address(&self) -> Result<DepositAddress, BitfinexClientError> {
         let mut body: HashMap<String, String> = HashMap::new();
         body.insert("wallet".to_string(), Wallet::EXCHANGE.to_string());
@@ -234,7 +238,7 @@ impl BitfinexClient {
         Ok(details.address)
     }
 
-    #[instrument(skip(self), err)]
+    #[instrument(name = "bitfinex_client.get_ln_invoice", skip(self), err)]
     pub async fn get_ln_invoice(
         &self,
         client_id: ClientId,
@@ -263,7 +267,7 @@ impl BitfinexClient {
         Ok(invoice)
     }
 
-    #[instrument(skip(self), err)]
+    #[instrument(name = "bitfinex_client.transfer_funding_to_trading", skip(self), err)]
     pub async fn transfer_funding_to_trading(
         &self,
         client_id: ClientId,
@@ -299,7 +303,7 @@ impl BitfinexClient {
         Ok(transfer)
     }
 
-    #[instrument(skip(self), err)]
+    #[instrument(name = "bitfinex_client.transfer_trading_to_funding", skip(self), err)]
     pub async fn transfer_trading_to_funding(
         &self,
         client_id: ClientId,
@@ -335,7 +339,7 @@ impl BitfinexClient {
         Ok(transfer)
     }
 
-    #[instrument(skip(self), err)]
+    #[instrument(name = "bitfinex_client.withdraw_btc_onchain", skip(self), err)]
     pub async fn withdraw_btc_onchain(
         &self,
         client_id: ClientId,
@@ -368,7 +372,7 @@ impl BitfinexClient {
         Ok(transfer)
     }
 
-    #[instrument(skip(self), err)]
+    #[instrument(name = "bitfinex_client.withdraw_btc_on_ln", skip(self), err)]
     pub async fn withdraw_btc_on_ln(
         &self,
         client_id: ClientId,
@@ -398,7 +402,7 @@ impl BitfinexClient {
         Ok(transfer)
     }
 
-    #[instrument(skip(self), err)]
+    #[instrument(name = "bitfinex_client.get_ln_transactions", skip(self), err)]
     pub async fn get_ln_transactions(
         &self,
         client_id: ClientId,
@@ -423,7 +427,11 @@ impl BitfinexClient {
         Ok(transactions)
     }
 
-    #[instrument(skip(self), err)]
+    #[instrument(
+        name = "bitfinex_client.get_btc_on_chain_transactions",
+        skip(self),
+        err
+    )]
     pub async fn get_btc_on_chain_transactions(
         &self,
         client_id: ClientId,
@@ -448,7 +456,7 @@ impl BitfinexClient {
         Ok(transactions)
     }
 
-    #[instrument(skip(self), err)]
+    #[instrument(name = "bitfinex_client.submit_order", skip(self), err)]
     pub async fn submit_order(
         &self,
         client_id: ClientId,
@@ -490,7 +498,7 @@ impl BitfinexClient {
         Ok(order)
     }
 
-    #[instrument(skip(self), err)]
+    #[instrument(name = "bitfinex_client.get_api_key_permissions", skip(self), err)]
     pub async fn get_api_key_permissions(&self) -> Result<Vec<ApiKeyDetails>, BitfinexClientError> {
         let body: HashMap<String, String> = HashMap::new();
         let request_body = serde_json::to_string(&body)?;

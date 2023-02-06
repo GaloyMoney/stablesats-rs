@@ -60,7 +60,7 @@ pub async fn start_job_runner(
         .await?)
 }
 
-#[instrument(skip_all, fields(error, error.level, error.message), err)]
+#[instrument(name = "hedging.job.spawn_poll_okex", skip_all, fields(error, error.level, error.message), err)]
 pub async fn spawn_poll_okex(
     pool: &sqlx::PgPool,
     duration: std::time::Duration,
@@ -88,7 +88,7 @@ struct AdjustHedgeData {
     tracing_data: HashMap<String, String>,
 }
 
-#[instrument(skip_all, fields(error, error.message) err)]
+#[instrument(name = "hedging.job.spawn_adjust_hedge", skip_all, fields(error, error.message) err)]
 pub async fn spawn_adjust_hedge<'a>(
     tx: impl Executor<'a, Database = Postgres>,
     trigger_id: impl Into<Uuid>,
@@ -170,7 +170,7 @@ struct AdjustFundingData {
     tracing_data: HashMap<String, String>,
 }
 
-#[instrument(skip_all, fields(error, error.message) err)]
+#[instrument(name = "hedging.job.spawn_adjust_funding", skip_all, fields(error, error.message) err)]
 pub async fn spawn_adjust_funding<'a>(
     tx: impl Executor<'a, Database = Postgres>,
     trigger_id: impl Into<Uuid>,

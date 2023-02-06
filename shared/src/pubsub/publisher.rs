@@ -51,7 +51,7 @@ impl Publisher {
         }
     }
 
-    #[instrument(skip_all, fields(correlation_id, payload_type, payload_json, error, error.message), err)]
+    #[instrument(name = "pubsub.redis.publish", skip_all, fields(correlation_id, payload_type, payload_json, error, error.message), err)]
     pub async fn publish<P: MessagePayload>(&self, payload: P) -> Result<(), PublisherError> {
         let span = tracing::Span::current();
         span.record(

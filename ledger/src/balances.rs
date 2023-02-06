@@ -17,12 +17,20 @@ impl<'a> Balances<'a> {
             .await
     }
 
+    #[instrument(
+        name = "ledger.balances.target_liability_in_cents",
+        skip(self),
+        fields(liability),
+        err
+    )]
     pub async fn target_liability_in_cents(&self) -> Result<SyntheticCentLiability, LedgerError> {
         let liability = self.stablesats_liability().await?;
-        Ok(SyntheticCentLiability::try_from(
+        let res = SyntheticCentLiability::try_from(
             liability.map(|l| l.settled()).unwrap_or(Decimal::ZERO) * CENTS_PER_USD,
         )
-        .expect("usd liability has wrong sign"))
+        .expect("usd liability has wrong sign");
+        tracing::Span::current().record("liability", &tracing::field::display(res));
+        Ok(res)
     }
 
     pub async fn stablesats_btc_wallet(&self) -> Result<Option<AccountBalance>, LedgerError> {

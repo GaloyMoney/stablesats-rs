@@ -47,7 +47,7 @@ impl UserTradeBalances {
             loop {
                 if num_errors > 0 || listener.recv().await.is_ok() {
                     let span = info_span!(
-                        "user_trades_notification_received",
+                        "user_trades.user_trades_notification_received",
                         error = tracing::field::Empty,
                         error.message = tracing::field::Empty,
                     );
@@ -73,7 +73,7 @@ impl UserTradeBalances {
         Ok(())
     }
 
-    #[instrument(name = "update_user_trade_balances", skip(self),
+    #[instrument(name = "user_trades.update_user_trade_balances", skip(self),
       fields(error, error.level, error.message), err)]
     async fn update_balances(&self) -> Result<(), UserTradesError> {
         shared::tracing::record_error(tracing::Level::WARN, || async move {

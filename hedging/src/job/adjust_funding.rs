@@ -10,7 +10,7 @@ use crate::{error::*, okex_transfers::*, rebalance_action::*};
 
 const SATS_PER_BTC: Decimal = dec!(100_000_000);
 
-#[instrument(name = "adjust_funding", skip_all, fields(correlation_id = %correlation_id,
+#[instrument(name = "hedging.job.adjust_funding", skip_all, fields(correlation_id = %correlation_id,
         target_liability, current_position, last_price_in_usd_cents, funding_available_balance,
         trading_available_balance, onchain_fees, action, client_transfer_id,
         transferred_funding) err)]

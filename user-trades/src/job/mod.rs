@@ -54,7 +54,7 @@ pub async fn start_job_runner(
         .await?)
 }
 
-#[instrument(skip_all, err)]
+#[instrument(name = "user_trades.job.spawn_publish_liability", skip_all, err)]
 pub async fn spawn_publish_liability(
     pool: &sqlx::PgPool,
     duration: Duration,
@@ -72,7 +72,7 @@ pub async fn spawn_publish_liability(
     }
 }
 
-#[instrument(skip_all,fields(error, error.level, error.message), err)]
+#[instrument(name = "user_trades.job.spawn_poll_galoy_transactions", skip_all,fields(error, error.level, error.message), err)]
 pub async fn spawn_poll_galoy_transactions(
     pool: &sqlx::PgPool,
     duration: Duration,

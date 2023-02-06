@@ -41,7 +41,7 @@ async fn health_check(
     StatusCode::OK
 }
 
-#[instrument(skip_all, fields(component_name, error = true, error.level, error.message, n_errors))]
+#[instrument(name = "health.health_check_error", skip_all, fields(component_name, error = true, error.level, error.message, n_errors))]
 async fn health_check_error(
     name: &str,
     n_errors: Arc<RwLock<usize>>,

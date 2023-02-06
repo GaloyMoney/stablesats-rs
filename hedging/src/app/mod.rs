@@ -105,7 +105,7 @@ impl HedgingApp {
                 if let PriceStreamPayload::OkexBtcSwapPricePayload(_) = msg.payload {
                     let correlation_id = msg.meta.correlation_id;
                     let span = info_span!(
-                        "okex_btc_usd_swap_price_received",
+                        "hedging.okex_btc_usd_swap_price_received",
                         message_type = %msg.payload_type,
                         correlation_id = %correlation_id,
                         error = tracing::field::Empty,
@@ -201,7 +201,7 @@ impl HedgingApp {
             while let Some(msg) = stream.next().await {
                 let correlation_id = msg.meta.correlation_id;
                 let span = info_span!(
-                    "okex_btc_usd_swap_position_received",
+                    "hedging.okex_btc_usd_swap_position_received",
                     message_type = %msg.payload_type,
                     correlation_id = %correlation_id,
                     error = tracing::field::Empty,

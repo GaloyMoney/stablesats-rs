@@ -10,7 +10,7 @@ use crate::{
 };
 
 #[instrument(
-    name = "poll_galoy_transactions",
+    name = "user_trades.job.poll_galoy_transactions",
     skip_all,
     err,
     fields(n_galoy_txs, n_unpaired_txs, n_user_trades, has_more)
