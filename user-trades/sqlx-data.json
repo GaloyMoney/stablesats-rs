@@ -1,5 +1,55 @@
 {
   "db": "PostgreSQL",
+  "059b953850061888b032cc6d58238ea8236ec2c0facf18471b71535531548e26": {
+    "describe": {
+      "columns": [
+        {
+          "name": "id",
+          "ordinal": 0,
+          "type_info": "Int4"
+        },
+        {
+          "name": "buy_amount",
+          "ordinal": 1,
+          "type_info": "Numeric"
+        },
+        {
+          "name": "buy_unit_id",
+          "ordinal": 2,
+          "type_info": "Int4"
+        },
+        {
+          "name": "sell_amount",
+          "ordinal": 3,
+          "type_info": "Numeric"
+        },
+        {
+          "name": "sell_unit_id",
+          "ordinal": 4,
+          "type_info": "Int4"
+        },
+        {
+          "name": "external_ref",
+          "ordinal": 5,
+          "type_info": "Jsonb"
+        }
+      ],
+      "nullable": [
+        false,
+        false,
+        false,
+        false,
+        false,
+        false
+      ],
+      "parameters": {
+        "Left": [
+          "Uuid"
+        ]
+      }
+    },
+    "query": "UPDATE user_trades\n               SET ledger_tx_id = $1\n               WHERE id = (\n                 SELECT id FROM user_trades WHERE ledger_tx_id IS NULL ORDER BY id LIMIT 1\n               ) RETURNING id, buy_amount, buy_unit_id, sell_amount, sell_unit_id, external_ref"
+  },
   "2b868fd5a78978ec8bc3bcd79008f831a139e070f994b0b8bfe4e8a3dd3105f7": {
     "describe": {
       "columns": [

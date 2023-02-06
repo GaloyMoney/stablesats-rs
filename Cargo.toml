@@ -2,6 +2,7 @@
 
 members = [
   "shared",
+  "ledger",
   "price-server",
   "cli",
   "hedging",

@@ -23,6 +23,7 @@ impl UserTradesApp {
         pubsub_cfg: PubSubConfig,
         galoy_client_cfg: GaloyClientConfig,
     ) -> Result<Self, UserTradesError> {
+        let ledger = ledger::Ledger::init(&pool).await?;
         let units = UserTradeUnits::load(&pool).await?;
         let user_trade_balances = UserTradeBalances::new(pool.clone(), units.clone()).await?;
         let user_trades = UserTrades::new(pool.clone(), units);
@@ -30,6 +31,7 @@ impl UserTradesApp {
         let job_runner = job::start_job_runner(
             pool.clone(),
             publisher,
+            ledger,
             balance_publish_frequency,
             user_trade_balances,
             user_trades,
