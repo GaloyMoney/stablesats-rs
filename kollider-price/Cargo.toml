@@ -18,7 +18,7 @@ url = { version = "2.3.1", features = ["serde"] }
 
 
 [dev-dependencies]
-anyhow = "1.0.68"
+anyhow = "1.0.69"
 chrono = { version = "0.4", features = [
     "clock",
     "serde",
