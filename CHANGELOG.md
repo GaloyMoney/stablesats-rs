@@ -1,3 +1,14 @@
+# [stablesats release v0.6.0](https://github.com/GaloyMoney/stablesats/releases/tag/v0.6.0)
+
+
+### Features
+
+- [**breaking**] Use ledger to trigger adjustment jobs (#281)
+
+### Miscellaneous Tasks
+
+- Bump rust_decimal from 1.28.0 to 1.28.1 (#278)
+
 # [stablesats release v0.5.6](https://github.com/GaloyMoney/stablesats/releases/tag/v0.5.6)
 
 
