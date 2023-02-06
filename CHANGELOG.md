@@ -1,3 +1,24 @@
+# [stablesats release v0.5.5](https://github.com/GaloyMoney/stablesats/releases/tag/v0.5.5)
+
+
+### Bug Fixes
+
+- Leverage check (#275)
+
+### Features
+
+- Add sqlx ledger (#276)
+
+### Miscellaneous Tasks
+
+- Bump rust_decimal_macros from 1.28.0 to 1.28.1 (#279)
+- Bump serde_json from 1.0.91 to 1.0.92 (#280)
+- Bump anyhow from 1.0.68 to 1.0.69 (#277)
+- Bump uuid from 1.2.2 to 1.3.0 (#274)
+- Bump futures from 0.3.25 to 0.3.26 (#272)
+- Bump async-trait from 0.1.63 to 0.1.64 (#271)
+- Bump tokio from 1.24.2 to 1.25.0 (#269)
+
 # [stablesats release v0.5.4](https://github.com/GaloyMoney/stablesats/releases/tag/v0.5.4)
 
 
