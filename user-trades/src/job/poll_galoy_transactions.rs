@@ -5,9 +5,7 @@ use std::collections::BTreeMap;
 
 use galoy_client::{GaloyClient, SettlementCurrency, TxCursor};
 
-use crate::{
-    error::UserTradesError, galoy_transactions::*, user_trade_unit::UserTradeUnit, user_trades::*,
-};
+use crate::{error::UserTradesError, galoy_transactions::*, user_trades::*};
 
 #[instrument(
     name = "user_trades.job.poll_galoy_transactions",
@@ -83,7 +81,7 @@ async fn update_ledger(
             ..
         })) = user_trades.find_unaccounted_trade(&mut tx).await
         {
-            if buy_unit == UserTradeUnit::SynthCent {
+            if buy_unit == UserTradeUnit::UsdCent {
                 ledger
                     .user_buys_usd(
                         tx,
@@ -191,7 +189,7 @@ impl From<SettlementCurrency> for UserTradeUnit {
     fn from(currency: SettlementCurrency) -> Self {
         match currency {
             SettlementCurrency::BTC => Self::Satoshi,
-            SettlementCurrency::USD => Self::SynthCent,
+            SettlementCurrency::USD => Self::UsdCent,
             _ => unimplemented!(),
         }
     }
@@ -254,7 +252,7 @@ mod tests {
         assert_eq!(
             trade1,
             &NewUserTrade {
-                buy_unit: UserTradeUnit::SynthCent,
+                buy_unit: UserTradeUnit::UsdCent,
                 buy_amount: dec!(10),
                 sell_unit: UserTradeUnit::Satoshi,
                 sell_amount: dec!(1000),
@@ -270,7 +268,7 @@ mod tests {
             &NewUserTrade {
                 buy_unit: UserTradeUnit::Satoshi,
                 buy_amount: dec!(1000),
-                sell_unit: UserTradeUnit::SynthCent,
+                sell_unit: UserTradeUnit::UsdCent,
                 sell_amount: dec!(10),
                 external_ref: ExternalRef {
                     timestamp: created_earlier,

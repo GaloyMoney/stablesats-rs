@@ -4,7 +4,7 @@ use sqlxmq::OwnedHandle;
 
 use galoy_client::{GaloyClient, GaloyClientConfig};
 
-use crate::{error::*, job, user_trade_unit::*, user_trades::*};
+use crate::{error::*, job, user_trades::*};
 pub use config::*;
 
 pub struct UserTradesApp {
@@ -20,8 +20,7 @@ impl UserTradesApp {
         galoy_client_cfg: GaloyClientConfig,
     ) -> Result<Self, UserTradesError> {
         let ledger = ledger::Ledger::init(&pool).await?;
-        let units = UserTradeUnits::load(&pool).await?;
-        let user_trades = UserTrades::new(pool.clone(), units);
+        let user_trades = UserTrades::new(pool.clone());
         let job_runner = job::start_job_runner(
             pool.clone(),
             ledger,
