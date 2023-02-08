@@ -1,3 +1,14 @@
+# [stablesats release v0.6.1](https://github.com/GaloyMoney/stablesats/releases/tag/v0.6.1)
+
+
+### Bug Fixes
+
+- Sqlx ledger initialization (#282)
+
+### Miscellaneous Tasks
+
+- Better account description
+
 # [stablesats release v0.6.0](https://github.com/GaloyMoney/stablesats/releases/tag/v0.6.0)
 
 
