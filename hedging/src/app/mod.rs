@@ -79,6 +79,7 @@ impl HedgingApp {
             price_receiver.resubscribe(),
         )
         .await?;
+        Self::spawn_non_stop_polling(pool.clone(), okex_poll_delay).await?;
         Self::spawn_health_checker(
             health_check_trigger,
             health_cfg,
@@ -86,7 +87,6 @@ impl HedgingApp {
             price_receiver,
         )
         .await;
-        Self::spawn_non_stop_polling(pool.clone(), okex_poll_delay).await?;
         let app = HedgingApp {
             _runner: job_runner,
         };
@@ -160,30 +160,36 @@ impl HedgingApp {
         pool: sqlx::PgPool,
         delay: std::time::Duration,
     ) -> Result<(), HedgingError> {
-        loop {
-            let _ = job::spawn_poll_okex(&pool, std::time::Duration::from_secs(1)).await;
-            tokio::time::sleep(delay).await;
-        }
+        tokio::spawn(async move {
+            loop {
+                let _ = job::spawn_poll_okex(&pool, std::time::Duration::from_secs(1)).await;
+                tokio::time::sleep(delay).await;
+            }
+        });
+        Ok(())
     }
 
     async fn spawn_liability_balance_listener(
         pool: sqlx::PgPool,
         ledger: ledger::Ledger,
     ) -> Result<(), HedgingError> {
-        let mut events = ledger.usd_liability_balance_events().await;
-        loop {
-            match events.recv().await {
-                Ok(received) => {
-                    if let ledger::LedgerEventData::BalanceUpdated(data) = received.data {
-                        job::spawn_adjust_hedge(&pool, data.entry_id).await?;
+        tokio::spawn(async move {
+            let _ = job::spawn_adjust_hedge(&pool, uuid::Uuid::new_v4()).await;
+            let mut events = ledger.usd_liability_balance_events().await;
+            loop {
+                match events.recv().await {
+                    Ok(received) => {
+                        if let ledger::LedgerEventData::BalanceUpdated(data) = received.data {
+                            let _ = job::spawn_adjust_hedge(&pool, data.entry_id).await;
+                        }
+                    }
+                    Err(tokio::sync::broadcast::error::RecvError::Lagged(_)) => (),
+                    _ => {
+                        break;
                     }
                 }
-                Err(tokio::sync::broadcast::error::RecvError::Lagged(_)) => (),
-                _ => {
-                    break;
-                }
             }
-        }
+        });
         Ok(())
     }
 
@@ -229,23 +235,19 @@ impl HedgingApp {
         position_sub: Subscriber,
         price_sub: memory::Subscriber<PriceStreamPayload>,
     ) {
-        tokio::spawn(async move {
-            while let Some(check) = health_check_trigger.next().await {
-                match (
-                    position_sub
-                        .healthy(health_cfg.unhealthy_msg_interval_position)
-                        .await,
-                    price_sub
-                        .healthy(health_cfg.unhealthy_msg_interval_price)
-                        .await,
-                ) {
-                    (Err(e), _) | (_, Err(e)) => {
-                        check.send(Err(e)).expect("Couldn't send response")
-                    }
-                    _ => check.send(Ok(())).expect("Couldn't send response"),
-                }
+        while let Some(check) = health_check_trigger.next().await {
+            match (
+                position_sub
+                    .healthy(health_cfg.unhealthy_msg_interval_position)
+                    .await,
+                price_sub
+                    .healthy(health_cfg.unhealthy_msg_interval_price)
+                    .await,
+            ) {
+                (Err(e), _) | (_, Err(e)) => check.send(Err(e)).expect("Couldn't send response"),
+                _ => check.send(Ok(())).expect("Couldn't send response"),
             }
-        });
+        }
     }
 
     async fn handle_received_okex_position(

@@ -88,7 +88,7 @@ struct AdjustHedgeData {
     tracing_data: HashMap<String, String>,
 }
 
-#[instrument(name = "hedging.job.spawn_adjust_hedge", skip_all, fields(error, error.message) err)]
+#[instrument(name = "hedging.job.spawn_adjust_hedge", skip_all, fields(error, error.message), err)]
 pub async fn spawn_adjust_hedge<'a>(
     tx: impl Executor<'a, Database = Postgres>,
     trigger_id: impl Into<Uuid>,
