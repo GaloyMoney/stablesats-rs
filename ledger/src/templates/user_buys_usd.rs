@@ -81,21 +81,21 @@ impl UserBuysUsd {
             EntryInput::builder()
                 .entry_type("'USER_BUYS_USD_BTC_CR'")
                 .currency("'BTC'")
-                .account_id(format!("uuid('{EXTERNAL_OMNIBUS_ID}')"))
+                .account_id(format!("uuid('{STABLESATS_BTC_WALLET_ID}')"))
                 .direction("CREDIT")
                 .layer("SETTLED")
                 .units("params.btc_amount")
                 .build()
-                .expect("Couldn't build PENDING_ONCHAIN_DEBIT entry"),
+                .expect("Couldn't build USER_BUYS_USD_BTC_CR entry"),
             EntryInput::builder()
                 .entry_type("'USER_BUYS_USD_BTC_DR'")
                 .currency("'BTC'")
-                .account_id(format!("uuid('{STABLESATS_BTC_WALLET_ID}')"))
+                .account_id(format!("uuid('{EXTERNAL_OMNIBUS_ID}')"))
                 .direction("DEBIT")
                 .layer("SETTLED")
                 .units("params.btc_amount")
                 .build()
-                .expect("Couldn't build BTC_WALLET_DR entry"),
+                .expect("Couldn't build USER_BUYS_USD_BTC_DR entry"),
             EntryInput::builder()
                 .entry_type("'USER_BUYS_USD_USD_CR'")
                 .currency("'USD'")

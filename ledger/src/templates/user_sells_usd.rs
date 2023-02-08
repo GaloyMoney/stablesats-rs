@@ -81,21 +81,21 @@ impl UserSellsUsd {
             EntryInput::builder()
                 .entry_type("'USER_SELLS_USD_BTC_DR'")
                 .currency("'BTC'")
-                .account_id(format!("uuid('{EXTERNAL_OMNIBUS_ID}')"))
+                .account_id(format!("uuid('{STABLESATS_BTC_WALLET_ID}')"))
                 .direction("DEBIT")
                 .layer("SETTLED")
                 .units("params.btc_amount")
                 .build()
-                .expect("Couldn't build PENDING_ONCHAIN_DEBIT entry"),
+                .expect("Couldn't build USER_SELLS_USD_BTC_DR entry"),
             EntryInput::builder()
                 .entry_type("'USER_SELLS_USD_BTC_CR'")
                 .currency("'BTC'")
-                .account_id(format!("uuid('{STABLESATS_BTC_WALLET_ID}')"))
+                .account_id(format!("uuid('{EXTERNAL_OMNIBUS_ID}')"))
                 .direction("CREDIT")
                 .layer("SETTLED")
                 .units("params.btc_amount")
                 .build()
-                .expect("Couldn't build BTC_WALLET_DR entry"),
+                .expect("Couldn't build USER_SELLS_USD_BTC_CR entry"),
             EntryInput::builder()
                 .entry_type("'USER_SELLS_USD_USD_DR'")
                 .currency("'USD'")
@@ -104,7 +104,7 @@ impl UserSellsUsd {
                 .layer("SETTLED")
                 .units("params.usd_amount")
                 .build()
-                .expect("Couldn't build USER_SELLS_USD_USD_CR entry"),
+                .expect("Couldn't build USER_SELLS_USD_USD_DR entry"),
             EntryInput::builder()
                 .entry_type("'USER_SELLS_USD_USD_CR'")
                 .currency("'USD'")
@@ -113,7 +113,7 @@ impl UserSellsUsd {
                 .layer("SETTLED")
                 .units("params.usd_amount")
                 .build()
-                .expect("Couldn't build USER_SELLS_USD_USD_DR entry"),
+                .expect("Couldn't build USER_SELLS_USD_USD_CR entry"),
         ];
 
         let params = UserSellsUsdParams::defs();
