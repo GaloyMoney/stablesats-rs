@@ -4,7 +4,9 @@ use uuid::{uuid, Uuid};
 
 // Templates
 pub(super) const USER_BUYS_USD_CODE: &str = "USER_BUYS_USD";
+pub(super) const USER_BUYS_USD_ID: Uuid = uuid!("00000000-0000-0000-0000-000000000001");
 pub(super) const USER_SELLS_USD_CODE: &str = "USER_SELLS_USD";
+pub(super) const USER_SELLS_USD_ID: Uuid = uuid!("00000000-0000-0000-0000-000000000002");
 
 // Journal
 pub(super) const STABLESATS_JOURNAL_NAME: &str = "Stablesats";

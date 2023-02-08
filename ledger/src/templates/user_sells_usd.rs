@@ -118,6 +118,7 @@ impl UserSellsUsd {
 
         let params = UserSellsUsdParams::defs();
         let template = NewTxTemplate::builder()
+            .id(USER_SELLS_USD_ID)
             .code(USER_SELLS_USD_CODE)
             .tx_input(tx_input)
             .entries(entries)
