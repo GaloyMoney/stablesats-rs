@@ -164,7 +164,7 @@ impl Ledger {
             .code(STABLESATS_LIABILITY)
             .id(STABLESATS_LIABILITY_ID)
             .name(STABLESATS_LIABILITY)
-            .description("Account for incoming stablesats liability".to_string())
+            .description("Account for stablesats liability".to_string())
             .build()
             .expect("Couldn't create stablesats liability account");
         match ledger.accounts().create(new_account).await {
