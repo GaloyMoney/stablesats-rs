@@ -13,9 +13,10 @@ const SATS_PER_BTC: Decimal = dec!(100_000_000);
 #[instrument(name = "hedging.job.adjust_funding", skip_all, fields(correlation_id = %correlation_id,
         target_liability, current_position, last_price_in_usd_cents, funding_available_balance,
         trading_available_balance, onchain_fees, action, client_transfer_id,
-        transferred_funding) err)]
+        transferred_funding, lag_ok), err)]
 pub(super) async fn execute(
     correlation_id: CorrelationId,
+    pool: &sqlx::PgPool,
     ledger: ledger::Ledger,
     okex: OkexClient,
     okex_transfers: OkexTransfers,
@@ -23,6 +24,10 @@ pub(super) async fn execute(
     funding_adjustment: FundingAdjustment,
 ) -> Result<(), HedgingError> {
     let span = tracing::Span::current();
+    if !crate::hack_user_trades_lag::lag_ok(pool).await? {
+        span.record("lag_ok", &tracing::field::display(false));
+        return Ok(());
+    }
 
     let target_liability_in_cents = ledger.balances().target_liability_in_cents().await?;
     span.record(

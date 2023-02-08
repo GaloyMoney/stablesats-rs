@@ -144,6 +144,7 @@ async fn adjust_hedge(
     okex_orders: OkexOrders,
     hedging_adjustment: HedgingAdjustment,
 ) -> Result<(), HedgingError> {
+    let pool = current_job.pool().clone();
     JobExecutor::builder(&mut current_job)
         .build()
         .expect("couldn't build JobExecutor")
@@ -151,6 +152,7 @@ async fn adjust_hedge(
             let data: AdjustHedgeData = data.ok_or(HedgingError::NoJobDataPresent)?;
             adjust_hedge::execute(
                 data.correlation_id,
+                &pool,
                 ledger,
                 okex,
                 okex_orders,
@@ -206,6 +208,7 @@ async fn adjust_funding(
     galoy: GaloyClient,
     funding_adjustment: FundingAdjustment,
 ) -> Result<(), HedgingError> {
+    let pool = current_job.pool().clone();
     JobExecutor::builder(&mut current_job)
         .build()
         .expect("couldn't build JobExecutor")
@@ -213,6 +216,7 @@ async fn adjust_funding(
             let data: AdjustFundingData = data.ok_or(HedgingError::NoJobDataPresent)?;
             adjust_funding::execute(
                 data.correlation_id,
+                &pool,
                 ledger,
                 okex,
                 okex_transfers,
