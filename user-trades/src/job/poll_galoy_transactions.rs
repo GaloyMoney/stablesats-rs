@@ -154,7 +154,7 @@ fn unify(unpaired_transactions: Vec<UnpairedTransaction>) -> (Vec<NewUserTrade>,
             };
             paired_ids.push(external_ref.btc_tx_id.clone());
             paired_ids.push(external_ref.usd_tx_id.clone());
-            if tx.settlement_amount > Decimal::ZERO {
+            if tx.settlement_amount < Decimal::ZERO {
                 user_trades.push(NewUserTrade {
                     buy_unit: tx.settlement_currency.into(),
                     buy_amount: tx.settlement_amount.abs(),
@@ -252,10 +252,10 @@ mod tests {
         assert_eq!(
             trade1,
             &NewUserTrade {
-                sell_unit: UserTradeUnit::UsdCent,
-                sell_amount: dec!(10),
-                buy_unit: UserTradeUnit::Satoshi,
-                buy_amount: dec!(1000),
+                buy_unit: UserTradeUnit::UsdCent,
+                buy_amount: dec!(10),
+                sell_unit: UserTradeUnit::Satoshi,
+                sell_amount: dec!(1000),
                 external_ref: ExternalRef {
                     timestamp: created_at,
                     btc_tx_id: "id1".to_string(),
@@ -266,10 +266,10 @@ mod tests {
         assert_eq!(
             trade2,
             &NewUserTrade {
-                sell_unit: UserTradeUnit::Satoshi,
-                sell_amount: dec!(1000),
-                buy_unit: UserTradeUnit::UsdCent,
-                buy_amount: dec!(10),
+                buy_unit: UserTradeUnit::Satoshi,
+                buy_amount: dec!(1000),
+                sell_unit: UserTradeUnit::UsdCent,
+                sell_amount: dec!(10),
                 external_ref: ExternalRef {
                     timestamp: created_earlier,
                     btc_tx_id: "id3".to_string(),

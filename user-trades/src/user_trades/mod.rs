@@ -91,7 +91,7 @@ impl UserTrades {
             r#"UPDATE user_trades
                SET ledger_tx_id = $1
                WHERE id = (
-                 SELECT id FROM user_trades WHERE ledger_tx_id IS NULL ORDER BY id LIMIT 1
+                 SELECT id FROM user_trades WHERE ledger_tx_id IS NULL ORDER BY external_ref->>'timestamp' LIMIT 1
                ) RETURNING id, buy_amount, buy_unit as "buy_unit: UserTradeUnit", sell_amount, sell_unit as "sell_unit: UserTradeUnit", external_ref"#,
             tx_id
         )
