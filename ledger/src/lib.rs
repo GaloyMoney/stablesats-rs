@@ -117,8 +117,8 @@ impl Ledger {
             .code(EXTERNAL_OMNIBUS_CODE)
             .id(EXTERNAL_OMNIBUS_ID)
             .name(EXTERNAL_OMNIBUS_CODE)
-            .description("Account for balancing btc coming into wallet".to_string())
             .normal_balance_type(DebitOrCredit::Debit)
+            .description("Account for balancing btc coming into wallet".to_string())
             .build()
             .expect("Couldn't create external omnibus account");
         match ledger.accounts().create(new_account).await {
@@ -148,6 +148,7 @@ impl Ledger {
             .code(STABLESATS_OMNIBUS)
             .id(STABLESATS_OMNIBUS_ID)
             .name(STABLESATS_OMNIBUS)
+            .normal_balance_type(DebitOrCredit::Debit)
             .description("Omnibus account for all stablesats hedging".to_string())
             .build()
             .expect("Couldn't create stablesats omnibus account");
@@ -163,7 +164,6 @@ impl Ledger {
             .code(STABLESATS_LIABILITY)
             .id(STABLESATS_LIABILITY_ID)
             .name(STABLESATS_LIABILITY)
-            .normal_balance_type(DebitOrCredit::Debit)
             .description("Account for incoming stablesats liability".to_string())
             .build()
             .expect("Couldn't create stablesats liability account");

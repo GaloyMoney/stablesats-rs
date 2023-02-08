@@ -4,6 +4,7 @@
 mod adjustment_action;
 mod app;
 mod error;
+pub(crate) mod hack_user_trades_lag;
 mod okex_orders;
 mod okex_transfers;
 mod rebalance_action;

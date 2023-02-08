@@ -11,7 +11,7 @@ fail-on-warnings = []
 [dependencies]
 shared = { path = "../shared", package = "stablesats-shared" }
 
-sqlx-ledger = "0.4"
+sqlx-ledger = "0.5"
 
 chrono = "0.4.23"
 rust_decimal = "1.28.1"

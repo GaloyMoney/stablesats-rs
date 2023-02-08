@@ -59,26 +59,23 @@
     },
     "query": "SELECT client_order_id FROM okex_orders WHERE complete = false"
   },
-  "774f260ef3109c246642f50d09384471a5bb9a7c59203fb5c1d7d9eca1a7f5dc": {
+  "755920d9b23d1c31d6479964d3e1130409f4b74ad5c7519e838818f07ebefd47": {
     "describe": {
       "columns": [
         {
-          "name": "amount",
+          "name": "count",
           "ordinal": 0,
-          "type_info": "Numeric"
+          "type_info": "Int8"
         }
       ],
       "nullable": [
-        false
+        null
       ],
       "parameters": {
-        "Left": [
-          "Numeric",
-          "Uuid"
-        ]
+        "Left": []
       }
     },
-    "query": "INSERT INTO synth_usd_liability (amount, correlation_id) \n  SELECT $1, $2\n  WHERE NOT EXISTS (\n    SELECT FROM (\n      SELECT amount FROM synth_usd_liability ORDER BY idx DESC LIMIT 1\n    ) last_row WHERE amount = $1\n  )\nRETURNING amount;\n"
+    "query": "SELECT COUNT(*) FROM user_trades WHERE ledger_tx_id IS NULL"
   },
   "96f7ee6322ab9ae4a1a69d230e50dcbec45afacfbbf811d90078643fa67cd772": {
     "describe": {
@@ -167,24 +164,6 @@
       }
     },
     "query": "UPDATE okex_transfers SET state = 'deleted' WHERE lost = true AND state = 'pending' AND created_at < now() - interval '1 day'"
-  },
-  "d1a41ae07e59886a30a1750d7e8dd8f24c0652c267b25d8fd5cf3698dc8ca699": {
-    "describe": {
-      "columns": [
-        {
-          "name": "amount",
-          "ordinal": 0,
-          "type_info": "Numeric"
-        }
-      ],
-      "nullable": [
-        false
-      ],
-      "parameters": {
-        "Left": []
-      }
-    },
-    "query": "SELECT amount FROM synth_usd_liability ORDER BY idx DESC LIMIT 1"
   },
   "d393086f855e0eb9bae8575eabf08e0882c0dbaaa7235c8ef9f94954c1f4a9a4": {
     "describe": {

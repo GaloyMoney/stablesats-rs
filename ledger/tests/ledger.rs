@@ -56,8 +56,8 @@ async fn user_buys_and_sells_usd() -> anyhow::Result<()> {
         .await?
         .unwrap()
         .settled();
-    assert_eq!(before_liability - after_liability, dec!(5));
-    assert_eq!(before_btc - after_btc, dec!(0.01));
+    assert_eq!(after_liability - before_liability, dec!(5));
+    assert_eq!(after_btc - before_btc, dec!(0.01));
 
     ledger
         .user_sells_usd(

@@ -73,10 +73,10 @@ impl GaloyTransactions {
     pub async fn get_latest_cursor(&self) -> Result<Option<LatestCursor>, UserTradesError> {
         let res =
             sqlx::query!("SELECT cursor FROM galoy_transactions ORDER BY created_at DESC LIMIT 1")
-                .fetch_all(&self.pool)
+                .fetch_optional(&self.pool)
                 .await?;
 
-        if let Some(res) = res.into_iter().next() {
+        if let Some(res) = res {
             Ok(Some(LatestCursor(res.cursor)))
         } else {
             Ok(None)
@@ -91,7 +91,7 @@ impl GaloyTransactions {
             "
             SELECT id, settlement_amount, settlement_currency, amount_in_usd_cents, created_at
             FROM galoy_transactions
-            WHERE is_paired = false AND amount_in_usd_cents != 0 FOR UPDATE
+            WHERE is_paired = false AND amount_in_usd_cents != 0 ORDER BY created_at FOR UPDATE
          "
         )
         .fetch_all(&mut tx)

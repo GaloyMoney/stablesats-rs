@@ -7,15 +7,20 @@ use shared::pubsub::CorrelationId;
 use crate::{adjustment_action::*, error::*, okex_orders::*};
 
 #[instrument(name = "hedging.job.adjust_hedge", skip_all, fields(correlation_id = %correlation_id,
-        target_liability, current_position, action, placed_order, client_order_id) err)]
+        target_liability, current_position, action, placed_order, client_order_id, lag_ok), err)]
 pub(super) async fn execute(
     correlation_id: CorrelationId,
+    pool: &sqlx::PgPool,
     ledger: ledger::Ledger,
     okex: OkexClient,
     okex_orders: OkexOrders,
     hedging_adjustment: HedgingAdjustment,
 ) -> Result<(), HedgingError> {
     let span = tracing::Span::current();
+    if !crate::hack_user_trades_lag::lag_ok(pool).await? {
+        span.record("lag_ok", &tracing::field::display(false));
+        return Ok(());
+    }
     let target_liability = ledger.balances().target_liability_in_cents().await?;
     span.record(
         "target_liability",

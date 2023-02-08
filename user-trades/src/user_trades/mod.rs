@@ -1,13 +1,15 @@
+mod unit;
+
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use sqlx::{PgPool, Postgres, QueryBuilder, Transaction};
 use tracing::instrument;
 use uuid::Uuid;
 
-use crate::{error::UserTradesError, user_trade_unit::*};
+use crate::error::UserTradesError;
 use rust_decimal::Decimal;
 
-use crate::user_trade_unit::UserTradeUnit;
+pub use unit::*;
 
 pub struct UnaccountedUserTrade {
     pub buy_unit: UserTradeUnit,
@@ -36,13 +38,11 @@ pub struct NewUserTrade {
 }
 
 #[derive(Clone)]
-pub struct UserTrades {
-    units: UserTradeUnits,
-}
+pub struct UserTrades {}
 
 impl UserTrades {
-    pub fn new(_pool: PgPool, units: UserTradeUnits) -> Self {
-        Self { units }
+    pub fn new(_pool: PgPool) -> Self {
+        Self {}
     }
 
     pub async fn persist_all<'a>(
@@ -55,7 +55,7 @@ impl UserTrades {
         }
 
         let mut query_builder: QueryBuilder<Postgres> = QueryBuilder::new(
-            "INSERT INTO user_trades (buy_unit_id, buy_amount, sell_unit_id, sell_amount, external_ref)"
+            "INSERT INTO user_trades (buy_unit, buy_amount, sell_unit, sell_amount, external_ref)",
         );
         query_builder.push_values(
             new_user_trades,
@@ -67,9 +67,9 @@ impl UserTrades {
                  sell_amount,
                  external_ref,
              }| {
-                builder.push_bind(self.units.get_id(buy_unit));
+                builder.push_bind(buy_unit);
                 builder.push_bind(buy_amount);
-                builder.push_bind(self.units.get_id(sell_unit));
+                builder.push_bind(sell_unit);
                 builder.push_bind(sell_amount);
                 builder.push_bind(
                     serde_json::to_value(external_ref).expect("failed to serialize external_ref"),
@@ -91,16 +91,16 @@ impl UserTrades {
             r#"UPDATE user_trades
                SET ledger_tx_id = $1
                WHERE id = (
-                 SELECT id FROM user_trades WHERE ledger_tx_id IS NULL ORDER BY id LIMIT 1
-               ) RETURNING id, buy_amount, buy_unit_id, sell_amount, sell_unit_id, external_ref"#,
+                 SELECT id FROM user_trades WHERE ledger_tx_id IS NULL ORDER BY external_ref->>'timestamp' LIMIT 1
+               ) RETURNING id, buy_amount, buy_unit as "buy_unit: UserTradeUnit", sell_amount, sell_unit as "sell_unit: UserTradeUnit", external_ref"#,
             tx_id
         )
         .fetch_optional(&mut *tx)
         .await?;
         Ok(trade.map(|trade| UnaccountedUserTrade {
-            buy_unit: self.units.from_id(trade.buy_unit_id),
+            buy_unit: trade.buy_unit,
             buy_amount: trade.buy_amount,
-            sell_unit: self.units.from_id(trade.sell_unit_id),
+            sell_unit: trade.sell_unit,
             sell_amount: trade.sell_amount,
             external_ref: serde_json::from_value(trade.external_ref)
                 .expect("failed to deserialize external_ref"),
