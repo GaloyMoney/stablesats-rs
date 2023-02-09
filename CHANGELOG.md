@@ -1,3 +1,15 @@
+# [stablesats release v0.6.3](https://github.com/GaloyMoney/stablesats/releases/tag/v0.6.3)
+
+
+### Bug Fixes
+
+- Use while not loop for health check
+- Do not expect on health check
+
+### Miscellaneous Tasks
+
+- More resillient health check
+
 # [stablesats release v0.6.2](https://github.com/GaloyMoney/stablesats/releases/tag/v0.6.2)
 
 
