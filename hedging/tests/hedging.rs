@@ -107,7 +107,7 @@ async fn hedging() -> anyhow::Result<()> {
         ..PubSubConfig::default()
     };
     let pg_host = std::env::var("PG_HOST").unwrap_or("localhost".to_string());
-    let pg_con = format!("postgres://stablesats:stablesats@{pg_host}:5432/stablesats");
+    let pg_con = format!("postgres://user:password@{pg_host}:5432/pg",);
     let pool = sqlx::PgPool::connect(&pg_con).await?;
 
     let publisher = Publisher::new(pubsub_config.clone()).await?;

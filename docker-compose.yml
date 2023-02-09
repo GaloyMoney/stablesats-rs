@@ -9,9 +9,9 @@ services:
   postgres:
     image: postgres:14.1
     environment:
-      - POSTGRES_USER=stablesats
-      - POSTGRES_PASSWORD=stablesats
-      - POSTGRES_DB=stablesats
+      - POSTGRES_USER=user
+      - POSTGRES_PASSWORD=password
+      - POSTGRES_DB=pg
   redis:
     image: bitnami/redis:6.2
     environment:
