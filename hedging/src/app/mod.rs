@@ -285,22 +285,20 @@ impl HedgingApp {
         position_sub: Subscriber,
         price_sub: memory::Subscriber<PriceStreamPayload>,
     ) {
-        loop {
-            if let Some(check) = health_check_trigger.next().await {
-                match (
-                    position_sub
-                        .healthy(health_cfg.unhealthy_msg_interval_position)
-                        .await,
-                    price_sub
-                        .healthy(health_cfg.unhealthy_msg_interval_price)
-                        .await,
-                ) {
-                    (Err(e), _) | (_, Err(e)) => {
-                        let _ = check.send(Err(e));
-                    }
-                    _ => {
-                        let _ = check.send(Ok(()));
-                    }
+        while let Some(check) = health_check_trigger.next().await {
+            match (
+                position_sub
+                    .healthy(health_cfg.unhealthy_msg_interval_position)
+                    .await,
+                price_sub
+                    .healthy(health_cfg.unhealthy_msg_interval_price)
+                    .await,
+            ) {
+                (Err(e), _) | (_, Err(e)) => {
+                    let _ = check.send(Err(e));
+                }
+                _ => {
+                    let _ = check.send(Ok(()));
                 }
             }
         }

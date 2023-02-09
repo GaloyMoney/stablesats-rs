@@ -34,14 +34,12 @@ impl PriceApp {
     ) -> Result<Self, PriceAppError> {
         let health_subscriber = subscriber.resubscribe();
         tokio::spawn(async move {
-            loop {
-                if let Some(check) = health_check_trigger.next().await {
-                    let _ = check.send(
-                        health_subscriber
-                            .healthy(health_check_cfg.unhealthy_msg_interval_price)
-                            .await,
-                    );
-                }
+            while let Some(check) = health_check_trigger.next().await {
+                let _ = check.send(
+                    health_subscriber
+                        .healthy(health_check_cfg.unhealthy_msg_interval_price)
+                        .await,
+                );
             }
         });
 
