@@ -10,7 +10,7 @@ use shared::{
     exchanges_config::OkexConfig,
     health::HealthCheckTrigger,
     payload::{OkexBtcUsdSwapPositionPayload, PriceStreamPayload},
-    pubsub::{memory, CorrelationId, PubSubConfig, Publisher, Subscriber},
+    pubsub::{memory, PubSubConfig, Publisher, Subscriber},
 };
 
 use crate::{
@@ -63,12 +63,21 @@ impl HedgingApp {
             funding_config.clone(),
         )
         .await?;
-        Self::spawn_liability_balance_listener(pool.clone(), ledger.clone()).await?;
+        Self::spawn_liability_balance_listener(
+            pool.clone(),
+            ledger.clone(),
+            okex.clone(),
+            hedging_adjustment.clone(),
+            funding_adjustment.clone(),
+        )
+        .await?;
         let position_sub = Self::spawn_okex_position_listener(
             pubsub_config.clone(),
             pool.clone(),
             ledger.clone(),
+            okex.clone(),
             hedging_adjustment,
+            funding_adjustment.clone(),
         )
         .await?;
         Self::spawn_okex_price_listener(
@@ -111,48 +120,29 @@ impl HedgingApp {
                         error = tracing::field::Empty,
                         error.level = tracing::field::Empty,
                         error.message = tracing::field::Empty,
+                        funding_action = tracing::field::Empty,
                     );
                     shared::tracing::inject_tracing_data(&span, &msg.meta.tracing_data);
-                    let _ = Self::handle_received_okex_price(
-                        correlation_id,
-                        &pool,
-                        &ledger,
-                        &okex,
-                        funding_adjustment.clone(),
-                    )
+                    async {
+                        if let Ok(current_position_in_cents) =
+                            okex.get_position_in_signed_usd_cents().await
+                        {
+                            let _ = Self::conditionally_spawn_adjust_funding(
+                                &pool,
+                                &ledger,
+                                &funding_adjustment,
+                                &okex,
+                                correlation_id,
+                                current_position_in_cents.usd_cents.into(),
+                            )
+                            .await;
+                        }
+                    }
                     .instrument(span)
                     .await;
                 }
             }
         });
-        Ok(())
-    }
-
-    async fn handle_received_okex_price(
-        correlation_id: CorrelationId,
-        pool: &sqlx::PgPool,
-        ledger: &ledger::Ledger,
-        okex: &OkexClient,
-        funding_adjustment: FundingAdjustment,
-    ) -> Result<(), HedgingError> {
-        let target_liability_in_cents = ledger.balances().target_liability_in_cents().await?;
-        let current_position_in_cents = okex.get_position_in_signed_usd_cents().await?.usd_cents;
-        let last_price_in_usd_cents = okex.get_last_price_in_usd_cents().await?.usd_cents;
-        let trading_available_balance = okex.trading_account_balance().await?;
-        let funding_available_balance = okex.funding_account_balance().await?;
-
-        if funding_adjustment
-            .determine_action(
-                target_liability_in_cents,
-                current_position_in_cents.into(),
-                trading_available_balance.total_amt_in_btc,
-                last_price_in_usd_cents,
-                funding_available_balance.total_amt_in_btc,
-            )
-            .action_required()
-        {
-            job::spawn_adjust_funding(pool, correlation_id).await?;
-        }
         Ok(())
     }
 
@@ -172,15 +162,58 @@ impl HedgingApp {
     async fn spawn_liability_balance_listener(
         pool: sqlx::PgPool,
         ledger: ledger::Ledger,
+        okex: OkexClient,
+        hedging_adjustment: HedgingAdjustment,
+        funding_adjustment: FundingAdjustment,
     ) -> Result<(), HedgingError> {
+        job::spawn_adjust_hedge(&pool, uuid::Uuid::new_v4()).await?;
+        job::spawn_adjust_funding(&pool, uuid::Uuid::new_v4()).await?;
         tokio::spawn(async move {
-            let _ = job::spawn_adjust_hedge(&pool, uuid::Uuid::new_v4()).await;
             let mut events = ledger.usd_liability_balance_events().await;
             loop {
                 match events.recv().await {
                     Ok(received) => {
                         if let ledger::LedgerEventData::BalanceUpdated(data) = received.data {
-                            let _ = job::spawn_adjust_hedge(&pool, data.entry_id).await;
+                            let correlation_id = data.entry_id;
+                            let span = info_span!(
+                                "hedging.usd_liability_balance_event_received",
+                                correlation_id = %correlation_id,
+                                event_json = &tracing::field::display(
+                                    serde_json::to_string(&data)
+                                        .expect("failed to serialize event data")
+                                ),
+                                funding_action = tracing::field::Empty,
+                                hedging_action = tracing::field::Empty,
+                            );
+                            async {
+                                if let Ok(current_position_in_cents) =
+                                    okex.get_position_in_signed_usd_cents().await
+                                {
+                                    let exposure = current_position_in_cents.usd_cents.into();
+                                    let _ = Self::conditionally_spawn_adjust_hedge(
+                                        &pool,
+                                        &ledger,
+                                        &hedging_adjustment,
+                                        correlation_id,
+                                        exposure,
+                                    )
+                                    .await;
+                                    let _ = Self::conditionally_spawn_adjust_funding(
+                                        &pool,
+                                        &ledger,
+                                        &funding_adjustment,
+                                        &okex,
+                                        correlation_id,
+                                        exposure,
+                                    )
+                                    .await;
+                                } else {
+                                    let _ = job::spawn_adjust_hedge(&pool, correlation_id).await;
+                                    let _ = job::spawn_adjust_funding(&pool, correlation_id).await;
+                                }
+                            }
+                            .instrument(span)
+                            .await;
                         }
                     }
                     Err(tokio::sync::broadcast::error::RecvError::Lagged(_)) => (),
@@ -197,7 +230,9 @@ impl HedgingApp {
         config: PubSubConfig,
         pool: sqlx::PgPool,
         ledger: ledger::Ledger,
+        okex: OkexClient,
         hedging_adjustment: HedgingAdjustment,
+        funding_adjustment: FundingAdjustment,
     ) -> Result<Subscriber, HedgingError> {
         let mut subscriber = Subscriber::new(config).await?;
         let mut stream = subscriber
@@ -210,18 +245,33 @@ impl HedgingApp {
                     "hedging.okex_btc_usd_swap_position_received",
                     message_type = %msg.payload_type,
                     correlation_id = %correlation_id,
+                    signed_usd_exposure = %msg.payload.signed_usd_exposure,
                     error = tracing::field::Empty,
                     error.level = tracing::field::Empty,
                     error.message = tracing::field::Empty,
+                    hedging_action = tracing::field::Empty,
+                    funding_action = tracing::field::Empty,
                 );
                 shared::tracing::inject_tracing_data(&span, &msg.meta.tracing_data);
-                let _ = Self::handle_received_okex_position(
-                    msg.payload,
-                    correlation_id,
-                    &pool,
-                    &ledger,
-                    hedging_adjustment.clone(),
-                )
+                async {
+                    let _ = Self::conditionally_spawn_adjust_hedge(
+                        &pool,
+                        &ledger,
+                        &hedging_adjustment,
+                        correlation_id,
+                        msg.payload.signed_usd_exposure,
+                    )
+                    .await;
+                    let _ = Self::conditionally_spawn_adjust_funding(
+                        &pool,
+                        &ledger,
+                        &funding_adjustment,
+                        &okex,
+                        correlation_id,
+                        msg.payload.signed_usd_exposure,
+                    )
+                    .await;
+                }
                 .instrument(span)
                 .await;
             }
@@ -250,19 +300,45 @@ impl HedgingApp {
         }
     }
 
-    async fn handle_received_okex_position(
-        payload: OkexBtcUsdSwapPositionPayload,
-        correlation_id: CorrelationId,
+    async fn conditionally_spawn_adjust_hedge(
         pool: &sqlx::PgPool,
         ledger: &ledger::Ledger,
-        hedging_adjustment: HedgingAdjustment,
+        hedging_adjustment: &HedgingAdjustment,
+        correlation_id: impl Into<uuid::Uuid>,
+        signed_usd_exposure: SyntheticCentExposure,
     ) -> Result<(), HedgingError> {
         let amount = ledger.balances().target_liability_in_cents().await?;
-        if hedging_adjustment
-            .determine_action(amount, payload.signed_usd_exposure)
-            .action_required()
-        {
+        let action = hedging_adjustment.determine_action(amount, signed_usd_exposure);
+        tracing::Span::current().record("hedging_action", &tracing::field::display(&action));
+        if action.action_required() {
             job::spawn_adjust_hedge(pool, correlation_id).await?;
+        }
+        Ok(())
+    }
+
+    async fn conditionally_spawn_adjust_funding(
+        pool: &sqlx::PgPool,
+        ledger: &ledger::Ledger,
+        funding_adjustment: &FundingAdjustment,
+        okex: &OkexClient,
+        correlation_id: impl Into<uuid::Uuid>,
+        signed_usd_exposure: SyntheticCentExposure,
+    ) -> Result<(), HedgingError> {
+        let target_liability_in_cents = ledger.balances().target_liability_in_cents().await?;
+        let last_price_in_usd_cents = okex.get_last_price_in_usd_cents().await?.usd_cents;
+        let trading_available_balance = okex.trading_account_balance().await?;
+        let funding_available_balance = okex.funding_account_balance().await?;
+
+        let action = funding_adjustment.determine_action(
+            target_liability_in_cents,
+            signed_usd_exposure,
+            trading_available_balance.total_amt_in_btc,
+            last_price_in_usd_cents,
+            funding_available_balance.total_amt_in_btc,
+        );
+        tracing::Span::current().record("funding_action", &tracing::field::display(&action));
+        if action.action_required() {
+            job::spawn_adjust_funding(pool, correlation_id).await?;
         }
         Ok(())
     }
