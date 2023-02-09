@@ -1,3 +1,20 @@
+# [stablesats release v0.6.4](https://github.com/GaloyMoney/stablesats/releases/tag/v0.6.4)
+
+
+### Bug Fixes
+
+- Typo
+- Host name in db url
+
+### Miscellaneous Tasks
+
+- Bump sqlx-ledger
+
+### Testing
+
+- Fix DATABASE_URL in makefile
+- Use same pg con as sqlx-ledger to improve local dev
+
 # [stablesats release v0.6.3](https://github.com/GaloyMoney/stablesats/releases/tag/v0.6.3)
 
 

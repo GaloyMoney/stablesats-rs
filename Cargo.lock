@@ -239,7 +239,7 @@ checksum = "349f9b6a179ed607305526ca489b34ad0a41aed5f7980fa90eb03160b69598fb"
 
 [[package]]
 name = "bitfinex-client"
-version = "0.6.4-dev"
+version = "0.6.4"
 dependencies = [
  "anyhow",
  "chrono",
@@ -263,7 +263,7 @@ dependencies = [
 
 [[package]]
 name = "bitfinex-price"
-version = "0.6.4-dev"
+version = "0.6.4"
 dependencies = [
  "anyhow",
  "chrono",
@@ -1100,7 +1100,7 @@ dependencies = [
 
 [[package]]
 name = "galoy-client"
-version = "0.6.4-dev"
+version = "0.6.4"
 dependencies = [
  "anyhow",
  "chrono",
@@ -1274,7 +1274,7 @@ dependencies = [
 
 [[package]]
 name = "hedging"
-version = "0.6.4-dev"
+version = "0.6.4"
 dependencies = [
  "anyhow",
  "bitfinex-client",
@@ -1573,7 +1573,7 @@ dependencies = [
 
 [[package]]
 name = "kollider-price"
-version = "0.6.4-dev"
+version = "0.6.4"
 dependencies = [
  "anyhow",
  "chrono",
@@ -1833,7 +1833,7 @@ dependencies = [
 
 [[package]]
 name = "okex-client"
-version = "0.6.4-dev"
+version = "0.6.4"
 dependencies = [
  "anyhow",
  "chrono",
@@ -1857,7 +1857,7 @@ dependencies = [
 
 [[package]]
 name = "okex-price"
-version = "0.6.4-dev"
+version = "0.6.4"
 dependencies = [
  "anyhow",
  "chrono",
@@ -2197,7 +2197,7 @@ dependencies = [
 
 [[package]]
 name = "price-server"
-version = "0.6.4-dev"
+version = "0.6.4"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -3127,7 +3127,7 @@ dependencies = [
 
 [[package]]
 name = "stablesats"
-version = "0.6.4-dev"
+version = "0.6.4"
 dependencies = [
  "anyhow",
  "axum",
@@ -3159,7 +3159,7 @@ dependencies = [
 
 [[package]]
 name = "stablesats-ledger"
-version = "0.6.4-dev"
+version = "0.6.4"
 dependencies = [
  "anyhow",
  "chrono",
@@ -3178,7 +3178,7 @@ dependencies = [
 
 [[package]]
 name = "stablesats-shared"
-version = "0.6.4-dev"
+version = "0.6.4"
 dependencies = [
  "anyhow",
  "chrono",
@@ -3836,7 +3836,7 @@ dependencies = [
 
 [[package]]
 name = "user-trades"
-version = "0.6.4-dev"
+version = "0.6.4"
 dependencies = [
  "anyhow",
  "chrono",
