@@ -36,13 +36,11 @@ impl PriceApp {
         tokio::spawn(async move {
             loop {
                 if let Some(check) = health_check_trigger.next().await {
-                    check
-                        .send(
-                            health_subscriber
-                                .healthy(health_check_cfg.unhealthy_msg_interval_price)
-                                .await,
-                        )
-                        .expect("Couldn't send response");
+                    let _ = check.send(
+                        health_subscriber
+                            .healthy(health_check_cfg.unhealthy_msg_interval_price)
+                            .await,
+                    );
                 }
             }
         });

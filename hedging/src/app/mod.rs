@@ -287,7 +287,6 @@ impl HedgingApp {
     ) {
         loop {
             if let Some(check) = health_check_trigger.next().await {
-                println!("HEALTH");
                 match (
                     position_sub
                         .healthy(health_cfg.unhealthy_msg_interval_position)
@@ -297,9 +296,11 @@ impl HedgingApp {
                         .await,
                 ) {
                     (Err(e), _) | (_, Err(e)) => {
-                        check.send(Err(e)).expect("Couldn't send response")
+                        let _ = check.send(Err(e));
                     }
-                    _ => check.send(Ok(())).expect("Couldn't send response"),
+                    _ => {
+                        let _ = check.send(Ok(()));
+                    }
                 }
             }
         }

@@ -15,20 +15,20 @@ async fn health_check(
         println!("Executing '{name}' health check:");
         let (snd, recv) = futures::channel::oneshot::channel();
         if let Err(e) = checker.clone().send(snd).await {
-            eprintln!("Couldn't send health check: {e}");
+            eprintln!("Couldn't send '{name}' health check: {e}");
             return health_check_error(name, n_errors, e).await;
         }
         match tokio::time::timeout(std::time::Duration::from_millis(500), recv).await {
             Err(e) => {
-                eprintln!("Health check timed out");
+                eprintln!("'{name}' health check timed out");
                 return health_check_error(name, n_errors, e).await;
             }
             Ok(Err(e)) => {
-                eprintln!("Error receiving return {e}");
+                eprintln!("Error receiving return '{name}' {e}");
                 return health_check_error(name, n_errors, e).await;
             }
             Ok(Ok(Err(e))) => {
-                eprintln!("FAILED: '{e}'");
+                eprintln!("'{name}' FAILED: '{e}'");
                 return health_check_error(name, n_errors, e).await;
             }
             _ => {
