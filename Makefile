@@ -13,7 +13,7 @@ check-code:
 	SQLX_OFFLINE=true cargo audit
 
 test-in-ci:
-	DATABASE_URL=postgres://stablesats:stablesats@postgres:5432/stablesats cargo sqlx migrate run
+	DATABASE_URL=postgres://user:password@127.0.0.1:5432/pg cargo sqlx migrate run
 	SQLX_OFFLINE=true cargo nextest run --verbose --locked
 
 cli-run:
