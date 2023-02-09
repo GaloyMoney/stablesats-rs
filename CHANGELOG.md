@@ -1,3 +1,11 @@
+# [stablesats release v0.6.2](https://github.com/GaloyMoney/stablesats/releases/tag/v0.6.2)
+
+
+### Miscellaneous Tasks
+
+- Improved job spawning from hedging app
+- Bump serde_json from 1.0.92 to 1.0.93 (#283)
+
 # [stablesats release v0.6.1](https://github.com/GaloyMoney/stablesats/releases/tag/v0.6.1)
 
 
