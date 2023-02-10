@@ -5,7 +5,6 @@ use rust_decimal::Decimal;
 use tracing::{info_span, instrument, Instrument};
 
 use shared::{
-    exchanges_config::ExchangeConfigs,
     health::HealthCheckTrigger,
     payload::{PriceStreamPayload, BITFINEX_EXCHANGE_ID, KOLLIDER_EXCHANGE_ID, OKEX_EXCHANGE_ID},
     pubsub::*,
@@ -30,7 +29,7 @@ impl PriceApp {
         fee_calc_cfg: FeeCalculatorConfig,
         subscriber: memory::Subscriber<PriceStreamPayload>,
         price_cache_config: ExchangePriceCacheConfig,
-        exchanges_cfg: ExchangeConfigs,
+        exchange_weights: ExchangeWeights,
     ) -> Result<Self, PriceAppError> {
         let health_subscriber = subscriber.resubscribe();
         tokio::spawn(async move {
@@ -45,28 +44,28 @@ impl PriceApp {
 
         let mut price_mixer = PriceMixer::new();
 
-        if let Some(config) = exchanges_cfg.okex.as_ref() {
-            if config.weight > Decimal::ZERO {
+        if let Some(weight) = exchange_weights.okex {
+            if weight > Decimal::ZERO {
                 let okex_price_cache = ExchangeTickCache::new(price_cache_config.clone());
                 Self::subscribe_okex(subscriber.resubscribe(), okex_price_cache.clone()).await?;
-                price_mixer.add_provider(OKEX_EXCHANGE_ID, okex_price_cache, config.weight);
+                price_mixer.add_provider(OKEX_EXCHANGE_ID, okex_price_cache, weight);
             }
         }
 
-        if let Some(config) = exchanges_cfg.bitfinex.as_ref() {
-            if config.weight > Decimal::ZERO {
+        if let Some(weight) = exchange_weights.bitfinex {
+            if weight > Decimal::ZERO {
                 let bitfinex_price_cache = ExchangeTickCache::new(price_cache_config.clone());
                 Self::subscribe_bitfinex(subscriber.resubscribe(), bitfinex_price_cache.clone())
                     .await?;
-                price_mixer.add_provider(BITFINEX_EXCHANGE_ID, bitfinex_price_cache, config.weight);
+                price_mixer.add_provider(BITFINEX_EXCHANGE_ID, bitfinex_price_cache, weight);
             }
         }
 
-        if let Some(config) = exchanges_cfg.kollider.as_ref() {
-            if config.weight > Decimal::ZERO {
+        if let Some(weight) = exchange_weights.kollider {
+            if weight > Decimal::ZERO {
                 let kollider_price_cache = ExchangeTickCache::new(price_cache_config);
                 Self::subscribe_kollider(subscriber, kollider_price_cache.clone()).await?;
-                price_mixer.add_provider(KOLLIDER_EXCHANGE_ID, kollider_price_cache, config.weight);
+                price_mixer.add_provider(KOLLIDER_EXCHANGE_ID, kollider_price_cache, weight);
             }
         }
 

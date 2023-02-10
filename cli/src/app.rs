@@ -183,7 +183,7 @@ async fn run_cmd(
         let (snd, recv) = futures::channel::mpsc::unbounded();
         checkers.insert("price", snd);
         let price = price_recv.resubscribe();
-        let exchanges = exchanges.clone();
+        let weights = extract_weights(&exchanges);
         handles.push(tokio::spawn(async move {
             let _ = price_send.try_send(
                 price_server::run(
@@ -193,7 +193,7 @@ async fn run_cmd(
                     price_server.fees,
                     price,
                     price_server.price_cache,
-                    exchanges,
+                    weights,
                 )
                 .await
                 .context("Price Server error"),
@@ -278,4 +278,14 @@ async fn price_cmd(
 
 fn price_stream_throttle_period() -> Duration {
     Duration::from_std(std::time::Duration::from_secs(2)).unwrap()
+}
+
+fn extract_weights(
+    config: &shared::exchanges_config::ExchangeConfigs,
+) -> price_server::ExchangeWeights {
+    price_server::ExchangeWeights {
+        okex: config.okex.as_ref().map(|c| c.weight),
+        bitfinex: config.bitfinex.as_ref().map(|c| c.weight),
+        kollider: config.kollider.as_ref().map(|c| c.weight),
+    }
 }

@@ -2,12 +2,7 @@ use rust_decimal_macros::dec;
 use std::fs;
 
 use price_server::{app::*, ExchangePriceCacheConfig};
-use shared::{
-    exchanges_config::{ExchangeConfig, ExchangeConfigs, OkexConfig},
-    payload::*,
-    pubsub::*,
-    time::*,
-};
+use shared::{payload::*, pubsub::*, time::*};
 
 #[derive(serde::Deserialize)]
 struct Fixture {
@@ -29,18 +24,8 @@ async fn price_app() -> anyhow::Result<()> {
 
     let (_, recv) = futures::channel::mpsc::unbounded();
 
-    let okex = ExchangeConfig {
-        weight: dec!(1.0),
-        config: OkexConfig {
-            api_key: "okex api".to_string(),
-            passphrase: "passphrase".to_string(),
-            secret_key: "secret key".to_string(),
-            simulated: false,
-        },
-    };
-
-    let ex_cfgs = ExchangeConfigs {
-        okex: Some(okex),
+    let ex_cfgs = ExchangeWeights {
+        okex: Some(dec!(1.0)),
         bitfinex: None,
         kollider: None,
     };
