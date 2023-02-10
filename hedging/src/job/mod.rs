@@ -18,7 +18,7 @@ use shared::{
 };
 
 use crate::{
-    adjustment_action::*, app::FundingSectionConfig, error::*, okex_orders::OkexOrders,
+    adjustment_action::*, config::FundingSectionConfig, error::*, okex_orders::OkexOrders,
     okex_transfers::OkexTransfers, rebalance_action::*,
 };
 

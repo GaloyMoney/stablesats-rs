@@ -3,6 +3,7 @@
 
 mod adjustment_action;
 mod app;
+mod config;
 mod error;
 pub(crate) mod hack_user_trades_lag;
 mod okex_orders;
@@ -15,6 +16,7 @@ use galoy_client::GaloyClientConfig;
 use shared::{exchanges_config::OkexConfig, health::HealthCheckTrigger, payload::*, pubsub::*};
 
 pub use app::*;
+pub use config::*;
 pub use error::*;
 
 #[allow(clippy::too_many_arguments)]

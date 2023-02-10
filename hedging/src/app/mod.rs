@@ -1,5 +1,3 @@
-mod config;
-
 use futures::stream::StreamExt;
 use sqlxmq::OwnedHandle;
 use tracing::{info_span, Instrument};
@@ -14,10 +12,9 @@ use shared::{
 };
 
 use crate::{
-    adjustment_action::*, error::*, job, okex_orders::*, okex_transfers::*, rebalance_action::*,
+    adjustment_action::*, config::*, error::*, job, okex_orders::*, okex_transfers::*,
+    rebalance_action::*,
 };
-
-pub use config::*;
 
 pub struct HedgingApp {
     _runner: OwnedHandle,

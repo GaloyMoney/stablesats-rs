@@ -7,7 +7,7 @@ use shared::{
     pubsub::Publisher,
 };
 
-use crate::{app::FundingSectionConfig, error::HedgingError, okex_orders::*, okex_transfers::*};
+use crate::{config::FundingSectionConfig, error::HedgingError, okex_orders::*, okex_transfers::*};
 
 pub async fn execute(
     okex_orders: OkexOrders,
