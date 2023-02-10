@@ -3,7 +3,7 @@ use axum::{http::StatusCode, routing::get, Router};
 use futures::SinkExt;
 use std::{collections::HashMap, net::SocketAddr, sync::Arc};
 use tokio::sync::RwLock;
-use tracing::instrument;
+use tracing::{instrument, trace, warn};
 
 use shared::health::HealthChecker;
 
@@ -12,27 +12,27 @@ async fn health_check(
     n_errors: Arc<RwLock<usize>>,
 ) -> StatusCode {
     for (name, checker) in checkers.iter() {
-        println!("Executing '{name}' health check:");
+        trace!("Executing '{name}' health check:");
         let (snd, recv) = futures::channel::oneshot::channel();
         if let Err(e) = checker.clone().send(snd).await {
-            eprintln!("Couldn't send '{name}' health check: {e}");
+            warn!("Couldn't send '{name}' health check: {e}");
             return health_check_error(name, n_errors, e).await;
         }
         match tokio::time::timeout(std::time::Duration::from_millis(500), recv).await {
             Err(e) => {
-                eprintln!("'{name}' health check timed out");
+                warn!("'{name}' health check timed out");
                 return health_check_error(name, n_errors, e).await;
             }
             Ok(Err(e)) => {
-                eprintln!("Error receiving return '{name}' {e}");
+                warn!("Error receiving return '{name}' {e}");
                 return health_check_error(name, n_errors, e).await;
             }
             Ok(Ok(Err(e))) => {
-                eprintln!("'{name}' FAILED: '{e}'");
+                warn!("'{name}' FAILED: '{e}'");
                 return health_check_error(name, n_errors, e).await;
             }
             _ => {
-                println!("OK");
+                trace!("'{name}' health OK");
             }
         }
     }
