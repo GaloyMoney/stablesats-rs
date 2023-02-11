@@ -1,13 +1,11 @@
 #![cfg_attr(feature = "fail-on-warnings", deny(warnings))]
 #![cfg_attr(feature = "fail-on-warnings", deny(clippy::all))]
 
-mod adjustment_action;
 mod app;
 mod config;
 mod error;
 pub(crate) mod hack_user_trades_lag;
 mod okex;
-mod rebalance_action;
 
 pub mod job;
 

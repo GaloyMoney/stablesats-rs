@@ -6,7 +6,7 @@ use galoy_client::*;
 use okex_client::*;
 use shared::pubsub::CorrelationId;
 
-use crate::{error::*, okex::*, rebalance_action::*};
+use crate::{error::*, okex::*};
 
 const SATS_PER_BTC: Decimal = dec!(100_000_000);
 
@@ -88,10 +88,10 @@ pub(super) async fn execute(
     };
 
     match action {
-        RebalanceAction::DoNothing => {}
+        OkexFundingAdjustment::DoNothing => {}
         _ => {
             match action {
-                RebalanceAction::TransferTradingToFunding(amount) => {
+                OkexFundingAdjustment::TransferTradingToFunding(amount) => {
                     let reservation = TransferReservation {
                         shared: &shared,
                         action_size: action.size(),
@@ -110,7 +110,7 @@ pub(super) async fn execute(
                         let _ = okex.transfer_trading_to_funding(client_id, amount).await?;
                     }
                 }
-                RebalanceAction::TransferFundingToTrading(amount) => {
+                OkexFundingAdjustment::TransferFundingToTrading(amount) => {
                     let reservation = TransferReservation {
                         shared: &shared,
                         action_size: Some(amount),
@@ -129,7 +129,7 @@ pub(super) async fn execute(
                         let _ = okex.transfer_funding_to_trading(client_id, amount).await?;
                     }
                 }
-                RebalanceAction::OnchainDeposit(amount) => {
+                OkexFundingAdjustment::OnchainDeposit(amount) => {
                     let deposit_address = okex.get_funding_deposit_address().await?.value;
                     let reservation = TransferReservation {
                         shared: &shared,
@@ -153,7 +153,7 @@ pub(super) async fn execute(
                             .await?;
                     }
                 }
-                RebalanceAction::OnchainWithdraw(amount) => {
+                OkexFundingAdjustment::OnchainWithdraw(amount) => {
                     let deposit_address = galoy.onchain_address().await?.address;
                     let reservation = TransferReservation {
                         shared: &shared,

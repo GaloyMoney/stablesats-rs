@@ -10,7 +10,7 @@ use shared::{
     pubsub::{memory, PubSubConfig, Publisher, Subscriber},
 };
 
-use crate::{adjustment_action::*, config::*, error::*, job, okex::*, rebalance_action::*};
+use crate::{config::*, error::*, job, okex::*};
 
 pub struct HedgingApp {
     _runner: OwnedHandle,

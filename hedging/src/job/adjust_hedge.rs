@@ -4,7 +4,7 @@ use tracing::instrument;
 use okex_client::*;
 use shared::pubsub::CorrelationId;
 
-use crate::{adjustment_action::*, error::*, okex::*};
+use crate::{error::*, okex::*};
 
 #[instrument(name = "hedging.job.adjust_hedge", skip_all, fields(correlation_id = %correlation_id,
         target_liability, current_position, action, placed_order, client_order_id, lag_ok), err)]
@@ -35,7 +35,7 @@ pub(super) async fn execute(
     let action = hedging_adjustment.determine_action(target_liability, current_position.into());
     span.record("action", &tracing::field::display(&action));
     match action {
-        AdjustmentAction::DoNothing => {}
+        OkexHedgeAdjustment::DoNothing => {}
         _ => {
             let reservation = OrderReservation {
                 correlation_id,
@@ -49,14 +49,14 @@ pub(super) async fn execute(
                     &tracing::field::display(String::from(order_id.clone())),
                 );
                 match action {
-                    AdjustmentAction::ClosePosition => {
+                    OkexHedgeAdjustment::ClosePosition => {
                         okex.close_positions(order_id).await?;
                     }
-                    AdjustmentAction::Sell(ref contracts) => {
+                    OkexHedgeAdjustment::Sell(ref contracts) => {
                         okex.place_order(order_id, OkexOrderSide::Sell, contracts)
                             .await?;
                     }
-                    AdjustmentAction::Buy(ref contracts) => {
+                    OkexHedgeAdjustment::Buy(ref contracts) => {
                         okex.place_order(order_id, OkexOrderSide::Buy, contracts)
                             .await?;
                     }

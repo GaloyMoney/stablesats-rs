@@ -5,11 +5,12 @@ use uuid::Uuid;
 use okex_client::{ClientOrderId, OrderDetails};
 use shared::pubsub::CorrelationId;
 
-use crate::{adjustment_action::AdjustmentAction, error::HedgingError};
+use super::OkexHedgeAdjustment;
+use crate::error::HedgingError;
 
 pub struct OrderReservation<'a> {
     pub correlation_id: CorrelationId,
-    pub action: &'a AdjustmentAction,
+    pub action: &'a OkexHedgeAdjustment,
     pub target_usd_value: Decimal,
     pub usd_value_before_order: Decimal,
 }

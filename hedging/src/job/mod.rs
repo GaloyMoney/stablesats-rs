@@ -17,7 +17,7 @@ use shared::{
     sqlxmq::JobExecutor,
 };
 
-use crate::{adjustment_action::*, error::*, okex::*, rebalance_action::*};
+use crate::{error::*, okex::*};
 
 pub const POLL_OKEX_ID: Uuid = uuid!("10000000-0000-0000-0000-000000000001");
 

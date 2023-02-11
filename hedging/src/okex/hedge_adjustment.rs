@@ -9,23 +9,23 @@ use crate::okex::OkexHedgingConfig;
 pub const CONTRACT_SIZE_CENTS: Decimal = dec!(10000);
 
 #[derive(Debug, PartialEq, Eq, Clone)]
-pub enum AdjustmentAction {
+pub enum OkexHedgeAdjustment {
     DoNothing,
     ClosePosition,
     Sell(BtcUsdSwapContracts),
     Buy(BtcUsdSwapContracts),
 }
-impl std::fmt::Display for AdjustmentAction {
+impl std::fmt::Display for OkexHedgeAdjustment {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            AdjustmentAction::DoNothing => write!(f, "DoNothing"),
-            AdjustmentAction::ClosePosition => write!(f, "ClosePosition"),
-            AdjustmentAction::Sell(contracts) => write!(f, "Sell({contracts})"),
-            AdjustmentAction::Buy(contracts) => write!(f, "Buy({contracts})"),
+            OkexHedgeAdjustment::DoNothing => write!(f, "DoNothing"),
+            OkexHedgeAdjustment::ClosePosition => write!(f, "ClosePosition"),
+            OkexHedgeAdjustment::Sell(contracts) => write!(f, "Sell({contracts})"),
+            OkexHedgeAdjustment::Buy(contracts) => write!(f, "Buy({contracts})"),
         }
     }
 }
-impl AdjustmentAction {
+impl OkexHedgeAdjustment {
     pub fn action_required(&self) -> bool {
         !matches!(*self, Self::DoNothing)
     }
@@ -70,14 +70,14 @@ impl HedgingAdjustment {
         &self,
         abs_liability: SyntheticCentLiability,
         signed_exposure: SyntheticCentExposure,
-    ) -> AdjustmentAction {
+    ) -> OkexHedgeAdjustment {
         if abs_liability >= Decimal::ZERO
             && abs_liability < self.config.minimum_liability_threshold_cents
         {
             if signed_exposure == Decimal::ZERO {
-                AdjustmentAction::DoNothing
+                OkexHedgeAdjustment::DoNothing
             } else {
-                AdjustmentAction::ClosePosition
+                OkexHedgeAdjustment::ClosePosition
             }
         } else {
             let signed_liability = abs_liability * Decimal::NEGATIVE_ONE;
@@ -89,9 +89,9 @@ impl HedgingAdjustment {
                     .round()
                     .abs();
                 if contracts.is_zero() {
-                    AdjustmentAction::DoNothing
+                    OkexHedgeAdjustment::DoNothing
                 } else {
-                    AdjustmentAction::Sell(BtcUsdSwapContracts::from(
+                    OkexHedgeAdjustment::Sell(BtcUsdSwapContracts::from(
                         u32::try_from(contracts).expect("decimal to u32"),
                     ))
                 }
@@ -101,9 +101,9 @@ impl HedgingAdjustment {
                     .round()
                     .abs();
                 if contracts.is_zero() {
-                    AdjustmentAction::DoNothing
+                    OkexHedgeAdjustment::DoNothing
                 } else {
-                    AdjustmentAction::Sell(BtcUsdSwapContracts::from(
+                    OkexHedgeAdjustment::Sell(BtcUsdSwapContracts::from(
                         u32::try_from(contracts).expect("decimal to u32"),
                     ))
                 }
@@ -113,14 +113,14 @@ impl HedgingAdjustment {
                     .round()
                     .abs();
                 if contracts.is_zero() {
-                    AdjustmentAction::DoNothing
+                    OkexHedgeAdjustment::DoNothing
                 } else {
-                    AdjustmentAction::Buy(BtcUsdSwapContracts::from(
+                    OkexHedgeAdjustment::Buy(BtcUsdSwapContracts::from(
                         u32::try_from(contracts).expect("decimal to u32"),
                     ))
                 }
             } else {
-                AdjustmentAction::DoNothing
+                OkexHedgeAdjustment::DoNothing
             }
         }
     }
@@ -138,7 +138,7 @@ mod tests {
         let liability = SyntheticCentLiability::try_from(dec!(10000)).unwrap();
         let exposure = SyntheticCentExposure::from(dec!(-10000));
         let adjustment = hedging_adjustment.determine_action(liability, exposure);
-        assert_eq!(adjustment, AdjustmentAction::DoNothing);
+        assert_eq!(adjustment, OkexHedgeAdjustment::DoNothing);
     }
 
     #[test]
@@ -149,7 +149,7 @@ mod tests {
         let liability = SyntheticCentLiability::try_from(dec!(0)).unwrap();
         let exposure = SyntheticCentExposure::from(dec!(-10000));
         let adjustment = hedging_adjustment.determine_action(liability, exposure);
-        assert_eq!(adjustment, AdjustmentAction::ClosePosition);
+        assert_eq!(adjustment, OkexHedgeAdjustment::ClosePosition);
     }
 
     #[test]
@@ -162,7 +162,7 @@ mod tests {
         let adjustment = hedging_adjustment.determine_action(liability, exposure);
         assert_eq!(
             adjustment,
-            AdjustmentAction::Sell(BtcUsdSwapContracts::from(1))
+            OkexHedgeAdjustment::Sell(BtcUsdSwapContracts::from(1))
         );
     }
 
@@ -176,7 +176,7 @@ mod tests {
         let adjustment = hedging_adjustment.determine_action(liability, exposure);
         assert_eq!(
             adjustment,
-            AdjustmentAction::Buy(BtcUsdSwapContracts::from(50))
+            OkexHedgeAdjustment::Buy(BtcUsdSwapContracts::from(50))
         );
     }
 
@@ -188,7 +188,7 @@ mod tests {
         let liability = SyntheticCentLiability::try_from(dec!(10000)).unwrap();
         let exposure = SyntheticCentExposure::from(dec!(-9980));
         let adjustment = hedging_adjustment.determine_action(liability, exposure);
-        assert_eq!(adjustment, AdjustmentAction::DoNothing);
+        assert_eq!(adjustment, OkexHedgeAdjustment::DoNothing);
     }
 
     #[test]
@@ -201,7 +201,7 @@ mod tests {
         let adjustment = hedging_adjustment.determine_action(liability, exposure);
         assert_eq!(
             adjustment,
-            AdjustmentAction::Sell(BtcUsdSwapContracts::from(2))
+            OkexHedgeAdjustment::Sell(BtcUsdSwapContracts::from(2))
         );
     }
 
@@ -219,7 +219,7 @@ mod tests {
         );
 
         let adjustment = hedging_adjustment.determine_action(liability, exposure);
-        assert_eq!(adjustment, AdjustmentAction::DoNothing);
+        assert_eq!(adjustment, OkexHedgeAdjustment::DoNothing);
     }
 
     #[test]
@@ -243,7 +243,7 @@ mod tests {
         let adjustment = hedging_adjustment.determine_action(liability, exposure);
         assert_eq!(
             adjustment,
-            AdjustmentAction::Sell(BtcUsdSwapContracts::from(
+            OkexHedgeAdjustment::Sell(BtcUsdSwapContracts::from(
                 u32::try_from(expected_ct).expect("decimal to u32")
             ))
         );
@@ -263,7 +263,7 @@ mod tests {
         );
 
         let adjustment = hedging_adjustment.determine_action(liability, exposure);
-        assert_eq!(adjustment, AdjustmentAction::DoNothing);
+        assert_eq!(adjustment, OkexHedgeAdjustment::DoNothing);
     }
 
     #[test]
@@ -285,7 +285,7 @@ mod tests {
             hedging_adjustment.determine_action(liability.try_into().unwrap(), exposure.into());
         assert_eq!(
             adjustment,
-            AdjustmentAction::Buy(BtcUsdSwapContracts::from(
+            OkexHedgeAdjustment::Buy(BtcUsdSwapContracts::from(
                 u32::try_from(expected_ct).expect("decimal to u32")
             ))
         );
@@ -300,7 +300,7 @@ mod tests {
         let exposure = SyntheticCentExposure::from(dec!(-19998));
 
         let adjustment = hedging_adjustment.determine_action(liability, exposure);
-        assert_eq!(adjustment, AdjustmentAction::ClosePosition);
+        assert_eq!(adjustment, OkexHedgeAdjustment::ClosePosition);
     }
 
     #[test]
@@ -312,7 +312,7 @@ mod tests {
         let exposure = SyntheticCentExposure::from(dec!(0));
 
         let adjustment = hedging_adjustment.determine_action(liability, exposure);
-        assert_eq!(adjustment, AdjustmentAction::DoNothing);
+        assert_eq!(adjustment, OkexHedgeAdjustment::DoNothing);
     }
 
     #[test]
@@ -327,7 +327,7 @@ mod tests {
         let adjustment = hedging_adjustment.determine_action(liability, exposure);
         assert_eq!(
             adjustment,
-            AdjustmentAction::Buy(BtcUsdSwapContracts::from(
+            OkexHedgeAdjustment::Buy(BtcUsdSwapContracts::from(
                 u32::try_from(expected_ct).expect("decimal to u32")
             ))
         );

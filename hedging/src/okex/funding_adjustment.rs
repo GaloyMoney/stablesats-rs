@@ -4,41 +4,38 @@ use rust_decimal_macros::dec;
 pub use okex_client::BtcUsdSwapContracts;
 pub use shared::payload::{SyntheticCentExposure, SyntheticCentLiability};
 
-use crate::{
-    adjustment_action::CONTRACT_SIZE_CENTS,
-    okex::{OkexFundingConfig, OkexHedgingConfig},
-};
+use crate::okex::*;
 
 const SATS_PER_BTC: Decimal = dec!(100_000_000);
 
 #[derive(Debug, PartialEq, Eq, Clone)]
-pub enum RebalanceAction {
+pub enum OkexFundingAdjustment {
     DoNothing,
     TransferTradingToFunding(Decimal),
     TransferFundingToTrading(Decimal),
     OnchainDeposit(Decimal),
     OnchainWithdraw(Decimal),
 }
-impl std::fmt::Display for RebalanceAction {
+impl std::fmt::Display for OkexFundingAdjustment {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            RebalanceAction::DoNothing => write!(f, "DoNothing"),
-            RebalanceAction::TransferTradingToFunding(amount_in_btc) => {
+            OkexFundingAdjustment::DoNothing => write!(f, "DoNothing"),
+            OkexFundingAdjustment::TransferTradingToFunding(amount_in_btc) => {
                 write!(f, "TransferTradingToFunding({amount_in_btc})")
             }
-            RebalanceAction::TransferFundingToTrading(amount_in_btc) => {
+            OkexFundingAdjustment::TransferFundingToTrading(amount_in_btc) => {
                 write!(f, "TransferFundingToTrading({amount_in_btc})")
             }
-            RebalanceAction::OnchainDeposit(amount_in_btc) => {
+            OkexFundingAdjustment::OnchainDeposit(amount_in_btc) => {
                 write!(f, "OnchainDeposit({amount_in_btc})")
             }
-            RebalanceAction::OnchainWithdraw(amount_in_btc) => {
+            OkexFundingAdjustment::OnchainWithdraw(amount_in_btc) => {
                 write!(f, "OnchainWithdraw({amount_in_btc})")
             }
         }
     }
 }
-impl RebalanceAction {
+impl OkexFundingAdjustment {
     pub fn action_required(&self) -> bool {
         !matches!(*self, Self::DoNothing)
     }
@@ -104,7 +101,7 @@ impl FundingAdjustment {
         total_collateral_in_btc: Decimal,
         btc_price_in_cents: Decimal,
         funding_btc_total_balance: Decimal,
-    ) -> RebalanceAction {
+    ) -> OkexFundingAdjustment {
         let round_liability_in_cents = round_contract_in_cents(abs_liability_in_cents.into());
         let abs_liability_in_btc = round_liability_in_cents / btc_price_in_cents;
         let abs_exposure_in_btc =
@@ -195,7 +192,7 @@ impl FundingAdjustment {
                 self.config.minimum_funding_balance_btc,
             )
         } else {
-            RebalanceAction::DoNothing
+            OkexFundingAdjustment::DoNothing
         }
     }
 }
@@ -204,7 +201,7 @@ fn calculate_transfer_in_deposit(
     funding_btc_total_balance: Decimal,
     amount_in_btc: Decimal,
     minimum_funding_balance_btc: Decimal,
-) -> RebalanceAction {
+) -> OkexFundingAdjustment {
     let internal_amount = std::cmp::min(funding_btc_total_balance, amount_in_btc);
     let new_funding_balance = funding_btc_total_balance - internal_amount;
     let funding_refill = std::cmp::max(
@@ -215,11 +212,11 @@ fn calculate_transfer_in_deposit(
     let external_amount = missing_amount + funding_refill;
 
     if !internal_amount.is_zero() {
-        RebalanceAction::TransferFundingToTrading(internal_amount)
+        OkexFundingAdjustment::TransferFundingToTrading(internal_amount)
     } else if !external_amount.is_zero() {
-        RebalanceAction::OnchainDeposit(external_amount)
+        OkexFundingAdjustment::OnchainDeposit(external_amount)
     } else {
-        RebalanceAction::DoNothing
+        OkexFundingAdjustment::DoNothing
     }
 }
 
@@ -227,7 +224,7 @@ fn calculate_transfer_out_withdraw(
     funding_btc_total_balance: Decimal,
     amount_in_btc: Decimal,
     minimum_funding_balance_btc: Decimal,
-) -> RebalanceAction {
+) -> OkexFundingAdjustment {
     let internal_amount = amount_in_btc;
     let external_amount = std::cmp::max(
         Decimal::ZERO,
@@ -235,11 +232,11 @@ fn calculate_transfer_out_withdraw(
     );
 
     if !internal_amount.is_zero() {
-        RebalanceAction::TransferTradingToFunding(internal_amount)
+        OkexFundingAdjustment::TransferTradingToFunding(internal_amount)
     } else if !external_amount.is_zero() {
-        RebalanceAction::OnchainWithdraw(external_amount)
+        OkexFundingAdjustment::OnchainWithdraw(external_amount)
     } else {
-        RebalanceAction::DoNothing
+        OkexFundingAdjustment::DoNothing
     }
 }
 
@@ -247,7 +244,7 @@ fn calculate_deposit(
     funding_btc_total_balance: Decimal,
     amount_in_btc: Decimal,
     minimum_funding_balance_btc: Decimal,
-) -> RebalanceAction {
+) -> OkexFundingAdjustment {
     let internal_amount = std::cmp::min(funding_btc_total_balance, amount_in_btc);
     let new_funding_balance = funding_btc_total_balance - internal_amount;
     let funding_refill = std::cmp::max(
@@ -258,32 +255,32 @@ fn calculate_deposit(
     let external_amount = missing_amount + funding_refill;
 
     if !external_amount.is_zero() {
-        RebalanceAction::OnchainDeposit(external_amount)
+        OkexFundingAdjustment::OnchainDeposit(external_amount)
     } else {
-        RebalanceAction::DoNothing
+        OkexFundingAdjustment::DoNothing
     }
 }
 
 fn calculate_transfer_in(
     funding_btc_total_balance: Decimal,
     amount_in_btc: Decimal,
-) -> RebalanceAction {
+) -> OkexFundingAdjustment {
     let internal_amount = std::cmp::min(funding_btc_total_balance, amount_in_btc);
 
     if !internal_amount.is_zero() {
-        RebalanceAction::TransferFundingToTrading(internal_amount)
+        OkexFundingAdjustment::TransferFundingToTrading(internal_amount)
     } else {
-        RebalanceAction::DoNothing
+        OkexFundingAdjustment::DoNothing
     }
 }
 
-fn calculate_transfer_out(amount_in_btc: Decimal) -> RebalanceAction {
+fn calculate_transfer_out(amount_in_btc: Decimal) -> OkexFundingAdjustment {
     let internal_amount = amount_in_btc;
 
     if !internal_amount.is_zero() {
-        RebalanceAction::TransferTradingToFunding(internal_amount)
+        OkexFundingAdjustment::TransferTradingToFunding(internal_amount)
     } else {
-        RebalanceAction::DoNothing
+        OkexFundingAdjustment::DoNothing
     }
 }
 
@@ -291,16 +288,16 @@ fn calculate_withdraw(
     funding_btc_total_balance: Decimal,
     amount_in_btc: Decimal,
     minimum_funding_balance_btc: Decimal,
-) -> RebalanceAction {
+) -> OkexFundingAdjustment {
     let external_amount = std::cmp::max(
         Decimal::ZERO,
         amount_in_btc + funding_btc_total_balance - minimum_funding_balance_btc,
     );
 
     if !external_amount.is_zero() {
-        RebalanceAction::OnchainWithdraw(external_amount)
+        OkexFundingAdjustment::OnchainWithdraw(external_amount)
     } else {
-        RebalanceAction::DoNothing
+        OkexFundingAdjustment::DoNothing
     }
 }
 
@@ -357,7 +354,7 @@ mod tests {
             btc_price,
             funding_adjustment.config.minimum_funding_balance_btc,
         );
-        assert_eq!(adjustment, RebalanceAction::DoNothing);
+        assert_eq!(adjustment, OkexFundingAdjustment::DoNothing);
     }
 
     #[test]
@@ -387,7 +384,7 @@ mod tests {
         );
         assert_eq!(
             adjustment,
-            RebalanceAction::OnchainDeposit(expected_external)
+            OkexFundingAdjustment::OnchainDeposit(expected_external)
         );
     }
 
@@ -421,7 +418,7 @@ mod tests {
         );
         assert_eq!(
             adjustment,
-            RebalanceAction::TransferTradingToFunding(expected_internal)
+            OkexFundingAdjustment::TransferTradingToFunding(expected_internal)
         );
     }
 
@@ -454,7 +451,7 @@ mod tests {
         );
         assert_eq!(
             adjustment,
-            RebalanceAction::TransferFundingToTrading(expected_internal)
+            OkexFundingAdjustment::TransferFundingToTrading(expected_internal)
         );
     }
 
@@ -487,7 +484,7 @@ mod tests {
         );
         assert_eq!(
             adjustment,
-            RebalanceAction::TransferTradingToFunding(expected_internal)
+            OkexFundingAdjustment::TransferTradingToFunding(expected_internal)
         );
     }
 
@@ -521,7 +518,7 @@ mod tests {
         );
         assert_eq!(
             adjustment,
-            RebalanceAction::OnchainDeposit(expected_external)
+            OkexFundingAdjustment::OnchainDeposit(expected_external)
         );
     }
 
