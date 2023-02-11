@@ -7,14 +7,14 @@ use shared::{
     pubsub::Publisher,
 };
 
-use crate::{config::FundingSectionConfig, error::HedgingError, okex_orders::*, okex_transfers::*};
+use crate::{error::HedgingError, okex::OkexFundingConfig, okex_orders::*, okex_transfers::*};
 
 pub async fn execute(
     okex_orders: OkexOrders,
     okex_transfers: OkexTransfers,
     okex: OkexClient,
     publisher: Publisher,
-    funding_config: FundingSectionConfig,
+    funding_config: OkexFundingConfig,
 ) -> Result<(), HedgingError> {
     let PositionSize {
         usd_cents,

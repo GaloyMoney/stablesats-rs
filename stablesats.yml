@@ -22,27 +22,10 @@
 # hedging:
 #   enabled: true
 #   config:
-#     okex_poll_frequency: 10
 #     health:
 #       unhealthy_msg_interval_liability: 20
 #       unhealthy_msg_interval_position: 20
 #       unhealthy_msg_interval_price: 20
-#
-#   hedging:
-#     low_bound_ratio_shorting: 0.98
-#     low_safebound_ratio_shorting: 1.00
-#     high_safebound_ratio_shorting: 1.00
-#     high_bound_ratio_shorting: 1.02
-#     minimum_liability_threshold_cents: 5000
-#   funding:
-#     minimum_transfer_amount_cents: 10000
-#     minimum_funding_balance_btc: 1.0
-#     low_bound_ratio_leverage: 2.0
-#     low_safebound_ratio_leverage: 3.0
-#     high_safebound_ratio_leverage: 3.0
-#     high_bound_ratio_leverage: 4.0
-#     high_bound_buffer_percentage: 0.9
-#     deposit_lost_timeout_seconds: 3600
 
 # price_server:
   # enabled: true
@@ -81,8 +64,25 @@
 #   okex:
 #     weight: 1.0
 #     config:
-#       api_key: okex api
-#       simulated: false
+#       client:
+#         api_key: okex api
+#         simulated: false
+#       poll_frequency: 10
+#       hedging:
+#         low_bound_ratio_shorting: 0.98
+#         low_safebound_ratio_shorting: 1.00
+#         high_safebound_ratio_shorting: 1.00
+#         high_bound_ratio_shorting: 1.02
+#         minimum_liability_threshold_cents: 5000
+#       funding:
+#         minimum_transfer_amount_cents: 10000
+#         minimum_funding_balance_btc: 1.0
+#         low_bound_ratio_leverage: 2.0
+#         low_safebound_ratio_leverage: 3.0
+#         high_safebound_ratio_leverage: 3.0
+#         high_bound_ratio_leverage: 4.0
+#         high_bound_buffer_percentage: 0.9
+#         deposit_lost_timeout_seconds: 3600
 #   bitfinex:
 #     weight: 0.0
 #     config:

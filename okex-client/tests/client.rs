@@ -1,7 +1,6 @@
 use rust_decimal::Decimal;
 use rust_decimal_macros::dec;
 use serial_test::serial;
-use shared::exchanges_config::OkexConfig;
 
 use std::env;
 
@@ -12,7 +11,7 @@ async fn configured_okex_client() -> anyhow::Result<OkexClient> {
     let passphrase = env::var("OKEX_PASSPHRASE").expect("OKEX_PASS_PHRASE not set");
     let secret_key = env::var("OKEX_SECRET_KEY").expect("OKEX_SECRET_KEY not set");
 
-    let client = OkexClient::new(OkexConfig {
+    let client = OkexClient::new(OkexClientConfig {
         api_key,
         passphrase,
         secret_key,
@@ -54,7 +53,7 @@ async fn get_onchain_fees_data() -> anyhow::Result<()> {
 #[serial]
 #[ignore = "avoid rate limit"]
 async fn client_is_missing_header() -> anyhow::Result<()> {
-    let client = OkexClient::new(OkexConfig {
+    let client = OkexClient::new(OkexClientConfig {
         api_key: "".to_string(),
         passphrase: "".to_string(),
         secret_key: "".to_string(),

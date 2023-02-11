@@ -4,7 +4,10 @@ use rust_decimal_macros::dec;
 pub use okex_client::BtcUsdSwapContracts;
 pub use shared::payload::{SyntheticCentExposure, SyntheticCentLiability};
 
-use crate::{adjustment_action::CONTRACT_SIZE_CENTS, FundingSectionConfig, HedgingSectionConfig};
+use crate::{
+    adjustment_action::CONTRACT_SIZE_CENTS,
+    okex::{OkexFundingConfig, OkexHedgingConfig},
+};
 
 const SATS_PER_BTC: Decimal = dec!(100_000_000);
 
@@ -82,12 +85,12 @@ fn floor_btc(amount_in_btc: Decimal) -> Decimal {
 
 #[derive(Debug, Clone)]
 pub struct FundingAdjustment {
-    config: FundingSectionConfig,
-    hedging_config: HedgingSectionConfig,
+    config: OkexFundingConfig,
+    hedging_config: OkexHedgingConfig,
 }
 
 impl FundingAdjustment {
-    pub fn new(config: FundingSectionConfig, hedging_config: HedgingSectionConfig) -> Self {
+    pub fn new(config: OkexFundingConfig, hedging_config: OkexHedgingConfig) -> Self {
         Self {
             config,
             hedging_config,
@@ -304,8 +307,6 @@ fn calculate_withdraw(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::{FundingSectionConfig, HedgingSectionConfig};
-    use rust_decimal_macros::dec;
 
     fn split_deposit(
         funding_btc_total_balance: Decimal,
@@ -341,8 +342,8 @@ mod tests {
     #[test]
     fn do_nothing_conditions() {
         let funding_adjustment = FundingAdjustment {
-            config: FundingSectionConfig::default(),
-            hedging_config: HedgingSectionConfig::default(),
+            config: OkexFundingConfig::default(),
+            hedging_config: OkexHedgingConfig::default(),
         };
         let liability = SyntheticCentLiability::try_from(dec!(10_000)).unwrap();
         let exposure = SyntheticCentExposure::from(dec!(-10_000));
@@ -362,8 +363,8 @@ mod tests {
     #[test]
     fn initial_conditions() {
         let funding_adjustment = FundingAdjustment {
-            config: FundingSectionConfig::default(),
-            hedging_config: HedgingSectionConfig::default(),
+            config: OkexFundingConfig::default(),
+            hedging_config: OkexHedgingConfig::default(),
         };
         let liability = SyntheticCentLiability::try_from(dec!(10_000)).unwrap();
         let exposure = SyntheticCentExposure::from(dec!(0));
@@ -393,8 +394,8 @@ mod tests {
     #[test]
     fn terminal_conditions() {
         let funding_adjustment = FundingAdjustment {
-            config: FundingSectionConfig::default(),
-            hedging_config: HedgingSectionConfig::default(),
+            config: OkexFundingConfig::default(),
+            hedging_config: OkexHedgingConfig::default(),
         };
         let liability = SyntheticCentLiability::try_from(
             funding_adjustment.config.minimum_transfer_amount_cents / dec!(2),
@@ -427,8 +428,8 @@ mod tests {
     #[test]
     fn user_activity_tracking() {
         let funding_adjustment = FundingAdjustment {
-            config: FundingSectionConfig::default(),
-            hedging_config: HedgingSectionConfig::default(),
+            config: OkexFundingConfig::default(),
+            hedging_config: OkexHedgingConfig::default(),
         };
         let liability = SyntheticCentLiability::try_from(dec!(10_000)).unwrap();
         let exposure = SyntheticCentExposure::from(dec!(-3_000));
@@ -460,8 +461,8 @@ mod tests {
     #[test]
     fn counterparty_risk_avoidance() {
         let funding_adjustment = FundingAdjustment {
-            config: FundingSectionConfig::default(),
-            hedging_config: HedgingSectionConfig::default(),
+            config: OkexFundingConfig::default(),
+            hedging_config: OkexHedgingConfig::default(),
         };
         let liability = SyntheticCentLiability::try_from(dec!(10_000)).unwrap();
         let exposure = dec!(10_000);
@@ -493,8 +494,8 @@ mod tests {
     #[test]
     fn liquidation_risk_avoidance() {
         let funding_adjustment = FundingAdjustment {
-            config: FundingSectionConfig::default(),
-            hedging_config: HedgingSectionConfig::default(),
+            config: OkexFundingConfig::default(),
+            hedging_config: OkexHedgingConfig::default(),
         };
         let liability = SyntheticCentLiability::try_from(dec!(10_000)).unwrap();
         let exposure = dec!(10_100);
@@ -527,8 +528,8 @@ mod tests {
     #[test]
     fn split_deposit_no_funding() {
         let funding_adjustment = FundingAdjustment {
-            config: FundingSectionConfig::default(),
-            hedging_config: HedgingSectionConfig::default(),
+            config: OkexFundingConfig::default(),
+            hedging_config: OkexHedgingConfig::default(),
         };
         let funding_btc_total_balance: Decimal = dec!(0);
         let amount_in_btc: Decimal = dec!(1);
@@ -548,8 +549,8 @@ mod tests {
     #[test]
     fn split_deposit_equal_funding_amount_under() {
         let funding_adjustment = FundingAdjustment {
-            config: FundingSectionConfig::default(),
-            hedging_config: HedgingSectionConfig::default(),
+            config: OkexFundingConfig::default(),
+            hedging_config: OkexHedgingConfig::default(),
         };
         let funding_btc_total_balance: Decimal =
             funding_adjustment.config.minimum_funding_balance_btc;
@@ -569,8 +570,8 @@ mod tests {
     #[test]
     fn split_deposit_equal_funding_amount_equal() {
         let funding_adjustment = FundingAdjustment {
-            config: FundingSectionConfig::default(),
-            hedging_config: HedgingSectionConfig::default(),
+            config: OkexFundingConfig::default(),
+            hedging_config: OkexHedgingConfig::default(),
         };
         let funding_btc_total_balance: Decimal =
             funding_adjustment.config.minimum_funding_balance_btc;
@@ -590,8 +591,8 @@ mod tests {
     #[test]
     fn split_deposit_equal_funding_amount_over() {
         let funding_adjustment = FundingAdjustment {
-            config: FundingSectionConfig::default(),
-            hedging_config: HedgingSectionConfig::default(),
+            config: OkexFundingConfig::default(),
+            hedging_config: OkexHedgingConfig::default(),
         };
         let funding_btc_total_balance: Decimal =
             funding_adjustment.config.minimum_funding_balance_btc;
@@ -611,8 +612,8 @@ mod tests {
     #[test]
     fn split_deposit_more_funding_amount_under() {
         let funding_adjustment = FundingAdjustment {
-            config: FundingSectionConfig::default(),
-            hedging_config: HedgingSectionConfig::default(),
+            config: OkexFundingConfig::default(),
+            hedging_config: OkexHedgingConfig::default(),
         };
         let extra_funding = dec!(0.3);
         let funding_btc_total_balance: Decimal =
@@ -633,8 +634,8 @@ mod tests {
     #[test]
     fn split_deposit_more_funding_amount_equal() {
         let funding_adjustment = FundingAdjustment {
-            config: FundingSectionConfig::default(),
-            hedging_config: HedgingSectionConfig::default(),
+            config: OkexFundingConfig::default(),
+            hedging_config: OkexHedgingConfig::default(),
         };
         let extra_funding = dec!(0.3);
         let funding_btc_total_balance: Decimal =
@@ -655,8 +656,8 @@ mod tests {
     #[test]
     fn split_deposit_more_funding_amount_over() {
         let funding_adjustment = FundingAdjustment {
-            config: FundingSectionConfig::default(),
-            hedging_config: HedgingSectionConfig::default(),
+            config: OkexFundingConfig::default(),
+            hedging_config: OkexHedgingConfig::default(),
         };
         let extra_funding = dec!(0.3);
         let funding_btc_total_balance: Decimal =
@@ -677,8 +678,8 @@ mod tests {
     #[test]
     fn split_withdraw_no_funding_amount_under() {
         let funding_adjustment = FundingAdjustment {
-            config: FundingSectionConfig::default(),
-            hedging_config: HedgingSectionConfig::default(),
+            config: OkexFundingConfig::default(),
+            hedging_config: OkexHedgingConfig::default(),
         };
         let funding_btc_total_balance: Decimal = dec!(0);
         let amount_in_btc: Decimal =
@@ -698,8 +699,8 @@ mod tests {
     #[test]
     fn split_withdraw_no_funding_amount_equal() {
         let funding_adjustment = FundingAdjustment {
-            config: FundingSectionConfig::default(),
-            hedging_config: HedgingSectionConfig::default(),
+            config: OkexFundingConfig::default(),
+            hedging_config: OkexHedgingConfig::default(),
         };
         let funding_btc_total_balance: Decimal = dec!(0);
         let amount_in_btc: Decimal = funding_adjustment.config.minimum_funding_balance_btc;
@@ -718,8 +719,8 @@ mod tests {
     #[test]
     fn split_withdraw_no_funding_amount_over() {
         let funding_adjustment = FundingAdjustment {
-            config: FundingSectionConfig::default(),
-            hedging_config: HedgingSectionConfig::default(),
+            config: OkexFundingConfig::default(),
+            hedging_config: OkexHedgingConfig::default(),
         };
         let funding_btc_total_balance: Decimal = dec!(0);
         let amount_in_btc: Decimal =
@@ -740,8 +741,8 @@ mod tests {
     #[test]
     fn split_withdraw_equal_funding() {
         let funding_adjustment = FundingAdjustment {
-            config: FundingSectionConfig::default(),
-            hedging_config: HedgingSectionConfig::default(),
+            config: OkexFundingConfig::default(),
+            hedging_config: OkexHedgingConfig::default(),
         };
         let funding_btc_total_balance: Decimal =
             funding_adjustment.config.minimum_funding_balance_btc;
@@ -761,8 +762,8 @@ mod tests {
     #[test]
     fn split_withdraw_more_funding() {
         let funding_adjustment = FundingAdjustment {
-            config: FundingSectionConfig::default(),
-            hedging_config: HedgingSectionConfig::default(),
+            config: OkexFundingConfig::default(),
+            hedging_config: OkexHedgingConfig::default(),
         };
         let extra_funding = dec!(0.3);
         let funding_btc_total_balance: Decimal =

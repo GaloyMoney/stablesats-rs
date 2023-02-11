@@ -5,15 +5,14 @@ use tracing::{info_span, Instrument};
 use galoy_client::*;
 use okex_client::*;
 use shared::{
-    exchanges_config::OkexConfig,
     health::HealthCheckTrigger,
     payload::{OkexBtcUsdSwapPositionPayload, PriceStreamPayload},
     pubsub::{memory, PubSubConfig, Publisher, Subscriber},
 };
 
 use crate::{
-    adjustment_action::*, config::*, error::*, job, okex_orders::*, okex_transfers::*,
-    rebalance_action::*,
+    adjustment_action::*, config::*, error::*, job, okex::OkexConfig, okex_orders::*,
+    okex_transfers::*, rebalance_action::*,
 };
 
 pub struct HedgingApp {
@@ -26,13 +25,14 @@ impl HedgingApp {
         pool: sqlx::PgPool,
         health_check_trigger: HealthCheckTrigger,
         HedgingAppConfig {
-            okex_poll_frequency: okex_poll_delay,
-            health: health_cfg,
+            health: health_cfg, ..
+        }: HedgingAppConfig,
+        OkexConfig {
+            client: okex_client_config,
+            poll_frequency: okex_poll_delay,
             hedging: hedging_config,
             funding: funding_config,
-            ..
-        }: HedgingAppConfig,
-        okex_client_config: OkexConfig,
+        }: OkexConfig,
         galoy_client_cfg: GaloyClientConfig,
         pubsub_config: PubSubConfig,
         price_receiver: memory::Subscriber<PriceStreamPayload>,

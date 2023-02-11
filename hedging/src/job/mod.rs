@@ -18,7 +18,7 @@ use shared::{
 };
 
 use crate::{
-    adjustment_action::*, config::FundingSectionConfig, error::*, okex_orders::OkexOrders,
+    adjustment_action::*, error::*, okex::OkexFundingConfig, okex_orders::OkexOrders,
     okex_transfers::OkexTransfers, rebalance_action::*,
 };
 
@@ -39,7 +39,7 @@ pub async fn start_job_runner(
     delay: std::time::Duration,
     funding_adjustment: FundingAdjustment,
     hedging_adjustment: HedgingAdjustment,
-    funding_config: FundingSectionConfig,
+    funding_config: OkexFundingConfig,
 ) -> Result<OwnedHandle, HedgingError> {
     let mut registry = JobRegistry::new(&[adjust_hedge, poll_okex, adjust_funding]);
     registry.set_context(ledger);
@@ -123,7 +123,7 @@ async fn poll_okex(
     okex_orders: OkexOrders,
     okex_transfers: OkexTransfers,
     publisher: Publisher,
-    funding_config: FundingSectionConfig,
+    funding_config: OkexFundingConfig,
 ) -> Result<(), HedgingError> {
     JobExecutor::builder(&mut current_job)
         .build()

@@ -280,12 +280,10 @@ fn price_stream_throttle_period() -> Duration {
     Duration::from_std(std::time::Duration::from_secs(2)).unwrap()
 }
 
-fn extract_weights(
-    config: &shared::exchanges_config::ExchangeConfigs,
-) -> price_server::ExchangeWeights {
+fn extract_weights(config: &hedging::ExchangesConfig) -> price_server::ExchangeWeights {
     price_server::ExchangeWeights {
         okex: config.okex.as_ref().map(|c| c.weight),
-        bitfinex: config.bitfinex.as_ref().map(|c| c.weight),
-        kollider: config.kollider.as_ref().map(|c| c.weight),
+        bitfinex: None,
+        kollider: None,
     }
 }

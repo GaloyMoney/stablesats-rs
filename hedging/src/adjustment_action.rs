@@ -4,7 +4,7 @@ use rust_decimal_macros::dec;
 pub use okex_client::BtcUsdSwapContracts;
 pub use shared::payload::{SyntheticCentExposure, SyntheticCentLiability};
 
-use crate::HedgingSectionConfig;
+use crate::okex::OkexHedgingConfig;
 
 pub const CONTRACT_SIZE_CENTS: Decimal = dec!(10000);
 
@@ -58,11 +58,11 @@ impl AdjustmentAction {
 
 #[derive(Debug, Clone)]
 pub struct HedgingAdjustment {
-    config: HedgingSectionConfig,
+    config: OkexHedgingConfig,
 }
 
 impl HedgingAdjustment {
-    pub fn new(config: HedgingSectionConfig) -> Self {
+    pub fn new(config: OkexHedgingConfig) -> Self {
         Self { config }
     }
 
@@ -129,13 +129,11 @@ impl HedgingAdjustment {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::HedgingSectionConfig;
-    use rust_decimal_macros::dec;
 
     #[test]
     fn no_adjustment() {
         let hedging_adjustment = HedgingAdjustment {
-            config: HedgingSectionConfig::default(),
+            config: OkexHedgingConfig::default(),
         };
         let liability = SyntheticCentLiability::try_from(dec!(10000)).unwrap();
         let exposure = SyntheticCentExposure::from(dec!(-10000));
@@ -146,7 +144,7 @@ mod tests {
     #[test]
     fn close_position() {
         let hedging_adjustment = HedgingAdjustment {
-            config: HedgingSectionConfig::default(),
+            config: OkexHedgingConfig::default(),
         };
         let liability = SyntheticCentLiability::try_from(dec!(0)).unwrap();
         let exposure = SyntheticCentExposure::from(dec!(-10000));
@@ -157,7 +155,7 @@ mod tests {
     #[test]
     fn increase() {
         let hedging_adjustment = HedgingAdjustment {
-            config: HedgingSectionConfig::default(),
+            config: OkexHedgingConfig::default(),
         };
         let liability = SyntheticCentLiability::try_from(dec!(20000)).unwrap();
         let exposure = SyntheticCentExposure::from(dec!(-10000));
@@ -171,7 +169,7 @@ mod tests {
     #[test]
     fn decrease() {
         let hedging_adjustment = HedgingAdjustment {
-            config: HedgingSectionConfig::default(),
+            config: OkexHedgingConfig::default(),
         };
         let liability = SyntheticCentLiability::try_from(dec!(100000)).unwrap();
         let exposure = SyntheticCentExposure::from(dec!(-599800));
@@ -185,7 +183,7 @@ mod tests {
     #[test]
     fn ignores_rounding() {
         let hedging_adjustment = HedgingAdjustment {
-            config: HedgingSectionConfig::default(),
+            config: OkexHedgingConfig::default(),
         };
         let liability = SyntheticCentLiability::try_from(dec!(10000)).unwrap();
         let exposure = SyntheticCentExposure::from(dec!(-9980));
@@ -196,7 +194,7 @@ mod tests {
     #[test]
     fn positive_exposure() {
         let hedging_adjustment = HedgingAdjustment {
-            config: HedgingSectionConfig::default(),
+            config: OkexHedgingConfig::default(),
         };
         let liability = SyntheticCentLiability::try_from(dec!(10000)).unwrap();
         let exposure = SyntheticCentExposure::from(dec!(10000));
@@ -210,7 +208,7 @@ mod tests {
     #[test]
     fn low_bound_limit() {
         let hedging_adjustment = HedgingAdjustment {
-            config: HedgingSectionConfig::default(),
+            config: OkexHedgingConfig::default(),
         };
         let nominal_liability = dec!(1000000);
         let liability = SyntheticCentLiability::try_from(nominal_liability).unwrap();
@@ -227,7 +225,7 @@ mod tests {
     #[test]
     fn low_bound_below() {
         let hedging_adjustment = HedgingAdjustment {
-            config: HedgingSectionConfig::default(),
+            config: OkexHedgingConfig::default(),
         };
         let nominal_liability = dec!(1000000);
         let liability = SyntheticCentLiability::try_from(nominal_liability).unwrap();
@@ -254,7 +252,7 @@ mod tests {
     #[test]
     fn high_bound_limit() {
         let hedging_adjustment = HedgingAdjustment {
-            config: HedgingSectionConfig::default(),
+            config: OkexHedgingConfig::default(),
         };
         let nominal_liability = dec!(1000000);
         let liability = SyntheticCentLiability::try_from(nominal_liability).unwrap();
@@ -271,7 +269,7 @@ mod tests {
     #[test]
     fn high_bound_above() {
         let hedging_adjustment = HedgingAdjustment {
-            config: HedgingSectionConfig::default(),
+            config: OkexHedgingConfig::default(),
         };
         let nominal_liability = 1000000;
         let liability = Decimal::from(nominal_liability);
@@ -296,7 +294,7 @@ mod tests {
     #[test]
     fn min_liability_threshold_below() {
         let hedging_adjustment = HedgingAdjustment {
-            config: HedgingSectionConfig::default(),
+            config: OkexHedgingConfig::default(),
         };
         let liability = SyntheticCentLiability::try_from(dec!(4900)).unwrap();
         let exposure = SyntheticCentExposure::from(dec!(-19998));
@@ -308,7 +306,7 @@ mod tests {
     #[test]
     fn min_liability_threshold_below_with_zero_exposure() {
         let hedging_adjustment = HedgingAdjustment {
-            config: HedgingSectionConfig::default(),
+            config: OkexHedgingConfig::default(),
         };
         let liability = SyntheticCentLiability::try_from(dec!(4900)).unwrap();
         let exposure = SyntheticCentExposure::from(dec!(0));
@@ -320,7 +318,7 @@ mod tests {
     #[test]
     fn min_liability_threshold_above() {
         let hedging_adjustment = HedgingAdjustment {
-            config: HedgingSectionConfig::default(),
+            config: OkexHedgingConfig::default(),
         };
         let liability = SyntheticCentLiability::try_from(dec!(5500)).unwrap();
         let exposure = SyntheticCentExposure::from(dec!(-19998));
