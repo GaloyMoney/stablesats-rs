@@ -4,7 +4,7 @@ use tracing::instrument;
 use okex_client::*;
 use shared::pubsub::CorrelationId;
 
-use crate::{adjustment_action::*, error::*, okex_orders::*};
+use crate::{adjustment_action::*, error::*, okex::*};
 
 #[instrument(name = "hedging.job.adjust_hedge", skip_all, fields(correlation_id = %correlation_id,
         target_liability, current_position, action, placed_order, client_order_id, lag_ok), err)]
@@ -37,7 +37,7 @@ pub(super) async fn execute(
     match action {
         AdjustmentAction::DoNothing => {}
         _ => {
-            let reservation = Reservation {
+            let reservation = OrderReservation {
                 correlation_id,
                 action: &action,
                 target_usd_value: target_liability * Decimal::NEGATIVE_ONE,

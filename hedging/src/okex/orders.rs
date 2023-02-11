@@ -7,7 +7,7 @@ use shared::pubsub::CorrelationId;
 
 use crate::{adjustment_action::AdjustmentAction, error::HedgingError};
 
-pub struct Reservation<'a> {
+pub struct OrderReservation<'a> {
     pub correlation_id: CorrelationId,
     pub action: &'a AdjustmentAction,
     pub target_usd_value: Decimal,
@@ -26,7 +26,7 @@ impl OkexOrders {
 
     pub async fn reserve_order_slot<'a>(
         &self,
-        reservation: Reservation<'a>,
+        reservation: OrderReservation<'a>,
     ) -> Result<Option<ClientOrderId>, HedgingError> {
         let mut tx = self.pool.begin().await?;
         tx.execute("SET TRANSACTION ISOLATION LEVEL SERIALIZABLE")
