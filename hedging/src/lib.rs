@@ -7,8 +7,6 @@ mod error;
 pub(crate) mod hack_user_trades_lag;
 mod okex;
 
-pub mod job;
-
 use galoy_client::GaloyClientConfig;
 use shared::{health::HealthCheckTrigger, payload::*, pubsub::*};
 

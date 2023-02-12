@@ -1,6 +1,7 @@
 mod config;
 mod funding_adjustment;
 mod hedge_adjustment;
+pub mod job;
 mod orders;
 mod transfers;
 
