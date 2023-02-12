@@ -1,24 +1,23 @@
-use okex_client::OkexClient;
+use sqlxmq::NamedJob;
 
-use super::{orders::OkexOrders, transfers::OkexTransfers};
-use crate::error::HedgingError;
-use shared::exchanges_config::OkexConfig;
-
-pub struct OkexEngine {}
+use super::job;
+pub struct OkexEngine {
+    pool: sqlx::PgPool,
+}
 
 impl OkexEngine {
-    pub async fn start(
-        pool: sqlx::PgPool,
-        okex_client_config: OkexConfig,
-    ) -> Result<Self, HedgingError> {
-        let okex = OkexClient::new(okex_client_config).await?;
-        // let funding_adjustment =
-        //     FundingAdjustment::new(funding_config.clone(), hedging_config.clone());
-        okex.check_leverage(funding_config.high_bound_ratio_leverage)
-            .await?;
-        let okex_orders = OkexOrders::new(pool.clone()).await?;
-        let okex_transfers = OkexTransfers::new(pool.clone()).await?;
+    pub fn new(pool: sqlx::PgPool) -> Self {
+        Self { pool }
+    }
 
-        Ok(OkexEngine {})
+    pub fn add_context_to_job_registry(&self, runner: &mut sqlxmq::JobRegistry) {
+        runner.set_context(self.pool.clone());
+    }
+
+    pub fn register_jobs(jobs: &mut Vec<&'static NamedJob>, channels: &mut Vec<&str>) {
+        jobs.push(job::adjust_hedge);
+        jobs.push(job::poll_okex);
+        jobs.push(job::adjust_funding);
+        channels.push("hedging.okex");
     }
 }

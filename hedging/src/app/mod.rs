@@ -13,7 +13,7 @@ use shared::{
 use crate::{config::*, error::*, okex::*};
 
 pub struct HedgingApp {
-    _runner: OwnedHandle,
+    _job_runner_handle: OwnedHandle,
 }
 
 impl HedgingApp {
@@ -43,20 +43,30 @@ impl HedgingApp {
             FundingAdjustment::new(funding_config.clone(), hedging_config.clone());
         let hedging_adjustment = HedgingAdjustment::new(hedging_config);
         let ledger = ledger::Ledger::init(&pool).await?;
-        let job_runner = job::start_job_runner(
-            pool.clone(),
-            ledger.clone(),
-            okex.clone(),
-            okex_orders,
-            okex_transfers.clone(),
-            GaloyClient::connect(galoy_client_cfg).await?,
-            Publisher::new(pubsub_config.clone()).await?,
-            okex_poll_delay,
-            funding_adjustment.clone(),
-            hedging_adjustment.clone(),
-            funding_config.clone(),
-        )
-        .await?;
+        let (mut jobs, mut channels) = (Vec::new(), Vec::new());
+        OkexEngine::register_jobs(&mut jobs, &mut channels);
+        let mut job_registry = sqlxmq::JobRegistry::new(&jobs);
+        let okex_engine = OkexEngine::new(pool.clone());
+        okex_engine.add_context_to_job_registry(&mut job_registry);
+        let job_runner_handle = job_registry
+            .runner(&pool)
+            .set_channel_names(&channels)
+            .run()
+            .await?;
+        // let job_runner = job::start_job_runner(
+        //     pool.clone(),
+        //     ledger.clone(),
+        //     okex.clone(),
+        //     okex_orders,
+        //     okex_transfers.clone(),
+        //     GaloyClient::connect(galoy_client_cfg).await?,
+        //     Publisher::new(pubsub_config.clone()).await?,
+        //     okex_poll_delay,
+        //     funding_adjustment.clone(),
+        //     hedging_adjustment.clone(),
+        //     funding_config.clone(),
+        // )
+        // .await?;
         Self::spawn_liability_balance_listener(
             pool.clone(),
             ledger.clone(),
@@ -91,7 +101,7 @@ impl HedgingApp {
         )
         .await;
         let app = HedgingApp {
-            _runner: job_runner,
+            _job_runner_handle: job_runner_handle,
         };
         Ok(app)
     }

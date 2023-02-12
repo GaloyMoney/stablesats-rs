@@ -113,7 +113,7 @@ pub async fn spawn_adjust_hedge<'a>(
 }
 
 #[job(name = "poll_okex")]
-async fn poll_okex(
+pub(super) async fn poll_okex(
     mut current_job: CurrentJob,
     OkexPollDelay(delay): OkexPollDelay,
     okex: OkexClient,
@@ -134,7 +134,7 @@ async fn poll_okex(
 }
 
 #[job(name = "adjust_hedge")]
-async fn adjust_hedge(
+pub(super) async fn adjust_hedge(
     mut current_job: CurrentJob,
     ledger: ledger::Ledger,
     okex: OkexClient,
@@ -197,7 +197,7 @@ pub async fn spawn_adjust_funding<'a>(
 }
 
 #[job(name = "adjust_funding")]
-async fn adjust_funding(
+pub(super) async fn adjust_funding(
     mut current_job: CurrentJob,
     ledger: ledger::Ledger,
     okex: OkexClient,
