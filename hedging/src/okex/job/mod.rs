@@ -4,7 +4,7 @@ mod poll_okex;
 
 use serde::{Deserialize, Serialize};
 use sqlx::{Executor, Postgres};
-use sqlxmq::{job, CurrentJob, JobBuilder, JobRegistry, OwnedHandle};
+use sqlxmq::{job, CurrentJob, JobBuilder};
 use tracing::instrument;
 use uuid::{uuid, Uuid};
 
@@ -22,40 +22,7 @@ use crate::{error::*, okex::*};
 pub const POLL_OKEX_ID: Uuid = uuid!("10000000-0000-0000-0000-000000000001");
 
 #[derive(Debug, Clone)]
-struct OkexPollDelay(std::time::Duration);
-
-#[allow(clippy::too_many_arguments)]
-pub async fn start_job_runner(
-    pool: sqlx::PgPool,
-    ledger: ledger::Ledger,
-    okex: OkexClient,
-    okex_orders: OkexOrders,
-    okex_transfers: OkexTransfers,
-    galoy: GaloyClient,
-    publisher: Publisher,
-    delay: std::time::Duration,
-    funding_adjustment: FundingAdjustment,
-    hedging_adjustment: HedgingAdjustment,
-    funding_config: OkexFundingConfig,
-) -> Result<OwnedHandle, HedgingError> {
-    let mut registry = JobRegistry::new(&[adjust_hedge, poll_okex, adjust_funding]);
-    registry.set_context(ledger);
-    registry.set_context(okex);
-    registry.set_context(okex_orders);
-    registry.set_context(okex_transfers);
-    registry.set_context(galoy);
-    registry.set_context(publisher);
-    registry.set_context(OkexPollDelay(delay));
-    registry.set_context(funding_adjustment);
-    registry.set_context(hedging_adjustment);
-    registry.set_context(funding_config);
-
-    Ok(registry
-        .runner(&pool)
-        .set_channel_names(&["hedging"])
-        .run()
-        .await?)
-}
+pub(super) struct OkexPollDelay(pub(super) std::time::Duration);
 
 #[instrument(name = "hedging.job.spawn_poll_okex", skip_all, fields(error, error.level, error.message), err)]
 pub async fn spawn_poll_okex(

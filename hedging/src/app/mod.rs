@@ -24,49 +24,35 @@ impl HedgingApp {
         HedgingAppConfig {
             health: health_cfg, ..
         }: HedgingAppConfig,
-        OkexConfig {
-            client: okex_client_config,
-            poll_frequency: okex_poll_delay,
-            hedging: hedging_config,
-            funding: funding_config,
-        }: OkexConfig,
+        okex_config: OkexConfig,
+        // OkexConfig {
+        //     client: okex_client_config,
+        //     poll_frequency: okex_poll_delay,
+        //     hedging: hedging_config,
+        //     funding: funding_config,
+        // }: OkexConfig,
         galoy_client_cfg: GaloyClientConfig,
         pubsub_config: PubSubConfig,
         price_receiver: memory::Subscriber<PriceStreamPayload>,
     ) -> Result<Self, HedgingError> {
-        let okex_orders = OkexOrders::new(pool.clone()).await?;
-        let okex_transfers = OkexTransfers::new(pool.clone()).await?;
-        let okex = OkexClient::new(okex_client_config).await?;
-        okex.check_leverage(funding_config.high_bound_ratio_leverage)
-            .await?;
+        let okex = OkexClient::new(okex_config.client.clone()).await?;
         let funding_adjustment =
-            FundingAdjustment::new(funding_config.clone(), hedging_config.clone());
-        let hedging_adjustment = HedgingAdjustment::new(hedging_config);
+            FundingAdjustment::new(okex_config.funding.clone(), okex_config.hedging.clone());
+        let hedging_adjustment = HedgingAdjustment::new(okex_config.hedging.clone());
         let ledger = ledger::Ledger::init(&pool).await?;
         let (mut jobs, mut channels) = (Vec::new(), Vec::new());
         OkexEngine::register_jobs(&mut jobs, &mut channels);
         let mut job_registry = sqlxmq::JobRegistry::new(&jobs);
-        let okex_engine = OkexEngine::new(pool.clone());
+        job_registry.set_context(ledger.clone());
+        job_registry.set_context(GaloyClient::connect(galoy_client_cfg).await?);
+        job_registry.set_context(Publisher::new(pubsub_config.clone()).await?);
+        let okex_engine = OkexEngine::init(pool.clone(), okex_config.clone()).await?;
         okex_engine.add_context_to_job_registry(&mut job_registry);
         let job_runner_handle = job_registry
             .runner(&pool)
             .set_channel_names(&channels)
             .run()
             .await?;
-        // let job_runner = job::start_job_runner(
-        //     pool.clone(),
-        //     ledger.clone(),
-        //     okex.clone(),
-        //     okex_orders,
-        //     okex_transfers.clone(),
-        //     GaloyClient::connect(galoy_client_cfg).await?,
-        //     Publisher::new(pubsub_config.clone()).await?,
-        //     okex_poll_delay,
-        //     funding_adjustment.clone(),
-        //     hedging_adjustment.clone(),
-        //     funding_config.clone(),
-        // )
-        // .await?;
         Self::spawn_liability_balance_listener(
             pool.clone(),
             ledger.clone(),
@@ -92,7 +78,7 @@ impl HedgingApp {
             price_receiver.resubscribe(),
         )
         .await?;
-        Self::spawn_non_stop_polling(pool.clone(), okex_poll_delay).await?;
+        Self::spawn_non_stop_polling(pool.clone(), okex_config.poll_frequency).await?;
         Self::spawn_health_checker(
             health_check_trigger,
             health_cfg,
