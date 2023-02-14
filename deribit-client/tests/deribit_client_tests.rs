@@ -32,8 +32,6 @@ async fn get_last_price_in_usd_cents() -> anyhow::Result<()> {
 
         assert!(!last_price.usd_cents.is_zero());
         assert!(last_price.usd_cents.is_sign_positive());
-    } else {
-        panic!("Client not configured");
     }
 
     Ok(())
@@ -46,8 +44,6 @@ async fn get_btc_on_chain_deposit_address() -> anyhow::Result<()> {
         let address = client.get_btc_on_chain_deposit_address().await?;
 
         assert_eq!(address.currency, Currency::BTC.to_string());
-    } else {
-        panic!("Client not configured");
     }
 
     Ok(())
@@ -60,8 +56,6 @@ async fn get_deposits() -> anyhow::Result<()> {
         let deposits = client.get_deposits().await?;
 
         assert_eq!(deposits[0].currency, Currency::BTC.to_string());
-    } else {
-        panic!("Client not configured");
     }
 
     Ok(())
@@ -74,8 +68,6 @@ async fn get_transfers() -> anyhow::Result<()> {
         let transfers = client.get_transfers().await?;
 
         assert_eq!(transfers[0].currency, Currency::BTC.to_string());
-    } else {
-        panic!("Client not configured");
     }
 
     Ok(())
@@ -90,8 +82,6 @@ async fn get_withdrawals() -> anyhow::Result<()> {
         if !withdrawals.is_empty() {
             assert_eq!(withdrawals[0].currency, Currency::BTC.to_string());
         }
-    } else {
-        panic!("Client not configured");
     }
 
     Ok(())
@@ -109,8 +99,6 @@ async fn buy() -> anyhow::Result<()> {
 
         let client_id = ClientId::new();
         client.close_position(client_id).await?;
-    } else {
-        panic!("Client not configured");
     }
 
     Ok(())
@@ -128,8 +116,6 @@ async fn sell() -> anyhow::Result<()> {
 
         let client_id = ClientId::new();
         client.close_position(client_id).await?;
-    } else {
-        panic!("Client not configured");
     }
 
     Ok(())
@@ -150,8 +136,6 @@ async fn get_order_state() -> anyhow::Result<()> {
 
         let client_id = ClientId::new();
         client.close_position(client_id).await?;
-    } else {
-        panic!("Client not configured");
     }
 
     Ok(())
@@ -175,8 +159,6 @@ async fn get_position() -> anyhow::Result<()> {
 
         let client_id = ClientId::new();
         client.close_position(client_id).await?;
-    } else {
-        panic!("Client not configured");
     }
 
     Ok(())
@@ -188,8 +170,6 @@ async fn get_funding_account_summary() -> anyhow::Result<()> {
     if let Ok(client) = configured_client().await {
         let account_summary = client.get_funding_account_summary().await?;
         assert_eq!(account_summary.currency, Currency::BTC.to_string());
-    } else {
-        panic!("Client not configured");
     }
 
     Ok(())
@@ -201,8 +181,6 @@ async fn get_trading_account_summary() -> anyhow::Result<()> {
     if let Ok(client) = configured_client().await {
         let account_summary = client.get_trading_account_summary().await?;
         assert_eq!(account_summary.currency, Currency::BTC.to_string());
-    } else {
-        panic!("Client not configured");
     }
 
     Ok(())
