@@ -11,6 +11,9 @@ pub enum DeribitClientError {
     #[error("DeribitClientError - DecimalConversion: {0}")]
     DecimalConversion(#[from] rust_decimal::Error),
 
+    #[error("DeribitClientError - CannotConvertOrderStateFromStr")]
+    CannotConvertOrderStateFromStr,
+
     #[error("DeribitClientError - UnexpectedResponse: {code:?} - {msg:?}")]
     UnexpectedResponse { msg: String, code: i64 },
     #[error("DeribitClientError - RequestParametersError: {code:?} - {msg:?}")]

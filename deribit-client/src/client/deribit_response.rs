@@ -142,7 +142,7 @@ pub struct Transfer {
     pub other_side: String,
     pub created_timestamp: u64,
     pub updated_timestamp: u64,
-    pub note: String,
+    pub note: Option<String>,
 }
 
 #[derive(Deserialize, Debug, Clone)]
@@ -164,6 +164,18 @@ pub struct TransferDetails {
 }
 
 #[derive(Deserialize, Debug, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct TransferSubmitted {
+    pub jsonrpc: String,
+    pub result: Transfer,
+
+    pub us_in: Option<u64>,
+    pub us_out: Option<u64>,
+    pub us_diff: Option<u64>,
+    pub testnet: Option<bool>,
+}
+
+#[derive(Deserialize, Debug, Clone)]
 pub struct Withdrawal {
     pub id: u64,
     pub amount: Decimal,
@@ -172,9 +184,11 @@ pub struct Withdrawal {
     pub address: String,
     pub priority: Decimal,
     pub state: String,
-    pub transaction_id: String,
+    #[serde(deserialize_with = "boolean")]
+    pub completed: bool,
+    pub transaction_id: Option<String>,
     pub created_timestamp: u64,
-    pub confirmed_timestamp: u64,
+    pub confirmed_timestamp: Option<u64>,
     pub updated_timestamp: u64,
     pub note: String,
 }
@@ -371,6 +385,20 @@ pub struct AccountSummaryDetails {
     pub testnet: Option<bool>,
 }
 
+fn boolean<'de, D: serde::Deserializer<'de>>(deserializer: D) -> Result<bool, D::Error> {
+    Ok(match serde_json::Value::deserialize(deserializer)? {
+        serde_json::Value::Bool(b) => b,
+        serde_json::Value::String(s) => s == "yes",
+        serde_json::Value::Number(num) => {
+            num.as_i64()
+                .ok_or_else(|| serde::de::Error::custom("Invalid number"))?
+                != 0
+        }
+        serde_json::Value::Null => false,
+        _ => return Err(serde::de::Error::custom("Wrong type, expected boolean")),
+    })
+}
+
 #[cfg(test)]
 mod tests {
     use rust_decimal_macros::dec;
@@ -438,6 +466,15 @@ mod tests {
     }
 
     #[test]
+    fn submit_transfer() {
+        let response_text = "{\"jsonrpc\": \"2.0\",\"id\": 210,\"result\": {\"updated_timestamp\": 1550226218504,\"type\": \"subaccount\",\"state\": \"confirmed\",\"other_side\": \"MySubAccount\",\"id\": 1,\"direction\": \"payment\",\"currency\": \"ETH\",\"created_timestamp\": 1550226218504,\"amount\": 12.1234}}";
+        let details = serde_json::from_str::<TransferSubmitted>(response_text).unwrap();
+        dbg!(details.clone());
+        assert!(!details.result.other_side.is_empty());
+        assert_eq!(details.result.other_side, "MySubAccount",);
+    }
+
+    #[test]
     fn get_withdrawals_empty() {
         let response_text = "{\"jsonrpc\": \"2.0\",\"result\": {\"data\": [],\"count\": 0},\"usIn\": 1675066247615127,\"usOut\": 1675066247615279,\"usDiff\": 152,\"testnet\": true}";
         let details = serde_json::from_str::<WithdrawalDetails>(response_text).unwrap();
@@ -446,11 +483,19 @@ mod tests {
     }
 
     #[test]
-    fn get_withdrawals() {
-        let response_text = "{\"jsonrpc\": \"2.0\",\"result\": {\"data\": [],\"count\": 0},\"usIn\": 1675066247615127,\"usOut\": 1675066247615279,\"usDiff\": 152,\"testnet\": true}";
-        let _details = serde_json::from_str::<WithdrawalDetails>(response_text).unwrap();
-        // assert!(!details.result.data.is_empty());
-        // assert_eq!(details.result.data[0].currency, Currency::BTC.to_string(),);
+    fn get_withdrawals_unconfirmed() {
+        let response_text = "{\"jsonrpc\":\"2.0\",\"result\":{\"data\":[{\"updated_timestamp\":1675411149209,\"transaction_id\":null,\"state\":\"unconfirmed\",\"priority\":1.0,\"note\":\"\",\"id\":21113,\"fee\":0.0001,\"currency\":\"BTC\",\"created_timestamp\":1675411149209,\"confirmed_timestamp\":null,\"completed\":0,\"amount\":0.0499,\"address\":\"bcrt1q2fnd9qslx03ka9un8cd50n7yh073rq67t0zp2z\"}],\"count\":1},\"usIn\":1675411523122145,\"usOut\":1675411523122283,\"usDiff\":138,\"testnet\":true}";
+        let details = serde_json::from_str::<WithdrawalDetails>(response_text).unwrap();
+        assert!(!details.result.data.is_empty());
+        assert_eq!(details.result.data[0].currency, Currency::BTC.to_string(),);
+    }
+
+    #[test]
+    fn get_withdrawals_confirmed() {
+        let response_text = "{\"jsonrpc\":\"2.0\",\"result\":{\"data\":[{\"updated_timestamp\":16754124,\"transaction_id\":null,\"state\":\"confirmed\",\"priority\":1.0,\"note\":\"\",\"id\":211,\"fee\":0.0001,\"currency\":\"BTC\",\"created_timestamp\":1675411,\"confirmed_timestamp\":167541,\"completed\":0,\"amount\":0.0499,\"address\":\"bcrt1q2\"}],\"count\":1},\"usIn\":1675412486,\"usOut\":167541248,\"usDiff\":147,\"testnet\":true}";
+        let details = serde_json::from_str::<WithdrawalDetails>(response_text).unwrap();
+        assert!(!details.result.data.is_empty());
+        assert_eq!(details.result.data[0].currency, Currency::BTC.to_string(),);
     }
 
     #[test]

@@ -1,5 +1,7 @@
 use rust_decimal::Decimal;
-use std::fmt::Display;
+use std::{fmt::Display, str::FromStr};
+
+use crate::DeribitClientError;
 
 #[derive(serde::Deserialize, Debug, Clone)]
 #[serde(transparent)]
@@ -85,6 +87,42 @@ impl Display for Priority {
             Priority::Mid => write!(f, "mid"),
             Priority::Low => write!(f, "low"),
             Priority::VeryLow => write!(f, "very_low"),
+        }
+    }
+}
+
+#[derive(serde::Deserialize, Debug, Clone, PartialEq, Eq)]
+pub enum OrderState {
+    Open,
+    Filled,
+    Rejected,
+    Cancelled,
+    Untriggered,
+}
+
+impl Display for OrderState {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match *self {
+            OrderState::Open => write!(f, "open"),
+            OrderState::Filled => write!(f, "filled"),
+            OrderState::Rejected => write!(f, "rejected"),
+            OrderState::Cancelled => write!(f, "cancelled"),
+            OrderState::Untriggered => write!(f, "untriggered"),
+        }
+    }
+}
+
+impl FromStr for OrderState {
+    type Err = DeribitClientError;
+
+    fn from_str(input: &str) -> Result<OrderState, Self::Err> {
+        match input {
+            "open" => Ok(OrderState::Open),
+            "filled" => Ok(OrderState::Filled),
+            "rejected" => Ok(OrderState::Rejected),
+            "cancelled" => Ok(OrderState::Cancelled),
+            "untriggered" => Ok(OrderState::Untriggered),
+            _ => Err(DeribitClientError::CannotConvertOrderStateFromStr),
         }
     }
 }

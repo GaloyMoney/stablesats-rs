@@ -138,7 +138,7 @@ impl DeribitClient {
     }
 
     #[instrument(skip(self), err)]
-    pub async fn get_withdrawals(&self) -> Result<Vec<Transfer>, DeribitClientError> {
+    pub async fn get_withdrawals(&self) -> Result<Vec<Withdrawal>, DeribitClientError> {
         let endpoint = "/private/get_withdrawals";
         let params = format!("?currency={}", Currency::BTC);
 
@@ -152,7 +152,7 @@ impl DeribitClient {
             .send()
             .await?;
 
-        let details = Self::extract_response_data::<TransferDetails>(response).await?;
+        let details = Self::extract_response_data::<WithdrawalDetails>(response).await?;
 
         Ok(details.result.data)
     }
@@ -314,7 +314,7 @@ impl DeribitClient {
     #[instrument(skip(self), err)]
     pub async fn get_funding_account_summary(&self) -> Result<AccountSummary, DeribitClientError> {
         let endpoint = "/private/get_account_summary";
-        let params = format!("?currency={}", Currency::BTC,);
+        let params = format!("?currency={}&extended=true", Currency::BTC,);
 
         let headers = self.get_private_request_headers(KeyUsage::ForFunding)?;
 
@@ -334,7 +334,7 @@ impl DeribitClient {
     #[instrument(skip(self), err)]
     pub async fn get_trading_account_summary(&self) -> Result<AccountSummary, DeribitClientError> {
         let endpoint = "/private/get_account_summary";
-        let params = format!("?currency={}", Currency::BTC,);
+        let params = format!("?currency={}&extended=true", Currency::BTC,);
 
         let headers = self.get_private_request_headers(KeyUsage::ForTrading)?;
 
@@ -351,13 +351,84 @@ impl DeribitClient {
         Ok(details.result)
     }
 
+    #[instrument(skip(self), err)]
+    pub async fn get_funding_account_id(&self) -> Result<u64, DeribitClientError> {
+        let summary = self.get_funding_account_summary().await?;
+        Ok(summary.id.unwrap())
+    }
+
+    #[instrument(skip(self), err)]
+    pub async fn get_trading_account_id(&self) -> Result<u64, DeribitClientError> {
+        let summary = self.get_trading_account_summary().await?;
+        Ok(summary.id.unwrap())
+    }
+
+    #[instrument(skip(self), err)]
+    pub async fn transfer_funding_to_trading(
+        &self,
+        amount_in_btc: Decimal,
+    ) -> Result<Transfer, DeribitClientError> {
+        let account_id = self.get_trading_account_id().await?;
+        let endpoint = "/private/submit_transfer_to_subaccount";
+
+        let params = format!(
+            "?currency={}&amount={}&destination={}",
+            Currency::BTC,
+            amount_in_btc,
+            account_id
+        );
+
+        let headers = self.get_private_request_headers(KeyUsage::ForFunding)?;
+
+        let response = self
+            .rate_limit_client(endpoint)
+            .await
+            .get(self.url_for_path(endpoint, params.as_str()))
+            .headers(headers)
+            .send()
+            .await?;
+
+        let details = Self::extract_response_data::<TransferSubmitted>(response).await?;
+
+        Ok(details.result)
+    }
+
+    #[instrument(skip(self), err)]
+    pub async fn transfer_trading_to_funding(
+        &self,
+        amount_in_btc: Decimal,
+    ) -> Result<Transfer, DeribitClientError> {
+        let account_id = self.get_funding_account_id().await?;
+        let endpoint = "/private/submit_transfer_to_subaccount";
+
+        let params = format!(
+            "?currency={}&amount={}&destination={}",
+            Currency::BTC,
+            amount_in_btc,
+            account_id
+        );
+
+        let headers = self.get_private_request_headers(KeyUsage::ForTrading)?;
+
+        let response = self
+            .rate_limit_client(endpoint)
+            .await
+            .get(self.url_for_path(endpoint, params.as_str()))
+            .headers(headers)
+            .send()
+            .await?;
+
+        let details = Self::extract_response_data::<TransferSubmitted>(response).await?;
+
+        Ok(details.result)
+    }
+
     async fn extract_response_data<T: serde::de::DeserializeOwned>(
         response: Response,
     ) -> Result<T, DeribitClientError> {
         match response.status() {
             StatusCode::OK => {
                 let response_text = response.text().await?;
-                dbg!(response_text.clone());
                 match serde_json::from_str::<T>(&response_text) {
                     Ok(data) => Ok(data),
                     Err(err) => Err(DeribitClientError::UnexpectedResponse {
@@ -368,7 +439,6 @@ impl DeribitClient {
             }
             _ => {
                 let response_text = response.text().await?;
-                dbg!(response_text.clone());
                 let data = serde_json::from_str::<DeribitErrorResponse>(&response_text)?;
                 Err(DeribitClientError::from((
                     data.error.message,
