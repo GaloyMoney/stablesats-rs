@@ -126,20 +126,12 @@ impl Default for PriceFeedConfigWrapper {
     }
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub struct BitfinexPriceFeedConfigWrapper {
     #[serde(default)]
     pub enabled: bool,
     #[serde(default)]
     pub config: bitfinex_price::PriceFeedConfig,
-}
-impl Default for BitfinexPriceFeedConfigWrapper {
-    fn default() -> Self {
-        Self {
-            enabled: true,
-            config: bitfinex_price::PriceFeedConfig::default(),
-        }
-    }
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
