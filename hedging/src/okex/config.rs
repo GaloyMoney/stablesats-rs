@@ -12,7 +12,9 @@ pub struct OkexConfig {
     #[serde_as(as = "serde_with::DurationSeconds<u64>")]
     #[serde(default = "default_okex_poll_frequency")]
     pub poll_frequency: Duration,
+    #[serde(default)]
     pub funding: OkexFundingConfig,
+    #[serde(default)]
     pub hedging: OkexHedgingConfig,
 }
 
