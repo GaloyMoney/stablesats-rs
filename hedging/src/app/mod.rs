@@ -176,7 +176,7 @@ impl HedgingApp {
                         if let ledger::LedgerEventData::BalanceUpdated(data) = received.data {
                             let correlation_id = data.entry_id;
                             let span = info_span!(
-                                parent: received.span,
+                                parent: &received.span,
                                 "hedging.usd_liability_balance_event_received",
                                 correlation_id = %correlation_id,
                                 event_json = &tracing::field::display(
