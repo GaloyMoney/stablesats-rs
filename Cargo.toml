@@ -11,6 +11,7 @@ members = [
   "okex-client",
   "bitfinex-client",
   "bitfinex-price",
+  "deribit-price",
   "galoy-client",
   "kollider-price",
 ]

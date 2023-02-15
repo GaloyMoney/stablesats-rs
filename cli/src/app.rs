@@ -116,6 +116,7 @@ async fn run_cmd(
         price_server,
         okex_price_feed,
         bitfinex_price_feed,
+        deribit_price_feed,
         user_trades,
         tracing,
         galoy,
@@ -156,6 +157,20 @@ async fn run_cmd(
                 bitfinex_price::run(bitfinex_price_feed.config, price_send)
                     .await
                     .context("Bitfinex Price Feed error"),
+            );
+        }));
+    }
+
+    if deribit_price_feed.enabled {
+        println!("Starting Deribit price feed");
+
+        let deribit_send = send.clone();
+        let price_send = price_send.clone();
+        handles.push(tokio::spawn(async move {
+            let _ = deribit_send.try_send(
+                deribit_price::run(deribit_price_feed.config, price_send)
+                    .await
+                    .context("Deribit Price Feed error"),
             );
         }));
     }
