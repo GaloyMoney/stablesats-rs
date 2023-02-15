@@ -1,4 +1,4 @@
-# [stablesats release v0.6.5](https://github.com/GaloyMoney/stablesats/releases/tag/v0.6.5)
+# [stablesats release v0.6.5](https://github.com/GaloyMoney/stablesats-rs/releases/tag/0.6.5)
 
 
 ### Miscellaneous Tasks
@@ -7,7 +7,7 @@
 - Output sqlx_ledger spans
 - Log output as json and filter out sqlx (#284)
 
-# [stablesats release v0.6.4](https://github.com/GaloyMoney/stablesats/releases/tag/v0.6.4)
+# [stablesats release v0.6.4](https://github.com/GaloyMoney/stablesats-rs/releases/tag/0.6.4)
 
 
 ### Bug Fixes
@@ -24,7 +24,7 @@
 - Fix DATABASE_URL in makefile
 - Use same pg con as sqlx-ledger to improve local dev
 
-# [stablesats release v0.6.3](https://github.com/GaloyMoney/stablesats/releases/tag/v0.6.3)
+# [stablesats release v0.6.3](https://github.com/GaloyMoney/stablesats-rs/releases/tag/0.6.3)
 
 
 ### Bug Fixes
@@ -36,7 +36,7 @@
 
 - More resillient health check
 
-# [stablesats release v0.6.2](https://github.com/GaloyMoney/stablesats/releases/tag/v0.6.2)
+# [stablesats release v0.6.2](https://github.com/GaloyMoney/stablesats-rs/releases/tag/0.6.2)
 
 
 ### Miscellaneous Tasks
@@ -44,7 +44,7 @@
 - Improved job spawning from hedging app
 - Bump serde_json from 1.0.92 to 1.0.93 (#283)
 
-# [stablesats release v0.6.1](https://github.com/GaloyMoney/stablesats/releases/tag/v0.6.1)
+# [stablesats release v0.6.1](https://github.com/GaloyMoney/stablesats-rs/releases/tag/0.6.1)
 
 
 ### Bug Fixes
@@ -55,7 +55,7 @@
 
 - Better account description
 
-# [stablesats release v0.6.0](https://github.com/GaloyMoney/stablesats/releases/tag/v0.6.0)
+# [stablesats release v0.6.0](https://github.com/GaloyMoney/stablesats-rs/releases/tag/0.6.0)
 
 
 ### Features
@@ -66,14 +66,14 @@
 
 - Bump rust_decimal from 1.28.0 to 1.28.1 (#278)
 
-# [stablesats release v0.5.6](https://github.com/GaloyMoney/stablesats/releases/tag/v0.5.6)
+# [stablesats release v0.5.6](https://github.com/GaloyMoney/stablesats-rs/releases/tag/0.5.6)
 
 
 ### Bug Fixes
 
 - Okex.check_leverage missing params
 
-# [stablesats release v0.5.5](https://github.com/GaloyMoney/stablesats/releases/tag/v0.5.5)
+# [stablesats release v0.5.5](https://github.com/GaloyMoney/stablesats-rs/releases/tag/0.5.5)
 
 
 ### Bug Fixes
@@ -94,14 +94,14 @@
 - Bump async-trait from 0.1.63 to 0.1.64 (#271)
 - Bump tokio from 1.24.2 to 1.25.0 (#269)
 
-# [stablesats release v0.5.4](https://github.com/GaloyMoney/stablesats/releases/tag/v0.5.4)
+# [stablesats release v0.5.4](https://github.com/GaloyMoney/stablesats-rs/releases/tag/0.5.4)
 
 
 ### Miscellaneous Tasks
 
 - Replace mid price ratio with last price (#270)
 
-# [stablesats release v0.5.3](https://github.com/GaloyMoney/stablesats/releases/tag/v0.5.3)
+# [stablesats release v0.5.3](https://github.com/GaloyMoney/stablesats-rs/releases/tag/0.5.3)
 
 
 ### Bug Fixes
@@ -113,7 +113,7 @@
 - Clippy
 - Simplify listening to balance updates
 
-# [stablesats release v0.5.2](https://github.com/GaloyMoney/stablesats/releases/tag/v0.5.2)
+# [stablesats release v0.5.2](https://github.com/GaloyMoney/stablesats-rs/releases/tag/0.5.2)
 
 
 ### Bug Fixes
@@ -124,7 +124,7 @@
 
 - Clippy
 
-# [stablesats release v0.5.1](https://github.com/GaloyMoney/stablesats/releases/tag/v0.5.1)
+# [stablesats release v0.5.1](https://github.com/GaloyMoney/stablesats-rs/releases/tag/0.5.1)
 
 
 ### Bug Fixes
@@ -133,7 +133,7 @@
 - Typo in Makefile
 - Remove keys from docker-compose.override.yml
 
-# [stablesats release v0.5.0](https://github.com/GaloyMoney/stablesats/releases/tag/v0.5.0)
+# [stablesats release v0.5.0](https://github.com/GaloyMoney/stablesats-rs/releases/tag/0.5.0)
 
 
 ### Features
@@ -145,7 +145,7 @@
 - Bump axum from 0.6.2 to 0.6.4 (#258)
 - Bump clap from 4.1.1 to 4.1.4 (#259)
 
-# [stablesats release v0.4.5](https://github.com/GaloyMoney/stablesats/releases/tag/v0.4.5)
+# [stablesats release v0.4.5](https://github.com/GaloyMoney/stablesats-rs/releases/tag/0.4.5)
 
 
 ### Miscellaneous Tasks
@@ -154,14 +154,14 @@
 - Better job execution visibility
 - Remove expects in JobExecutor
 
-# [stablesats release v0.4.4](https://github.com/GaloyMoney/stablesats/releases/tag/v0.4.4)
+# [stablesats release v0.4.4](https://github.com/GaloyMoney/stablesats-rs/releases/tag/0.4.4)
 
 
 ### Miscellaneous Tasks
 
 - Reduce retries increase connections
 
-# [stablesats release v0.4.3](https://github.com/GaloyMoney/stablesats/releases/tag/v0.4.3)
+# [stablesats release v0.4.3](https://github.com/GaloyMoney/stablesats-rs/releases/tag/0.4.3)
 
 
 ### Bug Fixes
@@ -173,14 +173,14 @@
 - Fix adjust_hedge retries
 - Improve poll_galoy_transactions retries
 
-# [stablesats release v0.4.2](https://github.com/GaloyMoney/stablesats/releases/tag/v0.4.2)
+# [stablesats release v0.4.2](https://github.com/GaloyMoney/stablesats-rs/releases/tag/0.4.2)
 
 
 ### Miscellaneous Tasks
 
 - More retries for critical jobs
 
-# [stablesats release v0.4.1](https://github.com/GaloyMoney/stablesats/releases/tag/v0.4.1)
+# [stablesats release v0.4.1](https://github.com/GaloyMoney/stablesats-rs/releases/tag/0.4.1)
 
 
 ### Bug Fixes
@@ -198,7 +198,7 @@
 
 - Remove bitfinex from hedging test
 
-# [stablesats release v0.4.0](https://github.com/GaloyMoney/stablesats/releases/tag/v0.4.0)
+# [stablesats release v0.4.0](https://github.com/GaloyMoney/stablesats-rs/releases/tag/0.4.0)
 
 
 ### Bug Fixes
@@ -248,21 +248,21 @@
 - Ignore okex tests
 - Pass withouth BITFINEX creds
 
-# [stablesats release v0.3.27](https://github.com/GaloyMoney/stablesats/releases/tag/v0.3.27)
+# [stablesats release v0.3.27](https://github.com/GaloyMoney/stablesats-rs/releases/tag/0.3.27)
 
 
 ### Bug Fixes
 
 - Await timestamp_sender for health check
 
-# [stablesats release v0.3.26](https://github.com/GaloyMoney/stablesats/releases/tag/v0.3.26)
+# [stablesats release v0.3.26](https://github.com/GaloyMoney/stablesats-rs/releases/tag/0.3.26)
 
 
 ### Miscellaneous Tasks
 
 - Dev mock price is configured directly in price_cache
 
-# [stablesats release v0.3.25](https://github.com/GaloyMoney/stablesats/releases/tag/v0.3.25)
+# [stablesats release v0.3.25](https://github.com/GaloyMoney/stablesats-rs/releases/tag/0.3.25)
 
 
 ### Miscellaneous Tasks
@@ -270,21 +270,21 @@
 - Add mock dev price
 - Switch price feed to in-memory pubsub (#230)
 
-# [stablesats release v0.3.24](https://github.com/GaloyMoney/stablesats/releases/tag/v0.3.24)
+# [stablesats release v0.3.24](https://github.com/GaloyMoney/stablesats-rs/releases/tag/0.3.24)
 
 
 ### Miscellaneous Tasks
 
 - Nest health config for hedging
 
-# [stablesats release v0.3.23](https://github.com/GaloyMoney/stablesats/releases/tag/v0.3.23)
+# [stablesats release v0.3.23](https://github.com/GaloyMoney/stablesats-rs/releases/tag/0.3.23)
 
 
 ### Miscellaneous Tasks
 
 - Add aditional context to health check message
 
-# [stablesats release v0.3.22](https://github.com/GaloyMoney/stablesats/releases/tag/v0.3.22)
+# [stablesats release v0.3.22](https://github.com/GaloyMoney/stablesats-rs/releases/tag/0.3.22)
 
 
 ### Miscellaneous Tasks
@@ -295,14 +295,14 @@
 
 - Attempt to avoid rate limit
 
-# [stablesats release v0.3.21](https://github.com/GaloyMoney/stablesats/releases/tag/v0.3.21)
+# [stablesats release v0.3.21](https://github.com/GaloyMoney/stablesats-rs/releases/tag/0.3.21)
 
 
 ### Refactor
 
 - Configure stale_after & last_msg_delay (#225)
 
-# [stablesats release v0.3.20](https://github.com/GaloyMoney/stablesats/releases/tag/v0.3.20)
+# [stablesats release v0.3.20](https://github.com/GaloyMoney/stablesats-rs/releases/tag/0.3.20)
 
 
 ### Miscellaneous Tasks
@@ -313,7 +313,7 @@
 - Bump serial_test from 0.9.0 to 0.10.0 (#223)
 - Bump serde_json from 1.0.89 to 1.0.91 (#224)
 
-# [stablesats release v0.3.19](https://github.com/GaloyMoney/stablesats/releases/tag/v0.3.19)
+# [stablesats release v0.3.19](https://github.com/GaloyMoney/stablesats-rs/releases/tag/0.3.19)
 
 
 ### Miscellaneous Tasks
@@ -323,7 +323,7 @@
 - Bump data-encoding from 2.3.2 to 2.3.3 (#217)
 - Bump serde from 1.0.148 to 1.0.150 (#219)
 
-# [stablesats release v0.3.18](https://github.com/GaloyMoney/stablesats/releases/tag/v0.3.18)
+# [stablesats release v0.3.18](https://github.com/GaloyMoney/stablesats-rs/releases/tag/0.3.18)
 
 
 ### Bug Fixes
@@ -345,7 +345,7 @@
 - Bump serde from 1.0.147 to 1.0.148 (#203)
 - Bump prost from 0.11.2 to 0.11.3 (#205)
 
-# [stablesats release v0.3.17](https://github.com/GaloyMoney/stablesats/releases/tag/v0.3.17)
+# [stablesats release v0.3.17](https://github.com/GaloyMoney/stablesats-rs/releases/tag/0.3.17)
 
 
 ### Miscellaneous Tasks
@@ -373,7 +373,7 @@
 
 - Adjust timing for hedging test to run better
 
-# [stablesats release v0.3.16](https://github.com/GaloyMoney/stablesats/releases/tag/v0.3.16)
+# [stablesats release v0.3.16](https://github.com/GaloyMoney/stablesats-rs/releases/tag/0.3.16)
 
 
 ### Bug Fixes
@@ -396,7 +396,7 @@
 
 - Ignore kollider price test
 
-# [stablesats release v0.3.15](https://github.com/GaloyMoney/stablesats/releases/tag/v0.3.15)
+# [stablesats release v0.3.15](https://github.com/GaloyMoney/stablesats-rs/releases/tag/0.3.15)
 
 
 ### Bug Fixes
@@ -423,7 +423,7 @@
 - Bump clap from 4.0.15 to 4.0.16 (#162)
 - Bump clap from 4.0.14 to 4.0.15 (#160)
 
-# [stablesats release v0.3.14](https://github.com/GaloyMoney/stablesats/releases/tag/v0.3.14)
+# [stablesats release v0.3.14](https://github.com/GaloyMoney/stablesats-rs/releases/tag/0.3.14)
 
 
 ### Bug Fixes
@@ -434,14 +434,14 @@
 
 - Bump clap from 4.0.13 to 4.0.14 (#158)
 
-# [stablesats release v0.3.13](https://github.com/GaloyMoney/stablesats/releases/tag/v0.3.13)
+# [stablesats release v0.3.13](https://github.com/GaloyMoney/stablesats-rs/releases/tag/0.3.13)
 
 
 ### Bug Fixes
 
 - Only complete job when it did not error
 
-# [stablesats release v0.3.12](https://github.com/GaloyMoney/stablesats/releases/tag/v0.3.12)
+# [stablesats release v0.3.12](https://github.com/GaloyMoney/stablesats-rs/releases/tag/0.3.12)
 
 
 ### Bug Fixes
@@ -458,7 +458,7 @@
 - Bump clap from 4.0.10 to 4.0.11 (#151)
 - Bump serde_json from 1.0.85 to 1.0.86 (#153)
 
-# [stablesats release v0.3.11](https://github.com/GaloyMoney/stablesats/releases/tag/v0.3.11)
+# [stablesats release v0.3.11](https://github.com/GaloyMoney/stablesats-rs/releases/tag/0.3.11)
 
 
 ### Bug Fixes
@@ -471,7 +471,7 @@
 - Bump tracing-subscriber from 0.3.15 to 0.3.16 (#150)
 - Bump clap from 4.0.8 to 4.0.10 (#148)
 
-# [stablesats release v0.3.10](https://github.com/GaloyMoney/stablesats/releases/tag/v0.3.10)
+# [stablesats release v0.3.10](https://github.com/GaloyMoney/stablesats-rs/releases/tag/0.3.10)
 
 
 ### Bug Fixes
@@ -479,7 +479,7 @@
 - Inject trace to all request & fix double request client (#145)
 - Poll_galoy_transactions job was not retrying
 
-# [stablesats release v0.3.9](https://github.com/GaloyMoney/stablesats/releases/tag/v0.3.9)
+# [stablesats release v0.3.9](https://github.com/GaloyMoney/stablesats-rs/releases/tag/0.3.9)
 
 
 ### Features
@@ -490,7 +490,7 @@
 
 - Bump clap from 4.0.4 to 4.0.8 (#141)
 
-# [stablesats release v0.3.8](https://github.com/GaloyMoney/stablesats/releases/tag/v0.3.8)
+# [stablesats release v0.3.8](https://github.com/GaloyMoney/stablesats-rs/releases/tag/0.3.8)
 
 
 ### Miscellaneous Tasks
@@ -499,14 +499,14 @@
 - Bump patches
 - Set output formatting to json (#140)
 
-# [stablesats release v0.3.7](https://github.com/GaloyMoney/stablesats/releases/tag/v0.3.7)
+# [stablesats release v0.3.7](https://github.com/GaloyMoney/stablesats-rs/releases/tag/0.3.7)
 
 
 ### Bug Fixes
 
 - Declare checkpoint_json in execute_job trace
 
-# [stablesats release v0.3.6](https://github.com/GaloyMoney/stablesats/releases/tag/v0.3.6)
+# [stablesats release v0.3.6](https://github.com/GaloyMoney/stablesats-rs/releases/tag/0.3.6)
 
 
 ### Miscellaneous Tasks
@@ -514,7 +514,7 @@
 - Add position msg to health check
 - Better health check
 
-# [stablesats release v0.3.5](https://github.com/GaloyMoney/stablesats/releases/tag/v0.3.5)
+# [stablesats release v0.3.5](https://github.com/GaloyMoney/stablesats-rs/releases/tag/0.3.5)
 
 
 ### Bug Fixes
@@ -535,7 +535,7 @@
 - Bump governor from 0.4.2 to 0.5.0 (#120)
 - Bump thiserror from 1.0.35 to 1.0.36 (#128)
 
-# [stablesats release v0.3.4](https://github.com/GaloyMoney/stablesats/releases/tag/v0.3.4)
+# [stablesats release v0.3.4](https://github.com/GaloyMoney/stablesats-rs/releases/tag/0.3.4)
 
 
 ### Bug Fixes
@@ -553,7 +553,7 @@
 - Bump serde from 1.0.144 to 1.0.145
 - Bump reqwest from 0.11.11 to 0.11.12
 
-# [stablesats release v0.3.3](https://github.com/GaloyMoney/stablesats/releases/tag/v0.3.3)
+# [stablesats release v0.3.3](https://github.com/GaloyMoney/stablesats-rs/releases/tag/0.3.3)
 
 
 ### Bug Fixes
@@ -564,7 +564,7 @@
 
 - Bump clap from 3.2.21 to 3.2.22
 
-# [stablesats release v0.3.2](https://github.com/GaloyMoney/stablesats/releases/tag/v0.3.2)
+# [stablesats release v0.3.2](https://github.com/GaloyMoney/stablesats-rs/releases/tag/0.3.2)
 
 
 ### Miscellaneous Tasks
@@ -572,7 +572,7 @@
 - Deduplicate adjust_hedge job
 - Dedup adjust_hedge job
 
-# [stablesats release v0.3.1](https://github.com/GaloyMoney/stablesats/releases/tag/v0.3.1)
+# [stablesats release v0.3.1](https://github.com/GaloyMoney/stablesats-rs/releases/tag/0.3.1)
 
 
 ### Bug Fixes
@@ -585,7 +585,7 @@
 - Remove redundant code
 - Use push_tuples
 
-# [stablesats release v0.3.0](https://github.com/GaloyMoney/stablesats/releases/tag/v0.3.0)
+# [stablesats release v0.3.0](https://github.com/GaloyMoney/stablesats-rs/releases/tag/0.3.0)
 
 
 ### Miscellaneous Tasks
@@ -595,7 +595,7 @@
 - Add update_paired_ids
 - Add galoy_transactions table
 
-# [stablesats release v0.2.4](https://github.com/GaloyMoney/stablesats/releases/tag/v0.2.4)
+# [stablesats release v0.2.4](https://github.com/GaloyMoney/stablesats-rs/releases/tag/0.2.4)
 
 
 ### Bug Fixes
@@ -615,7 +615,7 @@
 - Use the original hedging integration test
 - Add dealer v1 scenario based integration test
 
-# [stablesats release v0.2.3](https://github.com/GaloyMoney/stablesats/releases/tag/v0.2.3)
+# [stablesats release v0.2.3](https://github.com/GaloyMoney/stablesats-rs/releases/tag/0.2.3)
 
 
 ### Bug Fixes
@@ -631,7 +631,7 @@
 - Bump sqlx from 0.6.1 to 0.6.2
 - Bump serde_yaml from 0.9.11 to 0.9.13
 
-# [stablesats release v0.2.2](https://github.com/GaloyMoney/stablesats/releases/tag/v0.2.2)
+# [stablesats release v0.2.2](https://github.com/GaloyMoney/stablesats-rs/releases/tag/0.2.2)
 
 
 ### Bug Fixes
@@ -639,14 +639,14 @@
 - Tests passing
 - Some issues from initial run
 
-# [stablesats release v0.2.1](https://github.com/GaloyMoney/stablesats/releases/tag/v0.2.1)
+# [stablesats release v0.2.1](https://github.com/GaloyMoney/stablesats-rs/releases/tag/0.2.1)
 
 
 ### Miscellaneous Tasks
 
 - Whitespace for release
 
-# [stablesats release v0.2.0](https://github.com/GaloyMoney/stablesats/releases/tag/v0.2.0)
+# [stablesats release v0.2.0](https://github.com/GaloyMoney/stablesats-rs/releases/tag/0.2.0)
 
 
 ### Bug Fixes
@@ -788,7 +788,7 @@
 - Hedging test working in ci
 - Hedging e2e working locally
 
-# [stablesats release v0.1.11](https://github.com/GaloyMoney/stablesats/releases/tag/v0.1.11)
+# [stablesats release v0.1.11](https://github.com/GaloyMoney/stablesats-rs/releases/tag/0.1.11)
 
 
 ### Bug Fixes
@@ -811,7 +811,7 @@
 
 - Verify rounding of tiny amounts
 
-# [stablesats release v0.1.10](https://github.com/GaloyMoney/stablesats/releases/tag/v0.1.10)
+# [stablesats release v0.1.10](https://github.com/GaloyMoney/stablesats-rs/releases/tag/0.1.10)
 
 
 ### Bug Fixes
@@ -870,7 +870,7 @@
 - Extract 'trading-to-funding' response data
 - Use generics
 
-# [stablesats release v0.1.9](https://github.com/GaloyMoney/stablesats/releases/tag/v0.1.9)
+# [stablesats release v0.1.9](https://github.com/GaloyMoney/stablesats-rs/releases/tag/0.1.9)
 
 
 ### Bug Fixes
@@ -895,7 +895,7 @@
 
 - Add extract_response_data fn - simplify types
 
-# [stablesats release v0.1.8](https://github.com/GaloyMoney/stablesats/releases/tag/v0.1.8)
+# [stablesats release v0.1.8](https://github.com/GaloyMoney/stablesats-rs/releases/tag/0.1.8)
 
 
 ### Bug Fixes
@@ -924,7 +924,7 @@
 - Extract signing function
 - Extract OKEX_API_URL
 
-# [stablesats release v0.1.7](https://github.com/GaloyMoney/stablesats/releases/tag/v0.1.7)
+# [stablesats release v0.1.7](https://github.com/GaloyMoney/stablesats-rs/releases/tag/0.1.7)
 
 
 ### Bug Fixes
@@ -952,7 +952,7 @@
 
 - Add mid price fn to ExchangePriceCacheInner
 
-# [stablesats release v0.1.6](https://github.com/GaloyMoney/stablesats/releases/tag/v0.1.6)
+# [stablesats release v0.1.6](https://github.com/GaloyMoney/stablesats-rs/releases/tag/0.1.6)
 
 
 ### Bug Fixes
@@ -968,14 +968,14 @@
 - Switch edge image to ubuntu
 - Better error output
 
-# [stablesats release v0.1.5](https://github.com/GaloyMoney/stablesats/releases/tag/v0.1.5)
+# [stablesats release v0.1.5](https://github.com/GaloyMoney/stablesats-rs/releases/tag/0.1.5)
 
 
 ### Bug Fixes
 
 - Dockerfile.release ca not mkdir
 
-# [stablesats release v0.1.4](https://github.com/GaloyMoney/stablesats/releases/tag/v0.1.4)
+# [stablesats release v0.1.4](https://github.com/GaloyMoney/stablesats-rs/releases/tag/0.1.4)
 
 
 ### Miscellaneous Tasks
@@ -983,7 +983,7 @@
 - Add support for sentinal + redis pw
 - Put stablesats under /bin in release image
 
-# [stablesats release v0.1.3](https://github.com/GaloyMoney/stablesats/releases/tag/v0.1.3)
+# [stablesats release v0.1.3](https://github.com/GaloyMoney/stablesats-rs/releases/tag/0.1.3)
 
 
 ### Bug Fixes
@@ -996,22 +996,22 @@
 - Add Dockerfile.release
 - Add BUILDTIME + COMMITHASH to docker image
 
-# [stablesats release v0.1.2](https://github.com/GaloyMoney/stablesats/releases/tag/v0.1.2)
+# [stablesats release v0.1.2](https://github.com/GaloyMoney/stablesats-rs/releases/tag/0.1.2)
 
 
 ### Miscellaneous Tasks
 
 - Complete manifest for Cargo.toml files
 
-# [stablesats release v0.1.1](https://github.com/GaloyMoney/stablesats/releases/tag/v0.1.1)
+# [stablesats release v0.1.1](https://github.com/GaloyMoney/stablesats-rs/releases/tag/0.1.1)
 
 
 
-# [stablesats release v0.1.1](https://github.com/GaloyMoney/stablesats/releases/tag/v0.1.1)
+# [stablesats release v0.1.1](https://github.com/GaloyMoney/stablesats-rs/releases/tag/0.1.1)
 
 
 
-# [stablesats release v0.1.0](https://github.com/GaloyMoney/stablesats/releases/tag/v0.1.0)
+# [stablesats release v0.1.0](https://github.com/GaloyMoney/stablesats-rs/releases/tag/0.1.0)
 
 
 ### Bug Fixes

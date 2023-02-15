@@ -11,7 +11,7 @@ pushd repo
 VERSION="$(cat ../version/version)"
 
 cat <<EOF >new_change_log.md
-# [stablesats release v${VERSION}](https://github.com/GaloyMoney/stablesats/releases/tag/v${VERSION})
+# [stablesats release v${VERSION}](https://github.com/GaloyMoney/stablesats-rs/releases/tag/${VERSION})
 
 $(cat ../artifacts/gh-release-notes.md)
 
