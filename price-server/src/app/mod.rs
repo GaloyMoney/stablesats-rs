@@ -146,7 +146,7 @@ impl PriceApp {
         mut subscriber: memory::Subscriber<PriceStreamPayload>,
         price_cache: ExchangeTickCache,
     ) -> Result<(), PriceAppError> {
-        let _ = tokio::spawn(async move {
+        tokio::spawn(async move {
             while let Some(msg) = subscriber.next().await {
                 if let PriceStreamPayload::DeribitBtcUsdSwapPricePayload(price_msg) = msg.payload {
                     let span = info_span!(
