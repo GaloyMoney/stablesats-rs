@@ -1,3 +1,10 @@
+# [stablesats release v0.6.6](https://github.com/GaloyMoney/stablesats-rs/releases/tag/0.6.6)
+
+
+### Bug Fixes
+
+- Span should be reference (#288)
+
 # [stablesats release v0.6.5](https://github.com/GaloyMoney/stablesats-rs/releases/tag/0.6.5)
 
 

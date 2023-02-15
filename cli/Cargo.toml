@@ -1,6 +1,6 @@
 [package]
 name = "stablesats"
-version = "0.6.6-dev"
+version = "0.6.6"
 edition = "2021"
 authors = ["Justin Carter <justin@galoy.io>"]
 license = "MIT"
