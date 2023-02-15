@@ -732,6 +732,30 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "23d8666cb01533c39dde32bcbab8e227b4ed6679b2c925eba05feabea39508fb"
 
 [[package]]
+name = "deribit-client"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "chrono",
+ "data-encoding",
+ "governor",
+ "lazy_static",
+ "rand",
+ "reqwest",
+ "ring",
+ "rust_decimal",
+ "rust_decimal_macros",
+ "serde",
+ "serde_json",
+ "serde_yaml",
+ "serial_test",
+ "stablesats-shared",
+ "thiserror",
+ "tokio",
+ "tracing",
+]
+
+[[package]]
 name = "derive_builder"
 version = "0.12.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
