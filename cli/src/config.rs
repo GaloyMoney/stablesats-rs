@@ -5,7 +5,6 @@ use std::path::Path;
 
 use galoy_client::GaloyClientConfig;
 use hedging::{ExchangesConfig, HedgingAppConfig};
-use okex_price::PriceFeedConfig;
 use price_server::{
     ExchangePriceCacheConfig, FeeCalculatorConfig, PriceServerConfig, PriceServerHealthCheckConfig,
 };
@@ -24,8 +23,6 @@ pub struct Config {
     pub tracing: TracingConfig,
     #[serde(default)]
     pub price_server: PriceServerWrapper,
-    #[serde(default)]
-    pub okex_price_feed: PriceFeedConfigWrapper,
     #[serde(default)]
     pub bitfinex_price_feed: BitfinexPriceFeedConfigWrapper,
     #[serde(default)]
@@ -102,22 +99,6 @@ impl Default for PriceServerWrapper {
             health: PriceServerHealthCheckConfig::default(),
             fees: FeeCalculatorConfig::default(),
             price_cache: ExchangePriceCacheConfig::default(),
-        }
-    }
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct PriceFeedConfigWrapper {
-    #[serde(default = "bool_true")]
-    pub enabled: bool,
-    #[serde(default)]
-    pub config: PriceFeedConfig,
-}
-impl Default for PriceFeedConfigWrapper {
-    fn default() -> Self {
-        Self {
-            enabled: true,
-            config: PriceFeedConfig::default(),
         }
     }
 }

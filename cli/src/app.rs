@@ -114,7 +114,6 @@ async fn run_cmd(
         db,
         pubsub,
         price_server,
-        okex_price_feed,
         bitfinex_price_feed,
         user_trades,
         tracing,
@@ -132,14 +131,19 @@ async fn run_cmd(
     let mut checkers = HashMap::new();
     let (price_send, price_recv) = memory::channel(price_stream_throttle_period());
 
-    if okex_price_feed.enabled {
+    if exchanges
+        .okex
+        .as_ref()
+        .map(|okex| okex.weight > Decimal::ZERO)
+        .unwrap_or(false)
+    {
         println!("Starting Okex price feed");
 
         let okex_send = send.clone();
         let price_send = price_send.clone();
         handles.push(tokio::spawn(async move {
             let _ = okex_send.try_send(
-                okex_price::run(okex_price_feed.config, price_send)
+                okex_price::run(price_send)
                     .await
                     .context("Okex Price Feed error"),
             );
