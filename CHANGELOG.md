@@ -1,3 +1,12 @@
+# [stablesats release v0.6.5](https://github.com/GaloyMoney/stablesats/releases/tag/v0.6.5)
+
+
+### Miscellaneous Tasks
+
+- Disable bitfinex-price-feed by default
+- Output sqlx_ledger spans
+- Log output as json and filter out sqlx (#284)
+
 # [stablesats release v0.6.4](https://github.com/GaloyMoney/stablesats/releases/tag/v0.6.4)
 
 
