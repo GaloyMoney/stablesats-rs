@@ -4,12 +4,11 @@ use serde::{Deserialize, Serialize};
 use std::path::Path;
 
 use galoy_client::GaloyClientConfig;
-use hedging::HedgingAppConfig;
-use okex_price::PriceFeedConfig;
+use hedging::{ExchangesConfig, HedgingAppConfig};
 use price_server::{
     ExchangePriceCacheConfig, FeeCalculatorConfig, PriceServerConfig, PriceServerHealthCheckConfig,
 };
-use shared::{exchanges_config::ExchangeConfigs, pubsub::PubSubConfig};
+use shared::pubsub::PubSubConfig;
 use user_trades::UserTradesConfig;
 
 use super::{db::DbConfig, tracing::TracingConfig};
@@ -25,8 +24,6 @@ pub struct Config {
     #[serde(default)]
     pub price_server: PriceServerWrapper,
     #[serde(default)]
-    pub okex_price_feed: PriceFeedConfigWrapper,
-    #[serde(default)]
     pub bitfinex_price_feed: BitfinexPriceFeedConfigWrapper,
     #[serde(default)]
     pub user_trades: UserTradesConfigWrapper,
@@ -37,7 +34,7 @@ pub struct Config {
     #[serde(default)]
     pub kollider_price_feed: KolliderPriceFeedConfigWrapper,
     #[serde(default)]
-    pub exchanges: ExchangeConfigs,
+    pub exchanges: ExchangesConfig,
 }
 
 pub struct EnvOverride {
@@ -58,7 +55,7 @@ impl Config {
             okex_passphrase,
             okex_secret_key,
             pg_con: stablesats_pg_con,
-            bitfinex_secret_key,
+            bitfinex_secret_key: _,
         }: EnvOverride,
     ) -> anyhow::Result<Self> {
         let config_file = std::fs::read_to_string(path).context("Couldn't read config file")?;
@@ -71,12 +68,8 @@ impl Config {
         config.galoy.auth_code = galoy_phone_code;
 
         if let Some(okex) = config.exchanges.okex.as_mut() {
-            okex.config.secret_key = okex_secret_key;
-            okex.config.passphrase = okex_passphrase;
-        };
-
-        if let Some(bitfinex) = config.exchanges.bitfinex.as_mut() {
-            bitfinex.config.secret_key = bitfinex_secret_key;
+            okex.config.client.secret_key = okex_secret_key;
+            okex.config.client.passphrase = okex_passphrase;
         };
 
         config.db.pg_con = stablesats_pg_con;
@@ -106,22 +99,6 @@ impl Default for PriceServerWrapper {
             health: PriceServerHealthCheckConfig::default(),
             fees: FeeCalculatorConfig::default(),
             price_cache: ExchangePriceCacheConfig::default(),
-        }
-    }
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct PriceFeedConfigWrapper {
-    #[serde(default = "bool_true")]
-    pub enabled: bool,
-    #[serde(default)]
-    pub config: PriceFeedConfig,
-}
-impl Default for PriceFeedConfigWrapper {
-    fn default() -> Self {
-        Self {
-            enabled: true,
-            config: PriceFeedConfig::default(),
         }
     }
 }

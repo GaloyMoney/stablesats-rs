@@ -9,7 +9,7 @@ use serial_test::serial;
 use std::{env, fs};
 
 use okex_client::*;
-use shared::{exchanges_config::OkexConfig, payload::*, pubsub::*};
+use shared::{payload::*, pubsub::*};
 
 use hedging::*;
 
@@ -23,15 +23,18 @@ fn load_fixture(path: &str) -> anyhow::Result<Fixture> {
     Ok(serde_json::from_str(&contents)?)
 }
 
-fn okex_client_config() -> OkexConfig {
+fn okex_config() -> OkexConfig {
     let api_key = env::var("OKEX_API_KEY").expect("OKEX_API_KEY not set");
     let passphrase = env::var("OKEX_PASSPHRASE").expect("OKEX_PASS_PHRASE not set");
     let secret_key = env::var("OKEX_SECRET_KEY").expect("OKEX_SECRET_KEY not set");
     OkexConfig {
-        api_key,
-        passphrase,
-        secret_key,
-        simulated: true,
+        client: OkexClientConfig {
+            api_key,
+            passphrase,
+            secret_key,
+            simulated: true,
+        },
+        ..Default::default()
     }
 }
 
@@ -122,10 +125,9 @@ async fn hedging() -> anyhow::Result<()> {
             pool.clone(),
             recv,
             HedgingAppConfig {
-                okex_poll_frequency: std::time::Duration::from_secs(2),
                 ..Default::default()
             },
-            okex_client_config(),
+            okex_config(),
             galoy_client_config(),
             pubsub_config.clone(),
             tick_recv.resubscribe(),
@@ -141,7 +143,7 @@ async fn hedging() -> anyhow::Result<()> {
         .into_iter();
     publisher.publish(payloads.next().unwrap()).await?;
 
-    let okex = OkexClient::new(okex_client_config()).await?;
+    let okex = OkexClient::new(okex_config().client).await?;
     expect_exposure_equal(&mut stream, dec!(0)).await;
 
     publisher.publish(payloads.next().unwrap()).await?;

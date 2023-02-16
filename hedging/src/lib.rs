@@ -1,21 +1,19 @@
 #![cfg_attr(feature = "fail-on-warnings", deny(warnings))]
 #![cfg_attr(feature = "fail-on-warnings", deny(clippy::all))]
 
-mod adjustment_action;
 mod app;
+mod config;
 mod error;
 pub(crate) mod hack_user_trades_lag;
-mod okex_orders;
-mod okex_transfers;
-mod rebalance_action;
-
-pub mod job;
+mod okex;
 
 use galoy_client::GaloyClientConfig;
-use shared::{exchanges_config::OkexConfig, health::HealthCheckTrigger, payload::*, pubsub::*};
+use shared::{health::HealthCheckTrigger, payload::*, pubsub::*};
 
 pub use app::*;
+pub use config::*;
 pub use error::*;
+pub use okex::OkexConfig;
 
 #[allow(clippy::too_many_arguments)]
 pub async fn run(

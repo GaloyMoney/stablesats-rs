@@ -11,11 +11,9 @@ mod price_mixer;
 mod server;
 
 use app::PriceApp;
-use shared::{
-    exchanges_config::ExchangeConfigs, health::HealthCheckTrigger, payload::*, pubsub::memory,
-};
+use shared::{health::HealthCheckTrigger, payload::*, pubsub::memory};
 
-pub use app::PriceServerHealthCheckConfig;
+pub use app::{ExchangeWeights, PriceServerHealthCheckConfig};
 pub use cache_config::ExchangePriceCacheConfig;
 pub use fee_calculator::FeeCalculatorConfig;
 pub use server::*;
@@ -27,7 +25,7 @@ pub async fn run(
     fee_calc_cfg: FeeCalculatorConfig,
     subscriber: memory::Subscriber<PriceStreamPayload>,
     price_cache_config: ExchangePriceCacheConfig,
-    exchanges_cfg: ExchangeConfigs,
+    exchange_weights: ExchangeWeights,
 ) -> Result<(), PriceServerError> {
     let app = PriceApp::run(
         health_check_trigger,
@@ -35,7 +33,7 @@ pub async fn run(
         fee_calc_cfg,
         subscriber,
         price_cache_config,
-        exchanges_cfg,
+        exchange_weights,
     )
     .await?;
 

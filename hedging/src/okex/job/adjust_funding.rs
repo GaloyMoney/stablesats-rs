@@ -6,11 +6,11 @@ use galoy_client::*;
 use okex_client::*;
 use shared::pubsub::CorrelationId;
 
-use crate::{error::*, okex_transfers::*, rebalance_action::*};
+use crate::{error::*, okex::*};
 
 const SATS_PER_BTC: Decimal = dec!(100_000_000);
 
-#[instrument(name = "hedging.job.adjust_funding", skip_all, fields(correlation_id = %correlation_id,
+#[instrument(name = "hedging.okex.job.adjust_funding", skip_all, fields(correlation_id = %correlation_id,
         target_liability, current_position, last_price_in_usd_cents, funding_available_balance,
         trading_available_balance, onchain_fees, action, client_transfer_id,
         transferred_funding, lag_ok), err)]
@@ -75,7 +75,7 @@ pub(super) async fn execute(
     );
     span.record("action", &tracing::field::display(&action));
 
-    let shared = ReservationSharedData {
+    let shared = TransferReservationSharedData {
         correlation_id,
         action_type: action.action_type().to_string(),
         action_unit: action.unit().to_string(),
@@ -88,11 +88,11 @@ pub(super) async fn execute(
     };
 
     match action {
-        RebalanceAction::DoNothing => {}
+        OkexFundingAdjustment::DoNothing => {}
         _ => {
             match action {
-                RebalanceAction::TransferTradingToFunding(amount) => {
-                    let reservation = Reservation {
+                OkexFundingAdjustment::TransferTradingToFunding(amount) => {
+                    let reservation = TransferReservation {
                         shared: &shared,
                         action_size: action.size(),
                         fee: Decimal::ZERO,
@@ -110,8 +110,8 @@ pub(super) async fn execute(
                         let _ = okex.transfer_trading_to_funding(client_id, amount).await?;
                     }
                 }
-                RebalanceAction::TransferFundingToTrading(amount) => {
-                    let reservation = Reservation {
+                OkexFundingAdjustment::TransferFundingToTrading(amount) => {
+                    let reservation = TransferReservation {
                         shared: &shared,
                         action_size: Some(amount),
                         fee: Decimal::ZERO,
@@ -129,9 +129,9 @@ pub(super) async fn execute(
                         let _ = okex.transfer_funding_to_trading(client_id, amount).await?;
                     }
                 }
-                RebalanceAction::OnchainDeposit(amount) => {
+                OkexFundingAdjustment::OnchainDeposit(amount) => {
                     let deposit_address = okex.get_funding_deposit_address().await?.value;
-                    let reservation = Reservation {
+                    let reservation = TransferReservation {
                         shared: &shared,
                         action_size: Some(amount),
                         fee: Decimal::ZERO,
@@ -153,9 +153,9 @@ pub(super) async fn execute(
                             .await?;
                     }
                 }
-                RebalanceAction::OnchainWithdraw(amount) => {
+                OkexFundingAdjustment::OnchainWithdraw(amount) => {
                     let deposit_address = galoy.onchain_address().await?.address;
-                    let reservation = Reservation {
+                    let reservation = TransferReservation {
                         shared: &shared,
                         action_size: Some(amount),
                         fee: fees.min_fee,

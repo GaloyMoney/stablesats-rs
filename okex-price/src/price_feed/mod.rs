@@ -2,14 +2,17 @@ mod tick;
 
 use futures::{SinkExt, Stream, StreamExt};
 use tokio_tungstenite::{connect_async, tungstenite::Message};
+use url::Url;
 
-pub use crate::{config::*, error::*};
+pub use crate::error::*;
 pub use tick::*;
 
+pub(crate) const OKEX_WS_URL: &str = "wss://ws.okx.com:8443/ws/v5/public";
+
 pub async fn subscribe_btc_usd_swap_price_tick(
-    config: PriceFeedConfig,
 ) -> Result<std::pin::Pin<Box<dyn Stream<Item = OkexPriceTick> + Send>>, PriceFeedError> {
-    let (ws_stream, _) = connect_async(config.url).await?;
+    let url = Url::parse(OKEX_WS_URL).expect("invalid okex_ws_url");
+    let (ws_stream, _) = connect_async(url).await?;
     let (mut sender, receiver) = ws_stream.split();
 
     let subscribe_args = serde_json::json!({

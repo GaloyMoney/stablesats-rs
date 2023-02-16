@@ -114,7 +114,6 @@ async fn run_cmd(
         db,
         pubsub,
         price_server,
-        okex_price_feed,
         bitfinex_price_feed,
         user_trades,
         tracing,
@@ -132,14 +131,19 @@ async fn run_cmd(
     let mut checkers = HashMap::new();
     let (price_send, price_recv) = memory::channel(price_stream_throttle_period());
 
-    if okex_price_feed.enabled {
+    if exchanges
+        .okex
+        .as_ref()
+        .map(|okex| okex.weight > Decimal::ZERO)
+        .unwrap_or(false)
+    {
         println!("Starting Okex price feed");
 
         let okex_send = send.clone();
         let price_send = price_send.clone();
         handles.push(tokio::spawn(async move {
             let _ = okex_send.try_send(
-                okex_price::run(okex_price_feed.config, price_send)
+                okex_price::run(price_send)
                     .await
                     .context("Okex Price Feed error"),
             );
@@ -183,7 +187,7 @@ async fn run_cmd(
         let (snd, recv) = futures::channel::mpsc::unbounded();
         checkers.insert("price", snd);
         let price = price_recv.resubscribe();
-        let exchanges = exchanges.clone();
+        let weights = extract_weights(&exchanges);
         handles.push(tokio::spawn(async move {
             let _ = price_send.try_send(
                 price_server::run(
@@ -193,7 +197,7 @@ async fn run_cmd(
                     price_server.fees,
                     price,
                     price_server.price_cache,
-                    exchanges,
+                    weights,
                 )
                 .await
                 .context("Price Server error"),
@@ -278,4 +282,12 @@ async fn price_cmd(
 
 fn price_stream_throttle_period() -> Duration {
     Duration::from_std(std::time::Duration::from_secs(2)).unwrap()
+}
+
+fn extract_weights(config: &hedging::ExchangesConfig) -> price_server::ExchangeWeights {
+    price_server::ExchangeWeights {
+        okex: config.okex.as_ref().map(|c| c.weight),
+        bitfinex: None,
+        kollider: None,
+    }
 }

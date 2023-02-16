@@ -7,7 +7,7 @@ use shared::pubsub::CorrelationId;
 
 use crate::error::HedgingError;
 
-pub struct ReservationSharedData {
+pub struct TransferReservationSharedData {
     pub correlation_id: CorrelationId,
     pub action_type: String,
     pub action_unit: String,
@@ -19,12 +19,12 @@ pub struct ReservationSharedData {
     pub funding_btc_total_balance: Decimal,
 }
 
-pub struct Reservation<'a> {
+pub struct TransferReservation<'a> {
     pub action_size: Option<Decimal>,
     pub fee: Decimal,
     pub transfer_from: String,
     pub transfer_to: String,
-    pub shared: &'a ReservationSharedData,
+    pub shared: &'a TransferReservationSharedData,
 }
 
 #[derive(Clone)]
@@ -39,7 +39,7 @@ impl OkexTransfers {
 
     pub async fn reserve_transfer_slot<'a>(
         &self,
-        reservation: Reservation<'a>,
+        reservation: TransferReservation<'a>,
     ) -> Result<Option<ClientTransferId>, HedgingError> {
         let mut tx = self.pool.begin().await?;
         tx.execute("SET TRANSACTION ISOLATION LEVEL SERIALIZABLE")

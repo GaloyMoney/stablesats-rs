@@ -6,8 +6,7 @@ use shared::{payload::*, pubsub::*, time::*};
 
 #[tokio::test]
 async fn subscribes_to_tickers_channel() -> anyhow::Result<()> {
-    let config = PriceFeedConfig::default();
-    let mut received = subscribe_btc_usd_swap_price_tick(config)
+    let mut received = subscribe_btc_usd_swap_price_tick()
         .await
         .expect("subscribe_btc_usd_swap");
     let price_tick = received.next().await.expect("expected price tick");
@@ -32,8 +31,7 @@ async fn subscribes_to_tickers_channel() -> anyhow::Result<()> {
 
 #[tokio::test]
 async fn subscribe_to_order_book_channel() -> anyhow::Result<()> {
-    let config = PriceFeedConfig::default();
-    let mut order_book_stream = subscribe_btc_usd_swap_order_book(config)
+    let mut order_book_stream = subscribe_btc_usd_swap_order_book()
         .await
         .expect("subscribe to order book channel");
     let order_book = order_book_stream.next().await.expect("order book");
@@ -58,7 +56,7 @@ async fn publishes_to_price_stream() -> anyhow::Result<()> {
         memory::channel(chrono::Duration::from_std(std::time::Duration::from_secs(2)).unwrap());
 
     let _ = tokio::spawn(async move {
-        let _res = okex_price::run(PriceFeedConfig::default(), tick_send).await;
+        let _res = okex_price::run(tick_send).await;
     });
 
     let received_tick = tick_recv.next().await.expect("expected price tick");
