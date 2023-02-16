@@ -1,5 +1,4 @@
 use anyhow::Context;
-use kollider_price::config::KolliderPriceFeedConfig;
 use serde::{Deserialize, Serialize};
 use std::path::Path;
 
@@ -31,8 +30,6 @@ pub struct Config {
     pub galoy: GaloyClientConfig,
     #[serde(default)]
     pub hedging: HedgingConfigWrapper,
-    #[serde(default)]
-    pub kollider_price_feed: KolliderPriceFeedConfigWrapper,
     #[serde(default)]
     pub exchanges: ExchangesConfig,
 }
@@ -109,15 +106,6 @@ pub struct BitfinexPriceFeedConfigWrapper {
     pub enabled: bool,
     #[serde(default)]
     pub config: bitfinex_price::PriceFeedConfig,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize, Default)]
-pub struct KolliderPriceFeedConfigWrapper {
-    #[serde(default)]
-    pub enabled: bool,
-
-    #[serde(default)]
-    pub config: KolliderPriceFeedConfig,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

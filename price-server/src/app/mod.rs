@@ -6,7 +6,7 @@ use tracing::{info_span, instrument, Instrument};
 
 use shared::{
     health::HealthCheckTrigger,
-    payload::{PriceStreamPayload, BITFINEX_EXCHANGE_ID, KOLLIDER_EXCHANGE_ID, OKEX_EXCHANGE_ID},
+    payload::{PriceStreamPayload, BITFINEX_EXCHANGE_ID, OKEX_EXCHANGE_ID},
     pubsub::*,
 };
 
@@ -61,14 +61,6 @@ impl PriceApp {
             }
         }
 
-        if let Some(weight) = exchange_weights.kollider {
-            if weight > Decimal::ZERO {
-                let kollider_price_cache = ExchangeTickCache::new(price_cache_config);
-                Self::subscribe_kollider(subscriber, kollider_price_cache.clone()).await?;
-                price_mixer.add_provider(KOLLIDER_EXCHANGE_ID, kollider_price_cache, weight);
-            }
-        }
-
         let fee_calculator = FeeCalculator::new(fee_calc_cfg);
         let app = Self {
             price_mixer,
@@ -114,33 +106,6 @@ impl PriceApp {
                 if let PriceStreamPayload::BitfinexBtcUsdSwapPricePayload(price_msg) = msg.payload {
                     let span = info_span!(
                         "price_server.bitfinex_price_tick_received",
-                        message_type = %msg.payload_type,
-                        correlation_id = %msg.meta.correlation_id
-                    );
-                    shared::tracing::inject_tracing_data(&span, &msg.meta.tracing_data);
-                    async {
-                        price_cache
-                            .apply_update(price_msg, msg.meta.correlation_id)
-                            .await;
-                    }
-                    .instrument(span)
-                    .await;
-                }
-            }
-        });
-
-        Ok(())
-    }
-
-    async fn subscribe_kollider(
-        mut subscriber: memory::Subscriber<PriceStreamPayload>,
-        price_cache: ExchangeTickCache,
-    ) -> Result<(), PriceAppError> {
-        tokio::spawn(async move {
-            while let Some(msg) = subscriber.next().await {
-                if let PriceStreamPayload::KolliderBtcUsdSwapPricePayload(price_msg) = msg.payload {
-                    let span = info_span!(
-                        "price_server.kollider_price_tick_received",
                         message_type = %msg.payload_type,
                         correlation_id = %msg.meta.correlation_id
                     );

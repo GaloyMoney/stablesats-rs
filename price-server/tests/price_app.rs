@@ -27,7 +27,6 @@ async fn price_app() -> anyhow::Result<()> {
     let ex_cfgs = ExchangeWeights {
         okex: Some(dec!(1.0)),
         bitfinex: None,
-        kollider: None,
     };
 
     let app = PriceApp::run(
