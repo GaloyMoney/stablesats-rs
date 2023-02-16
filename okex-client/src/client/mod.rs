@@ -104,6 +104,10 @@ impl OkexClient {
         Ok(())
     }
 
+    pub fn is_simulated(&self) -> bool {
+        self.config.simulated
+    }
+
     pub async fn leverage_info(&self) -> Result<OkexLeverageInfoData, OkexClientError> {
         let path = "/api/v5/account/leverage-info?instId=BTC-USD-SWAP&mgnMode=cross";
         let config_url = Self::url_for_path(path);

@@ -62,10 +62,6 @@ pub(super) async fn execute(
         "trading_available_balance",
         &tracing::field::display(&trading_available_balance),
     );
-
-    let fees = okex.get_onchain_fees().await?;
-    span.record("onchain_fees", &tracing::field::display(&fees));
-
     let action = funding_adjustment.determine_action(
         target_liability_in_cents,
         current_position.usd_cents.into(),
@@ -74,6 +70,13 @@ pub(super) async fn execute(
         funding_available_balance.total_amt_in_btc,
     );
     span.record("action", &tracing::field::display(&action));
+
+    if okex.is_simulated() {
+        return Ok(());
+    }
+
+    let fees = okex.get_onchain_fees().await?;
+    span.record("onchain_fees", &tracing::field::display(&fees));
 
     let shared = TransferReservationSharedData {
         correlation_id,
