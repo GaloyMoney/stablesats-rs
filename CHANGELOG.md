@@ -1,3 +1,18 @@
+# [stablesats release v0.7.0](https://github.com/GaloyMoney/stablesats-rs/releases/tag/0.7.0)
+
+
+### Miscellaneous Tasks
+
+- Remove shared exchanges_config.rs (#292)
+- [**breaking**] Pause kollider integration (#291)
+- Bump axum from 0.6.4 to 0.6.6 (#286)
+- Bump sqlx-ledger from 0.5.1 to 0.5.2 (#287)
+- Bump clap from 4.1.4 to 4.1.6 (#290)
+
+### Refactor
+
+- [**breaking**] Restructure config and hedging module (#285)
+
 # [stablesats release v0.6.6](https://github.com/GaloyMoney/stablesats-rs/releases/tag/0.6.6)
 
 
