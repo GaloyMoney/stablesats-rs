@@ -70,14 +70,14 @@ impl ExchangeAllocation {
             .expect("Couldn't build TxInput");
         let entries = vec![
             EntryInput::builder()
-                .entry_type("'EXCHANGE_ALLOCATION_OMNIBUS_DR'")
+                .entry_type("'EXCHANGE_ALLOCATION_LIABILITY_DR'")
                 .currency("'BTC'")
-                .account_id(format!("uuid('{DERIVATIVE_ALLOCATIONS_OMNIBUS_ID}')"))
+                .account_id(format!("uuid('{STABLESATS_LIABILITY_ID}')"))
                 .direction("DEBIT")
                 .layer("SETTLED")
                 .units("params.okex_allocation_amount")
                 .build()
-                .expect("Couldn't build EXCHANGE_ALLOCATION_OMNIBUS_DR entry"),
+                .expect("Couldn't build EXCHANGE_ALLOCATION_LIABILITY_DR entry"),
             EntryInput::builder()
                 .entry_type("'EXCHANGE_ALLOCATION_OKEX_CR'")
                 .currency("'BTC'")
