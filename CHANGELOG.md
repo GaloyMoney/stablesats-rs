@@ -1,3 +1,14 @@
+# [stablesats release v0.7.1](https://github.com/GaloyMoney/stablesats-rs/releases/tag/0.7.1)
+
+
+### Bug Fixes
+
+- New id for static POLL_OKEX job
+
+### Miscellaneous Tasks
+
+- Early return funding if okex is simulating
+
 # [stablesats release v0.7.0](https://github.com/GaloyMoney/stablesats-rs/releases/tag/0.7.0)
 
 
