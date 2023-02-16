@@ -19,7 +19,8 @@ use shared::{
 
 use crate::{error::*, okex::*};
 
-pub const POLL_OKEX_ID: Uuid = uuid!("10000000-0000-0000-0000-000000000001");
+// retired: uuid!("10000000-0000-0000-0000-000000000001");
+pub const POLL_OKEX_ID: Uuid = uuid!("10000000-0000-0000-0000-000000000002");
 
 #[derive(Debug, Clone)]
 pub(super) struct OkexPollDelay(pub(super) std::time::Duration);
