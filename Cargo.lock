@@ -1572,23 +1572,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "kollider-price"
-version = "0.6.7-dev"
-dependencies = [
- "anyhow",
- "chrono",
- "futures",
- "rust_decimal",
- "serde",
- "serde_json",
- "stablesats-shared",
- "thiserror",
- "tokio",
- "tokio-tungstenite",
- "url",
-]
-
-[[package]]
 name = "lalrpop"
 version = "0.19.8"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3136,7 +3119,6 @@ dependencies = [
  "futures",
  "galoy-client",
  "hedging",
- "kollider-price",
  "okex-client",
  "okex-price",
  "opentelemetry",

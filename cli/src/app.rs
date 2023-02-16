@@ -119,7 +119,6 @@ async fn run_cmd(
         tracing,
         galoy,
         hedging,
-        kollider_price_feed,
         exchanges,
     }: Config,
 ) -> anyhow::Result<()> {
@@ -160,19 +159,6 @@ async fn run_cmd(
                 bitfinex_price::run(bitfinex_price_feed.config, price_send)
                     .await
                     .context("Bitfinex Price Feed error"),
-            );
-        }));
-    }
-
-    if kollider_price_feed.enabled {
-        println!("Starting Kollider price feed");
-
-        let kollider_send = send.clone();
-        handles.push(tokio::spawn(async move {
-            let _ = kollider_send.try_send(
-                kollider_price::run(kollider_price_feed.config, price_send)
-                    .await
-                    .context("Kollider Price Feed error"),
             );
         }));
     }
@@ -288,6 +274,5 @@ fn extract_weights(config: &hedging::ExchangesConfig) -> price_server::ExchangeW
     price_server::ExchangeWeights {
         okex: config.okex.as_ref().map(|c| c.weight),
         bitfinex: None,
-        kollider: None,
     }
 }

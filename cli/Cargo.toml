@@ -16,7 +16,6 @@ okex-client = { path = "../okex-client" }
 hedging = { path = "../hedging" }
 okex-price = { path = "../okex-price" }
 bitfinex-price = { path = "../bitfinex-price" }
-kollider-price = { path = "../kollider-price" }
 
 anyhow = "1.0.69"
 clap = { version = "4.1", features = ["derive", "env"] }

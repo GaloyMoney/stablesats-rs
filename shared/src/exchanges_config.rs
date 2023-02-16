@@ -6,7 +6,6 @@ use std::fmt::Debug;
 pub struct ExchangeConfigs {
     pub okex: Option<ExchangeConfig<OkexConfig>>,
     pub bitfinex: Option<ExchangeConfig<BitfinexConfig>>,
-    pub kollider: Option<ExchangeConfig<KolliderConfig>>,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -39,14 +38,6 @@ pub struct BitfinexConfig {
     pub simulated: bool,
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone, Default)]
-pub struct KolliderConfig {
-    #[serde(default)]
-    pub api_key: String,
-    #[serde(default)]
-    pub url: String,
-}
-
 #[cfg(test)]
 mod test_super {
     use super::*;
@@ -56,7 +47,6 @@ mod test_super {
     fn test_default() {
         let config = ExchangeConfigs::default();
         assert!(config.okex.is_none());
-        assert!(config.kollider.is_none());
     }
 
     #[test]
@@ -66,21 +56,12 @@ mod test_super {
                     weight: 0.8
                     config:
                         api_key: okex api key
-                  kollider: 
-                    weight: 0.2
-                    config:
-                        api_key: kollider api key
-                        url: url
              "#;
         let ex: ExchangeConfigs = serde_yaml::from_str(str).expect("Couldn't deserialize yaml");
 
         let okex = ex.okex.expect("Okex-config not found");
         assert_eq!(dec!(0.8), okex.weight);
         assert_eq!("okex api key", okex.config.api_key);
-
-        let kollider = ex.kollider.expect("Kollider-config not found");
-        assert_eq!(dec!(0.2), kollider.weight);
-        assert_eq!("kollider api key", kollider.config.api_key);
     }
 
     #[test]
@@ -104,18 +85,9 @@ mod test_super {
             },
         };
 
-        let kollider = ExchangeConfig {
-            weight: dec!(0.8),
-            config: KolliderConfig {
-                api_key: "kollider api key".to_string(),
-                url: "kollider url".to_string(),
-            },
-        };
-
         let data = ExchangeConfigs {
             okex: Some(ok),
             bitfinex: Some(bit),
-            kollider: Some(kollider),
         };
         let result = serde_yaml::to_string(&data)?;
         assert!(result.contains("okex passphrase"));
@@ -133,19 +105,12 @@ mod test_super {
                     weight: 3
                     config:
                         api_key: bitfinex api
-                  kollider:
-                    weight: 2
-                    config:
-                        api_key: kollider key
-                        url: url
              "#;
         let ex: ExchangeConfigs = serde_yaml::from_str(str)?;
         let okex_cfg = ex.okex.expect("Okex-config not found");
         assert_eq!(dec!(1), okex_cfg.weight);
         let bitfinex_cfg = ex.bitfinex.expect("Bitfinex-config not found");
         assert_eq!(dec!(3), bitfinex_cfg.weight);
-        let kollider_cfg = ex.kollider.expect("Kollider-config not found");
-        assert_eq!(dec!(2), kollider_cfg.weight);
         Ok(())
     }
 }
