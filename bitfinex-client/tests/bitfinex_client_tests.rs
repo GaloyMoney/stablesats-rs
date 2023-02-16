@@ -4,7 +4,6 @@ use bitfinex_client::*;
 
 use rust_decimal_macros::dec;
 use serial_test::serial;
-use shared::exchanges_config::BitfinexConfig;
 
 async fn configured_client() -> anyhow::Result<BitfinexClient> {
     let api_key = env::var("BITFINEX_API_KEY")?;

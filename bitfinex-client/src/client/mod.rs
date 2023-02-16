@@ -10,8 +10,8 @@ use reqwest::{
 };
 use ring::hmac;
 use rust_decimal::Decimal;
+use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
-use shared::exchanges_config::BitfinexConfig;
 use tracing::instrument;
 
 use std::{collections::HashMap, time::Duration};
@@ -32,6 +32,16 @@ lazy_static::lazy_static! {
 const REST_API_V2_URL: &str = "https://api.bitfinex.com/v2";
 const REST_API_R_SIGNATURE_PATH: &str = "/api/v2/auth/r";
 const REST_API_W_SIGNATURE_PATH: &str = "/api/v2/auth/w";
+
+#[derive(Serialize, Deserialize, Debug, Clone, Default)]
+pub struct BitfinexConfig {
+    #[serde(default)]
+    pub api_key: String,
+    #[serde(default)]
+    pub secret_key: String,
+    #[serde(default)]
+    pub simulated: bool,
+}
 
 #[derive(Clone)]
 pub struct BitfinexClient {
