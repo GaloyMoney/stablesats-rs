@@ -45,6 +45,7 @@ impl Ledger {
         Self::stablesats_btc_wallet_account(&inner).await?;
         Self::stablesats_omnibus_account(&inner).await?;
         Self::stablesats_liability_account(&inner).await?;
+        Self::derivative_allocation_okex_account(&inner).await?;
 
         templates::UserBuysUsd::init(&inner).await?;
         templates::UserSellsUsd::init(&inner).await?;
@@ -165,6 +166,21 @@ impl Ledger {
             .id(STABLESATS_LIABILITY_ID)
             .name(STABLESATS_LIABILITY)
             .description("Account for stablesats liability".to_string())
+            .build()
+            .expect("Couldn't create stablesats liability account");
+        match ledger.accounts().create(new_account).await {
+            Ok(_) | Err(SqlxLedgerError::DuplicateKey(_)) => Ok(()),
+            Err(e) => Err(e.into()),
+        }
+    }
+
+    #[instrument(name = "ledger.derivative_allocation_okex_account", skip_all)]
+    async fn derivative_allocation_okex_account(ledger: &SqlxLedger) -> Result<(), LedgerError> {
+        let new_account = NewAccount::builder()
+            .code(DERIVATIVE_ALLOCATIONS_OKEX)
+            .id(DERIVATIVE_ALLOCATIONS_OKEX_ID)
+            .name(DERIVATIVE_ALLOCATIONS_OKEX)
+            .description("Account for okex derivative allocations".to_string())
             .build()
             .expect("Couldn't create stablesats liability account");
         match ledger.accounts().create(new_account).await {
