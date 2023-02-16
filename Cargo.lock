@@ -3017,9 +3017,9 @@ dependencies = [
 
 [[package]]
 name = "sqlx-ledger"
-version = "0.5.1"
+version = "0.5.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1bb3b79eb45f4f2ce17e3ee625a6098d06dc76dbbbf6c3cd35a13fa9db9f4bc5"
+checksum = "7f70729c5e68bbc187290fc3203f3b41fef5d79c8a8a2dc0490f40cc7e400b02"
 dependencies = [
  "cached",
  "chrono",
@@ -3038,9 +3038,9 @@ dependencies = [
 
 [[package]]
 name = "sqlx-ledger-cel-interpreter"
-version = "0.5.1"
+version = "0.5.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "531f73b6560dbbb080a58561ce0112122dd492648004047209fec732c56c9ddd"
+checksum = "ceb3c1efe99322b0c7a205af379f31ec37e6282af1be4b595e26c42183dd13b8"
 dependencies = [
  "chrono",
  "rust_decimal",
@@ -3053,9 +3053,9 @@ dependencies = [
 
 [[package]]
 name = "sqlx-ledger-cel-parser"
-version = "0.5.1"
+version = "0.5.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0359bfd1147227714af2a0557990e0f3b6a0bb2a34201e254613d8fd01a43501"
+checksum = "b0a4ee93947e86557d645968aac198e17242e47dcb6ba479c8f32b8540186d6a"
 dependencies = [
  "lalrpop",
  "lalrpop-util",
