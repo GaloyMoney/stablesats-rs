@@ -81,3 +81,30 @@ async fn user_buys_and_sells_usd() -> anyhow::Result<()> {
 
     Ok(())
 }
+
+#[tokio::test]
+async fn exchange_allocation() -> anyhow::Result<()> {
+    let pool = init_pool().await?;
+    let ledger = Ledger::init(&pool).await?;
+
+    let okex_allocation_amount = dec!(200);
+
+    ledger
+        .exchange_allocation(
+            pool.begin().await?,
+            LedgerTxId::new(),
+            ExchangeAllocationParams {
+                okex_allocation_amount,
+                meta: ExchangeAllocationMeta {
+                    timestamp: chrono::Utc::now(),
+                },
+            },
+        )
+        .await?;
+
+    // let balance = ledger
+    //     .balances()
+    //     .get_ledger_account_balance(DERIVATIVE_ALLOCATIONS_OKEX_ID, "USD");
+
+    Ok(())
+}
