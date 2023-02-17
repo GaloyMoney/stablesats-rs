@@ -3166,6 +3166,7 @@ dependencies = [
  "rust_decimal_macros",
  "serde",
  "serde_json",
+ "serde_yaml",
  "sqlx",
  "sqlx-ledger",
  "stablesats-shared",
