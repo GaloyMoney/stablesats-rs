@@ -7,6 +7,9 @@ pub(super) const USER_BUYS_USD_CODE: &str = "USER_BUYS_USD";
 pub(super) const USER_BUYS_USD_ID: Uuid = uuid!("00000000-0000-0000-0000-000000000001");
 pub(super) const USER_SELLS_USD_CODE: &str = "USER_SELLS_USD";
 pub(super) const USER_SELLS_USD_ID: Uuid = uuid!("00000000-0000-0000-0000-000000000002");
+pub(super) const INCREASE_DERIVATIVE_EXCHANGE_ALLOCATION_CODE: &str = "EXCHANGE_ALLOCATION";
+pub(super) const INCREASE_DERIVATIVE_EXCHANGE_ALLOCATION_ID: Uuid =
+    uuid!("00000000-0000-0000-0000-000000000003");
 
 // Journal
 pub(super) const STABLESATS_JOURNAL_NAME: &str = "Stablesats";

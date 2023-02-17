@@ -49,6 +49,7 @@ impl Ledger {
 
         templates::UserBuysUsd::init(&inner).await?;
         templates::UserSellsUsd::init(&inner).await?;
+        templates::IncreaseDerivativeExchangeAllocation::init(&inner).await?;
 
         Ok(Self {
             events: inner.events(DEFAULT_BUFFER_SIZE).await?,
@@ -88,6 +89,27 @@ impl Ledger {
     ) -> Result<(), LedgerError> {
         self.inner
             .post_transaction_in_tx(tx, id, USER_SELLS_USD_CODE, Some(params))
+            .await?;
+        Ok(())
+    }
+
+    #[instrument(
+        name = "ledger.increase_derivatives_exchange_allocation",
+        skip(self, tx)
+    )]
+    pub async fn increase_derivatives_exchange_allocation(
+        &self,
+        tx: Transaction<'_, Postgres>,
+        id: LedgerTxId,
+        params: IncreaseDerivativeExchangeAllocationParams,
+    ) -> Result<(), LedgerError> {
+        self.inner
+            .post_transaction_in_tx(
+                tx,
+                id,
+                INCREASE_DERIVATIVE_EXCHANGE_ALLOCATION_CODE,
+                Some(params),
+            )
             .await?;
         Ok(())
     }

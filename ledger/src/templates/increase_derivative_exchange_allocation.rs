@@ -1,24 +1,26 @@
 use chrono::{DateTime, Utc};
 use rust_decimal::Decimal;
 use serde::{Deserialize, Serialize};
+use shared::exchanges_config::ExchangeConfigs;
 use sqlx_ledger::{tx_template::*, SqlxLedger, SqlxLedgerError};
 use tracing::instrument;
 
 use crate::{constants::*, error::*};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct ExchangeAllocationMeta {
+pub struct IncreaseDerivativeExchangeAllocationMeta {
     #[serde(with = "chrono::serde::ts_seconds")]
     pub timestamp: DateTime<Utc>,
 }
 
 #[derive(Debug, Clone)]
-pub struct ExchangeAllocationParams {
+pub struct IncreaseDerivativeExchangeAllocationParams {
     pub okex_allocation_amount: Decimal,
-    pub meta: ExchangeAllocationMeta,
+    pub exchange_configs: ExchangeConfigs,
+    pub meta: IncreaseDerivativeExchangeAllocationMeta,
 }
 
-impl ExchangeAllocationParams {
+impl IncreaseDerivativeExchangeAllocationParams {
     pub fn defs() -> Vec<ParamDefinition> {
         vec![
             ParamDefinition::builder()
@@ -40,15 +42,17 @@ impl ExchangeAllocationParams {
     }
 }
 
-impl From<ExchangeAllocationParams> for TxParams {
+impl From<IncreaseDerivativeExchangeAllocationParams> for TxParams {
     fn from(
-        ExchangeAllocationParams {
+        IncreaseDerivativeExchangeAllocationParams {
             okex_allocation_amount,
+            exchange_configs: _,
             meta,
-        }: ExchangeAllocationParams,
+        }: IncreaseDerivativeExchangeAllocationParams,
     ) -> Self {
         let effective = meta.timestamp.naive_utc().date();
         let meta = serde_json::to_value(meta).expect("Couldn't serialize meta");
+
         let mut params = Self::default();
         params.insert("okex_allocation_amount", okex_allocation_amount);
         params.insert("meta", meta);
@@ -56,9 +60,9 @@ impl From<ExchangeAllocationParams> for TxParams {
         params
     }
 }
-pub struct ExchangeAllocation {}
+pub struct IncreaseDerivativeExchangeAllocation {}
 
-impl ExchangeAllocation {
+impl IncreaseDerivativeExchangeAllocation {
     #[instrument(name = "ledger.user_buys_usd.init", skip_all)]
     pub async fn init(ledger: &SqlxLedger) -> Result<(), LedgerError> {
         let tx_input = TxInput::builder()
@@ -89,10 +93,10 @@ impl ExchangeAllocation {
                 .expect("Couldn't build EXCHANGE_ALLOCATION_OKEX_CR entry"),
         ];
 
-        let params = ExchangeAllocationParams::defs();
+        let params = IncreaseDerivativeExchangeAllocationParams::defs();
         let template = NewTxTemplate::builder()
-            .id(EXCHANGE_ALLOCATION_ID)
-            .code(EXCHANGE_ALLOCATION_CODE)
+            .id(INCREASE_DERIVATIVE_EXCHANGE_ALLOCATION_ID)
+            .code(INCREASE_DERIVATIVE_EXCHANGE_ALLOCATION_CODE)
             .tx_input(tx_input)
             .entries(entries)
             .params(params)
