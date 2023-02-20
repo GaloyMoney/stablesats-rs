@@ -102,5 +102,18 @@ async fn exchange_allocation() -> anyhow::Result<()> {
         )
         .await?;
 
+    ledger
+        .decrease_derivatives_exchange_allocation(
+            pool.begin().await?,
+            LedgerTxId::new(),
+            DecreaseDerivativeExchangeAllocationParams {
+                okex_allocation_amount,
+                meta: DecreaseDerivativeExchangeAllocationMeta {
+                    timestamp: chrono::Utc::now(),
+                },
+            },
+        )
+        .await?;
+
     Ok(())
 }

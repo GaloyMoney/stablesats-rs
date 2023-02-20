@@ -114,6 +114,27 @@ impl Ledger {
         Ok(())
     }
 
+    #[instrument(
+        name = "ledger.decrease_derivatives_exchange_allocation",
+        skip(self, tx)
+    )]
+    pub async fn decrease_derivatives_exchange_allocation(
+        &self,
+        tx: Transaction<'_, Postgres>,
+        id: LedgerTxId,
+        params: DecreaseDerivativeExchangeAllocationParams,
+    ) -> Result<(), LedgerError> {
+        self.inner
+            .post_transaction_in_tx(
+                tx,
+                id,
+                DECREASE_DERIVATIVE_EXCHANGE_ALLOCATION_CODE,
+                Some(params),
+            )
+            .await?;
+        Ok(())
+    }
+
     pub async fn usd_liability_balance_events(&self) -> broadcast::Receiver<SqlxLedgerEvent> {
         self.events
             .account_balance(STABLESATS_JOURNAL_ID.into(), STABLESATS_LIABILITY_ID.into())

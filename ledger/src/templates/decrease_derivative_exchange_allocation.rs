@@ -7,18 +7,18 @@ use tracing::instrument;
 use crate::{constants::*, error::*};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct IncreaseDerivativeExchangeAllocationMeta {
+pub struct DecreaseDerivativeExchangeAllocationMeta {
     #[serde(with = "chrono::serde::ts_seconds")]
     pub timestamp: DateTime<Utc>,
 }
 
 #[derive(Debug, Clone)]
-pub struct IncreaseDerivativeExchangeAllocationParams {
+pub struct DecreaseDerivativeExchangeAllocationParams {
     pub okex_allocation_amount: Decimal,
-    pub meta: IncreaseDerivativeExchangeAllocationMeta,
+    pub meta: DecreaseDerivativeExchangeAllocationMeta,
 }
 
-impl IncreaseDerivativeExchangeAllocationParams {
+impl DecreaseDerivativeExchangeAllocationParams {
     pub fn defs() -> Vec<ParamDefinition> {
         vec![
             ParamDefinition::builder()
@@ -40,12 +40,12 @@ impl IncreaseDerivativeExchangeAllocationParams {
     }
 }
 
-impl From<IncreaseDerivativeExchangeAllocationParams> for TxParams {
+impl From<DecreaseDerivativeExchangeAllocationParams> for TxParams {
     fn from(
-        IncreaseDerivativeExchangeAllocationParams {
+        DecreaseDerivativeExchangeAllocationParams {
             okex_allocation_amount,
             meta,
-        }: IncreaseDerivativeExchangeAllocationParams,
+        }: DecreaseDerivativeExchangeAllocationParams,
     ) -> Self {
         let effective = meta.timestamp.naive_utc().date();
         let meta = serde_json::to_value(meta).expect("Couldn't serialize meta");
@@ -57,9 +57,9 @@ impl From<IncreaseDerivativeExchangeAllocationParams> for TxParams {
         params
     }
 }
-pub struct IncreaseDerivativeExchangeAllocation {}
+pub struct DecreaseDerivativeExchangeAllocation {}
 
-impl IncreaseDerivativeExchangeAllocation {
+impl DecreaseDerivativeExchangeAllocation {
     #[instrument(name = "ledger.user_buys_usd.init", skip_all)]
     pub async fn init(ledger: &SqlxLedger) -> Result<(), LedgerError> {
         let tx_input = TxInput::builder()
@@ -71,36 +71,34 @@ impl IncreaseDerivativeExchangeAllocation {
             .expect("Couldn't build TxInput");
         let entries = vec![
             EntryInput::builder()
-                .entry_type("'INCREASE_DERIVATIVE_EXCHANGE_ALLOCATION_LIABILITY_DR'")
+                .entry_type("'EXCHANGE_ALLOCATION_LIABILITY_CR'")
                 .currency("'BTC'")
                 .account_id(format!("uuid('{STABLESATS_LIABILITY_ID}')"))
-                .direction("DEBIT")
-                .layer("SETTLED")
-                .units("params.okex_allocation_amount")
-                .build()
-                .expect(
-                    "Couldn't build INCREASE_DERIVATIVE_EXCHANGE_ALLOCATION_LIABILITY_DR entry",
-                ),
-            EntryInput::builder()
-                .entry_type("'INCREASE_DERIVATIVE_EXCHANGE_ALLOCATION_OKEX_CR'")
-                .currency("'BTC'")
-                .account_id(format!("uuid('{DERIVATIVE_ALLOCATIONS_OKEX_ID}')"))
                 .direction("CREDIT")
                 .layer("SETTLED")
                 .units("params.okex_allocation_amount")
                 .build()
-                .expect("Couldn't build INCREASE_DERIVATIVE_EXCHANGE_ALLOCATION_OKEX_CR entry"),
+                .expect("Couldn't build EXCHANGE_ALLOCATION_LIABILITY_DR entry"),
+            EntryInput::builder()
+                .entry_type("'EXCHANGE_ALLOCATION_OKEX_DR'")
+                .currency("'BTC'")
+                .account_id(format!("uuid('{DERIVATIVE_ALLOCATIONS_OKEX_ID}')"))
+                .direction("DEBIT")
+                .layer("SETTLED")
+                .units("params.okex_allocation_amount")
+                .build()
+                .expect("Couldn't build EXCHANGE_ALLOCATION_OKEX_CR entry"),
         ];
 
-        let params = IncreaseDerivativeExchangeAllocationParams::defs();
+        let params = DecreaseDerivativeExchangeAllocationParams::defs();
         let template = NewTxTemplate::builder()
-            .id(INCREASE_DERIVATIVE_EXCHANGE_ALLOCATION_ID)
-            .code(INCREASE_DERIVATIVE_EXCHANGE_ALLOCATION_CODE)
+            .id(DECREASE_DERIVATIVE_EXCHANGE_ALLOCATION_ID)
+            .code(DECREASE_DERIVATIVE_EXCHANGE_ALLOCATION_CODE)
             .tx_input(tx_input)
             .entries(entries)
             .params(params)
             .build()
-            .expect("Couldn't build INCREASE_DERIVATIVE_EXCHANGE_ALLOCATION_CODE");
+            .expect("Couldn't build DECREASE_DERIVATIVE_EXCHANGE_ALLOCATION_CODE");
         match ledger.tx_templates().create(template).await {
             Ok(_) | Err(SqlxLedgerError::DuplicateKey(_)) => Ok(()),
             Err(e) => Err(e.into()),
