@@ -102,6 +102,14 @@ async fn exchange_allocation() -> anyhow::Result<()> {
         )
         .await?;
 
+    let okex_balance = ledger
+        .balances()
+        .exchange_allocations()
+        .await?
+        .okex
+        .unwrap();
+    assert_eq!(okex_balance.settled(), okex_allocation_amount);
+
     ledger
         .decrease_derivatives_exchange_allocation(
             pool.begin().await?,
@@ -114,6 +122,14 @@ async fn exchange_allocation() -> anyhow::Result<()> {
             },
         )
         .await?;
+
+    let okex_balance = ledger
+        .balances()
+        .exchange_allocations()
+        .await?
+        .okex
+        .unwrap();
+    assert_eq!(okex_balance.settled(), dec!(0));
 
     Ok(())
 }

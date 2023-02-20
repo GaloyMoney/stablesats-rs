@@ -11,6 +11,10 @@ pub struct Balances<'a> {
     pub(super) btc: Currency,
 }
 
+pub struct ExchangeBalances {
+    pub okex: Option<AccountBalance>,
+}
+
 impl<'a> Balances<'a> {
     pub async fn stablesats_liability(&self) -> Result<Option<AccountBalance>, LedgerError> {
         self.get_ledger_account_balance(STABLESATS_LIABILITY_ID, self.usd)
@@ -49,5 +53,13 @@ impl<'a> Balances<'a> {
             .balances()
             .find(STABLESATS_JOURNAL_ID.into(), account_id.into(), currency)
             .await?)
+    }
+
+    pub async fn exchange_allocations(&self) -> Result<ExchangeBalances, LedgerError> {
+        Ok(ExchangeBalances {
+            okex: self
+                .get_ledger_account_balance(DERIVATIVE_ALLOCATIONS_OKEX_ID, self.usd)
+                .await?,
+        })
     }
 }
