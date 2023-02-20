@@ -1,7 +1,6 @@
 use rust_decimal::Decimal;
 use rust_decimal_macros::dec;
 
-use shared::exchanges_config::ExchangeConfigs;
 use stablesats_ledger::*;
 
 pub async fn init_pool() -> anyhow::Result<sqlx::PgPool> {
@@ -90,23 +89,12 @@ async fn exchange_allocation() -> anyhow::Result<()> {
 
     let okex_allocation_amount = dec!(200);
 
-    let str = r#"
-        okex:
-          weight: 1.0
-          config:
-            client:
-                api_key: okex api
-    "#;
-    let exchange_configs: ExchangeConfigs =
-        serde_yaml::from_str(str).expect("Couldn't deserialize yaml");
-
     ledger
         .increase_derivatives_exchange_allocation(
             pool.begin().await?,
             LedgerTxId::new(),
             IncreaseDerivativeExchangeAllocationParams {
                 okex_allocation_amount,
-                exchange_configs,
                 meta: IncreaseDerivativeExchangeAllocationMeta {
                     timestamp: chrono::Utc::now(),
                 },

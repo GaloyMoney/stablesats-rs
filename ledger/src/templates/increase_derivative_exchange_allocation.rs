@@ -1,7 +1,6 @@
 use chrono::{DateTime, Utc};
 use rust_decimal::Decimal;
 use serde::{Deserialize, Serialize};
-use shared::exchanges_config::ExchangeConfigs;
 use sqlx_ledger::{tx_template::*, SqlxLedger, SqlxLedgerError};
 use tracing::instrument;
 
@@ -16,7 +15,6 @@ pub struct IncreaseDerivativeExchangeAllocationMeta {
 #[derive(Debug, Clone)]
 pub struct IncreaseDerivativeExchangeAllocationParams {
     pub okex_allocation_amount: Decimal,
-    pub exchange_configs: ExchangeConfigs,
     pub meta: IncreaseDerivativeExchangeAllocationMeta,
 }
 
@@ -46,7 +44,6 @@ impl From<IncreaseDerivativeExchangeAllocationParams> for TxParams {
     fn from(
         IncreaseDerivativeExchangeAllocationParams {
             okex_allocation_amount,
-            exchange_configs: _,
             meta,
         }: IncreaseDerivativeExchangeAllocationParams,
     ) -> Self {
