@@ -62,4 +62,13 @@ impl<'a> Balances<'a> {
                 .await?,
         })
     }
+
+    pub async fn current_liability(&self) -> Result<Decimal, LedgerError> {
+        let exchange_allocations = self.exchange_allocations().await?;
+        let okex_liability = exchange_allocations
+            .okex
+            .map(|l| l.settled())
+            .unwrap_or(Decimal::ZERO);
+        Ok(okex_liability)
+    }
 }

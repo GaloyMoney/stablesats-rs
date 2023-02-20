@@ -93,7 +93,6 @@ async fn exchange_allocation() -> anyhow::Result<()> {
 
     ledger
         .increase_derivatives_exchange_allocation(
-            pool.begin().await?,
             LedgerTxId::new(),
             IncreaseDerivativeExchangeAllocationParams {
                 okex_allocation_amount,
@@ -114,7 +113,6 @@ async fn exchange_allocation() -> anyhow::Result<()> {
 
     ledger
         .decrease_derivatives_exchange_allocation(
-            pool.begin().await?,
             LedgerTxId::new(),
             DecreaseDerivativeExchangeAllocationParams {
                 okex_allocation_amount,

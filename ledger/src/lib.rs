@@ -94,19 +94,14 @@ impl Ledger {
         Ok(())
     }
 
-    #[instrument(
-        name = "ledger.increase_derivatives_exchange_allocation",
-        skip(self, tx)
-    )]
+    #[instrument(name = "ledger.increase_derivatives_exchange_allocation", skip(self))]
     pub async fn increase_derivatives_exchange_allocation(
         &self,
-        tx: Transaction<'_, Postgres>,
         id: LedgerTxId,
         params: IncreaseDerivativeExchangeAllocationParams,
     ) -> Result<(), LedgerError> {
         self.inner
-            .post_transaction_in_tx(
-                tx,
+            .post_transaction(
                 id,
                 INCREASE_DERIVATIVE_EXCHANGE_ALLOCATION_CODE,
                 Some(params),
@@ -115,19 +110,14 @@ impl Ledger {
         Ok(())
     }
 
-    #[instrument(
-        name = "ledger.decrease_derivatives_exchange_allocation",
-        skip(self, tx)
-    )]
+    #[instrument(name = "ledger.decrease_derivatives_exchange_allocation", skip(self))]
     pub async fn decrease_derivatives_exchange_allocation(
         &self,
-        tx: Transaction<'_, Postgres>,
         id: LedgerTxId,
         params: DecreaseDerivativeExchangeAllocationParams,
     ) -> Result<(), LedgerError> {
         self.inner
-            .post_transaction_in_tx(
-                tx,
+            .post_transaction(
                 id,
                 DECREASE_DERIVATIVE_EXCHANGE_ALLOCATION_CODE,
                 Some(params),

@@ -1,4 +1,6 @@
 use futures::stream::StreamExt;
+use ledger::LedgerError;
+use rust_decimal::Decimal;
 use sqlxmq::OwnedHandle;
 
 use galoy_client::*;
@@ -40,7 +42,7 @@ impl HedgingApp {
         let (okex_engine, subscriber) = OkexEngine::run(
             pool.clone(),
             okex_config,
-            ledger,
+            ledger.clone(),
             pubsub_config,
             price_receiver.resubscribe(),
         )
@@ -54,12 +56,71 @@ impl HedgingApp {
             .run()
             .await?;
 
+        Self::spawn_global_liability_listener(ledger.clone()).await?;
         Self::spawn_health_checker(health_check_trigger, health_cfg, subscriber, price_receiver)
             .await;
         let app = HedgingApp {
             _job_runner_handle: job_runner_handle,
         };
         Ok(app)
+    }
+
+    async fn spawn_global_liability_listener(ledger: ledger::Ledger) -> Result<(), LedgerError> {
+        tokio::spawn(async move {
+            let mut events = ledger.usd_liability_balance_events().await;
+            loop {
+                match events.recv().await {
+                    Ok(received) => {
+                        if let ledger::LedgerEventData::BalanceUpdated(_) = received.data {
+                            async {
+                                let target_liability = ledger
+                                    .balances()
+                                    .stablesats_liability()
+                                    .await?
+                                    .map(|l| l.settled())
+                                    .unwrap_or(Decimal::ZERO);
+
+                                let current_liability =
+                                    ledger.balances().current_liability().await?;
+
+                                if target_liability > current_liability {
+                                    ledger.increase_derivatives_exchange_allocation(
+                                        ledger::LedgerTxId::new(),
+                                        ledger::IncreaseDerivativeExchangeAllocationParams {
+                                            okex_allocation_amount: target_liability
+                                                - current_liability,
+                                            meta:
+                                                ledger::IncreaseDerivativeExchangeAllocationMeta {
+                                                    timestamp: chrono::Utc::now(),
+                                                },
+                                        },
+                                    ).await?;
+                                } else {
+                                    ledger.decrease_derivatives_exchange_allocation(
+                                        ledger::LedgerTxId::new(),
+                                        ledger::DecreaseDerivativeExchangeAllocationParams {
+                                            okex_allocation_amount: current_liability- target_liability,
+                                            meta:
+                                                ledger::DecreaseDerivativeExchangeAllocationMeta {
+                                                    timestamp: chrono::Utc::now(),
+                                                },
+                                        },
+                                    ).await?;
+                                }
+
+                                Ok::<(), ledger::LedgerError>(())
+                            }
+                            .await.expect("liability accounted for");
+                        }
+                    }
+                    Err(tokio::sync::broadcast::error::RecvError::Lagged(_)) => (),
+                    _ => {
+                        break;
+                    }
+                }
+            }
+        });
+        Ok(())
     }
 
     async fn spawn_health_checker(
