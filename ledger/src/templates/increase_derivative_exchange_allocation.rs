@@ -66,13 +66,13 @@ impl IncreaseDerivativeExchangeAllocation {
             .journal_id(format!("uuid('{STABLESATS_JOURNAL_ID}')"))
             .effective("params.effective")
             .metadata("params.meta")
-            .description("'User buys USD'")
+            .description("'Increase Derivative Exchange Allocations'")
             .build()
             .expect("Couldn't build TxInput");
         let entries = vec![
             EntryInput::builder()
                 .entry_type("'INCREASE_DERIVATIVE_EXCHANGE_ALLOCATION_LIABILITY_DR'")
-                .currency("'BTC'")
+                .currency("'USD'")
                 .account_id(format!("uuid('{STABLESATS_LIABILITY_ID}')"))
                 .direction("DEBIT")
                 .layer("SETTLED")
@@ -83,7 +83,7 @@ impl IncreaseDerivativeExchangeAllocation {
                 ),
             EntryInput::builder()
                 .entry_type("'INCREASE_DERIVATIVE_EXCHANGE_ALLOCATION_OKEX_CR'")
-                .currency("'BTC'")
+                .currency("'USD'")
                 .account_id(format!("uuid('{DERIVATIVE_ALLOCATIONS_OKEX_ID}')"))
                 .direction("CREDIT")
                 .layer("SETTLED")

@@ -12,6 +12,7 @@ pub async fn init_pool() -> anyhow::Result<sqlx::PgPool> {
 }
 
 #[tokio::test]
+#[serial]
 async fn user_buys_and_sells_usd() -> anyhow::Result<()> {
     let pool = init_pool().await?;
 

@@ -27,8 +27,10 @@ impl<'a> Balances<'a> {
         fields(liability),
         err
     )]
-    pub async fn target_liability_in_cents(&self) -> Result<SyntheticCentLiability, LedgerError> {
-        let liability = self.stablesats_liability().await?;
+    pub async fn okex_target_liability_in_cents(
+        &self,
+    ) -> Result<SyntheticCentLiability, LedgerError> {
+        let liability = self.exchange_allocations().await?.okex;
         let res = SyntheticCentLiability::try_from(
             liability.map(|l| l.settled()).unwrap_or(Decimal::ZERO) * CENTS_PER_USD,
         )
@@ -58,7 +60,7 @@ impl<'a> Balances<'a> {
     pub async fn exchange_allocations(&self) -> Result<ExchangeBalances, LedgerError> {
         Ok(ExchangeBalances {
             okex: self
-                .get_ledger_account_balance(DERIVATIVE_ALLOCATIONS_OKEX_ID, self.btc)
+                .get_ledger_account_balance(DERIVATIVE_ALLOCATIONS_OKEX_ID, self.usd)
                 .await?,
         })
     }

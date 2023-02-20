@@ -95,7 +95,7 @@ impl HedgingApp {
                                                 },
                                         },
                                     ).await?;
-                                } else {
+                                } else if current_liability > target_liability {
                                     ledger.decrease_derivatives_exchange_allocation(
                                         ledger::LedgerTxId::new(),
                                         ledger::DecreaseDerivativeExchangeAllocationParams {

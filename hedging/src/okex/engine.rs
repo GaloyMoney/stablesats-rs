@@ -127,7 +127,7 @@ impl OkexEngine {
         job::spawn_adjust_hedge(&self.pool, uuid::Uuid::new_v4()).await?;
         job::spawn_adjust_funding(&self.pool, uuid::Uuid::new_v4()).await?;
         tokio::spawn(async move {
-            let mut events = self.ledger.usd_liability_balance_events().await;
+            let mut events = self.ledger.okex_liability_balance_events().await;
             loop {
                 match events.recv().await {
                     Ok(received) => {
@@ -229,7 +229,11 @@ impl OkexEngine {
         correlation_id: impl Into<uuid::Uuid> + std::fmt::Debug,
         signed_usd_exposure: SyntheticCentExposure,
     ) -> Result<(), HedgingError> {
-        let amount = self.ledger.balances().target_liability_in_cents().await?;
+        let amount = self
+            .ledger
+            .balances()
+            .okex_target_liability_in_cents()
+            .await?;
         let action = self
             .hedging_adjustment
             .determine_action(amount, signed_usd_exposure);
@@ -246,7 +250,11 @@ impl OkexEngine {
         correlation_id: impl Into<uuid::Uuid> + std::fmt::Debug,
         signed_usd_exposure: SyntheticCentExposure,
     ) -> Result<(), HedgingError> {
-        let target_liability_in_cents = self.ledger.balances().target_liability_in_cents().await?;
+        let target_liability_in_cents = self
+            .ledger
+            .balances()
+            .okex_target_liability_in_cents()
+            .await?;
         let last_price_in_usd_cents = self
             .okex_client
             .get_last_price_in_usd_cents()

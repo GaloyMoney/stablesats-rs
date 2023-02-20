@@ -132,6 +132,15 @@ impl Ledger {
             .await
     }
 
+    pub async fn okex_liability_balance_events(&self) -> broadcast::Receiver<SqlxLedgerEvent> {
+        self.events
+            .account_balance(
+                STABLESATS_JOURNAL_ID.into(),
+                DERIVATIVE_ALLOCATIONS_OKEX_ID.into(),
+            )
+            .await
+    }
+
     #[instrument(name = "ledger.create_stablesats_journal", skip(ledger))]
     async fn create_stablesats_journal(ledger: &SqlxLedger) -> Result<(), LedgerError> {
         let new_journal = NewJournal::builder()

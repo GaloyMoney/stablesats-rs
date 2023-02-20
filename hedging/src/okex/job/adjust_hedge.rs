@@ -21,7 +21,7 @@ pub(super) async fn execute(
         span.record("lag_ok", &tracing::field::display(false));
         return Ok(());
     }
-    let target_liability = ledger.balances().target_liability_in_cents().await?;
+    let target_liability = ledger.balances().okex_target_liability_in_cents().await?;
     span.record(
         "target_liability",
         &tracing::field::display(target_liability),

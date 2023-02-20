@@ -29,7 +29,7 @@ pub(super) async fn execute(
         return Ok(());
     }
 
-    let target_liability_in_cents = ledger.balances().target_liability_in_cents().await?;
+    let target_liability_in_cents = ledger.balances().okex_target_liability_in_cents().await?;
     span.record(
         "target_liability",
         &tracing::field::display(target_liability_in_cents),
