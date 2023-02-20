@@ -58,7 +58,7 @@ impl<'a> Balances<'a> {
     pub async fn exchange_allocations(&self) -> Result<ExchangeBalances, LedgerError> {
         Ok(ExchangeBalances {
             okex: self
-                .get_ledger_account_balance(DERIVATIVE_ALLOCATIONS_OKEX_ID, self.usd)
+                .get_ledger_account_balance(DERIVATIVE_ALLOCATIONS_OKEX_ID, self.btc)
                 .await?,
         })
     }

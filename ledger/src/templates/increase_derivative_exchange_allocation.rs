@@ -72,7 +72,7 @@ impl IncreaseDerivativeExchangeAllocation {
         let entries = vec![
             EntryInput::builder()
                 .entry_type("'INCREASE_DERIVATIVE_EXCHANGE_ALLOCATION_LIABILITY_DR'")
-                .currency("'USD'")
+                .currency("'BTC'")
                 .account_id(format!("uuid('{STABLESATS_LIABILITY_ID}')"))
                 .direction("DEBIT")
                 .layer("SETTLED")
@@ -83,7 +83,7 @@ impl IncreaseDerivativeExchangeAllocation {
                 ),
             EntryInput::builder()
                 .entry_type("'INCREASE_DERIVATIVE_EXCHANGE_ALLOCATION_OKEX_CR'")
-                .currency("'USD'")
+                .currency("'BTC'")
                 .account_id(format!("uuid('{DERIVATIVE_ALLOCATIONS_OKEX_ID}')"))
                 .direction("CREDIT")
                 .layer("SETTLED")

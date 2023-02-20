@@ -3148,6 +3148,7 @@ dependencies = [
  "rust_decimal_macros",
  "serde",
  "serde_json",
+ "serial_test",
  "sqlx",
  "sqlx-ledger",
  "stablesats-shared",
