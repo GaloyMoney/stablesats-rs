@@ -50,6 +50,7 @@ impl Ledger {
         templates::UserBuysUsd::init(&inner).await?;
         templates::UserSellsUsd::init(&inner).await?;
         templates::IncreaseDerivativeExchangeAllocation::init(&inner).await?;
+        templates::DecreaseDerivativeExchangeAllocation::init(&inner).await?;
 
         Ok(Self {
             events: inner.events(DEFAULT_BUFFER_SIZE).await?,
@@ -223,6 +224,7 @@ impl Ledger {
             .code(DERIVATIVE_ALLOCATIONS_OKEX)
             .id(DERIVATIVE_ALLOCATIONS_OKEX_ID)
             .name(DERIVATIVE_ALLOCATIONS_OKEX)
+            .normal_balance_type(DebitOrCredit::Credit)
             .description("Account for okex derivative allocations".to_string())
             .build()
             .expect("Couldn't create stablesats liability account");

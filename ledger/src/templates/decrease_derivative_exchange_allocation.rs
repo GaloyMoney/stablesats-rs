@@ -71,23 +71,25 @@ impl DecreaseDerivativeExchangeAllocation {
             .expect("Couldn't build TxInput");
         let entries = vec![
             EntryInput::builder()
-                .entry_type("'EXCHANGE_ALLOCATION_LIABILITY_CR'")
+                .entry_type("'DECREASE_DERIVATIVE_EXCHANGE_ALLOCATION_LIABILITY_CR'")
                 .currency("'USD'")
                 .account_id(format!("uuid('{STABLESATS_LIABILITY_ID}')"))
                 .direction("CREDIT")
                 .layer("SETTLED")
                 .units("params.okex_allocation_amount")
                 .build()
-                .expect("Couldn't build EXCHANGE_ALLOCATION_LIABILITY_DR entry"),
+                .expect(
+                    "Couldn't build DECREASE_DERIVATIVE_EXCHANGE_ALLOCATION_LIABILITY_DR entry",
+                ),
             EntryInput::builder()
-                .entry_type("'EXCHANGE_ALLOCATION_OKEX_DR'")
+                .entry_type("'DECREASE_DERIVATIVE_EXCHANGE_ALLOCATION_OKEX_DR'")
                 .currency("'USD'")
                 .account_id(format!("uuid('{DERIVATIVE_ALLOCATIONS_OKEX_ID}')"))
                 .direction("DEBIT")
                 .layer("SETTLED")
                 .units("params.okex_allocation_amount")
                 .build()
-                .expect("Couldn't build EXCHANGE_ALLOCATION_OKEX_CR entry"),
+                .expect("Couldn't build DECREASE_DERIVATIVE_EXCHANGE_ALLOCATION_OKEX_CR entry"),
         ];
 
         let params = DecreaseDerivativeExchangeAllocationParams::defs();
