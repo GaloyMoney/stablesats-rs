@@ -83,34 +83,36 @@ impl HedgingApp {
                                 let current_liability =
                                     ledger.balances().current_liability().await?;
 
-                                if target_liability > current_liability {
-                                    ledger.increase_derivatives_exchange_allocation(
-                                        ledger::LedgerTxId::new(),
-                                        ledger::IncreaseDerivativeExchangeAllocationParams {
-                                            okex_allocation_amount: target_liability
-                                                - current_liability,
-                                            meta:
-                                                ledger::IncreaseDerivativeExchangeAllocationMeta {
-                                                    timestamp: chrono::Utc::now(),
-                                                },
-                                        },
-                                    ).await?;
-                                } else if current_liability > target_liability {
-                                    ledger.decrease_derivatives_exchange_allocation(
-                                        ledger::LedgerTxId::new(),
-                                        ledger::DecreaseDerivativeExchangeAllocationParams {
-                                            okex_allocation_amount: current_liability- target_liability,
-                                            meta:
-                                                ledger::DecreaseDerivativeExchangeAllocationMeta {
-                                                    timestamp: chrono::Utc::now(),
-                                                },
-                                        },
-                                    ).await?;
+                                match target_liability > current_liability {
+                                    true => {
+                                        ledger.increase_derivatives_exchange_allocation(
+                                            ledger::LedgerTxId::new(),
+                                            ledger::IncreaseDerivativeExchangeAllocationParams {
+                                                okex_allocation_amount: target_liability
+                                                    - current_liability,
+                                                meta:
+                                                    ledger::IncreaseDerivativeExchangeAllocationMeta {
+                                                        timestamp: chrono::Utc::now(),
+                                                    },
+                                            },
+                                        ).await?;
+                                    },
+                                    false => {
+                                        ledger.decrease_derivatives_exchange_allocation(
+                                            ledger::LedgerTxId::new(),
+                                            ledger::DecreaseDerivativeExchangeAllocationParams {
+                                                okex_allocation_amount: current_liability- target_liability,
+                                                meta:
+                                                    ledger::DecreaseDerivativeExchangeAllocationMeta {
+                                                        timestamp: chrono::Utc::now(),
+                                                    },
+                                            },
+                                        ).await?;
+                                    }
                                 }
-
                                 Ok::<(), ledger::LedgerError>(())
                             }
-                            .await.expect("liability accounted for");
+                            .await.expect("liability couldn't be accounted for");
                         }
                     }
                     Err(tokio::sync::broadcast::error::RecvError::Lagged(_)) => (),
