@@ -60,7 +60,7 @@ impl From<DecreaseDerivativeExchangeAllocationParams> for TxParams {
 pub struct DecreaseDerivativeExchangeAllocation {}
 
 impl DecreaseDerivativeExchangeAllocation {
-    #[instrument(name = "ledger.user_buys_usd.init", skip_all)]
+    #[instrument(name = "ledger.increase_derivative_exchange_allocation.init", skip_all)]
     pub async fn init(ledger: &SqlxLedger) -> Result<(), LedgerError> {
         let tx_input = TxInput::builder()
             .journal_id(format!("uuid('{STABLESATS_JOURNAL_ID}')"))
