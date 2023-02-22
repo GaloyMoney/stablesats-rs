@@ -13,6 +13,7 @@ pub struct UnpairedTransaction {
     pub settlement_currency: SettlementCurrency,
     pub direction: String,
     pub settlement_method: String,
+    pub memo: Option<String>,
     pub amount_in_usd_cents: Decimal,
     pub created_at: chrono::DateTime<chrono::Utc>,
 }
@@ -95,7 +96,7 @@ impl GaloyTransactions {
         let mut tx = self.pool.begin().await?;
         let res = sqlx::query!(
             "
-            SELECT id, direction, amount_in_usd_cents, settlement_method, settlement_amount, settlement_currency, created_at
+            SELECT id, direction, amount_in_usd_cents, memo, settlement_method, settlement_amount, settlement_currency, created_at
             FROM galoy_transactions
             WHERE is_paired = false AND amount_in_usd_cents != 0 ORDER BY created_at FOR UPDATE
          "
@@ -113,6 +114,7 @@ impl GaloyTransactions {
                         .parse()
                         .expect("Couldn't parse settlement currency"),
                     direction: res.direction,
+                    memo: res.memo,
                     amount_in_usd_cents: res.amount_in_usd_cents,
                     settlement_method: res.settlement_method,
                     created_at: res.created_at,

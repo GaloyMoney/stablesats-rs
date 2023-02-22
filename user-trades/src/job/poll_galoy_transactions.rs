@@ -265,11 +265,22 @@ fn unify(unpaired_transactions: Vec<UnpairedTransaction>) -> (Vec<NewUserTrade>,
 }
 
 fn is_pair(tx1: &UnpairedTransaction, tx2: &UnpairedTransaction) -> bool {
-    tx1.created_at == tx2.created_at
+    if tx1.created_at == tx2.created_at
         && tx1.settlement_currency != tx2.settlement_currency
         && tx1.direction != tx2.direction
         && tx1.settlement_method == tx2.settlement_method
-        && (tx1.amount_in_usd_cents.abs() - tx2.amount_in_usd_cents.abs()).abs() <= Decimal::ONE
+    {
+        return match (tx1.memo.as_ref(), tx2.memo.as_ref()) {
+            (Some(memo), _) | (_, Some(memo)) if memo.starts_with("JournalId") => {
+                tx1.memo == tx2.memo
+            }
+            _ => {
+                (tx1.amount_in_usd_cents.abs() - tx2.amount_in_usd_cents.abs()).abs()
+                    <= Decimal::ONE
+            }
+        };
+    }
+    false
 }
 
 impl From<SettlementCurrency> for UserTradeUnit {
@@ -300,6 +311,7 @@ mod tests {
             settlement_currency: SettlementCurrency::BTC,
             settlement_method: format!("ln"),
             direction: format!("RECEIVE"),
+            memo: Some(format!("JournalId:1")),
             amount_in_usd_cents: dec!(10),
         };
         let tx2 = UnpairedTransaction {
@@ -309,7 +321,8 @@ mod tests {
             settlement_currency: SettlementCurrency::USD,
             settlement_method: format!("ln"),
             direction: format!("SEND"),
-            amount_in_usd_cents: dec!(10),
+            memo: Some(format!("JournalId:1")),
+            amount_in_usd_cents: dec!(15),
         };
         let tx3 = UnpairedTransaction {
             id: "id3".to_string(),
@@ -318,6 +331,7 @@ mod tests {
             settlement_method: format!("ln"),
             settlement_currency: SettlementCurrency::BTC,
             direction: format!("SEND"),
+            memo: Some(format!("JournalId:2")),
             amount_in_usd_cents: dec!(10),
         };
         let tx4 = UnpairedTransaction {
@@ -327,6 +341,7 @@ mod tests {
             settlement_method: format!("ln"),
             settlement_currency: SettlementCurrency::USD,
             direction: format!("RECEIVE"),
+            memo: Some(format!("JournalId:2")),
             amount_in_usd_cents: dec!(10),
         };
         let unpaired = UnpairedTransaction {
@@ -336,6 +351,7 @@ mod tests {
             settlement_currency: SettlementCurrency::USD,
             settlement_method: format!("ln"),
             direction: format!("RECEIVE"),
+            memo: Some(format!("JournalId:3")),
             amount_in_usd_cents: dec!(10),
         };
         let unpaired_txs = vec![tx1, tx2, tx3, tx4, unpaired];
