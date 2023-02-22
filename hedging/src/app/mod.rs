@@ -71,7 +71,7 @@ impl HedgingApp {
             loop {
                 match events.recv().await {
                     Ok(received) => {
-                        if let ledger::LedgerEventData::BalanceUpdated(_) = received.data {
+                        if let ledger::LedgerEventData::BalanceUpdated(data) = received.data {
                             async {
                                 let target_liability = ledger
                                     .balances()
@@ -86,7 +86,7 @@ impl HedgingApp {
                                 match target_liability > current_liability {
                                     true => {
                                         ledger.increase_derivatives_exchange_allocation(
-                                            ledger::LedgerTxId::new(),
+                                            ledger::LedgerTxId::from(uuid::Uuid::from(data.entry_id)),
                                             ledger::IncreaseDerivativeExchangeAllocationParams {
                                                 okex_allocation_amount: target_liability
                                                     - current_liability,
