@@ -11,6 +11,8 @@ pub struct UnpairedTransaction {
     pub id: String,
     pub settlement_amount: Decimal,
     pub settlement_currency: SettlementCurrency,
+    pub direction: String,
+    pub settlement_method: String,
     pub amount_in_usd_cents: Decimal,
     pub created_at: chrono::DateTime<chrono::Utc>,
 }
@@ -37,7 +39,7 @@ impl GaloyTransactions {
             return Ok(());
         }
         let mut query_builder: QueryBuilder<Postgres> = QueryBuilder::new(
-            "INSERT INTO galoy_transactions (id, cursor, is_paired, settlement_amount, settlement_currency, settlement_method, cents_per_unit, amount_in_usd_cents, created_at)"
+            "INSERT INTO galoy_transactions (id, cursor, is_paired, settlement_amount, settlement_currency, settlement_method, cents_per_unit, amount_in_usd_cents, created_at, memo, direction)"
         );
         query_builder.push_values(
             transactions,
@@ -51,6 +53,8 @@ impl GaloyTransactions {
                  settlement_currency,
                  cents_per_unit,
                  amount_in_usd_cents,
+                 memo,
+                 direction,
                  status: _,
              }| {
                 builder.push_bind(id);
@@ -62,6 +66,8 @@ impl GaloyTransactions {
                 builder.push_bind(cents_per_unit);
                 builder.push_bind(amount_in_usd_cents);
                 builder.push_bind(created_at);
+                builder.push_bind(memo);
+                builder.push_bind(direction.to_string());
             },
         );
         query_builder.push("ON CONFLICT DO NOTHING");
@@ -89,7 +95,7 @@ impl GaloyTransactions {
         let mut tx = self.pool.begin().await?;
         let res = sqlx::query!(
             "
-            SELECT id, settlement_amount, settlement_currency, amount_in_usd_cents, created_at
+            SELECT id, direction, amount_in_usd_cents, settlement_method, settlement_amount, settlement_currency, created_at
             FROM galoy_transactions
             WHERE is_paired = false AND amount_in_usd_cents != 0 ORDER BY created_at FOR UPDATE
          "
@@ -106,7 +112,9 @@ impl GaloyTransactions {
                         .settlement_currency
                         .parse()
                         .expect("Couldn't parse settlement currency"),
+                    direction: res.direction,
                     amount_in_usd_cents: res.amount_in_usd_cents,
+                    settlement_method: res.settlement_method,
                     created_at: res.created_at,
                 })
                 .collect(),
@@ -117,18 +125,17 @@ impl GaloyTransactions {
     pub async fn update_paired_ids<'a>(
         &self,
         tx: &mut Transaction<'a, Postgres>,
-        ids: Vec<String>,
+        ids: &[String],
     ) -> Result<(), UserTradesError> {
         if ids.is_empty() {
             return Ok(());
         }
-        let mut query_builder: QueryBuilder<Postgres> =
-            QueryBuilder::new("UPDATE galoy_transactions SET is_paired = 'true' WHERE id IN");
-        query_builder.push_tuples(ids, |mut builder, id| {
-            builder.push_bind(id);
-        });
-        let query = query_builder.build();
-        query.execute(tx).await?;
+        sqlx::query!(
+            "UPDATE galoy_transactions SET is_paired = 'true' WHERE id = ANY($1)",
+            &ids[..]
+        )
+        .execute(tx)
+        .await?;
         Ok(())
     }
 }

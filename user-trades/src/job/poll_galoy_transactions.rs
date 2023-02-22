@@ -57,7 +57,7 @@ async fn update_user_trades(
     }
     let (trades, paired_ids) = unify(list);
     galoy_transactions
-        .update_paired_ids(&mut tx, paired_ids)
+        .update_paired_ids(&mut tx, &paired_ids)
         .await?;
     tracing::Span::current().record("n_user_trades", &tracing::field::display(trades.len()));
     user_trades.persist_all(&mut tx, trades).await?;
@@ -178,11 +178,11 @@ fn unify(unpaired_transactions: Vec<UnpairedTransaction>) -> (Vec<NewUserTrade>,
 }
 
 fn is_pair(tx1: &UnpairedTransaction, tx2: &UnpairedTransaction) -> bool {
-    if tx1.created_at != tx2.created_at || tx1.settlement_currency == tx2.settlement_currency {
-        return false;
-    }
-
-    tx1.amount_in_usd_cents.abs() == tx2.amount_in_usd_cents.abs()
+    tx1.created_at == tx2.created_at
+        && tx1.settlement_currency != tx2.settlement_currency
+        && tx1.direction != tx2.direction
+        && tx1.settlement_method == tx2.settlement_method
+        && (tx1.amount_in_usd_cents.abs() - tx2.amount_in_usd_cents.abs()).abs() <= Decimal::ONE
 }
 
 impl From<SettlementCurrency> for UserTradeUnit {
@@ -211,6 +211,8 @@ mod tests {
             created_at,
             settlement_amount: dec!(1000),
             settlement_currency: SettlementCurrency::BTC,
+            settlement_method: format!("ln"),
+            direction: format!("RECEIVE"),
             amount_in_usd_cents: dec!(10),
         };
         let tx2 = UnpairedTransaction {
@@ -218,20 +220,26 @@ mod tests {
             created_at,
             settlement_amount: dec!(-10),
             settlement_currency: SettlementCurrency::USD,
-            amount_in_usd_cents: dec!(-10),
+            settlement_method: format!("ln"),
+            direction: format!("SEND"),
+            amount_in_usd_cents: dec!(10),
         };
         let tx3 = UnpairedTransaction {
             id: "id3".to_string(),
             created_at: created_earlier,
             settlement_amount: dec!(-1000),
+            settlement_method: format!("ln"),
             settlement_currency: SettlementCurrency::BTC,
-            amount_in_usd_cents: dec!(-10),
+            direction: format!("SEND"),
+            amount_in_usd_cents: dec!(10),
         };
         let tx4 = UnpairedTransaction {
             id: "id4".to_string(),
             created_at: created_earlier,
             settlement_amount: dec!(10),
+            settlement_method: format!("ln"),
             settlement_currency: SettlementCurrency::USD,
+            direction: format!("RECEIVE"),
             amount_in_usd_cents: dec!(10),
         };
         let unpaired = UnpairedTransaction {
@@ -239,6 +247,8 @@ mod tests {
             created_at: created_earlier,
             settlement_amount: dec!(10),
             settlement_currency: SettlementCurrency::USD,
+            settlement_method: format!("ln"),
+            direction: format!("RECEIVE"),
             amount_in_usd_cents: dec!(10),
         };
         let unpaired_txs = vec![tx1, tx2, tx3, tx4, unpaired];

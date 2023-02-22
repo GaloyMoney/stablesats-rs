@@ -1,5 +1,71 @@
 {
   "db": "PostgreSQL",
+  "21fff44c3d9afbeb410e20503d5503ed369d2e1e973d7240ea7e6db64d15af9d": {
+    "describe": {
+      "columns": [],
+      "nullable": [],
+      "parameters": {
+        "Left": [
+          "TextArray"
+        ]
+      }
+    },
+    "query": "UPDATE galoy_transactions SET is_paired = 'true' WHERE id = ANY($1)"
+  },
+  "2ab6719038a358bdeb8020ed6c84b8b8b79f1562b82987082e32f113d029ab9c": {
+    "describe": {
+      "columns": [
+        {
+          "name": "id",
+          "ordinal": 0,
+          "type_info": "Varchar"
+        },
+        {
+          "name": "direction",
+          "ordinal": 1,
+          "type_info": "Varchar"
+        },
+        {
+          "name": "memo",
+          "ordinal": 2,
+          "type_info": "Varchar"
+        },
+        {
+          "name": "amount_in_usd_cents",
+          "ordinal": 3,
+          "type_info": "Numeric"
+        },
+        {
+          "name": "settlement_amount",
+          "ordinal": 4,
+          "type_info": "Numeric"
+        },
+        {
+          "name": "settlement_currency",
+          "ordinal": 5,
+          "type_info": "Varchar"
+        },
+        {
+          "name": "created_at",
+          "ordinal": 6,
+          "type_info": "Timestamptz"
+        }
+      ],
+      "nullable": [
+        false,
+        false,
+        true,
+        false,
+        false,
+        false,
+        false
+      ],
+      "parameters": {
+        "Left": []
+      }
+    },
+    "query": "\n            SELECT id, direction, memo, amount_in_usd_cents, settlement_amount, settlement_currency, created_at\n            FROM galoy_transactions\n            WHERE is_paired = false AND amount_in_usd_cents != 0 ORDER BY created_at FOR UPDATE\n         "
+  },
   "2b868fd5a78978ec8bc3bcd79008f831a139e070f994b0b8bfe4e8a3dd3105f7": {
     "describe": {
       "columns": [
@@ -87,47 +153,5 @@
       }
     },
     "query": "UPDATE user_trades\n               SET ledger_tx_id = $1\n               WHERE id = (\n                 SELECT id FROM user_trades WHERE ledger_tx_id IS NULL ORDER BY external_ref->>'timestamp' LIMIT 1\n               ) RETURNING id, buy_amount, buy_unit as \"buy_unit: UserTradeUnit\", sell_amount, sell_unit as \"sell_unit: UserTradeUnit\", external_ref"
-  },
-  "fbeadad71170b3413e08ca82e3da340b4d6a0f5c6d7a963c08b590a568a714f5": {
-    "describe": {
-      "columns": [
-        {
-          "name": "id",
-          "ordinal": 0,
-          "type_info": "Varchar"
-        },
-        {
-          "name": "settlement_amount",
-          "ordinal": 1,
-          "type_info": "Numeric"
-        },
-        {
-          "name": "settlement_currency",
-          "ordinal": 2,
-          "type_info": "Varchar"
-        },
-        {
-          "name": "amount_in_usd_cents",
-          "ordinal": 3,
-          "type_info": "Numeric"
-        },
-        {
-          "name": "created_at",
-          "ordinal": 4,
-          "type_info": "Timestamptz"
-        }
-      ],
-      "nullable": [
-        false,
-        false,
-        false,
-        false,
-        false
-      ],
-      "parameters": {
-        "Left": []
-      }
-    },
-    "query": "\n            SELECT id, settlement_amount, settlement_currency, amount_in_usd_cents, created_at\n            FROM galoy_transactions\n            WHERE is_paired = false AND amount_in_usd_cents != 0 ORDER BY created_at FOR UPDATE\n         "
   }
 }

@@ -20,6 +20,7 @@ pub type GaloyTransactionEdge =
     stablesats_transactions_list::StablesatsTransactionsListMeDefaultAccountTransactionsEdges;
 pub type GaloyTransactionNode =
     stablesats_transactions_list::StablesatsTransactionsListMeDefaultAccountTransactionsEdgesNode;
+pub type TxDirection = stablesats_transactions_list::TxDirection;
 
 pub type SettlementCurrency = stablesats_transactions_list::WalletCurrency;
 impl std::fmt::Display for SettlementCurrency {
@@ -54,6 +55,16 @@ impl std::fmt::Display for SettlementMethod {
     }
 }
 
+impl std::fmt::Display for TxDirection {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::RECEIVE => write!(f, "RECEIVE"),
+            Self::SEND => write!(f, "SEND"),
+            Self::Other(other) => write!(f, "{other}"),
+        }
+    }
+}
+
 #[derive(Debug)]
 pub struct GaloyTransaction {
     pub id: String,
@@ -61,6 +72,8 @@ pub struct GaloyTransaction {
     pub settlement_amount: Decimal,
     pub settlement_currency: SettlementCurrency,
     pub settlement_method: SettlementMethod,
+    pub memo: Option<String>,
+    pub direction: TxDirection,
     pub cents_per_unit: Decimal,
     pub amount_in_usd_cents: Decimal,
     pub status: TxStatus,

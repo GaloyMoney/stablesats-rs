@@ -115,6 +115,8 @@ impl TryFrom<stablesats_transactions_list::ResponseData> for GaloyTransactions {
                     settlement_currency: edge.node.settlement_currency,
                     settlement_method: edge.node.settlement_via,
                     cents_per_unit,
+                    memo: edge.node.memo,
+                    direction: edge.node.direction,
                     status: edge.node.status,
                 }
             })
