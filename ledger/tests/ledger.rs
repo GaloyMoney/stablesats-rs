@@ -18,12 +18,7 @@ async fn user_buys_and_sells_usd() -> anyhow::Result<()> {
 
     let ledger = Ledger::init(&pool).await?;
 
-    let before_liability = ledger
-        .balances()
-        .stablesats_liability()
-        .await?
-        .map(|b| b.settled())
-        .unwrap_or(Decimal::ZERO);
+    let before_liability = ledger.balances().stablesats_liability().await?;
     let before_btc = ledger
         .balances()
         .stablesats_btc_wallet()
@@ -46,12 +41,7 @@ async fn user_buys_and_sells_usd() -> anyhow::Result<()> {
         )
         .await?;
 
-    let after_liability = ledger
-        .balances()
-        .stablesats_liability()
-        .await?
-        .unwrap()
-        .settled();
+    let after_liability = ledger.balances().stablesats_liability().await?;
     let after_btc = ledger
         .balances()
         .stablesats_btc_wallet()
@@ -76,9 +66,9 @@ async fn user_buys_and_sells_usd() -> anyhow::Result<()> {
             },
         )
         .await?;
-    let end_balance = ledger.balances().stablesats_liability().await?.unwrap();
+    let end_balance = ledger.balances().stablesats_liability().await?;
     let end_btc = ledger.balances().stablesats_btc_wallet().await?.unwrap();
-    assert_eq!(end_balance.settled(), before_liability);
+    assert_eq!(end_balance, before_liability);
     assert_eq!(end_btc.settled(), before_btc);
 
     Ok(())

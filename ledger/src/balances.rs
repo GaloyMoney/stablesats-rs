@@ -16,9 +16,12 @@ pub struct ExchangeBalances {
 }
 
 impl<'a> Balances<'a> {
-    pub async fn stablesats_liability(&self) -> Result<Option<AccountBalance>, LedgerError> {
-        self.get_ledger_account_balance(STABLESATS_LIABILITY_ID, self.usd)
-            .await
+    pub async fn stablesats_liability(&self) -> Result<Decimal, LedgerError> {
+        Ok(self
+            .get_ledger_account_balance(STABLESATS_LIABILITY_ID, self.usd)
+            .await?
+            .map(|b| b.settled())
+            .unwrap_or(Decimal::ZERO))
     }
 
     #[instrument(

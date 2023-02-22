@@ -1,6 +1,5 @@
 use futures::stream::StreamExt;
 use ledger::LedgerError;
-use rust_decimal::Decimal;
 use sqlxmq::OwnedHandle;
 
 use galoy_client::*;
@@ -76,9 +75,7 @@ impl HedgingApp {
                                 let target_liability = ledger
                                     .balances()
                                     .stablesats_liability()
-                                    .await?
-                                    .map(|l| l.settled())
-                                    .unwrap_or(Decimal::ZERO);
+                                    .await?;
 
                                 let current_liability =
                                     ledger.balances().current_liability().await?;
