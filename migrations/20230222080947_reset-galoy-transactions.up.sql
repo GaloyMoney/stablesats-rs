@@ -13,3 +13,5 @@ CREATE TABLE galoy_transactions (
   amount_in_usd_cents NUMERIC NOT NULL,
   created_at TIMESTAMP WITH TIME ZONE NOT NULL
 );
+
+ALTER TABLE user_trades ADD COLUMN correction_ledger_tx_id UUID DEFAULT NULL;

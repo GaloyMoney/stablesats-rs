@@ -11,7 +11,7 @@ use crate::{error::UserTradesError, galoy_transactions::*, user_trades::*};
     name = "user_trades.job.poll_galoy_transactions",
     skip_all,
     err,
-    fields(n_galoy_txs, n_unpaired_txs, n_user_trades, has_more)
+    fields(n_galoy_txs, n_unpaired_txs, n_user_trades, has_more, n_bad_trades)
 )]
 pub(super) async fn execute(
     pool: &sqlx::PgPool,
@@ -59,10 +59,46 @@ async fn update_user_trades(
     galoy_transactions
         .update_paired_ids(&mut tx, &paired_ids)
         .await?;
+    let lookup = user_trades
+        .find_already_paired_trades(&mut tx, paired_ids)
+        .await?;
+    let (trades, bad_pairings) = find_trades_needing_correction(trades, lookup);
     tracing::Span::current().record("n_user_trades", &tracing::field::display(trades.len()));
+    if !bad_pairings.is_empty() {
+        user_trades.mark_bad_trades(&mut tx, bad_pairings).await?;
+    }
     user_trades.persist_all(&mut tx, trades).await?;
     tx.commit().await?;
     Ok(())
+}
+
+fn find_trades_needing_correction(
+    trades: Vec<NewUserTrade>,
+    mut lookup: PairedTradesLookup,
+) -> (Vec<NewUserTrade>, Vec<i32>) {
+    let mut bad_trades = Vec::new();
+    let mut filtered_trades = Vec::new();
+    for trade in trades {
+        match (
+            lookup.usd_to_btc.remove(&trade.external_ref.usd_tx_id),
+            lookup.btc_to_usd.remove(&trade.external_ref.btc_tx_id),
+        ) {
+            (None, None) => filtered_trades.push(trade),
+            (Some((btc_id, _)), Some((usd_id, _))) => {
+                if usd_id != btc_id {
+                    filtered_trades.push(trade);
+                    bad_trades.push(usd_id);
+                    bad_trades.push(btc_id);
+                }
+            }
+            (Some((id, _)), _) | (_, Some((id, _))) => {
+                filtered_trades.push(trade);
+                bad_trades.push(id);
+            }
+        }
+    }
+    tracing::Span::current().record("n_bad_trades", &tracing::field::display(bad_trades.len()));
+    (filtered_trades, bad_trades)
 }
 
 async fn update_ledger(
