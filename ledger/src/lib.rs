@@ -48,6 +48,8 @@ impl Ledger {
 
         templates::UserBuysUsd::init(&inner).await?;
         templates::UserSellsUsd::init(&inner).await?;
+        templates::RevertUserBuysUsd::init(&inner).await?;
+        templates::RevertUserSellsUsd::init(&inner).await?;
 
         Ok(Self {
             events: inner.events(DEFAULT_BUFFER_SIZE).await?,
@@ -87,6 +89,32 @@ impl Ledger {
     ) -> Result<(), LedgerError> {
         self.inner
             .post_transaction_in_tx(tx, id, USER_SELLS_USD_CODE, Some(params))
+            .await?;
+        Ok(())
+    }
+
+    #[instrument(name = "ledger.revert_user_buys_usd", skip(self, tx))]
+    pub async fn revert_user_buys_usd(
+        &self,
+        tx: Transaction<'_, Postgres>,
+        id: LedgerTxId,
+        params: RevertUserBuysUsdParams,
+    ) -> Result<(), LedgerError> {
+        self.inner
+            .post_transaction_in_tx(tx, id, REVERT_USER_BUYS_USD_CODE, Some(params))
+            .await?;
+        Ok(())
+    }
+
+    #[instrument(name = "ledger.revert_user_sells_usd", skip(self, tx))]
+    pub async fn revert_user_sells_usd(
+        &self,
+        tx: Transaction<'_, Postgres>,
+        id: LedgerTxId,
+        params: RevertUserSellsUsdParams,
+    ) -> Result<(), LedgerError> {
+        self.inner
+            .post_transaction_in_tx(tx, id, REVERT_USER_SELLS_USD_CODE, Some(params))
             .await?;
         Ok(())
     }

@@ -1,18 +1,6 @@
 {
   "db": "PostgreSQL",
-  "21fff44c3d9afbeb410e20503d5503ed369d2e1e973d7240ea7e6db64d15af9d": {
-    "describe": {
-      "columns": [],
-      "nullable": [],
-      "parameters": {
-        "Left": [
-          "TextArray"
-        ]
-      }
-    },
-    "query": "UPDATE galoy_transactions SET is_paired = 'true' WHERE id = ANY($1)"
-  },
-  "2ab6719038a358bdeb8020ed6c84b8b8b79f1562b82987082e32f113d029ab9c": {
+  "05219fc1273ea7a34b9b582be067d1ba065ce4e7cc4bd1b5af7f520bb36aff44": {
     "describe": {
       "columns": [
         {
@@ -26,14 +14,14 @@
           "type_info": "Varchar"
         },
         {
-          "name": "memo",
+          "name": "amount_in_usd_cents",
           "ordinal": 2,
-          "type_info": "Varchar"
+          "type_info": "Numeric"
         },
         {
-          "name": "amount_in_usd_cents",
+          "name": "settlement_method",
           "ordinal": 3,
-          "type_info": "Numeric"
+          "type_info": "Varchar"
         },
         {
           "name": "settlement_amount",
@@ -54,7 +42,7 @@
       "nullable": [
         false,
         false,
-        true,
+        false,
         false,
         false,
         false,
@@ -64,7 +52,19 @@
         "Left": []
       }
     },
-    "query": "\n            SELECT id, direction, memo, amount_in_usd_cents, settlement_amount, settlement_currency, created_at\n            FROM galoy_transactions\n            WHERE is_paired = false AND amount_in_usd_cents != 0 ORDER BY created_at FOR UPDATE\n         "
+    "query": "\n            SELECT id, direction, amount_in_usd_cents, settlement_method, settlement_amount, settlement_currency, created_at\n            FROM galoy_transactions\n            WHERE is_paired = false AND amount_in_usd_cents != 0 ORDER BY created_at FOR UPDATE\n         "
+  },
+  "21fff44c3d9afbeb410e20503d5503ed369d2e1e973d7240ea7e6db64d15af9d": {
+    "describe": {
+      "columns": [],
+      "nullable": [],
+      "parameters": {
+        "Left": [
+          "TextArray"
+        ]
+      }
+    },
+    "query": "UPDATE galoy_transactions SET is_paired = 'true' WHERE id = ANY($1)"
   },
   "2b868fd5a78978ec8bc3bcd79008f831a139e070f994b0b8bfe4e8a3dd3105f7": {
     "describe": {
@@ -83,6 +83,51 @@
       }
     },
     "query": "SELECT cursor FROM galoy_transactions ORDER BY created_at DESC LIMIT 1"
+  },
+  "4b5942fb896f349b40cd0f0b61b5f709f619b71ab2d02291d29c2ebdd98727bd": {
+    "describe": {
+      "columns": [
+        {
+          "name": "id",
+          "ordinal": 0,
+          "type_info": "Int4"
+        },
+        {
+          "name": "btc_id",
+          "ordinal": 1,
+          "type_info": "Text"
+        },
+        {
+          "name": "usd_id",
+          "ordinal": 2,
+          "type_info": "Text"
+        }
+      ],
+      "nullable": [
+        null,
+        null,
+        null
+      ],
+      "parameters": {
+        "Left": [
+          "TextArray"
+        ]
+      }
+    },
+    "query": "SELECT id, external_ref->>'btc_tx_id' AS btc_id, external_ref->>'usd_tx_id' AS usd_id FROM user_trades WHERE external_ref->>'btc_tx_id' = ANY($1)\n             UNION\n             SELECT id, external_ref->>'btc_tx_id' AS btc_id, external_ref->>'usd_tx_id' AS usd_id FROM user_trades WHERE external_ref->>'usd_tx_id' = ANY($1)"
+  },
+  "c0a3dad5c21faee2e7ee480ceeba54924c70f5d53c344cfcf6ac09d759016976": {
+    "describe": {
+      "columns": [],
+      "nullable": [],
+      "parameters": {
+        "Left": [
+          "Uuid",
+          "Int4Array"
+        ]
+      }
+    },
+    "query": "UPDATE user_trades SET correction_ledger_tx_id = $1 WHERE id = ANY($2) AND correction_ledger_tx_id IS NULL"
   },
   "ecda7feba70249cfa67e14e09d73daaac625dcbf4b307ae664f26b9f5d0eef2d": {
     "describe": {
@@ -153,5 +198,82 @@
       }
     },
     "query": "UPDATE user_trades\n               SET ledger_tx_id = $1\n               WHERE id = (\n                 SELECT id FROM user_trades WHERE ledger_tx_id IS NULL ORDER BY external_ref->>'timestamp' LIMIT 1\n               ) RETURNING id, buy_amount, buy_unit as \"buy_unit: UserTradeUnit\", sell_amount, sell_unit as \"sell_unit: UserTradeUnit\", external_ref"
+  },
+  "fee34cfbdb19294324dc4ceb3cc20fcf3bd61814cd8f1a680564ba14a14b2185": {
+    "describe": {
+      "columns": [
+        {
+          "name": "id",
+          "ordinal": 0,
+          "type_info": "Int4"
+        },
+        {
+          "name": "ledger_tx_id",
+          "ordinal": 1,
+          "type_info": "Uuid"
+        },
+        {
+          "name": "buy_amount",
+          "ordinal": 2,
+          "type_info": "Numeric"
+        },
+        {
+          "name": "buy_unit: UserTradeUnit",
+          "ordinal": 3,
+          "type_info": {
+            "Custom": {
+              "kind": {
+                "Enum": [
+                  "usd_cent",
+                  "satoshi"
+                ]
+              },
+              "name": "usertradeunit"
+            }
+          }
+        },
+        {
+          "name": "sell_amount",
+          "ordinal": 4,
+          "type_info": "Numeric"
+        },
+        {
+          "name": "sell_unit: UserTradeUnit",
+          "ordinal": 5,
+          "type_info": {
+            "Custom": {
+              "kind": {
+                "Enum": [
+                  "usd_cent",
+                  "satoshi"
+                ]
+              },
+              "name": "usertradeunit"
+            }
+          }
+        },
+        {
+          "name": "external_ref",
+          "ordinal": 6,
+          "type_info": "Jsonb"
+        }
+      ],
+      "nullable": [
+        false,
+        true,
+        false,
+        false,
+        false,
+        false,
+        false
+      ],
+      "parameters": {
+        "Left": [
+          "Uuid",
+          "Uuid"
+        ]
+      }
+    },
+    "query": "UPDATE user_trades\n               SET correction_ledger_tx_id = $1\n               WHERE id = (\n                 SELECT id FROM user_trades WHERE ledger_tx_id IS NOT NULL AND correction_ledger_tx_id = $2 ORDER BY external_ref->>'timestamp' LIMIT 1\n               ) RETURNING id, ledger_tx_id, buy_amount, buy_unit as \"buy_unit: UserTradeUnit\", sell_amount, sell_unit as \"sell_unit: UserTradeUnit\", external_ref"
   }
 }

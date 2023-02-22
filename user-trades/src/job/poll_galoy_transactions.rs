@@ -108,6 +108,57 @@ async fn update_ledger(
 ) -> Result<(), UserTradesError> {
     loop {
         let mut tx = pool.begin().await?;
+        if let Ok(Some(UserTradeNeedingRevert {
+            buy_unit,
+            buy_amount,
+            sell_amount,
+            external_ref,
+            ledger_tx_id,
+            correction_ledger_tx_id,
+            ..
+        })) = user_trades.find_trade_needing_revert(&mut tx).await
+        {
+            if buy_unit == UserTradeUnit::UsdCent {
+                ledger
+                    .revert_user_buys_usd(
+                        tx,
+                        correction_ledger_tx_id,
+                        ledger::RevertUserBuysUsdParams {
+                            satoshi_amount: sell_amount,
+                            usd_cents_amount: buy_amount,
+                            initial_ledger_tx_id: ledger_tx_id,
+                            meta: ledger::RevertUserBuysUsdMeta {
+                                timestamp: external_ref.timestamp,
+                                btc_tx_id: external_ref.btc_tx_id,
+                                usd_tx_id: external_ref.usd_tx_id,
+                            },
+                        },
+                    )
+                    .await?;
+            } else {
+                ledger
+                    .revert_user_sells_usd(
+                        tx,
+                        correction_ledger_tx_id,
+                        ledger::RevertUserSellsUsdParams {
+                            satoshi_amount: buy_amount,
+                            usd_cents_amount: sell_amount,
+                            initial_ledger_tx_id: ledger_tx_id,
+                            meta: ledger::RevertUserSellsUsdMeta {
+                                timestamp: external_ref.timestamp,
+                                btc_tx_id: external_ref.btc_tx_id,
+                                usd_tx_id: external_ref.usd_tx_id,
+                            },
+                        },
+                    )
+                    .await?;
+            }
+        } else {
+            break;
+        }
+    }
+    loop {
+        let mut tx = pool.begin().await?;
         if let Ok(Some(UnaccountedUserTrade {
             buy_unit,
             buy_amount,

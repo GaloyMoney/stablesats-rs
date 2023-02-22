@@ -23,6 +23,16 @@ pub struct UnaccountedUserTrade {
     pub ledger_tx_id: ledger::LedgerTxId,
 }
 
+pub struct UserTradeNeedingRevert {
+    pub buy_unit: UserTradeUnit,
+    pub buy_amount: Decimal,
+    pub sell_unit: UserTradeUnit,
+    pub sell_amount: Decimal,
+    pub external_ref: ExternalRef,
+    pub ledger_tx_id: ledger::LedgerTxId,
+    pub correction_ledger_tx_id: ledger::LedgerTxId,
+}
+
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct ExternalRef {
     #[serde(with = "chrono::serde::ts_seconds")]
@@ -165,6 +175,38 @@ impl UserTrades {
             external_ref: serde_json::from_value(trade.external_ref)
                 .expect("failed to deserialize external_ref"),
             ledger_tx_id: ledger::LedgerTxId::from(tx_id),
+        }))
+    }
+
+    #[instrument(name = "user_trades.find_trade_needing_revert", skip_all)]
+    pub async fn find_trade_needing_revert(
+        &self,
+        tx: &mut Transaction<'_, Postgres>,
+    ) -> Result<Option<UserTradeNeedingRevert>, UserTradesError> {
+        let tx_id = Uuid::new_v4();
+        let trade = sqlx::query!(
+            r#"UPDATE user_trades
+               SET correction_ledger_tx_id = $1
+               WHERE id = (
+                 SELECT id FROM user_trades WHERE ledger_tx_id IS NOT NULL AND correction_ledger_tx_id = $2 ORDER BY external_ref->>'timestamp' LIMIT 1
+               ) RETURNING id, ledger_tx_id, buy_amount, buy_unit as "buy_unit: UserTradeUnit", sell_amount, sell_unit as "sell_unit: UserTradeUnit", external_ref"#,
+            tx_id,
+            BAD_TRADE_MARKER
+        )
+        .fetch_optional(&mut *tx)
+        .await?;
+        Ok(trade.map(|trade| UserTradeNeedingRevert {
+            buy_unit: trade.buy_unit,
+            buy_amount: trade.buy_amount,
+            sell_unit: trade.sell_unit,
+            sell_amount: trade.sell_amount,
+            external_ref: serde_json::from_value(trade.external_ref)
+                .expect("failed to deserialize external_ref"),
+            ledger_tx_id: trade
+                .ledger_tx_id
+                .expect("ledger_tx_id is always present")
+                .into(),
+            correction_ledger_tx_id: ledger::LedgerTxId::from(tx_id),
         }))
     }
 }
