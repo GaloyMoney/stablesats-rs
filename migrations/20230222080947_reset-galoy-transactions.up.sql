@@ -1,7 +1,7 @@
 DROP TABLE galoy_transactions;
 
 CREATE TABLE galoy_transactions (
-  id VARCHAR(60) UNIQUE PRIMARY KEY,
+  id VARCHAR(60) PRIMARY KEY,
   cursor VARCHAR(60) NOT NULL,
   is_paired BOOLEAN,
   settlement_amount NUMERIC NOT NULL,
