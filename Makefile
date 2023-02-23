@@ -17,7 +17,7 @@ test-in-ci:
 	SQLX_OFFLINE=true cargo nextest run --verbose --locked
 
 cli-run:
-	cargo run --bin stablesats run
+	SQLX_OFFLINE=true cargo run --bin stablesats run
 
 build-x86_64-unknown-linux-musl-release:
 	SQLX_OFFLINE=true cargo build --release --locked --target x86_64-unknown-linux-musl

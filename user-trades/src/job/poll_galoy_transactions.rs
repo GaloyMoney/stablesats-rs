@@ -11,7 +11,7 @@ use crate::{error::UserTradesError, galoy_transactions::*, user_trades::*};
     name = "user_trades.job.poll_galoy_transactions",
     skip_all,
     err,
-    fields(n_galoy_txs, n_unpaired_txs, n_user_trades, has_more)
+    fields(n_galoy_txs, n_unpaired_txs, n_user_trades, has_more, n_bad_trades)
 )]
 pub(super) async fn execute(
     pool: &sqlx::PgPool,
@@ -57,12 +57,48 @@ async fn update_user_trades(
     }
     let (trades, paired_ids) = unify(list);
     galoy_transactions
-        .update_paired_ids(&mut tx, paired_ids)
+        .update_paired_ids(&mut tx, &paired_ids)
         .await?;
+    let lookup = user_trades
+        .find_already_paired_trades(&mut tx, paired_ids)
+        .await?;
+    let (trades, bad_pairings) = find_trades_needing_correction(trades, lookup);
     tracing::Span::current().record("n_user_trades", &tracing::field::display(trades.len()));
+    if !bad_pairings.is_empty() {
+        user_trades.mark_bad_trades(&mut tx, bad_pairings).await?;
+    }
     user_trades.persist_all(&mut tx, trades).await?;
     tx.commit().await?;
     Ok(())
+}
+
+fn find_trades_needing_correction(
+    trades: Vec<NewUserTrade>,
+    mut lookup: PairedTradesLookup,
+) -> (Vec<NewUserTrade>, Vec<i32>) {
+    let mut bad_trades = Vec::new();
+    let mut filtered_trades = Vec::new();
+    for trade in trades {
+        match (
+            lookup.usd_to_btc.remove(&trade.external_ref.usd_tx_id),
+            lookup.btc_to_usd.remove(&trade.external_ref.btc_tx_id),
+        ) {
+            (None, None) => filtered_trades.push(trade),
+            (Some((usd_id, _)), Some((btc_id, _))) => {
+                if usd_id != btc_id {
+                    filtered_trades.push(trade);
+                    bad_trades.push(usd_id);
+                    bad_trades.push(btc_id);
+                }
+            }
+            (Some((id, _)), _) | (_, Some((id, _))) => {
+                filtered_trades.push(trade);
+                bad_trades.push(id);
+            }
+        }
+    }
+    tracing::Span::current().record("n_bad_trades", &tracing::field::display(bad_trades.len()));
+    (filtered_trades, bad_trades)
 }
 
 async fn update_ledger(
@@ -70,6 +106,57 @@ async fn update_ledger(
     user_trades: &UserTrades,
     ledger: &ledger::Ledger,
 ) -> Result<(), UserTradesError> {
+    loop {
+        let mut tx = pool.begin().await?;
+        if let Ok(Some(UserTradeNeedingRevert {
+            buy_unit,
+            buy_amount,
+            sell_amount,
+            external_ref,
+            ledger_tx_id,
+            correction_ledger_tx_id,
+            ..
+        })) = user_trades.find_trade_needing_revert(&mut tx).await
+        {
+            if buy_unit == UserTradeUnit::UsdCent {
+                ledger
+                    .revert_user_buys_usd(
+                        tx,
+                        correction_ledger_tx_id,
+                        ledger::RevertUserBuysUsdParams {
+                            satoshi_amount: sell_amount,
+                            usd_cents_amount: buy_amount,
+                            initial_ledger_tx_id: ledger_tx_id,
+                            meta: ledger::RevertUserBuysUsdMeta {
+                                timestamp: external_ref.timestamp,
+                                btc_tx_id: external_ref.btc_tx_id,
+                                usd_tx_id: external_ref.usd_tx_id,
+                            },
+                        },
+                    )
+                    .await?;
+            } else {
+                ledger
+                    .revert_user_sells_usd(
+                        tx,
+                        correction_ledger_tx_id,
+                        ledger::RevertUserSellsUsdParams {
+                            satoshi_amount: buy_amount,
+                            usd_cents_amount: sell_amount,
+                            initial_ledger_tx_id: ledger_tx_id,
+                            meta: ledger::RevertUserSellsUsdMeta {
+                                timestamp: external_ref.timestamp,
+                                btc_tx_id: external_ref.btc_tx_id,
+                                usd_tx_id: external_ref.usd_tx_id,
+                            },
+                        },
+                    )
+                    .await?;
+            }
+        } else {
+            break;
+        }
+    }
     loop {
         let mut tx = pool.begin().await?;
         if let Ok(Some(UnaccountedUserTrade {
@@ -178,11 +265,22 @@ fn unify(unpaired_transactions: Vec<UnpairedTransaction>) -> (Vec<NewUserTrade>,
 }
 
 fn is_pair(tx1: &UnpairedTransaction, tx2: &UnpairedTransaction) -> bool {
-    if tx1.created_at != tx2.created_at || tx1.settlement_currency == tx2.settlement_currency {
-        return false;
+    if tx1.created_at == tx2.created_at
+        && tx1.settlement_currency != tx2.settlement_currency
+        && tx1.direction != tx2.direction
+        && tx1.settlement_method == tx2.settlement_method
+    {
+        return match (tx1.memo.as_ref(), tx2.memo.as_ref()) {
+            (Some(memo), _) | (_, Some(memo)) if memo.starts_with("JournalId:") => {
+                tx1.memo == tx2.memo
+            }
+            _ => {
+                (tx1.amount_in_usd_cents.abs() - tx2.amount_in_usd_cents.abs()).abs()
+                    <= Decimal::ONE
+            }
+        };
     }
-
-    tx1.amount_in_usd_cents.abs() == tx2.amount_in_usd_cents.abs()
+    false
 }
 
 impl From<SettlementCurrency> for UserTradeUnit {
@@ -211,6 +309,9 @@ mod tests {
             created_at,
             settlement_amount: dec!(1000),
             settlement_currency: SettlementCurrency::BTC,
+            settlement_method: format!("ln"),
+            direction: format!("RECEIVE"),
+            memo: Some(format!("JournalId:1")),
             amount_in_usd_cents: dec!(10),
         };
         let tx2 = UnpairedTransaction {
@@ -218,20 +319,29 @@ mod tests {
             created_at,
             settlement_amount: dec!(-10),
             settlement_currency: SettlementCurrency::USD,
-            amount_in_usd_cents: dec!(-10),
+            settlement_method: format!("ln"),
+            direction: format!("SEND"),
+            memo: Some(format!("JournalId:1")),
+            amount_in_usd_cents: dec!(15),
         };
         let tx3 = UnpairedTransaction {
             id: "id3".to_string(),
             created_at: created_earlier,
             settlement_amount: dec!(-1000),
+            settlement_method: format!("ln"),
             settlement_currency: SettlementCurrency::BTC,
-            amount_in_usd_cents: dec!(-10),
+            direction: format!("SEND"),
+            memo: Some(format!("JournalId:2")),
+            amount_in_usd_cents: dec!(10),
         };
         let tx4 = UnpairedTransaction {
             id: "id4".to_string(),
             created_at: created_earlier,
             settlement_amount: dec!(10),
+            settlement_method: format!("ln"),
             settlement_currency: SettlementCurrency::USD,
+            direction: format!("RECEIVE"),
+            memo: Some(format!("JournalId:2")),
             amount_in_usd_cents: dec!(10),
         };
         let unpaired = UnpairedTransaction {
@@ -239,6 +349,9 @@ mod tests {
             created_at: created_earlier,
             settlement_amount: dec!(10),
             settlement_currency: SettlementCurrency::USD,
+            settlement_method: format!("ln"),
+            direction: format!("RECEIVE"),
+            memo: Some(format!("JournalId:3")),
             amount_in_usd_cents: dec!(10),
         };
         let unpaired_txs = vec![tx1, tx2, tx3, tx4, unpaired];
