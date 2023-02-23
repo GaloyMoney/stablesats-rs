@@ -66,7 +66,7 @@ impl HedgingApp {
 
     async fn spawn_global_liability_listener(ledger: ledger::Ledger) -> Result<(), LedgerError> {
         tokio::spawn(async move {
-            let mut events = ledger.usd_liability_balance_events().await;
+            let mut events = ledger.usd_omnibus_balance_events().await;
             loop {
                 match events.recv().await {
                     Ok(received) => {
@@ -77,16 +77,16 @@ impl HedgingApp {
                                     .stablesats_liability()
                                     .await?;
 
-                                let current_liability =
-                                    ledger.balances().current_liability().await?;
+                                let currently_allocated_in_all_exchanges =
+                                    ledger.balances().currently_allocated_in_all_exchanges().await?;
 
-                                match target_liability > current_liability {
+                                match target_liability > currently_allocated_in_all_exchanges {
                                     true => {
                                         ledger.increase_derivatives_exchange_allocation(
                                             ledger::LedgerTxId::from(uuid::Uuid::from(data.entry_id)),
                                             ledger::IncreaseDerivativeExchangeAllocationParams {
                                                 okex_allocation_amount: target_liability
-                                                    - current_liability,
+                                                    - currently_allocated_in_all_exchanges,
                                                 meta:
                                                     ledger::IncreaseDerivativeExchangeAllocationMeta {
                                                         timestamp: chrono::Utc::now(),
@@ -98,7 +98,8 @@ impl HedgingApp {
                                         ledger.decrease_derivatives_exchange_allocation(
                                             ledger::LedgerTxId::new(),
                                             ledger::DecreaseDerivativeExchangeAllocationParams {
-                                                okex_allocation_amount: current_liability- target_liability,
+                                                okex_allocation_amount: currently_allocated_in_all_exchanges
+                                                    - target_liability,
                                                 meta:
                                                     ledger::DecreaseDerivativeExchangeAllocationMeta {
                                                         timestamp: chrono::Utc::now(),

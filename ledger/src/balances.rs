@@ -16,6 +16,7 @@ pub struct ExchangeBalances {
 }
 
 impl<'a> Balances<'a> {
+    #[instrument(name = "ledger.balances.stablesats_liability", skip(self))]
     pub async fn stablesats_liability(&self) -> Result<Decimal, LedgerError> {
         Ok(self
             .get_ledger_account_balance(STABLESATS_LIABILITY_ID, self.usd)
@@ -47,7 +48,7 @@ impl<'a> Balances<'a> {
             .await
     }
 
-    #[instrument(name = "ledger.get_ledger_account_balance", skip(self))]
+    #[instrument(name = "ledger.balances.get_ledger_account_balance", skip(self))]
     pub async fn get_ledger_account_balance(
         &self,
         account_id: impl Into<LedgerAccountId> + std::fmt::Debug,
@@ -60,6 +61,7 @@ impl<'a> Balances<'a> {
             .await?)
     }
 
+    #[instrument(name = "ledger.get_ledger_account_balance", skip(self))]
     pub async fn exchange_allocations(&self) -> Result<ExchangeBalances, LedgerError> {
         Ok(ExchangeBalances {
             okex: self
@@ -68,7 +70,8 @@ impl<'a> Balances<'a> {
         })
     }
 
-    pub async fn current_liability(&self) -> Result<Decimal, LedgerError> {
+    #[instrument(name = "ledger.balances.currently_allocated_in_all_exchanges", skip(self))]
+    pub async fn currently_allocated_in_all_exchanges(&self) -> Result<Decimal, LedgerError> {
         let exchange_allocations = self.exchange_allocations().await?;
         let okex_liability = exchange_allocations
             .okex

@@ -126,7 +126,7 @@ impl Ledger {
         Ok(())
     }
 
-    pub async fn usd_liability_balance_events(&self) -> broadcast::Receiver<SqlxLedgerEvent> {
+    pub async fn usd_omnibus_balance_events(&self) -> broadcast::Receiver<SqlxLedgerEvent> {
         self.events
             .account_balance(STABLESATS_JOURNAL_ID.into(), STABLESATS_OMNIBUS_ID.into())
             .await

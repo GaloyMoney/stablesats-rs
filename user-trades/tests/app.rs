@@ -29,7 +29,7 @@ async fn publishes_liability() -> anyhow::Result<()> {
     let pool = sqlx::PgPool::connect(&pg_con).await?;
     let mut events = ledger::Ledger::init(&pool)
         .await?
-        .usd_liability_balance_events()
+        .usd_omnibus_balance_events()
         .await;
     let _ = tokio::spawn(UserTradesApp::run(
         pool,
