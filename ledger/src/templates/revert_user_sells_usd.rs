@@ -83,7 +83,7 @@ impl RevertUserSellsUsd {
             .effective("params.effective")
             .correlation_id("params.correlation_id")
             .metadata("params.meta")
-            .description("'User sells USD'")
+            .description("'REVERT: User sells USD'")
             .build()
             .expect("Couldn't build TxInput");
         let entries = vec![
