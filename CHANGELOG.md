@@ -1,3 +1,10 @@
+# [stablesats release v0.8.0](https://github.com/GaloyMoney/stablesats-rs/releases/tag/0.8.0)
+
+
+### Bug Fixes
+
+- [**breaking**] Re-import galoy-transactions (#295)
+
 # [stablesats release v0.7.1](https://github.com/GaloyMoney/stablesats-rs/releases/tag/0.7.1)
 
 
