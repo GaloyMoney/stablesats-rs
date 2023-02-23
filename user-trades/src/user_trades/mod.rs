@@ -50,6 +50,7 @@ pub struct NewUserTrade {
     pub external_ref: ExternalRef,
 }
 
+#[derive(Debug)]
 pub struct PairedTradesLookup {
     pub usd_to_btc: HashMap<String, (i32, String)>,
     pub btc_to_usd: HashMap<String, (i32, String)>,
@@ -125,9 +126,9 @@ impl UserTrades {
         ids: Vec<String>,
     ) -> Result<PairedTradesLookup, UserTradesError> {
         let rows = sqlx::query!(
-            "SELECT id, external_ref->>'btc_tx_id' AS btc_id, external_ref->>'usd_tx_id' AS usd_id FROM user_trades WHERE external_ref->>'btc_tx_id' = ANY($1)
+            "SELECT id, external_ref->>'btc_tx_id' AS btc_id, external_ref->>'usd_tx_id' AS usd_id FROM user_trades WHERE external_ref->>'btc_tx_id' = ANY($1) AND correction_ledger_tx_id IS NULL
              UNION
-             SELECT id, external_ref->>'btc_tx_id' AS btc_id, external_ref->>'usd_tx_id' AS usd_id FROM user_trades WHERE external_ref->>'usd_tx_id' = ANY($1)",
+             SELECT id, external_ref->>'btc_tx_id' AS btc_id, external_ref->>'usd_tx_id' AS usd_id FROM user_trades WHERE external_ref->>'usd_tx_id' = ANY($1) AND correction_ledger_tx_id IS NULL",
             &ids[..]
         ).fetch_all(&mut *tx)
             .await?;

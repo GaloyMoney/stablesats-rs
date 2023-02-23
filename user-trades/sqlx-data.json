@@ -1,59 +1,5 @@
 {
   "db": "PostgreSQL",
-  "05219fc1273ea7a34b9b582be067d1ba065ce4e7cc4bd1b5af7f520bb36aff44": {
-    "describe": {
-      "columns": [
-        {
-          "name": "id",
-          "ordinal": 0,
-          "type_info": "Varchar"
-        },
-        {
-          "name": "direction",
-          "ordinal": 1,
-          "type_info": "Varchar"
-        },
-        {
-          "name": "amount_in_usd_cents",
-          "ordinal": 2,
-          "type_info": "Numeric"
-        },
-        {
-          "name": "settlement_method",
-          "ordinal": 3,
-          "type_info": "Varchar"
-        },
-        {
-          "name": "settlement_amount",
-          "ordinal": 4,
-          "type_info": "Numeric"
-        },
-        {
-          "name": "settlement_currency",
-          "ordinal": 5,
-          "type_info": "Varchar"
-        },
-        {
-          "name": "created_at",
-          "ordinal": 6,
-          "type_info": "Timestamptz"
-        }
-      ],
-      "nullable": [
-        false,
-        false,
-        false,
-        false,
-        false,
-        false,
-        false
-      ],
-      "parameters": {
-        "Left": []
-      }
-    },
-    "query": "\n            SELECT id, direction, amount_in_usd_cents, settlement_method, settlement_amount, settlement_currency, created_at\n            FROM galoy_transactions\n            WHERE is_paired = false AND amount_in_usd_cents != 0 ORDER BY created_at FOR UPDATE\n         "
-  },
   "21fff44c3d9afbeb410e20503d5503ed369d2e1e973d7240ea7e6db64d15af9d": {
     "describe": {
       "columns": [],
@@ -84,7 +30,80 @@
     },
     "query": "SELECT cursor FROM galoy_transactions ORDER BY created_at DESC LIMIT 1"
   },
-  "4b5942fb896f349b40cd0f0b61b5f709f619b71ab2d02291d29c2ebdd98727bd": {
+  "826a2e93ff9e145528eaafb810f5c8028a099f205369d4e59766f46c6a0d7500": {
+    "describe": {
+      "columns": [
+        {
+          "name": "id",
+          "ordinal": 0,
+          "type_info": "Varchar"
+        },
+        {
+          "name": "direction",
+          "ordinal": 1,
+          "type_info": "Varchar"
+        },
+        {
+          "name": "amount_in_usd_cents",
+          "ordinal": 2,
+          "type_info": "Numeric"
+        },
+        {
+          "name": "memo",
+          "ordinal": 3,
+          "type_info": "Varchar"
+        },
+        {
+          "name": "settlement_method",
+          "ordinal": 4,
+          "type_info": "Varchar"
+        },
+        {
+          "name": "settlement_amount",
+          "ordinal": 5,
+          "type_info": "Numeric"
+        },
+        {
+          "name": "settlement_currency",
+          "ordinal": 6,
+          "type_info": "Varchar"
+        },
+        {
+          "name": "created_at",
+          "ordinal": 7,
+          "type_info": "Timestamptz"
+        }
+      ],
+      "nullable": [
+        false,
+        false,
+        false,
+        true,
+        false,
+        false,
+        false,
+        false
+      ],
+      "parameters": {
+        "Left": []
+      }
+    },
+    "query": "\n            SELECT id, direction, amount_in_usd_cents, memo, settlement_method, settlement_amount, settlement_currency, created_at\n            FROM galoy_transactions\n            WHERE is_paired = false AND amount_in_usd_cents != 0 ORDER BY created_at FOR UPDATE\n         "
+  },
+  "c0a3dad5c21faee2e7ee480ceeba54924c70f5d53c344cfcf6ac09d759016976": {
+    "describe": {
+      "columns": [],
+      "nullable": [],
+      "parameters": {
+        "Left": [
+          "Uuid",
+          "Int4Array"
+        ]
+      }
+    },
+    "query": "UPDATE user_trades SET correction_ledger_tx_id = $1 WHERE id = ANY($2) AND correction_ledger_tx_id IS NULL"
+  },
+  "cb456cade246ef96b3f03e01d373e081166e03d1ec2914606b975d33273c195c": {
     "describe": {
       "columns": [
         {
@@ -114,20 +133,7 @@
         ]
       }
     },
-    "query": "SELECT id, external_ref->>'btc_tx_id' AS btc_id, external_ref->>'usd_tx_id' AS usd_id FROM user_trades WHERE external_ref->>'btc_tx_id' = ANY($1)\n             UNION\n             SELECT id, external_ref->>'btc_tx_id' AS btc_id, external_ref->>'usd_tx_id' AS usd_id FROM user_trades WHERE external_ref->>'usd_tx_id' = ANY($1)"
-  },
-  "c0a3dad5c21faee2e7ee480ceeba54924c70f5d53c344cfcf6ac09d759016976": {
-    "describe": {
-      "columns": [],
-      "nullable": [],
-      "parameters": {
-        "Left": [
-          "Uuid",
-          "Int4Array"
-        ]
-      }
-    },
-    "query": "UPDATE user_trades SET correction_ledger_tx_id = $1 WHERE id = ANY($2) AND correction_ledger_tx_id IS NULL"
+    "query": "SELECT id, external_ref->>'btc_tx_id' AS btc_id, external_ref->>'usd_tx_id' AS usd_id FROM user_trades WHERE external_ref->>'btc_tx_id' = ANY($1) AND correction_ledger_tx_id IS NULL\n             UNION\n             SELECT id, external_ref->>'btc_tx_id' AS btc_id, external_ref->>'usd_tx_id' AS usd_id FROM user_trades WHERE external_ref->>'usd_tx_id' = ANY($1) AND correction_ledger_tx_id IS NULL"
   },
   "ecda7feba70249cfa67e14e09d73daaac625dcbf4b307ae664f26b9f5d0eef2d": {
     "describe": {

@@ -84,7 +84,7 @@ fn find_trades_needing_correction(
             lookup.btc_to_usd.remove(&trade.external_ref.btc_tx_id),
         ) {
             (None, None) => filtered_trades.push(trade),
-            (Some((btc_id, _)), Some((usd_id, _))) => {
+            (Some((usd_id, _)), Some((btc_id, _))) => {
                 if usd_id != btc_id {
                     filtered_trades.push(trade);
                     bad_trades.push(usd_id);
@@ -271,7 +271,7 @@ fn is_pair(tx1: &UnpairedTransaction, tx2: &UnpairedTransaction) -> bool {
         && tx1.settlement_method == tx2.settlement_method
     {
         return match (tx1.memo.as_ref(), tx2.memo.as_ref()) {
-            (Some(memo), _) | (_, Some(memo)) if memo.starts_with("JournalId") => {
+            (Some(memo), _) | (_, Some(memo)) if memo.starts_with("JournalId:") => {
                 tx1.memo == tx2.memo
             }
             _ => {
