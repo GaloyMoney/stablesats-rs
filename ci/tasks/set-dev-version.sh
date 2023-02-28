@@ -11,7 +11,7 @@ for file in $(find . -mindepth 2 -name Cargo.toml); do
 done
 
 if [[ -z $(git config --global user.email) ]]; then
-  git config --global user.email "bot@cepler.dev"
+  git config --global user.email "bot@galoy.io"
 fi
 if [[ -z $(git config --global user.name) ]]; then
   git config --global user.name "CI Bot"
