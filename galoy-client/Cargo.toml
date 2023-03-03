@@ -25,4 +25,4 @@ opentelemetry-http = "0.7.0"
 
 [dev-dependencies]
 anyhow = "1.0.69"
-tokio = { version = "1.25.0", features = ["macros"] }
+tokio = { version = "1.26.0", features = ["macros"] }
