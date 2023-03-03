@@ -57,7 +57,7 @@ impl PriceMixer {
             total += f(&side_picker) * weight;
         }
 
-        if total > Decimal::ZERO && total_weights > Decimal::ZERO {
+        if total_weights > Decimal::ZERO {
             Ok(total / total_weights)
         } else {
             Err(prev_error.unwrap_or(ExchangePriceCacheError::NoPriceAvailable))
