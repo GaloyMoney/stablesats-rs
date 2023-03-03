@@ -1,3 +1,14 @@
+# [stablesats release v0.8.2](https://github.com/GaloyMoney/stablesats-rs/releases/tag/0.8.2)
+
+
+### Bug Fixes
+
+- Price server should handle 0 amounts
+
+### Miscellaneous Tasks
+
+- Remove redis-server from dev Dockerfile
+
 # [stablesats release v0.8.1](https://github.com/GaloyMoney/stablesats-rs/releases/tag/0.8.1)
 
 
