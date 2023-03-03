@@ -1,3 +1,20 @@
+# [stablesats release v0.8.1](https://github.com/GaloyMoney/stablesats-rs/releases/tag/0.8.1)
+
+
+### Documentation
+
+- Remove old migration notice
+
+### Miscellaneous Tasks
+
+- Output version when starting daemon
+- Bump axum from 0.6.8 to 0.6.9 (#303)
+- Bump tokio from 1.25.0 to 1.26.0 (#302)
+- Bump sqlx-ledger from 0.5.2 to 0.5.5 (#304)
+- Bump axum from 0.6.6 to 0.6.8 (#297)
+- Bump prost from 0.11.6 to 0.11.8 (#298)
+- Bump clap from 4.1.6 to 4.1.8 (#300)
+
 # [stablesats release v0.8.0](https://github.com/GaloyMoney/stablesats-rs/releases/tag/0.8.0)
 
 
