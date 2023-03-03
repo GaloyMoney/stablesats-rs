@@ -122,6 +122,7 @@ async fn run_cmd(
         exchanges,
     }: Config,
 ) -> anyhow::Result<()> {
+    println!("Stablesats - v{}", env!("CARGO_PKG_VERSION"));
     println!("Starting server process");
     crate::tracing::init_tracer(tracing)?;
 
