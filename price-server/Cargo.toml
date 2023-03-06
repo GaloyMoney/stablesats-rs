@@ -20,7 +20,7 @@ chrono = { version = "0.4", features = [
 ], default-features = false }
 prost = "0.11"
 tonic = "0.8"
-axum-core = "0.3.2"
+axum-core = "0.3.3"
 tokio = "1.26.0"
 futures = "0.3.26"
 thiserror = "1.0.38"
