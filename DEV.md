@@ -55,7 +55,7 @@ cd stablesats
 ```
 direnv allow
 ```
-5. Take note to update the postgres port numbers of any of `user-trades-db` and `hedging-db` to ensure these databases run alongside the postgres database(s) on `galoy`. Make the changes in [docker-compose.override](docker-compose.override.yml), in [user-trades/.env](.user-trades/.env) and/or [hedging/.env](.user-trades/.env) files
+5. Take note to update the postgres port numbers of any of `user-trades-db` and `hedging-db` to ensure these databases run alongside the postgres database(s) on `galoy`. Make the changes in [docker-compose.override](docker-compose.override.yml), in [user-trades/.env](.user-trades/.env) and/or [hedging/.env](.user-trades/.env) files. Galoy's backend uses the default port `5432` for its postgres database and uses `5433` for the kratos container, so use `5434` for the stablesats dbs.
 
 6. Run the local containers `stablesats` depends on
 ```
