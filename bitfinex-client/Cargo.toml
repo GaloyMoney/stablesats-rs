@@ -10,7 +10,7 @@ fail-on-warnings = []
 [dependencies]
 shared = { path = "../shared", package = "stablesats-shared" }
 reqwest = { version = "0.11.14", default-features = false, features = ["json", "rustls-tls"] }
-thiserror = "1.0.38"
+thiserror = "1.0.39"
 tokio = { version = "1.26.0", features = ["full"] }
 ring = "0.16.20"
 data-encoding = "2.3.3"

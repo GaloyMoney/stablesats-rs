@@ -14,7 +14,7 @@ reqwest = { version = "0.11.14", default-features = false, features = ["json", "
 serde = { version = "1.0.152", features = ["derive"] }
 serde_json = "1.0.93"
 
-thiserror = "1.0.38"
+thiserror = "1.0.39"
 chrono = { version = "0.4", features = ["clock", "serde"], default-features = false }
 tracing = "0.1.37"
 rust_decimal = "1.28.1"
