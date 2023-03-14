@@ -5,7 +5,7 @@ use tracing::{info_span, instrument, Instrument};
 use std::sync::Arc;
 
 use ledger::Ledger;
-use okex_client::OkexClient;
+use okx_client::OkxClient;
 use shared::{
     payload::*,
     pubsub::{memory, PubSubConfig, Subscriber},
@@ -19,7 +19,7 @@ pub struct OkexEngine {
     pool: sqlx::PgPool,
     orders: OkexOrders,
     transfers: OkexTransfers,
-    okex_client: OkexClient,
+    okx_client: OkxClient,
     ledger: Ledger,
     funding_adjustment: FundingAdjustment,
     hedging_adjustment: HedgingAdjustment,
@@ -33,10 +33,10 @@ impl OkexEngine {
         pubsub_config: PubSubConfig,
         price_receiver: memory::Subscriber<PriceStreamPayload>,
     ) -> Result<(Arc<Self>, Subscriber), HedgingError> {
-        let okex_client = OkexClient::new(config.client.clone()).await?;
+        let okx_client = OkxClient::new(config.client.clone()).await?;
         let orders = OkexOrders::new(pool.clone()).await?;
         let transfers = OkexTransfers::new(pool.clone()).await?;
-        okex_client
+        okx_client
             .check_leverage(config.funding.high_bound_ratio_leverage)
             .await?;
         let funding_adjustment =
@@ -45,7 +45,7 @@ impl OkexEngine {
         let ret = Arc::new(Self {
             config,
             pool,
-            okex_client,
+            okx_client,
             orders,
             transfers,
             ledger,
@@ -69,7 +69,7 @@ impl OkexEngine {
     }
 
     pub fn add_context_to_job_registry(&self, runner: &mut sqlxmq::JobRegistry) {
-        runner.set_context(self.okex_client.clone());
+        runner.set_context(self.okx_client.clone());
         runner.set_context(self.orders.clone());
         runner.set_context(self.transfers.clone());
         runner.set_context(job::OkexPollDelay(self.config.poll_frequency));
@@ -105,7 +105,7 @@ impl OkexEngine {
                     shared::tracing::inject_tracing_data(&span, &msg.meta.tracing_data);
                     async {
                         if let Ok(current_position_in_cents) =
-                            self.okex_client.get_position_in_signed_usd_cents().await
+                            self.okx_client.get_position_in_signed_usd_cents().await
                         {
                             let _ = self
                                 .conditionally_spawn_adjust_funding(
@@ -146,7 +146,7 @@ impl OkexEngine {
                             );
                             async {
                                 if let Ok(current_position_in_cents) =
-                                    self.okex_client.get_position_in_signed_usd_cents().await
+                                    self.okx_client.get_position_in_signed_usd_cents().await
                                 {
                                     let exposure = current_position_in_cents.usd_cents.into();
                                     let _ = self
@@ -248,12 +248,12 @@ impl OkexEngine {
     ) -> Result<(), HedgingError> {
         let target_liability_in_cents = self.ledger.balances().target_liability_in_cents().await?;
         let last_price_in_usd_cents = self
-            .okex_client
+            .okx_client
             .get_last_price_in_usd_cents()
             .await?
             .usd_cents;
-        let trading_available_balance = self.okex_client.trading_account_balance().await?;
-        let funding_available_balance = self.okex_client.funding_account_balance().await?;
+        let trading_available_balance = self.okx_client.trading_account_balance().await?;
+        let funding_available_balance = self.okx_client.funding_account_balance().await?;
 
         let action = self.funding_adjustment.determine_action(
             target_liability_in_cents,

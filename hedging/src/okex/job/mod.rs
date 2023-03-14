@@ -11,7 +11,7 @@ use uuid::{uuid, Uuid};
 use std::collections::HashMap;
 
 use galoy_client::GaloyClient;
-use okex_client::OkexClient;
+use okx_client::OkxClient;
 use shared::{
     pubsub::{CorrelationId, Publisher},
     sqlxmq::JobExecutor,
@@ -84,7 +84,7 @@ pub async fn spawn_adjust_hedge<'a>(
 pub(super) async fn poll_okex(
     mut current_job: CurrentJob,
     OkexPollDelay(delay): OkexPollDelay,
-    okex: OkexClient,
+    okex: OkxClient,
     okex_orders: OkexOrders,
     okex_transfers: OkexTransfers,
     publisher: Publisher,
@@ -105,7 +105,7 @@ pub(super) async fn poll_okex(
 pub(super) async fn adjust_hedge(
     mut current_job: CurrentJob,
     ledger: ledger::Ledger,
-    okex: OkexClient,
+    okex: OkxClient,
     okex_orders: OkexOrders,
     hedging_adjustment: HedgingAdjustment,
 ) -> Result<(), HedgingError> {
@@ -168,7 +168,7 @@ pub async fn spawn_adjust_funding<'a>(
 pub(super) async fn adjust_funding(
     mut current_job: CurrentJob,
     ledger: ledger::Ledger,
-    okex: OkexClient,
+    okex: OkxClient,
     okex_transfers: OkexTransfers,
     galoy: GaloyClient,
     funding_adjustment: FundingAdjustment,

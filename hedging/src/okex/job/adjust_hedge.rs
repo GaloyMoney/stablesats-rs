@@ -1,7 +1,7 @@
 use rust_decimal::Decimal;
 use tracing::instrument;
 
-use okex_client::*;
+use okx_client::*;
 use shared::pubsub::CorrelationId;
 
 use crate::{error::*, okex::*};
@@ -12,7 +12,7 @@ pub(super) async fn execute(
     correlation_id: CorrelationId,
     pool: &sqlx::PgPool,
     ledger: ledger::Ledger,
-    okex: OkexClient,
+    okex: OkxClient,
     okex_orders: OkexOrders,
     hedging_adjustment: HedgingAdjustment,
 ) -> Result<(), HedgingError> {
@@ -53,11 +53,11 @@ pub(super) async fn execute(
                         okex.close_positions(order_id).await?;
                     }
                     OkexHedgeAdjustment::Sell(ref contracts) => {
-                        okex.place_order(order_id, OkexOrderSide::Sell, contracts)
+                        okex.place_order(order_id, OkxOrderSide::Sell, contracts)
                             .await?;
                     }
                     OkexHedgeAdjustment::Buy(ref contracts) => {
-                        okex.place_order(order_id, OkexOrderSide::Buy, contracts)
+                        okex.place_order(order_id, OkxOrderSide::Buy, contracts)
                             .await?;
                     }
                     _ => unreachable!(),

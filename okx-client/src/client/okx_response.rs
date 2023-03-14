@@ -4,7 +4,7 @@ use serde::Deserialize;
 use super::primitives::ClientOrderId;
 
 #[derive(Deserialize, Debug)]
-pub struct OkexResponse<T> {
+pub struct OkxResponse<T> {
     pub code: String,
     pub msg: String,
     pub data: Option<Vec<T>>,
@@ -237,7 +237,7 @@ pub struct ClosePositionData {
 
 #[derive(Deserialize, Debug)]
 #[serde(rename_all = "camelCase")]
-pub struct OkexAccountConfigurationData {
+pub struct OkxAccountConfigurationData {
     pub acct_lv: String,
     pub auto_loan: bool,
     pub ct_iso_mode: String,
@@ -251,7 +251,7 @@ pub struct OkexAccountConfigurationData {
 
 #[derive(Deserialize, Debug)]
 #[serde(rename_all = "camelCase")]
-pub struct OkexLeverageInfoData {
+pub struct OkxLeverageInfoData {
     pub inst_id: String,
     pub mgn_mode: String,
     pub pos_side: String,

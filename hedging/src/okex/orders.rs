@@ -2,7 +2,7 @@ use rust_decimal::Decimal;
 use sqlx::{Executor, PgPool};
 use uuid::Uuid;
 
-use okex_client::{ClientOrderId, OrderDetails};
+use okx_client::{ClientOrderId, OrderDetails};
 use shared::pubsub::CorrelationId;
 
 use super::OkexHedgeAdjustment;

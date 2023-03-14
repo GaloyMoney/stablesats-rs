@@ -3,7 +3,7 @@ use rust_decimal_macros::dec;
 use tracing::instrument;
 
 use galoy_client::*;
-use okex_client::*;
+use okx_client::*;
 use shared::pubsub::CorrelationId;
 
 use crate::{error::*, okex::*};
@@ -18,7 +18,7 @@ pub(super) async fn execute(
     correlation_id: CorrelationId,
     pool: &sqlx::PgPool,
     ledger: ledger::Ledger,
-    okex: OkexClient,
+    okex: OkxClient,
     okex_transfers: OkexTransfers,
     galoy: GaloyClient,
     funding_adjustment: FundingAdjustment,

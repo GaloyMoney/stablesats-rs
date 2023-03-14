@@ -1,5 +1,5 @@
 mod error;
-mod okex_response;
+mod okx_response;
 mod primitives;
 
 use chrono::{SecondsFormat, Utc};
@@ -17,9 +17,9 @@ use tracing::instrument;
 use std::{collections::HashMap, time::Duration};
 
 pub use error::*;
-pub use okex_response::OrderDetails;
-pub use okex_response::TransferStateData;
-use okex_response::*;
+pub use okx_response::OrderDetails;
+pub use okx_response::TransferStateData;
+use okx_response::*;
 pub use primitives::*;
 
 use governor::{
@@ -32,14 +32,14 @@ lazy_static::lazy_static! {
 }
 
 const TESTNET_BURNER_ADDRESS: &str = "tb1qfqh7ksqcrhjgq35clnf06l5d9s6tk2ke46ecrj";
-const OKEX_API_URL: &str = "https://www.okex.com";
-pub const OKEX_MINIMUM_WITHDRAWAL_FEE: Decimal = dec!(0.0002);
-pub const OKEX_MAXIMUM_WITHDRAWAL_FEE: Decimal = dec!(0.0004);
-pub const OKEX_MINIMUM_WITHDRAWAL_AMOUNT: Decimal = dec!(0.001);
-pub const OKEX_MAXIMUM_WITHDRAWAL_AMOUNT: Decimal = dec!(500);
+const OKX_API_URL: &str = "https://www.okex.com";
+pub const OKX_MINIMUM_WITHDRAWAL_FEE: Decimal = dec!(0.0002);
+pub const OKX_MAXIMUM_WITHDRAWAL_FEE: Decimal = dec!(0.0004);
+pub const OKX_MINIMUM_WITHDRAWAL_AMOUNT: Decimal = dec!(0.001);
+pub const OKX_MAXIMUM_WITHDRAWAL_AMOUNT: Decimal = dec!(500);
 
 #[derive(Serialize, Deserialize, Debug, Clone, Default)]
-pub struct OkexClientConfig {
+pub struct OkxClientConfig {
     #[serde(default)]
     pub api_key: String,
     #[serde(default)]
@@ -51,13 +51,13 @@ pub struct OkexClientConfig {
 }
 
 #[derive(Clone)]
-pub struct OkexClient {
+pub struct OkxClient {
     client: ReqwestClient,
-    config: OkexClientConfig,
+    config: OkxClientConfig,
 }
 
-impl OkexClient {
-    pub async fn new(config: OkexClientConfig) -> Result<Self, OkexClientError> {
+impl OkxClient {
+    pub async fn new(config: OkxClientConfig) -> Result<Self, OkxClientError> {
         let client = Self {
             client: ReqwestClient::builder().use_rustls_tls().build()?,
             config,
@@ -74,17 +74,17 @@ impl OkexClient {
             .send()
             .await?;
         let config_data =
-            Self::extract_response_data::<OkexAccountConfigurationData>(response).await?;
+            Self::extract_response_data::<OkxAccountConfigurationData>(response).await?;
 
         if &config_data.pos_mode != "net_mode" {
-            return Err(OkexClientError::MisconfiguredAccount(format!(
+            return Err(OkxClientError::MisconfiguredAccount(format!(
                 "Expected `net_mode`, got `{}`",
                 config_data.pos_mode
             )));
         }
 
         if &config_data.acct_lv != "2" {
-            return Err(OkexClientError::MisconfiguredAccount(format!(
+            return Err(OkxClientError::MisconfiguredAccount(format!(
                 "Expected `acct_lv: 2`, got `{}`",
                 config_data.acct_lv
             )));
@@ -92,11 +92,11 @@ impl OkexClient {
         Ok(client)
     }
 
-    pub async fn check_leverage(&self, expected_leverage: Decimal) -> Result<(), OkexClientError> {
+    pub async fn check_leverage(&self, expected_leverage: Decimal) -> Result<(), OkxClientError> {
         let leverage_info = self.leverage_info().await?;
 
         if leverage_info.lever != expected_leverage {
-            return Err(OkexClientError::MisconfiguredAccount(format!(
+            return Err(OkxClientError::MisconfiguredAccount(format!(
                 "Expected `leverage: {}`, got `{}`",
                 expected_leverage, leverage_info.lever
             )));
@@ -108,7 +108,7 @@ impl OkexClient {
         self.config.simulated
     }
 
-    pub async fn leverage_info(&self) -> Result<OkexLeverageInfoData, OkexClientError> {
+    pub async fn leverage_info(&self) -> Result<OkxLeverageInfoData, OkxClientError> {
         let path = "/api/v5/account/leverage-info?instId=BTC-USD-SWAP&mgnMode=cross";
         let config_url = Self::url_for_path(path);
         let headers = self.get_request_headers(path)?;
@@ -120,7 +120,7 @@ impl OkexClient {
             .headers(headers)
             .send()
             .await?;
-        let leverage_info = Self::extract_response_data::<OkexLeverageInfoData>(response).await?;
+        let leverage_info = Self::extract_response_data::<OkxLeverageInfoData>(response).await?;
 
         Ok(leverage_info)
     }
@@ -131,8 +131,8 @@ impl OkexClient {
         &self.client
     }
 
-    #[instrument(name = "okex_client.get_funding_deposit_address", skip(self), err)]
-    pub async fn get_funding_deposit_address(&self) -> Result<DepositAddress, OkexClientError> {
+    #[instrument(name = "okx_client.get_funding_deposit_address", skip(self), err)]
+    pub async fn get_funding_deposit_address(&self) -> Result<DepositAddress, OkxClientError> {
         if self.config.simulated {
             return Ok(DepositAddress {
                 value: TESTNET_BURNER_ADDRESS.to_string(),
@@ -157,8 +157,8 @@ impl OkexClient {
         })
     }
 
-    #[instrument(name = "okex_client.get_onchain_fees", skip(self), err)]
-    pub async fn get_onchain_fees(&self) -> Result<OnchainFees, OkexClientError> {
+    #[instrument(name = "okx_client.get_onchain_fees", skip(self), err)]
+    pub async fn get_onchain_fees(&self) -> Result<OnchainFees, OkxClientError> {
         let request_path = "/api/v5/asset/currencies?ccy=BTC";
 
         let headers = self.get_request_headers(request_path)?;
@@ -176,19 +176,19 @@ impl OkexClient {
         Ok(OnchainFees {
             ccy: fees_data.ccy,
             chain: fees_data.chain,
-            min_fee: std::cmp::min(fees_data.min_fee, OKEX_MINIMUM_WITHDRAWAL_FEE),
-            max_fee: std::cmp::min(fees_data.max_fee, OKEX_MAXIMUM_WITHDRAWAL_FEE),
-            min_withdraw: std::cmp::min(fees_data.min_wd, OKEX_MINIMUM_WITHDRAWAL_AMOUNT),
-            max_withdraw: std::cmp::min(fees_data.max_wd, OKEX_MAXIMUM_WITHDRAWAL_AMOUNT),
+            min_fee: std::cmp::min(fees_data.min_fee, OKX_MINIMUM_WITHDRAWAL_FEE),
+            max_fee: std::cmp::min(fees_data.max_fee, OKX_MAXIMUM_WITHDRAWAL_FEE),
+            min_withdraw: std::cmp::min(fees_data.min_wd, OKX_MINIMUM_WITHDRAWAL_AMOUNT),
+            max_withdraw: std::cmp::min(fees_data.max_wd, OKX_MAXIMUM_WITHDRAWAL_AMOUNT),
         })
     }
 
-    #[instrument(name = "okex_client.transfer_funding_to_trading", skip(self), err)]
+    #[instrument(name = "okx_client.transfer_funding_to_trading", skip(self), err)]
     pub async fn transfer_funding_to_trading(
         &self,
         client_id: ClientTransferId,
         amt: Decimal,
-    ) -> Result<TransferId, OkexClientError> {
+    ) -> Result<TransferId, OkxClientError> {
         let mut body: HashMap<String, String> = HashMap::new();
         body.insert("ccy".to_string(), TradeCurrency::BTC.to_string());
         body.insert("amt".to_string(), amt.to_string());
@@ -215,12 +215,12 @@ impl OkexClient {
         })
     }
 
-    #[instrument(name = "okex_client.transfer_trading_to_funding", skip(self), err)]
+    #[instrument(name = "okx_client.transfer_trading_to_funding", skip(self), err)]
     pub async fn transfer_trading_to_funding(
         &self,
         client_id: ClientTransferId,
         amt: Decimal,
-    ) -> Result<TransferId, OkexClientError> {
+    ) -> Result<TransferId, OkxClientError> {
         let mut body: HashMap<String, String> = HashMap::new();
         body.insert("ccy".to_string(), TradeCurrency::BTC.to_string());
         body.insert("amt".to_string(), amt.to_string());
@@ -248,8 +248,8 @@ impl OkexClient {
         })
     }
 
-    #[instrument(name = "okex_client.funding_account_balance", skip(self), err)]
-    pub async fn funding_account_balance(&self) -> Result<AvailableBalance, OkexClientError> {
+    #[instrument(name = "okx_client.funding_account_balance", skip(self), err)]
+    pub async fn funding_account_balance(&self) -> Result<AvailableBalance, OkxClientError> {
         let request_path = "/api/v5/asset/balances?ccy=BTC";
 
         let headers = self.get_request_headers(request_path)?;
@@ -271,8 +271,8 @@ impl OkexClient {
         })
     }
 
-    #[instrument(name = "okex_client.trading_account_balance", skip(self), err)]
-    pub async fn trading_account_balance(&self) -> Result<AvailableBalance, OkexClientError> {
+    #[instrument(name = "okx_client.trading_account_balance", skip(self), err)]
+    pub async fn trading_account_balance(&self) -> Result<AvailableBalance, OkxClientError> {
         let request_path = "/api/v5/account/balance?ccy=BTC";
 
         let headers = self.get_request_headers(request_path)?;
@@ -304,11 +304,11 @@ impl OkexClient {
         })
     }
 
-    #[instrument(name = "okex_client.transfer_state", skip(self), err)]
+    #[instrument(name = "okx_client.transfer_state", skip(self), err)]
     pub async fn transfer_state(
         &self,
         transfer_id: TransferId,
-    ) -> Result<TransferState, OkexClientError> {
+    ) -> Result<TransferState, OkxClientError> {
         let static_request_path = "/api/v5/asset/transfer-state?ccy=BTC&transId=";
         let request_path = format!("{static_request_path}{}", transfer_id.value);
 
@@ -334,7 +334,7 @@ impl OkexClient {
     pub async fn transfer_state_by_client_id(
         &self,
         client_id: ClientTransferId,
-    ) -> Result<TransferState, OkexClientError> {
+    ) -> Result<TransferState, OkxClientError> {
         let static_request_path = "/api/v5/asset/transfer-state?ccy=BTC&clientId=";
         let request_path = format!("{}{}", static_request_path, client_id.0);
 
@@ -357,14 +357,14 @@ impl OkexClient {
         })
     }
 
-    #[instrument(name = "okex_client.withdraw_btc_onchain", skip(self), err)]
+    #[instrument(name = "okx_client.withdraw_btc_onchain", skip(self), err)]
     pub async fn withdraw_btc_onchain(
         &self,
         client_id: ClientTransferId,
         amt: Decimal,
         fee: Decimal,
         btc_address: String,
-    ) -> Result<WithdrawId, OkexClientError> {
+    ) -> Result<WithdrawId, OkxClientError> {
         let mut body: HashMap<String, String> = HashMap::new();
         body.insert("ccy".to_string(), TradeCurrency::BTC.to_string());
         body.insert("amt".to_string(), amt.to_string());
@@ -394,12 +394,12 @@ impl OkexClient {
         })
     }
 
-    #[instrument(name = "okex_client.fetch_deposit", skip(self), err)]
+    #[instrument(name = "okx_client.fetch_deposit", skip(self), err)]
     pub async fn fetch_deposit(
         &self,
         depo_addr: String,
         amt_in_btc: Decimal,
-    ) -> Result<DepositStatus, OkexClientError> {
+    ) -> Result<DepositStatus, OkxClientError> {
         // 1. Get all deposit history
         let request_path = "/api/v5/asset/deposit-history";
         let headers = self.get_request_headers(request_path)?;
@@ -432,18 +432,18 @@ impl OkexClient {
                 transaction_id: deposit_data.tx_id,
             })
         } else {
-            Err(OkexClientError::UnexpectedResponse {
+            Err(OkxClientError::UnexpectedResponse {
                 msg: format!("No deposit of {amt_in_btc} made to {depo_addr}"),
                 code: "0".to_string(),
             })
         }
     }
 
-    #[instrument(name = "okex_client.fetch_withdrawal_by_client_id", skip(self), err)]
+    #[instrument(name = "okx_client.fetch_withdrawal_by_client_id", skip(self), err)]
     pub async fn fetch_withdrawal_by_client_id(
         &self,
         client_id: ClientTransferId,
-    ) -> Result<WithdrawalStatus, OkexClientError> {
+    ) -> Result<WithdrawalStatus, OkxClientError> {
         let static_request_path = "/api/v5/asset/withdrawal-history?ccy=BTC&clientId=";
         let request_path = format!("{}{}", static_request_path, client_id.0);
         let headers = self.get_request_headers(&request_path)?;
@@ -476,24 +476,24 @@ impl OkexClient {
         })
     }
 
-    #[instrument(name = "okex_client.place_order", skip(self), err)]
+    #[instrument(name = "okx_client.place_order", skip(self), err)]
     pub async fn place_order(
         &self,
         id: ClientOrderId,
-        side: OkexOrderSide,
+        side: OkxOrderSide,
         contracts: &BtcUsdSwapContracts,
-    ) -> Result<OrderId, OkexClientError> {
+    ) -> Result<OrderId, OkxClientError> {
         let mut body: HashMap<String, String> = HashMap::new();
         body.insert("ccy".to_string(), TradeCurrency::BTC.to_string());
         body.insert("clOrdId".to_string(), id.0);
         body.insert(
             "instId".to_string(),
-            OkexInstrumentId::BtcUsdSwap.to_string(),
+            OkxInstrumentId::BtcUsdSwap.to_string(),
         );
-        body.insert("tdMode".to_string(), OkexMarginMode::Cross.to_string());
+        body.insert("tdMode".to_string(), OkxMarginMode::Cross.to_string());
         body.insert("side".to_string(), side.to_string());
-        body.insert("ordType".to_string(), OkexOrderType::Market.to_string());
-        body.insert("posSide".to_string(), OkexPositionSide::Net.to_string());
+        body.insert("ordType".to_string(), OkxOrderType::Market.to_string());
+        body.insert("posSide".to_string(), OkxPositionSide::Net.to_string());
         body.insert("sz".to_string(), contracts.0.to_string());
         let request_body = serde_json::to_string(&body)?;
 
@@ -511,7 +511,7 @@ impl OkexClient {
 
         let order_data = Self::extract_response_data::<OrderData>(response).await?;
         if order_data.ord_id.is_empty() && !order_data.s_code.is_empty() {
-            return Err(OkexClientError::UnexpectedResponse {
+            return Err(OkxClientError::UnexpectedResponse {
                 msg: order_data.s_msg,
                 code: order_data.s_code,
             });
@@ -521,8 +521,8 @@ impl OkexClient {
         })
     }
 
-    #[instrument(name = "okex_client.order_details", skip(self), err)]
-    pub async fn order_details(&self, id: ClientOrderId) -> Result<OrderDetails, OkexClientError> {
+    #[instrument(name = "okx_client.order_details", skip(self), err)]
+    pub async fn order_details(&self, id: ClientOrderId) -> Result<OrderDetails, OkxClientError> {
         let static_request_path = "/api/v5/trade/order?instId=BTC-USD-SWAP&clOrdId=";
         let request_path = format!("{}{}", static_request_path, id.0);
         let headers = self.get_request_headers(&request_path)?;
@@ -542,7 +542,7 @@ impl OkexClient {
         Ok(details)
     }
 
-    pub async fn get_last_price_in_usd_cents(&self) -> Result<LastPrice, OkexClientError> {
+    pub async fn get_last_price_in_usd_cents(&self) -> Result<LastPrice, OkxClientError> {
         let request_path = "/api/v5/market/ticker?instId=BTC-USD-SWAP";
         let headers = self.get_request_headers(request_path)?;
 
@@ -561,12 +561,12 @@ impl OkexClient {
                 usd_cents: last * Decimal::ONE_HUNDRED,
             })
         } else {
-            Err(OkexClientError::NoLastPriceAvailable)
+            Err(OkxClientError::NoLastPriceAvailable)
         }
     }
 
-    #[instrument(name = "okex_client.get_position_in_signed_usd_cents", skip_all, err)]
-    pub async fn get_position_in_signed_usd_cents(&self) -> Result<PositionSize, OkexClientError> {
+    #[instrument(name = "okx_client.get_position_in_signed_usd_cents", skip_all, err)]
+    pub async fn get_position_in_signed_usd_cents(&self) -> Result<PositionSize, OkxClientError> {
         let request_path = "/api/v5/account/positions?instId=BTC-USD-SWAP";
         let headers = self.get_request_headers(request_path)?;
 
@@ -590,7 +590,7 @@ impl OkexClient {
             let last = last.parse::<Decimal>().unwrap_or(Decimal::ZERO);
 
             Ok(PositionSize {
-                instrument_id: OkexInstrumentId::BtcUsdSwap,
+                instrument_id: OkxInstrumentId::BtcUsdSwap,
                 usd_cents: notional_usd
                     * Decimal::ONE_HUNDRED
                     * if direction > Decimal::ZERO {
@@ -602,23 +602,23 @@ impl OkexClient {
             })
         } else {
             Ok(PositionSize {
-                instrument_id: OkexInstrumentId::BtcUsdSwap,
+                instrument_id: OkxInstrumentId::BtcUsdSwap,
                 usd_cents: Decimal::ZERO,
                 last_price_in_usd_cents: Decimal::ZERO,
             })
         }
     }
 
-    #[instrument(name = "okex_client.close_positions", skip(self), err)]
-    pub async fn close_positions(&self, id: ClientOrderId) -> Result<(), OkexClientError> {
+    #[instrument(name = "okx_client.close_positions", skip(self), err)]
+    pub async fn close_positions(&self, id: ClientOrderId) -> Result<(), OkxClientError> {
         let mut body: HashMap<String, String> = HashMap::new();
         body.insert(
             "instId".to_string(),
-            OkexInstrumentId::BtcUsdSwap.to_string(),
+            OkxInstrumentId::BtcUsdSwap.to_string(),
         );
         body.insert("clOrdId".to_string(), id.0);
-        body.insert("mgnMode".to_string(), OkexMarginMode::Cross.to_string());
-        body.insert("posSide".to_string(), OkexPositionSide::Net.to_string());
+        body.insert("mgnMode".to_string(), OkxMarginMode::Cross.to_string());
+        body.insert("posSide".to_string(), OkxPositionSide::Net.to_string());
         body.insert("ccy".to_string(), TradeCurrency::BTC.to_string());
         body.insert("autoCxl".to_string(), "false".to_string());
         let request_body = serde_json::to_string(&body)?;
@@ -636,7 +636,7 @@ impl OkexClient {
             .await?;
 
         match Self::extract_optional_response_data::<ClosePositionData>(response).await {
-            Err(OkexClientError::UnexpectedResponse { msg, .. })
+            Err(OkxClientError::UnexpectedResponse { msg, .. })
                 if msg.starts_with("Position does not exist") =>
             {
                 Ok(())
@@ -648,24 +648,24 @@ impl OkexClient {
     /// Extracts the first entry in the response data
     async fn extract_response_data<T: serde::de::DeserializeOwned>(
         response: reqwest::Response,
-    ) -> Result<T, OkexClientError> {
+    ) -> Result<T, OkxClientError> {
         let response_text = response.text().await?;
-        let OkexResponse { code, msg, data } =
-            serde_json::from_str::<OkexResponse<T>>(&response_text)?;
+        let OkxResponse { code, msg, data } =
+            serde_json::from_str::<OkxResponse<T>>(&response_text)?;
         if let Some(data) = data {
             if let Some(first) = data.into_iter().next() {
                 return Ok(first);
             }
         }
-        Err(OkexClientError::from((msg, code)))
+        Err(OkxClientError::from((msg, code)))
     }
 
     async fn extract_optional_response_data<T: serde::de::DeserializeOwned>(
         response: reqwest::Response,
-    ) -> Result<Option<T>, OkexClientError> {
+    ) -> Result<Option<T>, OkxClientError> {
         let response_text = response.text().await?;
-        let OkexResponse { code, msg, data } =
-            serde_json::from_str::<OkexResponse<T>>(&response_text)?;
+        let OkxResponse { code, msg, data } =
+            serde_json::from_str::<OkxResponse<T>>(&response_text)?;
         if let Some(data) = data {
             if let Some(first) = data.into_iter().next() {
                 return Ok(Some(first));
@@ -673,44 +673,44 @@ impl OkexClient {
                 return Ok(None);
             }
         }
-        Err(OkexClientError::from((msg, code)))
+        Err(OkxClientError::from((msg, code)))
     }
 
     /// Extracts the array of entries in the response data
     async fn extract_response_data_array<T: serde::de::DeserializeOwned>(
         response: reqwest::Response,
-    ) -> Result<Vec<T>, OkexClientError> {
+    ) -> Result<Vec<T>, OkxClientError> {
         let response_text = response.text().await?;
-        let OkexResponse { code, msg, data } =
-            serde_json::from_str::<OkexResponse<T>>(&response_text)?;
+        let OkxResponse { code, msg, data } =
+            serde_json::from_str::<OkxResponse<T>>(&response_text)?;
 
         if let Some(data) = data {
             return Ok(data);
         }
-        Err(OkexClientError::from((msg, code)))
+        Err(OkxClientError::from((msg, code)))
     }
 
-    fn sign_okex_request(&self, pre_hash: String) -> String {
+    fn sign_okx_request(&self, pre_hash: String) -> String {
         let key = hmac::Key::new(hmac::HMAC_SHA256, self.config.secret_key.as_bytes());
         let signature = hmac::sign(&key, pre_hash.as_bytes());
         BASE64.encode(signature.as_ref())
     }
 
     fn url_for_path(path: &str) -> String {
-        format!("{OKEX_API_URL}{path}")
+        format!("{OKX_API_URL}{path}")
     }
 
     fn post_request_headers(
         &self,
         request_path: &str,
         request_body: &str,
-    ) -> Result<HeaderMap, OkexClientError> {
+    ) -> Result<HeaderMap, OkxClientError> {
         let timestamp = Utc::now().to_rfc3339_opts(SecondsFormat::Millis, true);
         let pre_hash = format!("{timestamp}POST{request_path}{request_body}");
         self.request_headers(timestamp, pre_hash)
     }
 
-    fn get_request_headers(&self, request_path: &str) -> Result<HeaderMap, OkexClientError> {
+    fn get_request_headers(&self, request_path: &str) -> Result<HeaderMap, OkxClientError> {
         let timestamp = Utc::now().to_rfc3339_opts(SecondsFormat::Millis, true);
         let pre_hash = format!("{timestamp}GET{request_path}");
         self.request_headers(timestamp, pre_hash)
@@ -720,8 +720,8 @@ impl OkexClient {
         &self,
         formatted_timestamp: String,
         pre_hash: String,
-    ) -> Result<HeaderMap, OkexClientError> {
-        let sign_base64 = self.sign_okex_request(pre_hash);
+    ) -> Result<HeaderMap, OkxClientError> {
+        let sign_base64 = self.sign_okx_request(pre_hash);
         let simulation_flag = i32::from(self.config.simulated);
 
         let mut headers = HeaderMap::new();

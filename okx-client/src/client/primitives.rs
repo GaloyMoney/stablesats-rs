@@ -153,83 +153,83 @@ pub struct LastPrice {
 
 #[derive(Debug)]
 pub struct PositionSize {
-    pub instrument_id: OkexInstrumentId,
+    pub instrument_id: OkxInstrumentId,
     pub usd_cents: Decimal,
     pub last_price_in_usd_cents: Decimal,
 }
 
 #[derive(Debug, Clone)]
-pub enum OkexInstrumentId {
+pub enum OkxInstrumentId {
     BtcUsdSwap,
 }
 
-impl Display for OkexInstrumentId {
+impl Display for OkxInstrumentId {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match *self {
-            OkexInstrumentId::BtcUsdSwap => write!(f, "BTC-USD-SWAP"),
+            OkxInstrumentId::BtcUsdSwap => write!(f, "BTC-USD-SWAP"),
         }
     }
 }
 
 #[derive(Debug, Clone)]
-pub enum OkexMarginMode {
+pub enum OkxMarginMode {
     Cross,
 }
 
-impl Display for OkexMarginMode {
+impl Display for OkxMarginMode {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match *self {
-            OkexMarginMode::Cross => write!(f, "cross"),
+            OkxMarginMode::Cross => write!(f, "cross"),
         }
     }
 }
 
 #[derive(Debug, Clone)]
-pub enum OkexPositionMode {
+pub enum OkxPositionMode {
     Net,
 }
 
-impl Display for OkexPositionMode {
+impl Display for OkxPositionMode {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match *self {
-            OkexPositionMode::Net => write!(f, "net_mode"),
+            OkxPositionMode::Net => write!(f, "net_mode"),
         }
     }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub enum OkexPositionSide {
+pub enum OkxPositionSide {
     Long,
     Short,
     Net,
 }
 
-impl Display for OkexPositionSide {
+impl Display for OkxPositionSide {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match *self {
-            OkexPositionSide::Net => write!(f, "net"),
-            OkexPositionSide::Long => write!(f, "long"),
-            OkexPositionSide::Short => write!(f, "short"),
+            OkxPositionSide::Net => write!(f, "net"),
+            OkxPositionSide::Long => write!(f, "long"),
+            OkxPositionSide::Short => write!(f, "short"),
         }
     }
 }
 
 #[derive(Debug, Clone)]
-pub enum OkexOrderSide {
+pub enum OkxOrderSide {
     Buy,
     Sell,
 }
 
-impl Display for OkexOrderSide {
+impl Display for OkxOrderSide {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match *self {
-            OkexOrderSide::Buy => write!(f, "buy"),
-            OkexOrderSide::Sell => write!(f, "sell"),
+            OkxOrderSide::Buy => write!(f, "buy"),
+            OkxOrderSide::Sell => write!(f, "sell"),
         }
     }
 }
 
-pub enum OkexOrderType {
+pub enum OkxOrderType {
     Market,
     Limit,
     PostOnly,
@@ -238,15 +238,15 @@ pub enum OkexOrderType {
     OptimalLimitIoc,
 }
 
-impl Display for OkexOrderType {
+impl Display for OkxOrderType {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match *self {
-            OkexOrderType::Market => write!(f, "market"),
-            OkexOrderType::Limit => write!(f, "limit"),
-            OkexOrderType::PostOnly => write!(f, "post_only"),
-            OkexOrderType::Fok => write!(f, "fok"),
-            OkexOrderType::Ioc => write!(f, "ioc"),
-            OkexOrderType::OptimalLimitIoc => write!(f, "optimal_limit_ioc"),
+            OkxOrderType::Market => write!(f, "market"),
+            OkxOrderType::Limit => write!(f, "limit"),
+            OkxOrderType::PostOnly => write!(f, "post_only"),
+            OkxOrderType::Fok => write!(f, "fok"),
+            OkxOrderType::Ioc => write!(f, "ioc"),
+            OkxOrderType::OptimalLimitIoc => write!(f, "optimal_limit_ioc"),
         }
     }
 }

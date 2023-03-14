@@ -18,8 +18,8 @@ pub enum HedgingError {
     Sqlx(#[from] sqlx::Error),
     #[error("HedgingError - Migrate: {0}")]
     Migrate(#[from] sqlx::migrate::MigrateError),
-    #[error("HedgingError - OkexClient: {0}")]
-    OkexClient(#[from] okex_client::OkexClientError),
+    #[error("HedgingError - OkxClient: {0}")]
+    OkxClient(#[from] okx_client::OkxClientError),
     #[error("HedgingError - GaloyClient: {0}")]
     GaloyClient(#[from] galoy_client::GaloyClientError),
     #[error("HedgingError - BitfinexClient: {0}")]
