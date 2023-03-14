@@ -41,10 +41,10 @@ enum Command {
         /// Phone code for the galoy client
         #[clap(env = "GALOY_PHONE_CODE", default_value = "")]
         galoy_phone_code: String,
-        /// Okex secret key
+        /// Okx secret key
         #[clap(env = "OKEX_SECRET_KEY", default_value = "")]
         okex_secret_key: String,
-        /// Okex passphrase
+        /// Okx passphrase
         #[clap(env = "OKEX_PASSPHRASE", default_value = "")]
         okex_passphrase: String,
         /// Bitfinex secret key
@@ -137,7 +137,7 @@ async fn run_cmd(
         .map(|okex| okex.weight > Decimal::ZERO)
         .unwrap_or(false)
     {
-        println!("Starting Okex price feed");
+        println!("Starting Okx price feed");
 
         let okex_send = send.clone();
         let price_send = price_send.clone();
@@ -145,7 +145,7 @@ async fn run_cmd(
             let _ = okex_send.try_send(
                 okex_price::run(price_send)
                     .await
-                    .context("Okex Price Feed error"),
+                    .context("Okx Price Feed error"),
             );
         }));
     }
