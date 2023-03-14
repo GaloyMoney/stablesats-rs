@@ -1,7 +1,7 @@
 use rust_decimal::Decimal;
 use rust_decimal_macros::dec;
 
-pub use okex_client::BtcUsdSwapContracts;
+pub use okx_client::BtcUsdSwapContracts;
 pub use shared::payload::{SyntheticCentExposure, SyntheticCentLiability};
 
 use crate::okex::OkexHedgingConfig;

@@ -1,4 +1,4 @@
-use okex_client::OkexClientConfig;
+use okx_client::OkxClientConfig;
 use rust_decimal::Decimal;
 use rust_decimal_macros::dec;
 use serde::{Deserialize, Serialize};
@@ -8,7 +8,7 @@ use std::time::Duration;
 #[derive(Serialize, Deserialize, Debug, Clone, Default)]
 pub struct OkexConfig {
     #[serde(default)]
-    pub client: OkexClientConfig,
+    pub client: OkxClientConfig,
     #[serde_as(as = "serde_with::DurationSeconds<u64>")]
     #[serde(default = "default_okex_poll_frequency")]
     pub poll_frequency: Duration,

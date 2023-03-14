@@ -2,7 +2,7 @@ use rust_decimal::Decimal;
 use sqlx::{Executor, PgPool};
 use uuid::Uuid;
 
-use okex_client::{ClientTransferId, TransferState, WithdrawalStatus};
+use okx_client::{ClientTransferId, TransferState, WithdrawalStatus};
 use shared::pubsub::CorrelationId;
 
 use crate::error::HedgingError;

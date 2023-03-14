@@ -1,4 +1,4 @@
-use okex_client::{OkexClient, OkexClientError, PositionSize};
+use okx_client::{OkxClient, OkxClientError, PositionSize};
 use shared::{
     payload::{
         ExchangeIdRaw, InstrumentIdRaw, OkexBtcUsdSwapPositionPayload, SyntheticCentExposure,
@@ -12,7 +12,7 @@ use crate::{error::HedgingError, okex::*};
 pub async fn execute(
     okex_orders: OkexOrders,
     okex_transfers: OkexTransfers,
-    okex: OkexClient,
+    okex: OkxClient,
     publisher: Publisher,
     funding_config: OkexFundingConfig,
 ) -> Result<(), HedgingError> {
@@ -35,7 +35,7 @@ pub async fn execute(
             Ok(details) => {
                 okex_orders.update_order(details).await?;
             }
-            Err(OkexClientError::OrderDoesNotExist) => {
+            Err(OkxClientError::OrderDoesNotExist) => {
                 okex_orders.mark_as_lost(id).await?;
                 execute_sweep = true;
             }
@@ -53,7 +53,7 @@ pub async fn execute(
             Ok(details) => {
                 okex_transfers.update_transfer(details).await?;
             }
-            Err(OkexClientError::ParameterClientIdError) => {
+            Err(OkxClientError::ParameterClientIdError) => {
                 okex_transfers.mark_as_lost(id).await?;
                 execute_transfer_sweep = true;
             }
@@ -68,7 +68,7 @@ pub async fn execute(
                     .update_deposit(id, details.state, details.transaction_id)
                     .await?;
             }
-            Err(OkexClientError::UnexpectedResponse { .. }) => {
+            Err(OkxClientError::UnexpectedResponse { .. }) => {
                 if chrono::Utc::now() - created_at > funding_config.deposit_lost_timeout_seconds {
                     okex_transfers.mark_as_lost(id).await?;
                     execute_transfer_sweep = true;
@@ -83,8 +83,8 @@ pub async fn execute(
             Ok(details) => {
                 okex_transfers.update_withdrawal(details).await?;
             }
-            Err(OkexClientError::WithdrawalIdDoesNotExist)
-            | Err(OkexClientError::ParameterClientIdError) => {
+            Err(OkxClientError::WithdrawalIdDoesNotExist)
+            | Err(OkxClientError::ParameterClientIdError) => {
                 okex_transfers.mark_as_lost(id).await?;
                 execute_transfer_sweep = true;
             }

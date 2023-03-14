@@ -12,7 +12,7 @@ shared = { path = "../shared", package = "stablesats-shared" }
 price-server = { path = "../price-server" }
 user-trades = { path = "../user-trades" }
 galoy-client = { path = "../galoy-client" }
-okex-client = { path = "../okex-client" }
+okx-client = { path = "../okx-client" }
 hedging = { path = "../hedging" }
 okex-price = { path = "../okex-price" }
 bitfinex-price = { path = "../bitfinex-price" }

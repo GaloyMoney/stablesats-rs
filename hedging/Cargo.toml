@@ -10,7 +10,7 @@ fail-on-warnings = []
 [dependencies]
 ledger = { path = "../ledger", package = "stablesats-ledger" }
 shared = { path = "../shared", package = "stablesats-shared" }
-okex-client = { path = "../okex-client" }
+okx-client = { path = "../okx-client" }
 bitfinex-client = { path = "../bitfinex-client" }
 galoy-client = { path = "../galoy-client" }
 

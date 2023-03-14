@@ -4,14 +4,14 @@ use serial_test::serial;
 
 use std::env;
 
-use okex_client::*;
+use okx_client::*;
 
-async fn configured_okex_client() -> anyhow::Result<OkexClient> {
+async fn configured_okx_client() -> anyhow::Result<OkxClient> {
     let api_key = env::var("OKEX_API_KEY").expect("OKEX_API_KEY not set");
     let passphrase = env::var("OKEX_PASSPHRASE").expect("OKEX_PASS_PHRASE not set");
     let secret_key = env::var("OKEX_SECRET_KEY").expect("OKEX_SECRET_KEY not set");
 
-    let client = OkexClient::new(OkexClientConfig {
+    let client = OkxClient::new(OkxClientConfig {
         api_key,
         passphrase,
         secret_key,
@@ -26,7 +26,7 @@ async fn configured_okex_client() -> anyhow::Result<OkexClient> {
 #[serial]
 #[ignore = "avoid rate limit"]
 async fn get_deposit_address_data() -> anyhow::Result<()> {
-    let client = configured_okex_client().await?;
+    let client = configured_okx_client().await?;
     let address = client.get_funding_deposit_address().await?;
     assert!(address.value.len() > 10);
 
@@ -37,7 +37,7 @@ async fn get_deposit_address_data() -> anyhow::Result<()> {
 #[serial]
 #[ignore = "avoid rate limit"]
 async fn get_onchain_fees_data() -> anyhow::Result<()> {
-    let client = configured_okex_client().await?;
+    let client = configured_okx_client().await?;
     let fees = client.get_onchain_fees().await?;
     assert_eq!(fees.ccy, "BTC".to_string());
     assert_eq!(fees.chain, "BTC-Bitcoin".to_string());
@@ -53,7 +53,7 @@ async fn get_onchain_fees_data() -> anyhow::Result<()> {
 #[serial]
 #[ignore = "avoid rate limit"]
 async fn client_is_missing_header() -> anyhow::Result<()> {
-    let client = OkexClient::new(OkexClientConfig {
+    let client = OkxClient::new(OkxClientConfig {
         api_key: "".to_string(),
         passphrase: "".to_string(),
         secret_key: "".to_string(),
@@ -63,7 +63,7 @@ async fn client_is_missing_header() -> anyhow::Result<()> {
 
     assert!(client.is_err());
 
-    if let Err(OkexClientError::UnexpectedResponse { msg, .. }) = client {
+    if let Err(OkxClientError::UnexpectedResponse { msg, .. }) = client {
         assert!(msg.contains("header"));
     } else {
         assert!(false)
@@ -76,7 +76,7 @@ async fn client_is_missing_header() -> anyhow::Result<()> {
 #[serial]
 #[ignore = "avoid rate limit"]
 async fn funding_account_balance() -> anyhow::Result<()> {
-    let client = configured_okex_client().await?;
+    let client = configured_okx_client().await?;
     let avail_balance = client.funding_account_balance().await?;
     let balance = avail_balance.total_amt_in_btc;
     let minimum_balance = dec!(0);
@@ -89,7 +89,7 @@ async fn funding_account_balance() -> anyhow::Result<()> {
 #[serial]
 #[ignore = "avoid rate limit"]
 async fn trading_account_balance() -> anyhow::Result<()> {
-    let client = configured_okex_client().await?;
+    let client = configured_okx_client().await?;
     let avail_balance = client.trading_account_balance().await?;
     let minimum_balance = dec!(0);
     assert!(avail_balance.total_amt_in_btc >= minimum_balance);
@@ -101,10 +101,10 @@ async fn trading_account_balance() -> anyhow::Result<()> {
 #[serial]
 #[ignore = "avoid rate limit"]
 async fn unknown_client_order_id() -> anyhow::Result<()> {
-    let client = configured_okex_client().await?;
+    let client = configured_okx_client().await?;
     let id = ClientOrderId::new();
     let result = client.order_details(id).await;
-    if let Err(OkexClientError::OrderDoesNotExist) = result {
+    if let Err(OkxClientError::OrderDoesNotExist) = result {
         assert!(true)
     } else {
         assert!(false)
@@ -113,14 +113,14 @@ async fn unknown_client_order_id() -> anyhow::Result<()> {
 }
 
 #[tokio::test]
-#[ignore = "only works against real okex client"]
+#[ignore = "only works against real okx client"]
 async fn deposit_status() -> anyhow::Result<()> {
     if let (Ok(deposit_addr), Ok(deposit_amount)) = (
         env::var("OKEX_DEPOSIT_ADDRESS"),
         env::var("OKEX_DEPOSIT_AMOUNT"),
     ) {
         let amt = Decimal::from_str_exact(&deposit_amount)?;
-        let client = configured_okex_client().await?;
+        let client = configured_okx_client().await?;
 
         let deposit = client.fetch_deposit(deposit_addr, amt).await?;
 
@@ -132,10 +132,10 @@ async fn deposit_status() -> anyhow::Result<()> {
 #[tokio::test]
 #[ignore = "only works against real okex client"]
 async fn withdraw_to_onchain_address() -> anyhow::Result<()> {
-    let amount = OKEX_MINIMUM_WITHDRAWAL_AMOUNT;
-    let fee = OKEX_MINIMUM_WITHDRAWAL_FEE;
+    let amount = OKX_MINIMUM_WITHDRAWAL_AMOUNT;
+    let fee = OKX_MINIMUM_WITHDRAWAL_FEE;
     if let Ok(onchain_address) = env::var("ONCHAIN_BTC_WITHDRAWAL_ADDRESS") {
-        let client = configured_okex_client().await?;
+        let client = configured_okx_client().await?;
         let withdraw_id = client
             .withdraw_btc_onchain(ClientTransferId::new(), amount, fee, onchain_address)
             .await?;
@@ -148,7 +148,7 @@ async fn withdraw_to_onchain_address() -> anyhow::Result<()> {
 #[tokio::test]
 #[ignore = "transfer call is rate limited"]
 async fn transfer_trading_to_funding() -> anyhow::Result<()> {
-    let client = configured_okex_client().await?;
+    let client = configured_okx_client().await?;
     let amount = dec!(0.00001);
     let transfer_id = client
         .transfer_trading_to_funding(ClientTransferId::new(), amount)
@@ -162,7 +162,7 @@ async fn transfer_trading_to_funding() -> anyhow::Result<()> {
 #[tokio::test]
 #[ignore = "transfer call is rate limited"]
 async fn transfer_state() -> anyhow::Result<()> {
-    let client = configured_okex_client().await?;
+    let client = configured_okx_client().await?;
     let amount = dec!(0.00001);
     let client_id = ClientTransferId::new();
     let client_id_val: String = client_id.clone().into();
@@ -183,7 +183,7 @@ async fn transfer_state() -> anyhow::Result<()> {
 #[tokio::test]
 #[ignore = "transfer call is rate limited"]
 async fn transfer_state_by_client_id() -> anyhow::Result<()> {
-    let client = configured_okex_client().await?;
+    let client = configured_okx_client().await?;
     let amount = dec!(0.00001);
     let client_id = ClientTransferId::new();
     let client_id_val: String = client_id.clone().into();
@@ -204,14 +204,14 @@ async fn transfer_state_by_client_id() -> anyhow::Result<()> {
 #[serial]
 #[ignore = "avoid rate limit"]
 async fn open_close_position() -> anyhow::Result<()> {
-    let client = configured_okex_client().await?;
+    let client = configured_okx_client().await?;
 
     client.close_positions(ClientOrderId::new()).await?;
 
     client
         .place_order(
             ClientOrderId::new(),
-            OkexOrderSide::Sell,
+            OkxOrderSide::Sell,
             &BtcUsdSwapContracts::from(1),
         )
         .await?;
@@ -230,7 +230,7 @@ async fn open_close_position() -> anyhow::Result<()> {
 #[serial]
 #[ignore = "avoid rate limit"]
 async fn last_price() -> anyhow::Result<()> {
-    let client = configured_okex_client().await?;
+    let client = configured_okx_client().await?;
 
     let last_price = client.get_last_price_in_usd_cents().await?;
 

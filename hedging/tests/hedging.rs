@@ -8,7 +8,7 @@ use serial_test::serial;
 
 use std::{env, fs};
 
-use okex_client::*;
+use okx_client::*;
 use shared::{payload::*, pubsub::*};
 
 use hedging::*;
@@ -28,7 +28,7 @@ fn okex_config() -> OkexConfig {
     let passphrase = env::var("OKEX_PASSPHRASE").expect("OKEX_PASS_PHRASE not set");
     let secret_key = env::var("OKEX_SECRET_KEY").expect("OKEX_SECRET_KEY not set");
     OkexConfig {
-        client: OkexClientConfig {
+        client: OkxClientConfig {
             api_key,
             passphrase,
             secret_key,
@@ -143,7 +143,7 @@ async fn hedging() -> anyhow::Result<()> {
         .into_iter();
     publisher.publish(payloads.next().unwrap()).await?;
 
-    let okex = OkexClient::new(okex_config().client).await?;
+    let okex = OkxClient::new(okex_config().client).await?;
     expect_exposure_equal(&mut stream, dec!(0)).await;
 
     publisher.publish(payloads.next().unwrap()).await?;
@@ -154,7 +154,7 @@ async fn hedging() -> anyhow::Result<()> {
         if idx == 0 {
             okex.place_order(
                 ClientOrderId::new(),
-                OkexOrderSide::Sell,
+                OkxOrderSide::Sell,
                 &BtcUsdSwapContracts::from(5),
             )
             .await?;
