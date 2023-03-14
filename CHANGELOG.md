@@ -1,3 +1,10 @@
+# [stablesats release v0.9.1](https://github.com/GaloyMoney/stablesats-rs/releases/tag/0.9.1)
+
+
+### Bug Fixes
+
+- Okx transfer client id not found (#314)
+
 # [stablesats release v0.9.0](https://github.com/GaloyMoney/stablesats-rs/releases/tag/0.9.0)
 
 
