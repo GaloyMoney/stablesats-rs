@@ -101,7 +101,7 @@ impl OkexOrders {
 
     pub async fn sweep_lost_records(&self) -> Result<(), HedgingError> {
         sqlx::query!(
-            r#"DELETE FROM okex_orders WHERE lost = true AND complete = false AND created_at < now() - interval '1 day'"#
+            r#"DELETE FROM okex_orders WHERE lost = true AND complete = false AND created_at < now() - interval '5 hour'"#
         )
         .execute(&self.pool)
         .await?;

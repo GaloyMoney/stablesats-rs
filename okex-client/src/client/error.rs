@@ -14,6 +14,8 @@ pub enum OkexClientError {
     ServiceUnavailable { msg: String, code: String },
     #[error("OkexClientError - OrderDoesNotExist")]
     OrderDoesNotExist,
+    #[error("OkexClientError - ParameterClientIdNotFound")]
+    ParameterClientIdNotFound,
     #[error("OkexClientError - ParameterClientIdError")]
     ParameterClientIdError,
     #[error("OkexClientError - WithdrawalIdDoesNotExist")]
@@ -32,6 +34,7 @@ impl From<(String, String)> for OkexClientError {
             "50001" => OkexClientError::ServiceUnavailable { msg, code },
             "51000" => OkexClientError::ParameterClientIdError,
             "51603" => OkexClientError::OrderDoesNotExist,
+            "58129" => OkexClientError::ParameterClientIdNotFound,
             "58215" => OkexClientError::WithdrawalIdDoesNotExist,
             _ => OkexClientError::UnexpectedResponse { msg, code },
         }
