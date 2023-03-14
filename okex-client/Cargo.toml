@@ -14,7 +14,7 @@ tokio = { version = "1.26.0", features = ["full"] }
 ring = "0.16.20"
 data-encoding = "2.3.3"
 serde = { version = "1.0.152", features = ["derive"] }
-serde_json = "1.0.93"
+serde_json = "1.0.94"
 chrono = { version = "0.4", features = ["clock", "serde"], default-features = false }
 serde_yaml = "0.9.19"
 rust_decimal = "1.28.1"
