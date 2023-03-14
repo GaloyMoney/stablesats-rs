@@ -1,3 +1,19 @@
+# [stablesats release v0.9.0](https://github.com/GaloyMoney/stablesats-rs/releases/tag/0.9.0)
+
+
+### Bug Fixes
+
+- Handling of okx error 58129 (#313)
+
+### Miscellaneous Tasks
+
+- Patch vulnerability
+- Bump axum-core from 0.3.2 to 0.3.3 (#305)
+- Bump serde_yaml from 0.9.17 to 0.9.19 (#307)
+- Bump thiserror from 1.0.38 to 1.0.39 (#308)
+- Bump async-trait from 0.1.64 to 0.1.66 (#309)
+- Add features to tokio in okex-client
+
 # [stablesats release v0.8.2](https://github.com/GaloyMoney/stablesats-rs/releases/tag/0.8.2)
 
 
