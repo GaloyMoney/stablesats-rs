@@ -35,7 +35,8 @@ pub async fn execute(
             Ok(details) => {
                 okex_orders.update_order(details).await?;
             }
-            Err(OkexClientError::OrderDoesNotExist) => {
+            Err(OkexClientError::OrderDoesNotExist)
+            | Err(OkexClientError::ParameterClientIdNotFound) => {
                 okex_orders.mark_as_lost(id).await?;
                 execute_sweep = true;
             }
