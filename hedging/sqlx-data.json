@@ -59,6 +59,16 @@
     },
     "query": "SELECT client_order_id FROM okex_orders WHERE complete = false"
   },
+  "5a7a2a9f44d59aa52bf93bae05be9078b4de460c26ad0c66520f4361601f5700": {
+    "describe": {
+      "columns": [],
+      "nullable": [],
+      "parameters": {
+        "Left": []
+      }
+    },
+    "query": "DELETE FROM okex_orders WHERE lost = true AND complete = false AND created_at < now() - interval '5 hour'"
+  },
   "755920d9b23d1c31d6479964d3e1130409f4b74ad5c7519e838818f07ebefd47": {
     "describe": {
       "columns": [
@@ -182,16 +192,6 @@
       }
     },
     "query": "SELECT client_transfer_id FROM okex_transfers WHERE action = 'withdraw' AND state = 'pending'"
-  },
-  "dc6913735a5493821cc85a6a069277431024ccdffbc76d09f11629e818f54df2": {
-    "describe": {
-      "columns": [],
-      "nullable": [],
-      "parameters": {
-        "Left": []
-      }
-    },
-    "query": "DELETE FROM okex_orders WHERE lost = true AND complete = false AND created_at < now() - interval '1 day'"
   },
   "ec7ba61bfab2d7ce85f306efac3a90a1fc514ce949e1984fe518b46e2c4a3612": {
     "describe": {
