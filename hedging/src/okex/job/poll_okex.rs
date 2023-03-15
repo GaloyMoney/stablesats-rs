@@ -35,7 +35,8 @@ pub async fn execute(
             Ok(details) => {
                 okex_orders.update_order(details).await?;
             }
-            Err(OkexClientError::OrderDoesNotExist) => {
+            Err(OkexClientError::OrderDoesNotExist)
+            | Err(OkexClientError::ParameterClientIdNotFound) => {
                 okex_orders.mark_as_lost(id).await?;
                 execute_sweep = true;
             }
@@ -53,7 +54,8 @@ pub async fn execute(
             Ok(details) => {
                 okex_transfers.update_transfer(details).await?;
             }
-            Err(OkexClientError::ParameterClientIdError) => {
+            Err(OkexClientError::ParameterClientIdError)
+            | Err(OkexClientError::ParameterClientIdNotFound) => {
                 okex_transfers.mark_as_lost(id).await?;
                 execute_transfer_sweep = true;
             }
@@ -84,7 +86,8 @@ pub async fn execute(
                 okex_transfers.update_withdrawal(details).await?;
             }
             Err(OkexClientError::WithdrawalIdDoesNotExist)
-            | Err(OkexClientError::ParameterClientIdError) => {
+            | Err(OkexClientError::ParameterClientIdError)
+            | Err(OkexClientError::ParameterClientIdNotFound) => {
                 okex_transfers.mark_as_lost(id).await?;
                 execute_transfer_sweep = true;
             }
