@@ -1,3 +1,18 @@
+# [stablesats release v0.9.2](https://github.com/GaloyMoney/stablesats-rs/releases/tag/0.9.2)
+
+
+### Bug Fixes
+
+- Zero exposure from api response (#321)
+
+### Miscellaneous Tasks
+
+- Bump futures from 0.3.26 to 0.3.27 (#317)
+- Bump chrono from 0.4.23 to 0.4.24 (#319)
+- Bump serde from 1.0.152 to 1.0.156 (#318)
+- Bump axum from 0.6.9 to 0.6.11 (#320)
+- Bump serde_with from 2.2.0 to 2.3.1 (#316)
+
 # [stablesats release v0.9.1](https://github.com/GaloyMoney/stablesats-rs/releases/tag/0.9.1)
 
 
