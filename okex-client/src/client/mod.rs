@@ -565,7 +565,12 @@ impl OkexClient {
         }
     }
 
-    #[instrument(name = "okex_client.get_position_in_signed_usd_cents", skip_all, err)]
+    #[instrument(
+        name = "okex_client.get_position_in_signed_usd_cents",
+        skip_all,
+        fields(notional_usd, position_in_ct, last_price),
+        err
+    )]
     pub async fn get_position_in_signed_usd_cents(&self) -> Result<PositionSize, OkexClientError> {
         let request_path = "/api/v5/account/positions?instId=BTC-USD-SWAP";
         let headers = self.get_request_headers(request_path)?;
@@ -585,6 +590,11 @@ impl OkexClient {
             ..
         }) = Self::extract_optional_response_data::<PositionData>(response).await?
         {
+            let span = tracing::Span::current();
+            span.record("notional_usd", &tracing::field::display(&notional_usd));
+            span.record("position_in_ct", &tracing::field::display(&pos));
+            span.record("last_price", &tracing::field::display(&last));
+
             let d_result = pos.parse::<Decimal>();
             let n_result = notional_usd.parse::<Decimal>();
             let l_result = last.parse::<Decimal>();
@@ -601,7 +611,7 @@ impl OkexClient {
                         },
                     last_price_in_usd_cents: last * Decimal::ONE_HUNDRED,
                 }),
-                _ => Err(OkexClientError::NoPositionAvailable),
+                _ => Err(OkexClientError::NonParsablePositionData),
             }
         } else {
             Err(OkexClientError::NoPositionAvailable)
