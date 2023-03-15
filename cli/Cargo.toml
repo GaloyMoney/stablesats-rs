@@ -19,7 +19,7 @@ bitfinex-price = { path = "../bitfinex-price" }
 
 anyhow = "1.0.69"
 clap = { version = "4.1", features = ["derive", "env"] }
-serde = { version = "1.0.152", features = ["derive"] }
+serde = { version = "1.0.156", features = ["derive"] }
 serde_yaml = "0.9.19"
 tokio = "1.26.0"
 futures = "0.3.26"
