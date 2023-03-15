@@ -26,7 +26,17 @@ pub(super) async fn execute(
         "target_liability",
         &tracing::field::display(target_liability),
     );
-    let current_position = okex.get_position_in_signed_usd_cents().await?.usd_cents;
+    let current_position = match okex.get_position_in_signed_usd_cents().await {
+        Ok(current_position) => current_position.usd_cents,
+        Err(OkexClientError::NoPositionAvailable) => {
+            span.record(
+                "current_position",
+                &tracing::field::display("NoPositionAvailable"),
+            );
+            return Ok(());
+        }
+        Err(e) => return Err(e.into()),
+    };
     span.record(
         "current_position",
         &tracing::field::display(current_position),

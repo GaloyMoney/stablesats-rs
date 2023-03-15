@@ -22,6 +22,8 @@ pub enum OkexClientError {
     WithdrawalIdDoesNotExist,
     #[error("OkexClientError - NoLastPriceAvailable")]
     NoLastPriceAvailable,
+    #[error("OkexClientError - NoPositionAvailable")]
+    NoPositionAvailable,
     #[error("OkexClientError - DecimalConversion: {0}")]
     DecimalConversion(#[from] rust_decimal::Error),
     #[error("OkexClientError - MisconfiguredAccount: {0}")]
