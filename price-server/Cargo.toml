@@ -22,7 +22,7 @@ prost = "0.11"
 tonic = "0.8"
 axum-core = "0.3.3"
 tokio = "1.26.0"
-futures = "0.3.26"
+futures = "0.3.27"
 thiserror = "1.0.39"
 serde = { version = "1.0.156", features = ["derive"] }
 rust_decimal = "1.28.1"
