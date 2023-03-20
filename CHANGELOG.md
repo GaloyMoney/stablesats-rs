@@ -1,3 +1,16 @@
+# [stablesats release v0.9.3](https://github.com/GaloyMoney/stablesats-rs/releases/tag/0.9.3)
+
+
+### Miscellaneous Tasks
+
+- Bump async-trait from 0.1.66 to 0.1.67 (#324)
+- Bump serde from 1.0.156 to 1.0.157 (#328)
+- Bump thiserror from 1.0.39 to 1.0.40 (#325)
+- Bump anyhow from 1.0.69 to 1.0.70 (#326)
+- Bump rust_decimal_macros from 1.28.1 to 1.29.0 (#327)
+- Bump rust_decimal from 1.28.1 to 1.29.0 (#322)
+- Bump clap from 4.1.8 to 4.1.9 (#323)
+
 # [stablesats release v0.9.2](https://github.com/GaloyMoney/stablesats-rs/releases/tag/0.9.2)
 
 
