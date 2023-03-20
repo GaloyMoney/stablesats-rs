@@ -24,5 +24,5 @@ tracing-opentelemetry = "0.18.0"
 opentelemetry-http = "0.7.0"
 
 [dev-dependencies]
-anyhow = "1.0.69"
+anyhow = "1.0.70"
 tokio = { version = "1.26.0", features = ["macros"] }

@@ -34,5 +34,5 @@ governor = "0.5.1"
 lazy_static = "1.4.0"
 
 [dev-dependencies]
-anyhow = "1.0.69"
+anyhow = "1.0.70"
 serde_yaml = "0.9.19"
