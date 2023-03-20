@@ -12,7 +12,7 @@ shared = { path = "../shared", package = "stablesats-shared" }
 ledger = { path = "../ledger", package = "stablesats-ledger" }
 galoy_client = { path = "../galoy-client", package = "galoy-client" }
 
-thiserror = "1.0.39"
+thiserror = "1.0.40"
 chrono = "0.4"
 tokio = "1.26.0"
 sqlx = { version = "0.6", features = [ "offline", "runtime-tokio-rustls", "postgres", "decimal", "uuid", "chrono", "json" ] }
