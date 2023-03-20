@@ -25,5 +25,5 @@ rand = "0.8.5"
 tracing = "0.1.37"
 
 [dev-dependencies]
-anyhow = "1.0.69"
+anyhow = "1.0.70"
 serial_test = "*"

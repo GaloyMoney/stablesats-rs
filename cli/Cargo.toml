@@ -17,7 +17,7 @@ hedging = { path = "../hedging" }
 okex-price = { path = "../okex-price" }
 bitfinex-price = { path = "../bitfinex-price" }
 
-anyhow = "1.0.69"
+anyhow = "1.0.70"
 clap = { version = "4.1", features = ["derive", "env"] }
 serde = { version = "1.0.156", features = ["derive"] }
 serde_yaml = "0.9.19"
