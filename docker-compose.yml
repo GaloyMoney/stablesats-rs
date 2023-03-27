@@ -38,6 +38,7 @@ services:
     working_dir: /repo
     volumes:
       - ./:/repo
+      - cargo-cache:/usr/local/cargo
   otel-agent:
     image: otel/opentelemetry-collector-contrib:0.57.2
     command: ["--config=/etc/otel-agent-config.yaml"]
@@ -46,3 +47,5 @@ services:
     - HONEYCOMB_API_KEY=${HONEYCOMB_API_KEY}
     volumes:
       - ./dev/otel-agent-config.yaml:/etc/otel-agent-config.yaml
+volumes:
+  cargo-cache:
