@@ -17,7 +17,7 @@ serde_json = "1.0.93"
 thiserror = "1.0.40"
 chrono = { version = "0.4", features = ["clock", "serde"], default-features = false }
 tracing = "0.1.37"
-rust_decimal = "1.29.0"
+rust_decimal = "1.29.1"
 rust_decimal_macros = "1.29.0"
 opentelemetry = "0.18.0"
 tracing-opentelemetry = "0.18.0"
