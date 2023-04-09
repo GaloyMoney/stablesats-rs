@@ -12,11 +12,9 @@ use crate::{
     error::UserTradesError, galoy_transactions::GaloyTransactions, user_trades::UserTrades,
 };
 
-pub const PUBLISH_LIABILITY_ID: Uuid = uuid!("00000000-0000-0000-0000-000000000001");
+// retired: uuid!("10000000-0000-0000-0000-000000000001");
 pub const POLL_GALOY_TRANSACTIONS_ID: Uuid = uuid!("00000000-0000-0000-0000-000000000002");
 
-#[derive(Debug, Clone)]
-struct LiabilityPublishDelay(Duration);
 #[derive(Debug, Clone)]
 struct PollGaloyTransactionsDelay(Duration);
 
