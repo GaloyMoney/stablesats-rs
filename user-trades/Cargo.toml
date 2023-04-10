@@ -29,4 +29,4 @@ serde_with = "2.3.1"
 
 [dev-dependencies]
 anyhow = "1.0.70"
-serial_test = "1.0.0"
+serial_test = "2.0.0"
