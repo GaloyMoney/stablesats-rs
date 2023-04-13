@@ -1,3 +1,19 @@
+# [stablesats release v0.9.4](https://github.com/GaloyMoney/stablesats-rs/releases/tag/0.9.4)
+
+
+### Bug Fixes
+
+- Cargo.lock
+
+### Miscellaneous Tasks
+
+- Bump sqlx-ledger
+- Cargo update (#342)
+- Bump deps and fix vulnerabilities
+- Bump serde from 1.0.157 to 1.0.158 (#331)
+- Bump clap from 4.1.9 to 4.1.11 (#329)
+- Bump reqwest from 0.11.14 to 0.11.15 (#332)
+
 # [stablesats release v0.9.3](https://github.com/GaloyMoney/stablesats-rs/releases/tag/0.9.3)
 
 
