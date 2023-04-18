@@ -6,8 +6,6 @@ set -eu
 
 CI_ROOT=$(pwd)
 
-unpack_deps
-
 cat <<EOF > ${CI_ROOT}/gcloud-creds.json
 ${GOOGLE_CREDENTIALS}
 EOF
