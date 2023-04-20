@@ -595,6 +595,10 @@ impl OkexClient {
             span.record("position_in_ct", &tracing::field::display(&pos));
             span.record("last_price", &tracing::field::display(&last));
 
+            // Position responses with data:
+            // No position on account: pos = 0 and everything else is empty
+            // Some position on account: pos, notional and last are properly populated
+            // Else: raise an error
             let d_result = pos.parse::<Decimal>();
             let n_result = notional_usd.parse::<Decimal>();
             let l_result = last.parse::<Decimal>();
@@ -611,6 +615,17 @@ impl OkexClient {
                         },
                     last_price_in_usd_cents: last * Decimal::ONE_HUNDRED,
                 }),
+                (Ok(direction), _, _) => {
+                    if direction.is_zero() {
+                        Ok(PositionSize {
+                            instrument_id: OkexInstrumentId::BtcUsdSwap,
+                            usd_cents: Decimal::ZERO,
+                            last_price_in_usd_cents: Decimal::ZERO,
+                        })
+                    } else {
+                        Err(OkexClientError::NonParsablePositionData)
+                    }
+                }
                 _ => Err(OkexClientError::NonParsablePositionData),
             }
         } else {
