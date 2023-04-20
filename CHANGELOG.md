@@ -1,3 +1,10 @@
+# [stablesats release v0.9.5](https://github.com/GaloyMoney/stablesats-rs/releases/tag/0.9.5)
+
+
+### Bug Fixes
+
+- Okex get position error when zero position (#361)
+
 # [stablesats release v0.9.4](https://github.com/GaloyMoney/stablesats-rs/releases/tag/0.9.4)
 
 
