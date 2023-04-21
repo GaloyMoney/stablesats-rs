@@ -596,9 +596,11 @@ impl OkexClient {
             span.record("last_price", &tracing::field::display(&last));
 
             // Position responses with data:
-            // No position on account: pos = 0 and everything else is empty
-            // Some position on account: pos, notional and last are properly populated
-            // Else: raise an error
+            //  No position on account: pos = 0 and everything else is empty
+            //  Some position on account: pos, notional and last are properly populated
+            //  Else: raise an error
+            // Position responses without data:
+            //  No position on account: successful api call, but no data
             let d_result = pos.parse::<Decimal>();
             let n_result = notional_usd.parse::<Decimal>();
             let l_result = last.parse::<Decimal>();
@@ -629,7 +631,11 @@ impl OkexClient {
                 _ => Err(OkexClientError::NonParsablePositionData),
             }
         } else {
-            Err(OkexClientError::NoPositionAvailable)
+            Ok(PositionSize {
+                instrument_id: OkexInstrumentId::BtcUsdSwap,
+                usd_cents: Decimal::ZERO,
+                last_price_in_usd_cents: Decimal::ZERO,
+            })
         }
     }
 
@@ -660,8 +666,10 @@ impl OkexClient {
             .await?;
 
         match Self::extract_optional_response_data::<ClosePositionData>(response).await {
-            Err(OkexClientError::UnexpectedResponse { msg, .. })
-                if msg.starts_with("Position does not exist") =>
+            Err(OkexClientError::UnexpectedResponse { msg, code })
+                if code == "51023"
+                    || msg.starts_with("Position does not exist")
+                    || msg.starts_with("Position doesn't exist") =>
             {
                 Ok(())
             }
@@ -690,8 +698,8 @@ impl OkexClient {
         let response_text = response.text().await?;
         let OkexResponse { code, msg, data } =
             serde_json::from_str::<OkexResponse<T>>(&response_text)?;
-        if let Some(data) = data {
-            if let Some(first) = data.into_iter().next() {
+        if code == "0" && data.is_some() {
+            if let Some(first) = data.unwrap().into_iter().next() {
                 return Ok(Some(first));
             } else {
                 return Ok(None);
