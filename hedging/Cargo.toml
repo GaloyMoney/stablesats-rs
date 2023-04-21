@@ -20,7 +20,7 @@ serde_json = "1.0.93"
 tokio = "1.26.0"
 futures = "0.3.27"
 thiserror = "1.0.40"
-opentelemetry = { version = "0.18.0", features = ["trace"] }
+opentelemetry = { version = "0.19.0", features = ["trace"] }
 tracing-opentelemetry = "0.18.0"
 tracing = "0.1.37"
 chrono = { version = "0.4", features = ["clock", "serde"], default-features = false }
