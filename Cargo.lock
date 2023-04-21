@@ -272,7 +272,7 @@ dependencies = [
  "serde",
  "serde_json",
  "serde_yaml",
- "serial_test 2.0.0",
+ "serial_test",
  "stablesats-shared",
  "thiserror",
  "tokio",
@@ -1328,7 +1328,7 @@ dependencies = [
  "serde",
  "serde_json",
  "serde_with",
- "serial_test 2.0.0",
+ "serial_test",
  "sqlx",
  "sqlxmq",
  "stablesats-ledger",
@@ -1872,7 +1872,7 @@ dependencies = [
  "serde",
  "serde_json",
  "serde_yaml",
- "serial_test 2.0.0",
+ "serial_test",
  "thiserror",
  "tokio",
  "tracing",
@@ -2815,20 +2815,6 @@ dependencies = [
 
 [[package]]
 name = "serial_test"
-version = "1.0.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "538c30747ae860d6fb88330addbbd3e0ddbe46d662d032855596d8a8ca260611"
-dependencies = [
- "dashmap",
- "futures",
- "lazy_static",
- "log",
- "parking_lot 0.12.1",
- "serial_test_derive 1.0.0",
-]
-
-[[package]]
-name = "serial_test"
 version = "2.0.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "0e56dd856803e253c8f298af3f4d7eb0ae5e23a737252cd90bb4f3b435033b2d"
@@ -2838,18 +2824,7 @@ dependencies = [
  "lazy_static",
  "log",
  "parking_lot 0.12.1",
- "serial_test_derive 2.0.0",
-]
-
-[[package]]
-name = "serial_test_derive"
-version = "1.0.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "079a83df15f85d89a68d64ae1238f142f172b1fa915d0d76b26a7cba1b659a69"
-dependencies = [
- "proc-macro2",
- "quote",
- "syn 1.0.109",
+ "serial_test_derive",
 ]
 
 [[package]]
@@ -3845,7 +3820,7 @@ dependencies = [
  "serde",
  "serde_json",
  "serde_with",
- "serial_test 1.0.0",
+ "serial_test",
  "sqlx",
  "sqlxmq",
  "stablesats-ledger",
