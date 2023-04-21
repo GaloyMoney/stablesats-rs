@@ -1,3 +1,11 @@
+# [stablesats release v0.9.6](https://github.com/GaloyMoney/stablesats-rs/releases/tag/0.9.6)
+
+
+### Bug Fixes
+
+- Update Cargo.lock
+- Okex get position error on empty api response (#365)
+
 # [stablesats release v0.9.5](https://github.com/GaloyMoney/stablesats-rs/releases/tag/0.9.5)
 
 
