@@ -1,3 +1,10 @@
+# [stablesats release v0.9.7](https://github.com/GaloyMoney/stablesats-rs/releases/tag/0.9.7)
+
+
+### Miscellaneous Tasks
+
+- Rename proto file (#370)
+
 # [stablesats release v0.9.6](https://github.com/GaloyMoney/stablesats-rs/releases/tag/0.9.6)
 
 
