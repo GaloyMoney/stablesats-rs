@@ -11,7 +11,7 @@ use crate::{error::UserTradesError, galoy_transactions::*, user_trades::*};
     name = "user_trades.job.poll_galoy_transactions",
     skip_all,
     err,
-    fields(n_galoy_txs, n_unpaired_txs, n_user_trades, has_more, n_bad_trades)
+    fields(n_galoy_txs, n_unpaired_txs, n_user_trades, has_more, n_bad_trades, galoy_transactions)
 )]
 pub(super) async fn execute(
     pool: &sqlx::PgPool,
@@ -38,6 +38,10 @@ async fn import_galoy_transactions(
     tracing::Span::current().record(
         "n_galoy_txs",
         &tracing::field::display(transactions.list.len()),
+    );
+    tracing::Span::current().record(
+        "galoy_transactions",
+        &tracing::field::display(&transactions),
     );
     tracing::Span::current().record("has_more", &tracing::field::display(transactions.has_more));
     if !transactions.list.is_empty() {

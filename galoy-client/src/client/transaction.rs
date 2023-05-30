@@ -80,9 +80,38 @@ pub struct GaloyTransaction {
     pub created_at: DateTime<Utc>,
 }
 
+impl std::fmt::Display for GaloyTransaction {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "id: {}, ", self.id)?;
+        write!(f, "cursor: {}, ", self.cursor.0)?;
+        write!(f, "settlement_amount: {}, ", self.settlement_amount)?;
+        write!(f, "settlement_currency: {}, ", self.settlement_currency)?;
+        write!(f, "settlement_method: {}, ", self.settlement_method)?;
+        write!(f, "memo: {}, ", self.memo.as_ref().unwrap())?;
+        write!(f, "direction: {}, ", self.direction)?;
+        write!(f, "cents_per_unit: {}, ", self.cents_per_unit)?;
+        write!(f, "amount_in_usd_cents: {}, ", self.amount_in_usd_cents)?;
+        write!(f, "created_at: {}, ", self.created_at)?;
+        Ok(())
+    }
+}
+
 #[derive(Debug)]
 pub struct GaloyTransactions {
     pub cursor: Option<TxCursor>,
     pub list: Vec<GaloyTransaction>,
     pub has_more: bool,
+}
+
+impl std::fmt::Display for GaloyTransactions {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        writeln!(f, "cursor: {}, ", self.cursor.as_ref().unwrap().0)?;
+        writeln!(f, "[")?;
+        for tx in &self.list {
+            writeln!(f, "{}", tx)?;
+        }
+        writeln!(f, "]")?;
+        writeln!(f, "has_more: {}, ", self.has_more)?;
+        Ok(())
+    }
 }
