@@ -78,10 +78,23 @@ impl GaloyTransactions {
     }
 
     pub async fn get_latest_cursor(&self) -> Result<Option<LatestCursor>, UserTradesError> {
-        let res =
-            sqlx::query!("SELECT cursor FROM galoy_transactions ORDER BY created_at DESC LIMIT 1")
-                .fetch_optional(&self.pool)
-                .await?;
+        let res = sqlx::query!(
+            "
+                SELECT id as cursor
+                FROM galoy_transactions
+                WHERE created_at < (
+                    SELECT created_at
+                    FROM galoy_transactions
+                    ORDER BY created_at DESC
+                    LIMIT 1
+                    OFFSET 5
+                )
+                ORDER BY created_at DESC, id ASC
+                LIMIT 1;
+                "
+        )
+        .fetch_optional(&self.pool)
+        .await?;
 
         if let Some(res) = res {
             Ok(Some(LatestCursor(res.cursor)))
