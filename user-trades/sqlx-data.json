@@ -1,18 +1,6 @@
 {
   "db": "PostgreSQL",
-  "21fff44c3d9afbeb410e20503d5503ed369d2e1e973d7240ea7e6db64d15af9d": {
-    "describe": {
-      "columns": [],
-      "nullable": [],
-      "parameters": {
-        "Left": [
-          "TextArray"
-        ]
-      }
-    },
-    "query": "UPDATE galoy_transactions SET is_paired = 'true' WHERE id = ANY($1)"
-  },
-  "2b868fd5a78978ec8bc3bcd79008f831a139e070f994b0b8bfe4e8a3dd3105f7": {
+  "1d7d4ed90df3ac0713c4c02e721ed97f8cf11d7bb9fc0927590ed8a9ee9eeeea": {
     "describe": {
       "columns": [
         {
@@ -28,7 +16,19 @@
         "Left": []
       }
     },
-    "query": "SELECT cursor FROM galoy_transactions ORDER BY created_at DESC LIMIT 1"
+    "query": "\n                SELECT id as cursor\n                FROM galoy_transactions\n                WHERE created_at < (\n                    SELECT created_at\n                    FROM galoy_transactions\n                    ORDER BY created_at DESC\n                    LIMIT 1\n                    OFFSET 5\n                )\n                ORDER BY created_at DESC, id ASC\n                LIMIT 1;\n                "
+  },
+  "21fff44c3d9afbeb410e20503d5503ed369d2e1e973d7240ea7e6db64d15af9d": {
+    "describe": {
+      "columns": [],
+      "nullable": [],
+      "parameters": {
+        "Left": [
+          "TextArray"
+        ]
+      }
+    },
+    "query": "UPDATE galoy_transactions SET is_paired = 'true' WHERE id = ANY($1)"
   },
   "826a2e93ff9e145528eaafb810f5c8028a099f205369d4e59766f46c6a0d7500": {
     "describe": {
