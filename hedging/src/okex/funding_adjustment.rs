@@ -172,7 +172,11 @@ impl FundingAdjustment {
                 abs_exposure_in_btc / self.config.low_safebound_ratio_leverage;
             let transfer_size_in_btc = floor_btc(total_collateral_in_btc - new_collateral_in_btc);
 
-            calculate_transfer_out_withdraw(
+            calculate_transfer_out(transfer_size_in_btc)
+        } else if funding_btc_total_balance > self.config.minimum_funding_balance_btc {
+            let transfer_size_in_btc = Decimal::ZERO;
+
+            calculate_withdraw(
                 funding_btc_total_balance,
                 transfer_size_in_btc,
                 self.config.minimum_funding_balance_btc,
@@ -215,26 +219,6 @@ fn calculate_transfer_in_deposit(
         OkexFundingAdjustment::TransferFundingToTrading(internal_amount)
     } else if !external_amount.is_zero() {
         OkexFundingAdjustment::OnchainDeposit(external_amount)
-    } else {
-        OkexFundingAdjustment::DoNothing
-    }
-}
-
-fn calculate_transfer_out_withdraw(
-    funding_btc_total_balance: Decimal,
-    amount_in_btc: Decimal,
-    minimum_funding_balance_btc: Decimal,
-) -> OkexFundingAdjustment {
-    let internal_amount = amount_in_btc;
-    let external_amount = std::cmp::max(
-        Decimal::ZERO,
-        amount_in_btc + funding_btc_total_balance - minimum_funding_balance_btc,
-    );
-
-    if !internal_amount.is_zero() {
-        OkexFundingAdjustment::TransferTradingToFunding(internal_amount)
-    } else if !external_amount.is_zero() {
-        OkexFundingAdjustment::OnchainWithdraw(external_amount)
     } else {
         OkexFundingAdjustment::DoNothing
     }
