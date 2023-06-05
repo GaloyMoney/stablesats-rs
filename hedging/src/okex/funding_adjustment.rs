@@ -342,7 +342,7 @@ mod tests {
     }
 
     #[test]
-    fn initial_conditions() {
+    fn initial_conditions_in_trading_account() {
         let funding_adjustment = FundingAdjustment {
             config: OkexFundingConfig::default(),
             hedging_config: OkexHedgingConfig::default(),
@@ -373,7 +373,38 @@ mod tests {
     }
 
     #[test]
-    fn terminal_conditions() {
+    fn initial_conditions_in_funding_account() {
+        let funding_adjustment = FundingAdjustment {
+            config: OkexFundingConfig::default(),
+            hedging_config: OkexHedgingConfig::default(),
+        };
+        let liability = SyntheticCentLiability::try_from(dec!(10_000)).unwrap();
+        let exposure = SyntheticCentExposure::from(dec!(0));
+        let total_collateral: Decimal = dec!(0);
+        let funding_btc_total_balance: Decimal = dec!(10_000);
+        let btc_price: Decimal = dec!(1);
+        let expected_total: Decimal =
+            round_btc(liability / funding_adjustment.config.high_safebound_ratio_leverage);
+        let (expected_internal, _) = split_deposit(
+            funding_btc_total_balance,
+            expected_total,
+            funding_adjustment.config.minimum_funding_balance_btc,
+        );
+        let adjustment = funding_adjustment.determine_action(
+            liability,
+            exposure,
+            total_collateral,
+            btc_price,
+            funding_btc_total_balance,
+        );
+        assert_eq!(
+            adjustment,
+            OkexFundingAdjustment::TransferFundingToTrading(expected_internal)
+        );
+    }
+
+    #[test]
+    fn terminal_conditions_in_trading_account() {
         let funding_adjustment = FundingAdjustment {
             config: OkexFundingConfig::default(),
             hedging_config: OkexHedgingConfig::default(),
@@ -385,7 +416,7 @@ mod tests {
         let exposure = SyntheticCentExposure::from(dec!(0));
         let total_collateral: Decimal =
             liability / funding_adjustment.config.high_safebound_ratio_leverage;
-        let funding_btc_total_balance: Decimal = dec!(0);
+        let funding_btc_total_balance: Decimal = dec!(2_000);
         let btc_price: Decimal = dec!(1);
         let expected_total: Decimal = floor_btc(total_collateral);
         let (expected_internal, _) = split_withdraw(
@@ -403,6 +434,39 @@ mod tests {
         assert_eq!(
             adjustment,
             OkexFundingAdjustment::TransferTradingToFunding(expected_internal)
+        );
+    }
+
+    #[test]
+    fn terminal_conditions_in_funding_account() {
+        let funding_adjustment = FundingAdjustment {
+            config: OkexFundingConfig::default(),
+            hedging_config: OkexHedgingConfig::default(),
+        };
+        let liability = SyntheticCentLiability::try_from(
+            funding_adjustment.config.minimum_transfer_amount_cents / dec!(2),
+        )
+        .unwrap();
+        let exposure = SyntheticCentExposure::from(dec!(0));
+        let total_collateral: Decimal = dec!(0);
+        let funding_btc_total_balance: Decimal = dec!(2_000);
+        let btc_price: Decimal = dec!(1);
+        let expected_total: Decimal = floor_btc(total_collateral);
+        let (_, expected_external) = split_withdraw(
+            funding_btc_total_balance,
+            expected_total,
+            funding_adjustment.config.minimum_funding_balance_btc,
+        );
+        let adjustment = funding_adjustment.determine_action(
+            liability,
+            exposure,
+            total_collateral,
+            btc_price,
+            funding_btc_total_balance,
+        );
+        assert_eq!(
+            adjustment,
+            OkexFundingAdjustment::OnchainWithdraw(expected_external)
         );
     }
 
@@ -440,7 +504,7 @@ mod tests {
     }
 
     #[test]
-    fn counterparty_risk_avoidance() {
+    fn counterparty_risk_avoidance_in_trading_account() {
         let funding_adjustment = FundingAdjustment {
             config: OkexFundingConfig::default(),
             hedging_config: OkexHedgingConfig::default(),
@@ -469,6 +533,37 @@ mod tests {
         assert_eq!(
             adjustment,
             OkexFundingAdjustment::TransferTradingToFunding(expected_internal)
+        );
+    }
+
+    #[test]
+    fn counterparty_risk_avoidance_in_funding_account() {
+        let funding_adjustment = FundingAdjustment {
+            config: OkexFundingConfig::default(),
+            hedging_config: OkexHedgingConfig::default(),
+        };
+        let liability = SyntheticCentLiability::try_from(dec!(10_000)).unwrap();
+        let signed_exposure = SyntheticCentExposure::from(dec!(-10_000));
+        let total_collateral: Decimal =
+            liability / funding_adjustment.config.high_safebound_ratio_leverage;
+        let funding_btc_total_balance: Decimal = dec!(2_000);
+        let btc_price: Decimal = dec!(1);
+        let expected_total: Decimal = dec!(0);
+        let (_, expected_external) = split_withdraw(
+            funding_btc_total_balance,
+            expected_total,
+            funding_adjustment.config.minimum_funding_balance_btc,
+        );
+        let adjustment = funding_adjustment.determine_action(
+            liability,
+            signed_exposure,
+            total_collateral,
+            btc_price,
+            funding_btc_total_balance,
+        );
+        assert_eq!(
+            adjustment,
+            OkexFundingAdjustment::OnchainWithdraw(expected_external)
         );
     }
 
