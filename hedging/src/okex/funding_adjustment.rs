@@ -150,7 +150,7 @@ impl FundingAdjustment {
             calculate_withdraw(
                 funding_btc_total_balance,
                 transfer_size_in_btc,
-                self.config.minimum_funding_balance_btc,
+                Decimal::ZERO,
             )
         } else if abs_liability_in_cents > self.hedging_config.minimum_liability_threshold_cents
             && abs_liability_in_btc
@@ -452,11 +452,8 @@ mod tests {
         let funding_btc_total_balance: Decimal = dec!(2_000);
         let btc_price: Decimal = dec!(1);
         let expected_total: Decimal = floor_btc(total_collateral);
-        let (_, expected_external) = split_withdraw(
-            funding_btc_total_balance,
-            expected_total,
-            funding_adjustment.config.minimum_funding_balance_btc,
-        );
+        let (_, expected_external) =
+            split_withdraw(funding_btc_total_balance, expected_total, Decimal::ZERO);
         let adjustment = funding_adjustment.determine_action(
             liability,
             exposure,
