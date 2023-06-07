@@ -107,10 +107,13 @@ impl FundingAdjustment {
         let abs_exposure_in_btc =
             Decimal::from(signed_exposure_in_cents).abs() / btc_price_in_cents;
 
+        let zero_equivalent_funding_balance_btc =
+            self.config.minimum_transfer_amount_cents / Decimal::TEN / btc_price_in_cents;
+
         if abs_exposure_in_btc.is_zero()
             && total_collateral_in_btc.is_zero()
             && abs_liability_in_cents > self.hedging_config.minimum_liability_threshold_cents
-            && funding_btc_total_balance.is_zero()
+            && funding_btc_total_balance < zero_equivalent_funding_balance_btc
         {
             let new_collateral_in_btc =
                 abs_liability_in_btc / self.config.high_safebound_ratio_leverage;
@@ -122,9 +125,9 @@ impl FundingAdjustment {
                 self.config.minimum_funding_balance_btc,
             )
         } else if abs_exposure_in_btc.is_zero()
-            && abs_liability_in_cents > self.hedging_config.minimum_liability_threshold_cents
             && total_collateral_in_btc.is_zero()
-            && !funding_btc_total_balance.is_zero()
+            && abs_liability_in_cents > self.hedging_config.minimum_liability_threshold_cents
+            && funding_btc_total_balance >= zero_equivalent_funding_balance_btc
         {
             let new_collateral_in_btc =
                 abs_liability_in_btc / self.config.high_safebound_ratio_leverage;
@@ -143,9 +146,9 @@ impl FundingAdjustment {
             && abs_liability_in_cents >= Decimal::ZERO
             && abs_liability_in_cents < self.config.minimum_transfer_amount_cents
             && total_collateral_in_btc.is_zero()
-            && funding_btc_total_balance > self.config.minimum_funding_balance_btc
+            && funding_btc_total_balance >= zero_equivalent_funding_balance_btc
         {
-            let transfer_size_in_btc = floor_btc(total_collateral_in_btc);
+            let transfer_size_in_btc = Decimal::ZERO;
 
             calculate_withdraw(
                 funding_btc_total_balance,
@@ -173,7 +176,10 @@ impl FundingAdjustment {
             let transfer_size_in_btc = floor_btc(total_collateral_in_btc - new_collateral_in_btc);
 
             calculate_transfer_out(transfer_size_in_btc)
-        } else if funding_btc_total_balance > self.config.minimum_funding_balance_btc {
+        } else if !abs_exposure_in_btc.is_zero()
+            && funding_btc_total_balance
+                > self.config.minimum_funding_balance_btc / self.config.high_bound_buffer_percentage
+        {
             let transfer_size_in_btc = Decimal::ZERO;
 
             calculate_withdraw(
@@ -191,6 +197,17 @@ impl FundingAdjustment {
             let transfer_size_in_btc = round_btc(new_collateral_in_btc - total_collateral_in_btc);
 
             calculate_transfer_in_deposit(
+                funding_btc_total_balance,
+                transfer_size_in_btc,
+                self.config.minimum_funding_balance_btc,
+            )
+        } else if !abs_exposure_in_btc.is_zero()
+            && funding_btc_total_balance
+                < self.config.minimum_funding_balance_btc * self.config.high_bound_buffer_percentage
+        {
+            let transfer_size_in_btc = Decimal::ZERO;
+
+            calculate_deposit(
                 funding_btc_total_balance,
                 transfer_size_in_btc,
                 self.config.minimum_funding_balance_btc,
