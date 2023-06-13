@@ -13,7 +13,7 @@ In its current implementation, `stablesats` is coupled to and dependent on the [
 ## Dependencies
 Last tested with the following tools and application:
 ### Tools
-- Rust Compliler
+- Rust Compiler
 ```
 $ rustc --version
 rustc 1.63.0 (4b91a6ea7 2022-08-08)
