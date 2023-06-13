@@ -22,19 +22,14 @@ services:
     depends_on:
     - integration-deps
     command: ["make","test-in-ci"]
+    env_file:
+      - ${TMP_ENV_CI:-.env.ci}
     environment:
     - REDIS_HOST=redis
-    - OKEX_API_KEY=${OKEX_API_KEY}
-    - OKEX_PASSPHRASE=${OKEX_PASSPHRASE}
-    - OKEX_SECRET_KEY=${OKEX_SECRET_KEY}
-    # - BITFINEX_API_KEY=${BITFINEX_API_KEY}
-    # - BITFINEX_SECRET_KEY=${BITFINEX_SECRET_KEY}
     - RUST_BACKTRACE=1
     - PG_HOST=postgres
     - PG_PORT=5432
     - GALOY_GRAPHQL_URI=https://api.staging.galoy.io/graphql
-    - PHONE_NUMBER=${PHONE_NUMBER}
-    - AUTH_CODE=${AUTH_CODE}
     working_dir: /repo
     volumes:
       - ./:/repo
