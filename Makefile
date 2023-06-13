@@ -14,6 +14,7 @@ check-code:
 
 test-in-ci:
 	DATABASE_URL=postgres://user:password@postgres:5432/pg cargo sqlx migrate run
+	make create-tmp-env-ci && \
 	SQLX_OFFLINE=true cargo nextest run --verbose --locked
 
 cli-run:
@@ -40,3 +41,6 @@ reset-deps-local: clean-deps start-deps-local setup-db
 
 setup-db:
 	cargo sqlx migrate run
+
+create-tmp-env-ci:
+	envsubst < .env.ci > tmp.env.ci
