@@ -171,16 +171,25 @@ impl OkexClient {
             .send()
             .await?;
 
-        let fees_data = Self::extract_response_data::<OnchainFeesData>(response).await?;
-
-        Ok(OnchainFees {
-            ccy: fees_data.ccy,
-            chain: fees_data.chain,
-            min_fee: std::cmp::min(fees_data.min_fee, OKEX_MINIMUM_WITHDRAWAL_FEE),
-            max_fee: std::cmp::min(fees_data.max_fee, OKEX_MAXIMUM_WITHDRAWAL_FEE),
-            min_withdraw: std::cmp::min(fees_data.min_wd, OKEX_MINIMUM_WITHDRAWAL_AMOUNT),
-            max_withdraw: std::cmp::min(fees_data.max_wd, OKEX_MAXIMUM_WITHDRAWAL_AMOUNT),
-        })
+        let fees_data_resp = Self::extract_response_data::<OnchainFeesData>(response).await;
+        match fees_data_resp {
+            Ok(fees_data) => Ok(OnchainFees {
+                ccy: fees_data.ccy,
+                chain: fees_data.chain,
+                min_fee: std::cmp::min(fees_data.min_fee, OKEX_MINIMUM_WITHDRAWAL_FEE),
+                max_fee: std::cmp::min(fees_data.max_fee, OKEX_MAXIMUM_WITHDRAWAL_FEE),
+                min_withdraw: std::cmp::min(fees_data.min_wd, OKEX_MINIMUM_WITHDRAWAL_AMOUNT),
+                max_withdraw: std::cmp::min(fees_data.max_wd, OKEX_MAXIMUM_WITHDRAWAL_AMOUNT),
+            }),
+            _ => Ok(OnchainFees {
+                ccy: "BTC".to_string(),
+                chain: "BTC-Bitcoin".to_string(),
+                min_fee: OKEX_MINIMUM_WITHDRAWAL_FEE,
+                max_fee: OKEX_MAXIMUM_WITHDRAWAL_FEE,
+                min_withdraw: OKEX_MINIMUM_WITHDRAWAL_AMOUNT,
+                max_withdraw: OKEX_MAXIMUM_WITHDRAWAL_AMOUNT,
+            }),
+        }
     }
 
     #[instrument(name = "okex_client.transfer_funding_to_trading", skip(self), err)]

@@ -71,10 +71,6 @@ pub(super) async fn execute(
     );
     span.record("action", &tracing::field::display(&action));
 
-    if okex.is_simulated() {
-        return Ok(());
-    }
-
     let fees = okex.get_onchain_fees().await?;
     span.record("onchain_fees", &tracing::field::display(&fees));
 
@@ -133,6 +129,10 @@ pub(super) async fn execute(
                     }
                 }
                 OkexFundingAdjustment::OnchainDeposit(amount) => {
+                    if okex.is_simulated() {
+                        return Ok(());
+                    }
+
                     let deposit_address = okex.get_funding_deposit_address().await?.value;
                     let reservation = TransferReservation {
                         shared: &shared,
@@ -157,6 +157,10 @@ pub(super) async fn execute(
                     }
                 }
                 OkexFundingAdjustment::OnchainWithdraw(amount) => {
+                    if okex.is_simulated() {
+                        return Ok(());
+                    }
+
                     let deposit_address = galoy.onchain_address().await?.address;
                     let reservation = TransferReservation {
                         shared: &shared,

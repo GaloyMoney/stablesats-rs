@@ -107,10 +107,13 @@ impl FundingAdjustment {
         let abs_exposure_in_btc =
             Decimal::from(signed_exposure_in_cents).abs() / btc_price_in_cents;
 
+        let zero_equivalent_funding_balance_btc =
+            self.config.minimum_transfer_amount_cents / Decimal::TEN / btc_price_in_cents;
+
         if abs_exposure_in_btc.is_zero()
             && total_collateral_in_btc.is_zero()
             && abs_liability_in_cents > self.hedging_config.minimum_liability_threshold_cents
-            && funding_btc_total_balance.is_zero()
+            && funding_btc_total_balance < zero_equivalent_funding_balance_btc
         {
             let new_collateral_in_btc =
                 abs_liability_in_btc / self.config.high_safebound_ratio_leverage;
@@ -122,9 +125,9 @@ impl FundingAdjustment {
                 self.config.minimum_funding_balance_btc,
             )
         } else if abs_exposure_in_btc.is_zero()
-            && abs_liability_in_cents > self.hedging_config.minimum_liability_threshold_cents
             && total_collateral_in_btc.is_zero()
-            && !funding_btc_total_balance.is_zero()
+            && abs_liability_in_cents > self.hedging_config.minimum_liability_threshold_cents
+            && funding_btc_total_balance >= zero_equivalent_funding_balance_btc
         {
             let new_collateral_in_btc =
                 abs_liability_in_btc / self.config.high_safebound_ratio_leverage;
@@ -143,14 +146,14 @@ impl FundingAdjustment {
             && abs_liability_in_cents >= Decimal::ZERO
             && abs_liability_in_cents < self.config.minimum_transfer_amount_cents
             && total_collateral_in_btc.is_zero()
-            && funding_btc_total_balance > self.config.minimum_funding_balance_btc
+            && funding_btc_total_balance >= zero_equivalent_funding_balance_btc
         {
-            let transfer_size_in_btc = floor_btc(total_collateral_in_btc);
+            let transfer_size_in_btc = Decimal::ZERO;
 
             calculate_withdraw(
                 funding_btc_total_balance,
                 transfer_size_in_btc,
-                self.config.minimum_funding_balance_btc,
+                Decimal::ZERO,
             )
         } else if abs_liability_in_cents > self.hedging_config.minimum_liability_threshold_cents
             && abs_liability_in_btc
@@ -172,7 +175,14 @@ impl FundingAdjustment {
                 abs_exposure_in_btc / self.config.low_safebound_ratio_leverage;
             let transfer_size_in_btc = floor_btc(total_collateral_in_btc - new_collateral_in_btc);
 
-            calculate_transfer_out_withdraw(
+            calculate_transfer_out(transfer_size_in_btc)
+        } else if !abs_exposure_in_btc.is_zero()
+            && funding_btc_total_balance
+                > self.config.minimum_funding_balance_btc / self.config.high_bound_buffer_percentage
+        {
+            let transfer_size_in_btc = Decimal::ZERO;
+
+            calculate_withdraw(
                 funding_btc_total_balance,
                 transfer_size_in_btc,
                 self.config.minimum_funding_balance_btc,
@@ -187,6 +197,17 @@ impl FundingAdjustment {
             let transfer_size_in_btc = round_btc(new_collateral_in_btc - total_collateral_in_btc);
 
             calculate_transfer_in_deposit(
+                funding_btc_total_balance,
+                transfer_size_in_btc,
+                self.config.minimum_funding_balance_btc,
+            )
+        } else if !abs_exposure_in_btc.is_zero()
+            && funding_btc_total_balance
+                < self.config.minimum_funding_balance_btc * self.config.high_bound_buffer_percentage
+        {
+            let transfer_size_in_btc = Decimal::ZERO;
+
+            calculate_deposit(
                 funding_btc_total_balance,
                 transfer_size_in_btc,
                 self.config.minimum_funding_balance_btc,
@@ -215,26 +236,6 @@ fn calculate_transfer_in_deposit(
         OkexFundingAdjustment::TransferFundingToTrading(internal_amount)
     } else if !external_amount.is_zero() {
         OkexFundingAdjustment::OnchainDeposit(external_amount)
-    } else {
-        OkexFundingAdjustment::DoNothing
-    }
-}
-
-fn calculate_transfer_out_withdraw(
-    funding_btc_total_balance: Decimal,
-    amount_in_btc: Decimal,
-    minimum_funding_balance_btc: Decimal,
-) -> OkexFundingAdjustment {
-    let internal_amount = amount_in_btc;
-    let external_amount = std::cmp::max(
-        Decimal::ZERO,
-        amount_in_btc + funding_btc_total_balance - minimum_funding_balance_btc,
-    );
-
-    if !internal_amount.is_zero() {
-        OkexFundingAdjustment::TransferTradingToFunding(internal_amount)
-    } else if !external_amount.is_zero() {
-        OkexFundingAdjustment::OnchainWithdraw(external_amount)
     } else {
         OkexFundingAdjustment::DoNothing
     }
@@ -358,7 +359,7 @@ mod tests {
     }
 
     #[test]
-    fn initial_conditions() {
+    fn initial_conditions_in_trading_account() {
         let funding_adjustment = FundingAdjustment {
             config: OkexFundingConfig::default(),
             hedging_config: OkexHedgingConfig::default(),
@@ -389,7 +390,38 @@ mod tests {
     }
 
     #[test]
-    fn terminal_conditions() {
+    fn initial_conditions_in_funding_account() {
+        let funding_adjustment = FundingAdjustment {
+            config: OkexFundingConfig::default(),
+            hedging_config: OkexHedgingConfig::default(),
+        };
+        let liability = SyntheticCentLiability::try_from(dec!(10_000)).unwrap();
+        let exposure = SyntheticCentExposure::from(dec!(0));
+        let total_collateral: Decimal = dec!(0);
+        let funding_btc_total_balance: Decimal = dec!(10_000);
+        let btc_price: Decimal = dec!(1);
+        let expected_total: Decimal =
+            round_btc(liability / funding_adjustment.config.high_safebound_ratio_leverage);
+        let (expected_internal, _) = split_deposit(
+            funding_btc_total_balance,
+            expected_total,
+            funding_adjustment.config.minimum_funding_balance_btc,
+        );
+        let adjustment = funding_adjustment.determine_action(
+            liability,
+            exposure,
+            total_collateral,
+            btc_price,
+            funding_btc_total_balance,
+        );
+        assert_eq!(
+            adjustment,
+            OkexFundingAdjustment::TransferFundingToTrading(expected_internal)
+        );
+    }
+
+    #[test]
+    fn terminal_conditions_in_trading_account() {
         let funding_adjustment = FundingAdjustment {
             config: OkexFundingConfig::default(),
             hedging_config: OkexHedgingConfig::default(),
@@ -401,7 +433,7 @@ mod tests {
         let exposure = SyntheticCentExposure::from(dec!(0));
         let total_collateral: Decimal =
             liability / funding_adjustment.config.high_safebound_ratio_leverage;
-        let funding_btc_total_balance: Decimal = dec!(0);
+        let funding_btc_total_balance: Decimal = dec!(2_000);
         let btc_price: Decimal = dec!(1);
         let expected_total: Decimal = floor_btc(total_collateral);
         let (expected_internal, _) = split_withdraw(
@@ -419,6 +451,36 @@ mod tests {
         assert_eq!(
             adjustment,
             OkexFundingAdjustment::TransferTradingToFunding(expected_internal)
+        );
+    }
+
+    #[test]
+    fn terminal_conditions_in_funding_account() {
+        let funding_adjustment = FundingAdjustment {
+            config: OkexFundingConfig::default(),
+            hedging_config: OkexHedgingConfig::default(),
+        };
+        let liability = SyntheticCentLiability::try_from(
+            funding_adjustment.config.minimum_transfer_amount_cents / dec!(2),
+        )
+        .unwrap();
+        let exposure = SyntheticCentExposure::from(dec!(0));
+        let total_collateral: Decimal = dec!(0);
+        let funding_btc_total_balance: Decimal = dec!(2_000);
+        let btc_price: Decimal = dec!(1);
+        let expected_total: Decimal = floor_btc(total_collateral);
+        let (_, expected_external) =
+            split_withdraw(funding_btc_total_balance, expected_total, Decimal::ZERO);
+        let adjustment = funding_adjustment.determine_action(
+            liability,
+            exposure,
+            total_collateral,
+            btc_price,
+            funding_btc_total_balance,
+        );
+        assert_eq!(
+            adjustment,
+            OkexFundingAdjustment::OnchainWithdraw(expected_external)
         );
     }
 
@@ -456,7 +518,7 @@ mod tests {
     }
 
     #[test]
-    fn counterparty_risk_avoidance() {
+    fn counterparty_risk_avoidance_in_trading_account() {
         let funding_adjustment = FundingAdjustment {
             config: OkexFundingConfig::default(),
             hedging_config: OkexHedgingConfig::default(),
@@ -485,6 +547,37 @@ mod tests {
         assert_eq!(
             adjustment,
             OkexFundingAdjustment::TransferTradingToFunding(expected_internal)
+        );
+    }
+
+    #[test]
+    fn counterparty_risk_avoidance_in_funding_account() {
+        let funding_adjustment = FundingAdjustment {
+            config: OkexFundingConfig::default(),
+            hedging_config: OkexHedgingConfig::default(),
+        };
+        let liability = SyntheticCentLiability::try_from(dec!(10_000)).unwrap();
+        let signed_exposure = SyntheticCentExposure::from(dec!(-10_000));
+        let total_collateral: Decimal =
+            liability / funding_adjustment.config.high_safebound_ratio_leverage;
+        let funding_btc_total_balance: Decimal = dec!(2_000);
+        let btc_price: Decimal = dec!(1);
+        let expected_total: Decimal = dec!(0);
+        let (_, expected_external) = split_withdraw(
+            funding_btc_total_balance,
+            expected_total,
+            funding_adjustment.config.minimum_funding_balance_btc,
+        );
+        let adjustment = funding_adjustment.determine_action(
+            liability,
+            signed_exposure,
+            total_collateral,
+            btc_price,
+            funding_btc_total_balance,
+        );
+        assert_eq!(
+            adjustment,
+            OkexFundingAdjustment::OnchainWithdraw(expected_external)
         );
     }
 
