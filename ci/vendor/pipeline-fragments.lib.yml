@@ -156,7 +156,6 @@ plan:
 on_failure: #@ slack_failure_notification()
 #@ end
 
-
 #@ def nodejs_integration_test():
 name: test-integration
 serial: true
