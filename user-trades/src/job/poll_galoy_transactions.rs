@@ -11,7 +11,15 @@ use crate::{error::UserTradesError, galoy_transactions::*, user_trades::*};
     name = "user_trades.job.poll_galoy_transactions",
     skip_all,
     err,
-    fields(n_galoy_txs, n_unpaired_txs, n_user_trades, has_more, n_bad_trades)
+    fields(
+        n_galoy_txs,
+        n_unpaired_txs,
+        n_user_trades,
+        has_more,
+        n_bad_trades,
+        unpaired_reimport_n_txs,
+        unpaired_reimport_cursor
+    )
 )]
 pub(super) async fn execute(
     pool: &sqlx::PgPool,
@@ -21,6 +29,7 @@ pub(super) async fn execute(
     ledger: &ledger::Ledger,
 ) -> Result<bool, UserTradesError> {
     let has_more = import_galoy_transactions(galoy_transactions, galoy.clone()).await?;
+    reimport_unpaired_galoy_transactions(galoy_transactions, galoy.clone()).await?;
     update_user_trades(galoy_transactions, user_trades).await?;
     update_ledger(pool, user_trades, ledger).await?;
 
@@ -44,6 +53,35 @@ async fn import_galoy_transactions(
         galoy_transactions.persist_all(transactions.list).await?;
     }
     Ok(transactions.has_more)
+}
+
+async fn reimport_unpaired_galoy_transactions(
+    galoy_transactions: &GaloyTransactions,
+    galoy: GaloyClient,
+) -> Result<(), UserTradesError> {
+    let cursor = galoy_transactions.get_oldest_unpaired_cursor().await?;
+    match cursor {
+        None => {}
+        Some(cursor) => {
+            let unpaired_transactions = galoy
+                .transactions_list(Some(TxCursor::from(cursor.0.clone())))
+                .await?;
+            tracing::Span::current().record(
+                "unpaired_reimport_cursor",
+                &tracing::field::display(cursor.0),
+            );
+            tracing::Span::current().record(
+                "unpaired_reimport_n_txs",
+                &tracing::field::display(unpaired_transactions.list.len()),
+            );
+            if !unpaired_transactions.list.is_empty() {
+                galoy_transactions
+                    .persist_all(unpaired_transactions.list)
+                    .await?;
+            }
+        }
+    }
+    Ok(())
 }
 
 async fn update_user_trades(
