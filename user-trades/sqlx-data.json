@@ -12,6 +12,24 @@
     },
     "query": "UPDATE galoy_transactions SET is_paired = 'true' WHERE id = ANY($1)"
   },
+  "264749bc31b40a993a6a474509be5bfeef2a0cc87c088b82f870122e544befc5": {
+    "describe": {
+      "columns": [
+        {
+          "name": "cursor",
+          "ordinal": 0,
+          "type_info": "Varchar"
+        }
+      ],
+      "nullable": [
+        false
+      ],
+      "parameters": {
+        "Left": []
+      }
+    },
+    "query": "\n                WITH do_update AS (\n                    UPDATE galoy_transactions\n                    SET unpaired_last_checked_at = NOW()\n                    WHERE id = (\n                        SELECT id\n                        FROM galoy_transactions\n                        WHERE is_paired = false \n                        AND amount_in_usd_cents != 0 \n                        AND NOW() - unpaired_last_checked_at >  INTERVAL '1' day\n                        ORDER BY created_at\n                        LIMIT 1\n                    )\n                    RETURNING created_at\n                ) \n                SELECT id as cursor\n                FROM galoy_transactions\n                WHERE created_at < (SELECT created_at FROM do_update)\n                ORDER BY created_at DESC, id ASC\n                LIMIT 1\n         "
+  },
   "2b868fd5a78978ec8bc3bcd79008f831a139e070f994b0b8bfe4e8a3dd3105f7": {
     "describe": {
       "columns": [
