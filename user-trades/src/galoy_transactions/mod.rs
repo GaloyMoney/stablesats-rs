@@ -90,6 +90,42 @@ impl GaloyTransactions {
         }
     }
 
+    pub async fn get_oldest_unpaired_cursor(
+        &self,
+    ) -> Result<Option<LatestCursor>, UserTradesError> {
+        let res = sqlx::query!(
+            "
+                WITH do_update AS (
+                    UPDATE galoy_transactions
+                    SET unpaired_last_checked_at = NOW()
+                    WHERE id = (
+                        SELECT id
+                        FROM galoy_transactions
+                        WHERE is_paired = false
+                        AND amount_in_usd_cents != 0
+                        AND NOW() - unpaired_last_checked_at >  INTERVAL '1' day
+                        ORDER BY created_at
+                        LIMIT 1
+                    )
+                    RETURNING created_at
+                )
+                SELECT id as cursor
+                FROM galoy_transactions
+                WHERE created_at < (SELECT created_at FROM do_update)
+                ORDER BY created_at DESC, id ASC
+                LIMIT 1
+         "
+        )
+        .fetch_optional(&self.pool)
+        .await?;
+
+        if let Some(res) = res {
+            Ok(Some(LatestCursor(res.cursor)))
+        } else {
+            Ok(None)
+        }
+    }
+
     pub async fn list_unpaired_transactions(
         &self,
     ) -> Result<UnpairedTransactions, UserTradesError> {
