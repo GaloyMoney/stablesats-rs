@@ -1,3 +1,11 @@
+# [stablesats release v0.9.8](https://github.com/GaloyMoney/stablesats-rs/releases/tag/0.9.8)
+
+
+### Bug Fixes
+
+- Funding balance buffer exceeded withdraw (#373)
+- Typo in DEV.md
+
 # [stablesats release v0.9.7](https://github.com/GaloyMoney/stablesats-rs/releases/tag/0.9.7)
 
 
