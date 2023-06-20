@@ -464,25 +464,30 @@ impl OkexClient {
             .send()
             .await?;
 
-        let withdrawal_data =
-            Self::extract_response_data::<WithdrawalHistoryData>(response).await?;
+        let withdrawal_data_option =
+            Self::extract_optional_response_data::<WithdrawalHistoryData>(response).await?;
 
-        Ok(WithdrawalStatus {
-            state: match &withdrawal_data.state[..] {
-                "-3" => "pending".to_string(), // canceling
-                "-2" => "failed".to_string(),  // canceled
-                "-1" => "failed".to_string(),  // failed
-                "0" => "pending".to_string(),  // waiting withdrawal
-                "1" => "pending".to_string(),  // withdrawing
-                "2" => "success".to_string(),  // withdraw success
-                "7" => "pending".to_string(),  // approved
-                "10" => "pending".to_string(), // waiting transfer
-                "4" | "5" | "6" | "8" | "9" | "12" => "pending".to_string(), // waiting manual review
-                _ => "failed".to_string(),
-            },
-            transaction_id: withdrawal_data.tx_id,
-            client_id: withdrawal_data.client_id,
-        })
+        match withdrawal_data_option {
+            Some(withdrawal_data) => {
+                Ok(WithdrawalStatus {
+                    state: match &withdrawal_data.state[..] {
+                        "-3" => "pending".to_string(), // canceling
+                        "-2" => "failed".to_string(),  // canceled
+                        "-1" => "failed".to_string(),  // failed
+                        "0" => "pending".to_string(),  // waiting withdrawal
+                        "1" => "pending".to_string(),  // withdrawing
+                        "2" => "success".to_string(),  // withdraw success
+                        "7" => "pending".to_string(),  // approved
+                        "10" => "pending".to_string(), // waiting transfer
+                        "4" | "5" | "6" | "8" | "9" | "12" => "pending".to_string(), // waiting manual review
+                        _ => "failed".to_string(),
+                    },
+                    transaction_id: withdrawal_data.tx_id,
+                    client_id: withdrawal_data.client_id,
+                })
+            }
+            None => Err(OkexClientError::ParameterClientIdNotFound),
+        }
     }
 
     #[instrument(name = "okex_client.place_order", skip(self), err)]
