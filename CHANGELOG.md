@@ -1,3 +1,18 @@
+# [stablesats release v0.9.9](https://github.com/GaloyMoney/stablesats-rs/releases/tag/0.9.9)
+
+
+### Bug Fixes
+
+- Migration column default to now
+- Sqlx json file
+- Galoy_transactions polling
+
+### Features
+
+- Re-import unpaired galoy transactions
+- Add fetch tx cursor to re-import old unpaired
+- Add last checked column to galoy transactions
+
 # [stablesats release v0.9.8](https://github.com/GaloyMoney/stablesats-rs/releases/tag/0.9.8)
 
 
