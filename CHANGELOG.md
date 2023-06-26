@@ -1,3 +1,15 @@
+# [stablesats release v0.9.10](https://github.com/GaloyMoney/stablesats-rs/releases/tag/0.9.10)
+
+
+### Bug Fixes
+
+- Okex client fetch withdrawal by id
+
+### Miscellaneous Tasks
+
+- Bump openssl from 0.10.49 to 0.10.55
+- Bump axum-core from 0.3.3 to 0.3.4 (#366)
+
 # [stablesats release v0.9.9](https://github.com/GaloyMoney/stablesats-rs/releases/tag/0.9.9)
 
 
