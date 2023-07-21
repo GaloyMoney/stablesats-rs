@@ -140,7 +140,7 @@ impl BitfinexClient {
             .await?;
 
         let mut orders = Self::extract_response_data::<Vec<OrderDetails>>(response).await?;
-        for mut details in &mut orders {
+        for details in &mut orders {
             if let Some(status) = details.order_status.clone() {
                 if status == "EXECUTED" || status == "CANCELED" {
                     details.complete = true;
