@@ -1,3 +1,14 @@
+# [stablesats release v0.9.11](https://github.com/GaloyMoney/stablesats-rs/releases/tag/0.9.11)
+
+
+### Bug Fixes
+
+- Alert on GaloyClient::connect failure
+
+### Miscellaneous Tasks
+
+- Remove redundant mut
+
 # [stablesats release v0.9.10](https://github.com/GaloyMoney/stablesats-rs/releases/tag/0.9.10)
 
 
