@@ -1,6 +1,7 @@
 mod config;
 
 use sqlxmq::OwnedHandle;
+use tracing::instrument;
 
 use galoy_client::{GaloyClient, GaloyClientConfig};
 
@@ -12,6 +13,7 @@ pub struct UserTradesApp {
 }
 
 impl UserTradesApp {
+    #[instrument(name = "UserTradesApp.run", skip_all, fields(error, error.level, error.message))]
     pub async fn run(
         pool: sqlx::PgPool,
         UserTradesConfig {
@@ -25,7 +27,10 @@ impl UserTradesApp {
             pool.clone(),
             ledger,
             user_trades,
-            GaloyClient::connect(galoy_client_cfg).await?,
+            shared::tracing::record_error(tracing::Level::ERROR, || async move {
+                GaloyClient::connect(galoy_client_cfg).await
+            })
+            .await?,
             galoy_poll_frequency,
         )
         .await?;

@@ -1,5 +1,6 @@
 use futures::stream::StreamExt;
 use sqlxmq::OwnedHandle;
+use tracing::instrument;
 
 use galoy_client::*;
 use shared::{
@@ -16,6 +17,7 @@ pub struct HedgingApp {
 
 impl HedgingApp {
     #[allow(clippy::too_many_arguments)]
+    #[instrument(name = "HedgingApp.run", skip_all, fields(error, error.level, error.message))]
     pub async fn run(
         pool: sqlx::PgPool,
         health_check_trigger: HealthCheckTrigger,
@@ -34,7 +36,12 @@ impl HedgingApp {
 
         let ledger = ledger::Ledger::init(&pool).await?;
         job_registry.set_context(ledger.clone());
-        job_registry.set_context(GaloyClient::connect(galoy_client_cfg).await?);
+        job_registry.set_context(
+            shared::tracing::record_error(tracing::Level::ERROR, || async move {
+                GaloyClient::connect(galoy_client_cfg).await
+            })
+            .await?,
+        );
         job_registry.set_context(Publisher::new(pubsub_config.clone()).await?);
 
         let (okex_engine, subscriber) = OkexEngine::run(
