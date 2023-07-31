@@ -1,3 +1,5 @@
+use tracing::instrument;
+
 use okex_client::{OkexClient, OkexClientError, PositionSize};
 use shared::{
     payload::{
@@ -9,6 +11,7 @@ use shared::{
 
 use crate::{error::HedgingError, okex::*};
 
+#[instrument(name = "hedging.okex.job.poll_okex", skip_all)]
 pub async fn execute(
     okex_orders: OkexOrders,
     okex_transfers: OkexTransfers,
