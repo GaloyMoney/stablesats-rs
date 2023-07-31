@@ -15,8 +15,8 @@ pub struct Subscriber {
 
 impl Subscriber {
     pub async fn new(config: PubSubConfig) -> Result<Self, SubscriberError> {
-        let client = SubscriberClient::new(config.into());
-        tokio::spawn(client.connect(None));
+        let client = SubscriberClient::new(config.into(), None, None);
+        tokio::spawn(client.connect());
         client
             .wait_for_connect()
             .await
@@ -66,32 +66,26 @@ impl Subscriber {
         &mut self,
     ) -> Result<Receiver<Envelope<M>>, SubscriberError> {
         self.subscribed_to = Some(<M as MessagePayload>::message_type().to_string());
-        let message_stream = self.client.on_message();
+        let mut message_stream = self.client.on_message();
         self.client
             .subscribe(<M as MessagePayload>::channel())
             .await?;
-        let (snd, recv) = channel(100);
-        tokio::spawn(
-            message_stream
-                .filter_map(|(channel, value)| async move {
-                    if channel == <M as MessagePayload>::channel() {
-                        if let RedisValue::String(v) = value {
-                            if let Ok(msg) = serde_json::from_str::<Envelope<M>>(&v) {
-                                if msg.payload_type == <M as MessagePayload>::message_type() {
-                                    return Some(Ok(msg));
-                                }
+        let (mut snd, recv) = channel(100);
+        let mut timestamp_sender = self.timestamp_sender.clone();
+        tokio::spawn(async move {
+            while let Ok(message) = message_stream.recv().await {
+                if message.channel == <M as MessagePayload>::channel() {
+                    if let RedisValue::String(v) = message.value {
+                        if let Ok(msg) = serde_json::from_str::<Envelope<M>>(&v) {
+                            if msg.payload_type == <M as MessagePayload>::message_type() {
+                                let _ = timestamp_sender.send(msg.meta.published_at).await;
+                                let _ = snd.send(msg).await;
                             }
                         }
                     }
-                    None
-                })
-                .forward(
-                    self.timestamp_sender
-                        .clone()
-                        .with(|msg: Envelope<M>| async move { Ok(msg.meta.published_at) })
-                        .fanout(snd),
-                ),
-        );
+                }
+            }
+        });
         Ok(recv)
     }
 }

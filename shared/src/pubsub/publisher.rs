@@ -24,8 +24,8 @@ impl Publisher {
                 .expect("couldn't create quota")
                 .allow_burst(NonZeroU32::new(MAX_BURST).unwrap()),
         ));
-        let client = RedisClient::new(config.into());
-        tokio::spawn(client.connect(None));
+        let client = RedisClient::new(config.into(), None, None);
+        tokio::spawn(client.connect());
         client
             .wait_for_connect()
             .await

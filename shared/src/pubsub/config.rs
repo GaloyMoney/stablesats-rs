@@ -65,20 +65,17 @@ impl From<PubSubConfig> for RedisConfig {
             ret.password = Some(password)
         }
         if let Some(host) = config.host {
-            ret.server = ServerConfig::Centralized {
-                host,
-                port: config.port,
-            };
+            ret.server = ServerConfig::new_centralized(host, config.port)
         }
         if let Some(sentinel) = config.sentinel {
-            ret.server = ServerConfig::Sentinel {
-                hosts: sentinel
+            ret.server = ServerConfig::new_sentinel(
+                sentinel
                     .hosts
                     .into_iter()
                     .map(|h| (h.host, h.port))
                     .collect(),
-                service_name: sentinel.service_name,
-            };
+                sentinel.service_name,
+            )
         }
         ret
     }
