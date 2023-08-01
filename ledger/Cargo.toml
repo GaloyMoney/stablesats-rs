@@ -13,7 +13,7 @@ shared = { path = "../shared", package = "stablesats-shared" }
 
 sqlx-ledger = "0.5.12"
 
-chrono = "0.4.24"
+chrono = "0.4.26"
 rust_decimal = "1.29.0"
 rust_decimal_macros = "1.29.0"
 serde = "1.0.158"
