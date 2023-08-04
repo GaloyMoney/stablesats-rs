@@ -58,6 +58,7 @@ impl OkexEngine {
             .spawn_okex_price_listener(price_receiver)
             .await?;
 
+        // REMOVE AND REPLACE WITH ledger listener
         let subscriber = Arc::clone(&ret)
             .spawn_position_listener(pubsub_config)
             .await?;

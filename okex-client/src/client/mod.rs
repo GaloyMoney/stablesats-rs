@@ -713,7 +713,7 @@ impl OkexClient {
         let OkexResponse { code, msg, data } =
             serde_json::from_str::<OkexResponse<T>>(&response_text)?;
         if code == "0" && data.is_some() {
-            if let Some(first) = data.unwrap().into_iter().next() {
+            if let Some(first) = data?.into_iter().next() {
                 return Ok(Some(first));
             } else {
                 return Ok(None);

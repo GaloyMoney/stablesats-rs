@@ -43,11 +43,14 @@ impl Ledger {
         Self::stablesats_btc_wallet_account(&inner).await?;
         Self::stablesats_omnibus_account(&inner).await?;
         Self::stablesats_liability_account(&inner).await?;
+        // Self::exchange_position_omnibus_account()
+        // Self::okex_position_account()
 
         templates::UserBuysUsd::init(&inner).await?;
         templates::UserSellsUsd::init(&inner).await?;
         templates::RevertUserBuysUsd::init(&inner).await?;
         templates::RevertUserSellsUsd::init(&inner).await?;
+        // templates::AdjustExchangePosition::init(&inner).await?;
 
         Ok(Self {
             events: inner.events(EventSubscriberOpts::default()).await?,
@@ -64,6 +67,8 @@ impl Ledger {
             btc: self.btc,
         }
     }
+
+    pub async fn adjust_okex_usd_position() {}
 
     #[instrument(name = "ledger.user_buys_usd", skip(self, tx))]
     pub async fn user_buys_usd(
@@ -126,6 +131,11 @@ impl Ledger {
             .await?)
     }
 
+    // pub async fn usd_position_events(&self) -> broadcast::Receiver<SqlxLedgerEvent> {
+    //     self.events
+    //         .account_balance(EXCHANGE_JOURNAL_ID.into(), EXCHANGE_POSITION_ID.into())
+    //         .await
+    // }
     #[instrument(name = "ledger.create_stablesats_journal", skip(ledger))]
     async fn create_stablesats_journal(ledger: &SqlxLedger) -> Result<(), LedgerError> {
         let new_journal = NewJournal::builder()

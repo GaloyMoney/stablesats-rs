@@ -24,13 +24,14 @@ pub async fn execute(
         instrument_id,
         ..
     } = okex.get_position_in_signed_usd_cents().await?;
-    publisher
-        .publish(OkexBtcUsdSwapPositionPayload {
-            exchange: ExchangeIdRaw::from(OKEX_EXCHANGE_ID),
-            instrument_id: InstrumentIdRaw::from(instrument_id.to_string()),
-            signed_usd_exposure: SyntheticCentExposure::from(usd_cents),
-        })
-        .await?;
+    ledger.adjust_okex_position(usd_cents).await?;
+    // publisher
+    //     .publish(OkexBtcUsdSwapPositionPayload {
+    //         exchange: ExchangeIdRaw::from(OKEX_EXCHANGE_ID),
+    //         instrument_id: InstrumentIdRaw::from(instrument_id.to_string()),
+    //         signed_usd_exposure: SyntheticCentExposure::from(usd_cents),
+    //     })
+    //     .await?;
 
     let mut execute_sweep = false;
     for id in okex_orders.open_orders().await? {
