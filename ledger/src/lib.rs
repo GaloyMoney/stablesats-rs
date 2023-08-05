@@ -43,14 +43,14 @@ impl Ledger {
         Self::stablesats_btc_wallet_account(&inner).await?;
         Self::stablesats_omnibus_account(&inner).await?;
         Self::stablesats_liability_account(&inner).await?;
-        // Self::exchange_position_omnibus_account()
-        // Self::okex_position_account()
+        Self::exchange_position_omnibus_account(&inner).await?;
+        Self::okex_position_account(&inner).await?;
 
         templates::UserBuysUsd::init(&inner).await?;
         templates::UserSellsUsd::init(&inner).await?;
         templates::RevertUserBuysUsd::init(&inner).await?;
         templates::RevertUserSellsUsd::init(&inner).await?;
-        // templates::AdjustExchangePosition::init(&inner).await?;
+        templates::AdjustExchangePosition::init(&inner).await?;
 
         Ok(Self {
             events: inner.events(EventSubscriberOpts::default()).await?,
@@ -68,7 +68,22 @@ impl Ledger {
         }
     }
 
-    pub async fn adjust_okex_usd_position() {}
+    #[instrument(name = "ledger.adjust_okex_position", skip(self, tx))]
+    pub async fn adjust_okex_usd_position(
+        &self,
+        tx: Transaction<'_, Postgres>,
+        params: AdjustExchangePositionParams,
+    ) -> Result<(), LedgerError> {
+        self.inner
+            .post_transaction_in_tx(
+                tx,
+                LedgerTxId::new(),
+                ADJUST_EXCHANGE_POSITION_CODE,
+                Some(params),
+            )
+            .await?;
+        Ok(())
+    }
 
     #[instrument(name = "ledger.user_buys_usd", skip(self, tx))]
     pub async fn user_buys_usd(
@@ -131,11 +146,12 @@ impl Ledger {
             .await?)
     }
 
-    // pub async fn usd_position_events(&self) -> broadcast::Receiver<SqlxLedgerEvent> {
-    //     self.events
-    //         .account_balance(EXCHANGE_JOURNAL_ID.into(), EXCHANGE_POSITION_ID.into())
-    //         .await
-    // }
+    pub async fn usd_position_events(&self) -> broadcast::Receiver<SqlxLedgerEvent> {
+        self.events
+            .account_balance(STABLESATS_JOURNAL_ID.into(), OKEX_POSITION_ID.into())
+            .await
+    }
+
     #[instrument(name = "ledger.create_stablesats_journal", skip(ledger))]
     async fn create_stablesats_journal(ledger: &SqlxLedger) -> Result<(), LedgerError> {
         let new_journal = NewJournal::builder()
@@ -206,6 +222,38 @@ impl Ledger {
             .description("Account for stablesats liability".to_string())
             .build()
             .expect("Couldn't create stablesats liability account");
+        match ledger.accounts().create(new_account).await {
+            Ok(_) | Err(SqlxLedgerError::DuplicateKey(_)) => Ok(()),
+            Err(e) => Err(e.into()),
+        }
+    }
+
+    #[instrument(name = "ledger.hedge_position_omnibus_account", skip_all)]
+    async fn exchange_position_omnibus_account(ledger: &SqlxLedger) -> Result<(), LedgerError> {
+        let new_account = NewAccount::builder()
+            .code(HEDGE_POSITION_OMNIBUS_CODE)
+            .id(HEDGE_POSITION_OMNIBUS_ID)
+            .name(HEDGE_POSITION_OMNIBUS_CODE)
+            .normal_balance_type(DebitOrCredit::Credit)
+            .description("Omnibus account for all exchange hedging".to_string())
+            .build()
+            .expect("Couldn't create hedge position omnibus account");
+        match ledger.accounts().create(new_account).await {
+            Ok(_) | Err(SqlxLedgerError::DuplicateKey(_)) => Ok(()),
+            Err(e) => Err(e.into()),
+        }
+    }
+
+    #[instrument(name = "ledger.okex_position_account", skip_all)]
+    async fn okex_position_account(ledger: &SqlxLedger) -> Result<(), LedgerError> {
+        let new_account = NewAccount::builder()
+            .code(OKEX_POSITION_CODE)
+            .id(OKEX_POSITION_ID)
+            .name(OKEX_POSITION_CODE)
+            .normal_balance_type(DebitOrCredit::Debit)
+            .description("Account for okex position".to_string())
+            .build()
+            .expect("Couldn't create okex position account");
         match ledger.accounts().create(new_account).await {
             Ok(_) | Err(SqlxLedgerError::DuplicateKey(_)) => Ok(()),
             Err(e) => Err(e.into()),
