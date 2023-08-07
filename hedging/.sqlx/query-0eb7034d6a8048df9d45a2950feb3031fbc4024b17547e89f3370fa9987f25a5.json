@@ -1,0 +1,14 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE okex_orders SET lost = true WHERE client_order_id = $1",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Text"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "0eb7034d6a8048df9d45a2950feb3031fbc4024b17547e89f3370fa9987f25a5"
+}

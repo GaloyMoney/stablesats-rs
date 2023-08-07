@@ -1,0 +1,14 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE okex_transfers SET lost = true WHERE client_transfer_id = $1",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Text"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "26fa2863be469d0f97b42390da4c73344a7d5152e4b5704574dc2f83756a94c6"
+}

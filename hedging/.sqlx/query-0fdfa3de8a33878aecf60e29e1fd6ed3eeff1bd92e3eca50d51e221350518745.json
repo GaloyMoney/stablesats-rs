@@ -1,0 +1,19 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE okex_orders SET lost = false, order_id = $1, avg_price = $2, fee = $3, state = $4, complete = $5 WHERE client_order_id = $6",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Varchar",
+        "Numeric",
+        "Numeric",
+        "Varchar",
+        "Bool",
+        "Text"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "0fdfa3de8a33878aecf60e29e1fd6ed3eeff1bd92e3eca50d51e221350518745"
+}
