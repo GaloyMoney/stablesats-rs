@@ -96,7 +96,7 @@ impl UserTrades {
             },
         );
         let query = query_builder.build();
-        query.execute(tx).await?;
+        query.execute(&mut **tx).await?;
         Ok(())
     }
 
@@ -114,7 +114,7 @@ impl UserTrades {
             BAD_TRADE_MARKER,
             &bad_ids[..]
         )
-        .execute(tx)
+        .execute(&mut **tx)
         .await?;
         Ok(())
     }
@@ -130,7 +130,7 @@ impl UserTrades {
              UNION
              SELECT id, external_ref->>'btc_tx_id' AS btc_id, external_ref->>'usd_tx_id' AS usd_id FROM user_trades WHERE external_ref->>'usd_tx_id' = ANY($1) AND correction_ledger_tx_id IS NULL",
             &ids[..]
-        ).fetch_all(&mut *tx)
+        ).fetch_all(&mut **tx)
             .await?;
         let usd_to_btc: HashMap<String, (i32, String)> = rows
             .into_iter()
@@ -166,7 +166,7 @@ impl UserTrades {
                ) RETURNING id, buy_amount, buy_unit as "buy_unit: UserTradeUnit", sell_amount, sell_unit as "sell_unit: UserTradeUnit", external_ref"#,
             tx_id
         )
-        .fetch_optional(&mut *tx)
+        .fetch_optional(&mut **tx)
         .await?;
         Ok(trade.map(|trade| UnaccountedUserTrade {
             buy_unit: trade.buy_unit,
@@ -194,7 +194,7 @@ impl UserTrades {
             tx_id,
             BAD_TRADE_MARKER
         )
-        .fetch_optional(&mut *tx)
+        .fetch_optional(&mut **tx)
         .await?;
         Ok(trade.map(|trade| UserTradeNeedingRevert {
             buy_unit: trade.buy_unit,

@@ -1,6 +1,7 @@
 use futures::stream::StreamExt;
 use sqlxmq::NamedJob;
 use tracing::{info_span, instrument, Instrument};
+use tracing_opentelemetry::OpenTelemetrySpanExt;
 
 use std::sync::Arc;
 
@@ -134,7 +135,7 @@ impl OkexEngine {
                         if let ledger::LedgerEventData::BalanceUpdated(data) = received.data {
                             let correlation_id = data.entry_id;
                             let span = info_span!(
-                                parent: &received.span,
+                                // parent: &received.otel_context,
                                 "hedging.okex.usd_liability_balance_event_received",
                                 correlation_id = %correlation_id,
                                 event_json = &tracing::field::display(
@@ -144,6 +145,8 @@ impl OkexEngine {
                                 funding_action = tracing::field::Empty,
                                 hedging_action = tracing::field::Empty,
                             );
+
+                            span.set_parent(received.otel_context.clone());
                             async {
                                 if let Ok(current_position_in_cents) =
                                     self.okex_client.get_position_in_signed_usd_cents().await

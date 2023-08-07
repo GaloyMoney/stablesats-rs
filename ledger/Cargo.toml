@@ -11,14 +11,20 @@ fail-on-warnings = []
 [dependencies]
 shared = { path = "../shared", package = "stablesats-shared" }
 
-sqlx-ledger = "0.5.12"
+sqlx-ledger = { git = "https://github.com/GaloyMoney/sqlx-ledger", branch = "main", features = ["otel"] }
 
 chrono = "0.4.24"
 rust_decimal = "1.29.0"
 rust_decimal_macros = "1.29.0"
 serde = "1.0.158"
 serde_json = "1.0.93"
-sqlx = { version = "0.6", features = [ "offline", "runtime-tokio-rustls", "postgres", "decimal", "uuid", "chrono"] }
+sqlx = { version = "0.7.1", features = [
+    "runtime-tokio-rustls",
+    "postgres",
+    "rust_decimal",
+    "uuid",
+    "chrono",
+] }
 thiserror = "1.0.40"
 tokio = "1.29.1"
 tracing = "0.1.37"

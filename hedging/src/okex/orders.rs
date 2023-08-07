@@ -35,7 +35,7 @@ impl OkexOrders {
         let res = sqlx::query!(
             r#"SELECT client_order_id FROM okex_orders WHERE complete = false AND lost = false"#
         )
-        .fetch_all(&mut tx)
+        .fetch_all(&mut *tx)
         .await?;
 
         if !res.is_empty() {
@@ -58,7 +58,7 @@ impl OkexOrders {
             reservation.target_usd_value,
             reservation.usd_value_before_order,
         )
-        .execute(&mut tx)
+        .execute(&mut *tx)
         .await?;
         tx.commit().await?;
         Ok(Some(id))

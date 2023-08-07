@@ -1,5 +1,5 @@
 use futures::stream::StreamExt;
-use sqlxmq::OwnedHandle;
+use sqlxmq::JobRunnerHandle;
 use tracing::instrument;
 
 use galoy_client::*;
@@ -12,7 +12,7 @@ use shared::{
 use crate::{config::*, error::*, okex::*};
 
 pub struct HedgingApp {
-    _job_runner_handle: OwnedHandle,
+    _job_runner_handle: JobRunnerHandle,
 }
 
 impl HedgingApp {

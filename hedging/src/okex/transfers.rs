@@ -47,7 +47,7 @@ impl OkexTransfers {
         let res = sqlx::query!(
             r#"SELECT client_transfer_id FROM okex_transfers WHERE state = 'pending' AND lost = false"#,
         )
-        .fetch_all(&mut tx)
+        .fetch_all(&mut *tx)
         .await?;
 
         if !res.is_empty() {
@@ -88,7 +88,7 @@ impl OkexTransfers {
             reservation.shared.funding_btc_total_balance,
             "pending"
         )
-        .execute(&mut tx)
+        .execute(&mut *tx)
         .await?;
         tx.commit().await?;
         Ok(Some(id))

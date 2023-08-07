@@ -16,7 +16,7 @@ pub use templates::*;
 
 use sqlx_ledger::{
     account::NewAccount,
-    event::{EventSubscriber, SqlxLedgerEvent},
+    event::{EventSubscriber, EventSubscriberOpts, SqlxLedgerEvent},
     journal::*,
     Currency, DebitOrCredit, SqlxLedger, SqlxLedgerError,
 };
@@ -24,8 +24,6 @@ pub use sqlx_ledger::{
     event::{SqlxLedgerEvent as LedgerEvent, SqlxLedgerEventData as LedgerEventData},
     TransactionId as LedgerTxId,
 };
-
-const DEFAULT_BUFFER_SIZE: usize = 100;
 
 #[derive(Debug, Clone)]
 pub struct Ledger {
@@ -52,7 +50,7 @@ impl Ledger {
         templates::RevertUserSellsUsd::init(&inner).await?;
 
         Ok(Self {
-            events: inner.events(DEFAULT_BUFFER_SIZE).await?,
+            events: inner.events(EventSubscriberOpts::default()).await?,
             inner,
             usd: "USD".parse().unwrap(),
             btc: "BTC".parse().unwrap(),
@@ -123,6 +121,7 @@ impl Ledger {
         self.events
             .account_balance(STABLESATS_JOURNAL_ID.into(), STABLESATS_LIABILITY_ID.into())
             .await
+            .unwrap()
     }
 
     #[instrument(name = "ledger.create_stablesats_journal", skip(ledger))]
