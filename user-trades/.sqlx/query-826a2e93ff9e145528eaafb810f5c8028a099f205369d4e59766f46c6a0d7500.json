@@ -1,0 +1,62 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n            SELECT id, direction, amount_in_usd_cents, memo, settlement_method, settlement_amount, settlement_currency, created_at\n            FROM galoy_transactions\n            WHERE is_paired = false AND amount_in_usd_cents != 0 ORDER BY created_at FOR UPDATE\n         ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 1,
+        "name": "direction",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 2,
+        "name": "amount_in_usd_cents",
+        "type_info": "Numeric"
+      },
+      {
+        "ordinal": 3,
+        "name": "memo",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 4,
+        "name": "settlement_method",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 5,
+        "name": "settlement_amount",
+        "type_info": "Numeric"
+      },
+      {
+        "ordinal": 6,
+        "name": "settlement_currency",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 7,
+        "name": "created_at",
+        "type_info": "Timestamptz"
+      }
+    ],
+    "parameters": {
+      "Left": []
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      true,
+      false,
+      false,
+      false,
+      false
+    ]
+  },
+  "hash": "826a2e93ff9e145528eaafb810f5c8028a099f205369d4e59766f46c6a0d7500"
+}

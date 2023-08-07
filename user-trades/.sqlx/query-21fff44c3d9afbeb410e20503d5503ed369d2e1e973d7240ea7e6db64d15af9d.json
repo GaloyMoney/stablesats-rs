@@ -1,0 +1,14 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE galoy_transactions SET is_paired = 'true' WHERE id = ANY($1)",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "TextArray"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "21fff44c3d9afbeb410e20503d5503ed369d2e1e973d7240ea7e6db64d15af9d"
+}

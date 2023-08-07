@@ -1,0 +1,20 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT client_order_id FROM okex_orders WHERE complete = false AND lost = false",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "client_order_id",
+        "type_info": "Varchar"
+      }
+    ],
+    "parameters": {
+      "Left": []
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "a96d3a4a4c19ae27d60f46d99e12dcc09ea2440aaae906c0e159bed1b8b71ad3"
+}

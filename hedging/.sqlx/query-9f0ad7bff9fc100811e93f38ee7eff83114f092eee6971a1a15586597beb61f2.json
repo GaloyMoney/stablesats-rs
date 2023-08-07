@@ -1,0 +1,28 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "INSERT INTO okex_transfers (\n                client_transfer_id, \n                correlation_id, \n                action, \n                currency,\n                amount,\n                fee,\n                transfer_from,\n                transfer_to,\n                target_usd_exposure,\n                current_usd_exposure,\n                trading_btc_used_balance,\n                trading_btc_total_balance,\n                current_usd_btc_price,\n                funding_btc_total_balance,\n                state\n            ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Varchar",
+        "Uuid",
+        "Varchar",
+        "Varchar",
+        "Numeric",
+        "Numeric",
+        "Varchar",
+        "Varchar",
+        "Numeric",
+        "Numeric",
+        "Numeric",
+        "Numeric",
+        "Numeric",
+        "Numeric",
+        "Varchar"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "9f0ad7bff9fc100811e93f38ee7eff83114f092eee6971a1a15586597beb61f2"
+}
