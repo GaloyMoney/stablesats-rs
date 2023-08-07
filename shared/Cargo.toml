@@ -13,7 +13,10 @@ fail-on-warnings = []
 
 [dependencies]
 # setting default-features = false to not include vulnerable time crate
-chrono = { version = "0.4", features = ["clock", "serde"], default-features = false }
+chrono = { version = "0.4", features = [
+    "clock",
+    "serde",
+], default-features = false }
 derive_builder = "0.12.0"
 fred = { version = "5.2.0", features = ["subscriber-client"] }
 futures = "0.3.27"
@@ -23,8 +26,17 @@ rust_decimal_macros = "1.29.0"
 serde = { version = "1.0.158", features = ["derive"] }
 serde_json = "1.0.93"
 serde_with = "2.3.1"
-sqlx = { version = "0.6", features = [ "offline", "runtime-tokio-rustls", "postgres", "decimal", "uuid", "chrono", "json" ] }
-sqlxmq = { version = "0.4.1", default-features = false, features = [ "runtime-tokio-rustls" ] }
+sqlx = { version = "0.7.1", features = [
+    "runtime-tokio-rustls",
+    "postgres",
+    "rust_decimal",
+    "uuid",
+    "chrono",
+    "json",
+] }
+sqlxmq = { git = "https://github.com/Diggsey/sqlxmq", rev = "658d584", default-features = false, features = [
+    "runtime-tokio-rustls",
+] }
 thiserror = "1.0.40"
 tokio = "1.29.1"
 tracing = "0.1.37"

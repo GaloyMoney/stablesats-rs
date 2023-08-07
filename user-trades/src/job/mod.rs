@@ -1,6 +1,6 @@
 mod poll_galoy_transactions;
 
-use sqlxmq::{job, CurrentJob, JobBuilder, JobRegistry, OwnedHandle};
+use sqlxmq::{job, CurrentJob, JobBuilder, JobRegistry, JobRunnerHandle};
 use tracing::instrument;
 use uuid::{uuid, Uuid};
 
@@ -25,7 +25,7 @@ pub async fn start_job_runner(
     user_trades: UserTrades,
     galoy_client: GaloyClient,
     galoy_poll_delay: Duration,
-) -> Result<OwnedHandle, UserTradesError> {
+) -> Result<JobRunnerHandle, UserTradesError> {
     let mut registry = JobRegistry::new(&[poll_galoy_transactions]);
     registry.set_context(ledger);
     registry.set_context(user_trades);

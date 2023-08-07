@@ -1,6 +1,6 @@
 mod config;
 
-use sqlxmq::OwnedHandle;
+use sqlxmq::JobRunnerHandle;
 use tracing::instrument;
 
 use galoy_client::{GaloyClient, GaloyClientConfig};
@@ -9,7 +9,7 @@ use crate::{error::*, job, user_trades::*};
 pub use config::*;
 
 pub struct UserTradesApp {
-    _runner: OwnedHandle,
+    _runner: JobRunnerHandle,
 }
 
 impl UserTradesApp {

@@ -137,7 +137,7 @@ impl GaloyTransactions {
             WHERE is_paired = false AND amount_in_usd_cents != 0 ORDER BY created_at FOR UPDATE
          "
         )
-        .fetch_all(&mut tx)
+        .fetch_all(&mut *tx)
         .await?;
         Ok(UnpairedTransactions {
             list: res
@@ -172,7 +172,7 @@ impl GaloyTransactions {
             "UPDATE galoy_transactions SET is_paired = 'true' WHERE id = ANY($1)",
             &ids[..]
         )
-        .execute(tx)
+        .execute(&mut **tx)
         .await?;
         Ok(())
     }
