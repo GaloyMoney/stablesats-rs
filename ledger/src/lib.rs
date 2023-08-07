@@ -10,7 +10,7 @@ mod constants;
 mod error;
 mod templates;
 
-use constants::*;
+pub use constants::*;
 pub use error::*;
 pub use templates::*;
 
@@ -38,19 +38,21 @@ impl Ledger {
         let inner = SqlxLedger::new(pool);
 
         Self::create_stablesats_journal(&inner).await?;
+        Self::create_hedging_journal(&inner).await?;
 
         Self::external_omnibus_account(&inner).await?;
         Self::stablesats_btc_wallet_account(&inner).await?;
         Self::stablesats_omnibus_account(&inner).await?;
         Self::stablesats_liability_account(&inner).await?;
-        Self::exchange_position_omnibus_account(&inner).await?;
+        Self::hedge_position_omnibus_account(&inner).await?;
         Self::okex_position_account(&inner).await?;
 
         templates::UserBuysUsd::init(&inner).await?;
         templates::UserSellsUsd::init(&inner).await?;
         templates::RevertUserBuysUsd::init(&inner).await?;
         templates::RevertUserSellsUsd::init(&inner).await?;
-        templates::AdjustExchangePosition::init(&inner).await?;
+        templates::IncreaseExchangePosition::init(&inner).await?;
+        templates::DecreaseExchangePosition::init(&inner).await?;
 
         Ok(Self {
             events: inner.events(EventSubscriberOpts::default()).await?,
@@ -68,17 +70,34 @@ impl Ledger {
         }
     }
 
-    #[instrument(name = "ledger.adjust_okex_position", skip(self, tx))]
-    pub async fn adjust_okex_usd_position(
+    #[instrument(name = "ledger.increase_exchange_position", skip(self, tx))]
+    pub async fn increase_exchange_position(
         &self,
         tx: Transaction<'_, Postgres>,
-        params: AdjustExchangePositionParams,
+        params: IncreaseExchangePositionParams,
     ) -> Result<(), LedgerError> {
         self.inner
             .post_transaction_in_tx(
                 tx,
                 LedgerTxId::new(),
-                ADJUST_EXCHANGE_POSITION_CODE,
+                INCREASE_EXCHANGE_POSITION_CODE,
+                Some(params),
+            )
+            .await?;
+        Ok(())
+    }
+
+    #[instrument(name = "ledger.decrease_exchange_position", skip(self, tx))]
+    pub async fn decrease_exchange_position(
+        &self,
+        tx: Transaction<'_, Postgres>,
+        params: DecreaseExchangePositionParams,
+    ) -> Result<(), LedgerError> {
+        self.inner
+            .post_transaction_in_tx(
+                tx,
+                LedgerTxId::new(),
+                DECREASE_EXCHANGE_POSITION_CODE,
                 Some(params),
             )
             .await?;
@@ -159,7 +178,21 @@ impl Ledger {
             .description("Stablesats journal".to_string())
             .name(STABLESATS_JOURNAL_NAME)
             .build()
-            .expect("Couldn't build NewJournal");
+            .expect("Couldn't build Stablesats journal");
+        match ledger.journals().create(new_journal).await {
+            Ok(_) | Err(SqlxLedgerError::DuplicateKey(_)) => Ok(()),
+            Err(e) => Err(e.into()),
+        }
+    }
+
+    #[instrument(name = "ledger.create_hedging_journal", skip(ledger))]
+    async fn create_hedging_journal(ledger: &SqlxLedger) -> Result<(), LedgerError> {
+        let new_journal = NewJournal::builder()
+            .id(HEDGING_JOURNAL_ID)
+            .description("Hedging journal".to_string())
+            .name(HEDGING_JOURNAL_NAME)
+            .build()
+            .expect("Couldn't build Hedging journal");
         match ledger.journals().create(new_journal).await {
             Ok(_) | Err(SqlxLedgerError::DuplicateKey(_)) => Ok(()),
             Err(e) => Err(e.into()),
@@ -229,7 +262,7 @@ impl Ledger {
     }
 
     #[instrument(name = "ledger.hedge_position_omnibus_account", skip_all)]
-    async fn exchange_position_omnibus_account(ledger: &SqlxLedger) -> Result<(), LedgerError> {
+    async fn hedge_position_omnibus_account(ledger: &SqlxLedger) -> Result<(), LedgerError> {
         let new_account = NewAccount::builder()
             .code(HEDGE_POSITION_OMNIBUS_CODE)
             .id(HEDGE_POSITION_OMNIBUS_ID)

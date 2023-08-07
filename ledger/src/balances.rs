@@ -13,7 +13,7 @@ pub struct Balances<'a> {
 
 impl<'a> Balances<'a> {
     pub async fn stablesats_liability(&self) -> Result<Option<AccountBalance>, LedgerError> {
-        self.get_ledger_account_balance(STABLESATS_LIABILITY_ID, self.usd)
+        self.get_ledger_account_balance(STABLESATS_JOURNAL_ID, STABLESATS_LIABILITY_ID, self.usd)
             .await
     }
 
@@ -34,20 +34,36 @@ impl<'a> Balances<'a> {
     }
 
     pub async fn stablesats_btc_wallet(&self) -> Result<Option<AccountBalance>, LedgerError> {
-        self.get_ledger_account_balance(STABLESATS_BTC_WALLET_ID, self.btc)
+        self.get_ledger_account_balance(STABLESATS_JOURNAL_ID, STABLESATS_BTC_WALLET_ID, self.btc)
+            .await
+    }
+
+    pub async fn exchange_position_account_balance(
+        &self,
+        exchange_position_id: impl Into<LedgerAccountId> + std::fmt::Debug,
+    ) -> Result<Option<AccountBalance>, LedgerError> {
+        self.get_ledger_account_balance(HEDGING_JOURNAL_ID, exchange_position_id, self.usd)
+            .await
+    }
+
+    pub async fn hedge_position_omnibus_account_balance(
+        &self,
+    ) -> Result<Option<AccountBalance>, LedgerError> {
+        self.get_ledger_account_balance(HEDGING_JOURNAL_ID, HEDGE_POSITION_OMNIBUS_ID, self.usd)
             .await
     }
 
     #[instrument(name = "ledger.get_ledger_account_balance", skip(self))]
     pub async fn get_ledger_account_balance(
         &self,
+        journal_id: impl Into<sqlx_ledger::JournalId> + std::fmt::Debug,
         account_id: impl Into<LedgerAccountId> + std::fmt::Debug,
         currency: Currency,
     ) -> Result<Option<AccountBalance>, LedgerError> {
         Ok(self
             .inner
             .balances()
-            .find(STABLESATS_JOURNAL_ID.into(), account_id.into(), currency)
+            .find(journal_id.into(), account_id.into(), currency)
             .await?)
     }
 }
