@@ -34,7 +34,7 @@ sqlx = { version = "0.7.1", features = [
     "chrono",
     "json",
 ] }
-sqlxmq = { git = "https://github.com/Diggsey/sqlxmq", rev = "658d584", default-features = false, features = [
+sqlxmq = { git = "https://github.com/GaloyMoney/sqlxmq", rev = "f03f73c", default-features = false, features = [
     "runtime-tokio-rustls",
 ] }
 thiserror = "1.0.40"
