@@ -70,8 +70,52 @@ impl Ledger {
         }
     }
 
+    #[instrument(name = "ledger.adjust_exchange_position", skip(self, tx))]
+    pub async fn adjust_exchange_position(
+        &self,
+        tx: Transaction<'_, Postgres>,
+        usd_cents_amount: rust_decimal::Decimal,
+        exchange_position_id: uuid::Uuid,
+        exchange_id: String,
+        instrument_id: String,
+    ) -> Result<(), LedgerError> {
+        let current_balance = self
+            .balances()
+            .exchange_position_account_balance(exchange_position_id)
+            .await?
+            .map(|b| b.settled())
+            .unwrap_or(rust_decimal::Decimal::ZERO);
+        let diff = current_balance * CENTS_PER_USD + usd_cents_amount;
+        if diff < rust_decimal::Decimal::ZERO {
+            let decrease_exchange_position_params = DecreaseExchangePositionParams {
+                usd_cents_amount: diff.abs(),
+                exchange_position_id,
+                meta: DecreaseExchangePositionMeta {
+                    timestamp: chrono::Utc::now(),
+                    exchange_id,
+                    instrument_id,
+                },
+            };
+            self.decrease_exchange_position(tx, decrease_exchange_position_params)
+                .await?
+        } else {
+            let increase_exchange_position_params = IncreaseExchangePositionParams {
+                usd_cents_amount: diff,
+                exchange_position_id,
+                meta: IncreaseExchangePositionMeta {
+                    timestamp: chrono::Utc::now(),
+                    exchange_id,
+                    instrument_id,
+                },
+            };
+            self.increase_exchange_position(tx, increase_exchange_position_params)
+                .await?
+        }
+        Ok(())
+    }
+
     #[instrument(name = "ledger.increase_exchange_position", skip(self, tx))]
-    pub async fn increase_exchange_position(
+    async fn increase_exchange_position(
         &self,
         tx: Transaction<'_, Postgres>,
         params: IncreaseExchangePositionParams,
@@ -88,7 +132,7 @@ impl Ledger {
     }
 
     #[instrument(name = "ledger.decrease_exchange_position", skip(self, tx))]
-    pub async fn decrease_exchange_position(
+    async fn decrease_exchange_position(
         &self,
         tx: Transaction<'_, Postgres>,
         params: DecreaseExchangePositionParams,
@@ -164,8 +208,12 @@ impl Ledger {
             .account_balance(STABLESATS_JOURNAL_ID.into(), STABLESATS_LIABILITY_ID.into())
             .await?)
     }
-    
-    //usd_position_balance_events here. 
+
+    pub async fn usd_okex_position_balance_events(&self) -> broadcast::Receiver<SqlxLedgerEvent> {
+        self.events
+            .account_balance(HEDGING_JOURNAL_ID.into(), OKEX_POSITION_ID.into())
+            .await
+    }
 
     #[instrument(name = "ledger.create_stablesats_journal", skip(ledger))]
     async fn create_stablesats_journal(ledger: &SqlxLedger) -> Result<(), LedgerError> {

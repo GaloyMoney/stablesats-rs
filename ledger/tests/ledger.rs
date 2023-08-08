@@ -87,7 +87,7 @@ async fn adjust_exchange_position() -> anyhow::Result<()> {
     let pool = init_pool().await?;
     let ledger = Ledger::init(&pool).await?;
 
-    ledger
+    let initial_exchange_balance = ledger
         .balances()
         .exchange_position_account_balance(OKEX_POSITION_ID)
         .await?
@@ -95,71 +95,42 @@ async fn adjust_exchange_position() -> anyhow::Result<()> {
         .unwrap_or(Decimal::ZERO);
 
     ledger
-        .increase_exchange_position(
+        .adjust_exchange_position(
             pool.begin().await?,
-            IncreaseExchangePositionParams {
-                usd_cents_amount: dec!(10000),
-                exchange_position_id: OKEX_POSITION_ID,
-                meta: IncreaseExchangePositionMeta {
-                    timestamp: chrono::Utc::now(),
-                    exchange_id: "okex".to_string(),
-                    instrument_id: "BTC-USD-SWAP".to_string(),
-                },
-            },
+            dec!(-10000),
+            OKEX_POSITION_ID,
+            "okex".to_string(),
+            "BTC-USD-SWAP".to_string(),
         )
         .await?;
-
-    let after_increase_exchange_position_account_balance = ledger
+    let balance_after_first_adjustment = ledger
         .balances()
         .exchange_position_account_balance(OKEX_POSITION_ID)
         .await?
         .unwrap()
         .settled();
-
-    let after_increase_hedging_omnibus_account_balance = ledger
-        .balances()
-        .hedge_position_omnibus_account_balance()
-        .await?
-        .unwrap()
-        .settled();
-
     assert_eq!(
-        after_increase_exchange_position_account_balance,
-        after_increase_hedging_omnibus_account_balance
+        balance_after_first_adjustment - initial_exchange_balance,
+        dec!(100)
     );
-
     ledger
-        .decrease_exchange_position(
+        .adjust_exchange_position(
             pool.begin().await?,
-            DecreaseExchangePositionParams {
-                usd_cents_amount: dec!(10000),
-                exchange_position_id: OKEX_POSITION_ID,
-                meta: DecreaseExchangePositionMeta {
-                    timestamp: chrono::Utc::now(),
-                    exchange_id: "okex".to_string(),
-                    instrument_id: "BTC-USD-SWAP".to_string(),
-                },
-            },
+            dec!(-9000),
+            OKEX_POSITION_ID,
+            "okex".to_string(),
+            "BTC-USD-SWAP".to_string(),
         )
         .await?;
-
-    let after_decrease_exchange_position_account_balance = ledger
+    let balance_after_second_adjustment = ledger
         .balances()
         .exchange_position_account_balance(OKEX_POSITION_ID)
         .await?
         .unwrap()
         .settled();
-
-    let after_decrease_hedging_omnibus_account_balance = ledger
-        .balances()
-        .hedge_position_omnibus_account_balance()
-        .await?
-        .unwrap()
-        .settled();
-
     assert_eq!(
-        after_decrease_exchange_position_account_balance,
-        after_decrease_hedging_omnibus_account_balance
+        balance_after_second_adjustment - balance_after_first_adjustment,
+        dec!(-10)
     );
     Ok(())
 }
