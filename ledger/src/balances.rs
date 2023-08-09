@@ -38,18 +38,22 @@ impl<'a> Balances<'a> {
             .await
     }
 
-    pub async fn exchange_position_account_balance(
+    async fn exchange_position_account_balance(
         &self,
         exchange_position_id: impl Into<LedgerAccountId> + std::fmt::Debug,
     ) -> Result<Option<AccountBalance>, LedgerError> {
-        self.get_ledger_account_balance(HEDGING_JOURNAL_ID, exchange_position_id, self.usd)
-            .await
+        self.get_ledger_account_balance(
+            EXCHANGE_POSITION_JOURNAL_ID,
+            exchange_position_id,
+            self.usd,
+        )
+        .await
     }
 
-    pub async fn hedge_position_omnibus_account_balance(
+    pub async fn okex_position_account_balance(
         &self,
     ) -> Result<Option<AccountBalance>, LedgerError> {
-        self.get_ledger_account_balance(HEDGING_JOURNAL_ID, HEDGE_POSITION_OMNIBUS_ID, self.usd)
+        self.exchange_position_account_balance(OKEX_POSITION_ID)
             .await
     }
 

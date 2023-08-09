@@ -73,7 +73,7 @@ impl IncreaseExchangePosition {
     #[instrument(name = "ledger.increase_exchange_position.init", skip_all)]
     pub async fn init(ledger: &SqlxLedger) -> Result<(), LedgerError> {
         let tx_input = TxInput::builder()
-            .journal_id(format!("uuid('{HEDGING_JOURNAL_ID}')"))
+            .journal_id(format!("uuid('{EXCHANGE_POSITION_JOURNAL_ID}')"))
             .effective("params.effective")
             .metadata("params.meta")
             .description("'Increase exchange position'")
@@ -93,7 +93,7 @@ impl IncreaseExchangePosition {
             EntryInput::builder()
                 .entry_type("'INCREASE_EXCHANGE_POSITION_USD_DR'")
                 .currency("'USD'")
-                .account_id(format!("uuid('{HEDGE_POSITION_OMNIBUS_ID}')"))
+                .account_id(format!("uuid('{EXCHANGE_POSITION_OMNIBUS_ID}')"))
                 .direction("DEBIT")
                 .layer("SETTLED")
                 .units("params.usd_amount")

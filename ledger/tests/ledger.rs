@@ -87,50 +87,48 @@ async fn adjust_exchange_position() -> anyhow::Result<()> {
     let pool = init_pool().await?;
     let ledger = Ledger::init(&pool).await?;
 
-    let initial_exchange_balance = ledger
+    let initial_okex_balance = ledger
         .balances()
-        .exchange_position_account_balance(OKEX_POSITION_ID)
+        .okex_position_account_balance()
         .await?
         .map(|b| b.settled())
         .unwrap_or(Decimal::ZERO);
 
     ledger
-        .adjust_exchange_position(
+        .adjust_okex_position(
             pool.begin().await?,
             dec!(-10000),
-            OKEX_POSITION_ID,
             "okex".to_string(),
             "BTC-USD-SWAP".to_string(),
         )
         .await?;
     let balance_after_first_adjustment = ledger
         .balances()
-        .exchange_position_account_balance(OKEX_POSITION_ID)
+        .okex_position_account_balance()
         .await?
         .unwrap()
         .settled();
     assert_eq!(
-        balance_after_first_adjustment - initial_exchange_balance,
+        balance_after_first_adjustment - initial_okex_balance,
         dec!(100)
     );
     ledger
-        .adjust_exchange_position(
+        .adjust_okex_position(
             pool.begin().await?,
             dec!(-9000),
-            OKEX_POSITION_ID,
             "okex".to_string(),
             "BTC-USD-SWAP".to_string(),
         )
         .await?;
     let balance_after_second_adjustment = ledger
         .balances()
-        .exchange_position_account_balance(OKEX_POSITION_ID)
+        .okex_position_account_balance()
         .await?
         .unwrap()
         .settled();
     assert_eq!(
-        balance_after_second_adjustment - balance_after_first_adjustment,
-        dec!(-10)
+        balance_after_second_adjustment - initial_okex_balance,
+        dec!(90)
     );
     Ok(())
 }
