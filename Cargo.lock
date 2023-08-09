@@ -2129,14 +2129,14 @@ dependencies = [
 
 [[package]]
 name = "opentelemetry-http"
-version = "0.7.0"
+version = "0.9.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1edc79add46364183ece1a4542592ca593e6421c60807232f5b8f7a31703825d"
+checksum = "c7594ec0e11d8e33faf03530a4c49af7064ebba81c1480e01be67d90b356508b"
 dependencies = [
  "async-trait",
  "bytes",
  "http",
- "opentelemetry_api 0.18.0",
+ "opentelemetry_api 0.20.0",
 ]
 
 [[package]]
@@ -2191,6 +2191,22 @@ dependencies = [
  "futures-channel",
  "futures-util",
  "indexmap 1.9.3",
+ "once_cell",
+ "pin-project-lite",
+ "thiserror",
+ "urlencoding",
+]
+
+[[package]]
+name = "opentelemetry_api"
+version = "0.20.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "8a81f725323db1b1206ca3da8bb19874bbd3f57c3bcd59471bfb04525b265b9b"
+dependencies = [
+ "futures-channel",
+ "futures-util",
+ "indexmap 1.9.3",
+ "js-sys",
  "once_cell",
  "pin-project-lite",
  "thiserror",
