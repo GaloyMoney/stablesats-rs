@@ -1,3 +1,10 @@
+# [stablesats release v0.9.13](https://github.com/GaloyMoney/stablesats-rs/releases/tag/0.9.13)
+
+
+### Bug Fixes
+
+- Avoid use of unwrap (#401)
+
 # [stablesats release v0.9.12](https://github.com/GaloyMoney/stablesats-rs/releases/tag/0.9.12)
 
 
