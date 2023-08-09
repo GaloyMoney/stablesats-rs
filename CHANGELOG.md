@@ -1,3 +1,19 @@
+# [stablesats release v0.9.12](https://github.com/GaloyMoney/stablesats-rs/releases/tag/0.9.12)
+
+
+### Bug Fixes
+
+- Dead code
+
+### Miscellaneous Tasks
+
+- Fix format
+- Update sqlxmq & sqlx-ledger versions
+- Update sqlx offline queries data
+- Update sqlx to 0.7.1
+- Add instrumentation to poll_okex job
+- Bump tokio to 1.29.1 (#395)
+
 # [stablesats release v0.9.11](https://github.com/GaloyMoney/stablesats-rs/releases/tag/0.9.11)
 
 
