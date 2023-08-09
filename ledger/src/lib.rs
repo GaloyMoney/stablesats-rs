@@ -117,11 +117,13 @@ impl Ledger {
         Ok(())
     }
 
-    pub async fn usd_liability_balance_events(&self) -> broadcast::Receiver<SqlxLedgerEvent> {
-        self.events
+    pub async fn usd_liability_balance_events(
+        &self,
+    ) -> Result<broadcast::Receiver<SqlxLedgerEvent>, LedgerError> {
+        Ok(self
+            .events
             .account_balance(STABLESATS_JOURNAL_ID.into(), STABLESATS_LIABILITY_ID.into())
-            .await
-            .unwrap()
+            .await?)
     }
 
     #[instrument(name = "ledger.create_stablesats_journal", skip(ledger))]
