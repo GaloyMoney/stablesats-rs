@@ -30,7 +30,7 @@ async fn publishes_liability() -> anyhow::Result<()> {
     let mut events = ledger::Ledger::init(&pool)
         .await?
         .usd_liability_balance_events()
-        .await;
+        .await?;
     let _ = tokio::spawn(UserTradesApp::run(
         pool,
         UserTradesConfig {

@@ -127,8 +127,8 @@ impl OkexEngine {
     async fn spawn_liability_listener(self: Arc<Self>) -> Result<(), HedgingError> {
         job::spawn_adjust_hedge(&self.pool, uuid::Uuid::new_v4()).await?;
         job::spawn_adjust_funding(&self.pool, uuid::Uuid::new_v4()).await?;
+        let mut events = self.ledger.usd_liability_balance_events().await?;
         tokio::spawn(async move {
-            let mut events = self.ledger.usd_liability_balance_events().await;
             loop {
                 match events.recv().await {
                     Ok(received) => {
