@@ -1,3 +1,10 @@
+# [stablesats release v0.9.15](https://github.com/GaloyMoney/stablesats-rs/releases/tag/0.9.15)
+
+
+### Miscellaneous Tasks
+
+- Remove redis
+
 # [stablesats release v0.9.14](https://github.com/GaloyMoney/stablesats-rs/releases/tag/0.9.14)
 
 
