@@ -6,7 +6,7 @@ use galoy_client::*;
 use shared::{
     health::HealthCheckTrigger,
     payload::PriceStreamPayload,
-    pubsub::{memory, PubSubConfig, Publisher, Subscriber},
+    pubsub::{memory, PubSubConfig, Publisher},
 };
 
 use crate::{config::*, error::*, okex::*};
@@ -44,11 +44,10 @@ impl HedgingApp {
         );
         job_registry.set_context(Publisher::new(pubsub_config.clone()).await?);
 
-        let (okex_engine, subscriber) = OkexEngine::run(
+        let okex_engine = OkexEngine::run(
             pool.clone(),
             okex_config,
             ledger,
-            pubsub_config,
             price_receiver.resubscribe(),
         )
         .await?;
@@ -61,8 +60,7 @@ impl HedgingApp {
             .run()
             .await?;
 
-        Self::spawn_health_checker(health_check_trigger, health_cfg, subscriber, price_receiver)
-            .await;
+        Self::spawn_health_checker(health_check_trigger, health_cfg, price_receiver).await;
         let app = HedgingApp {
             _job_runner_handle: job_runner_handle,
         };
@@ -72,19 +70,14 @@ impl HedgingApp {
     async fn spawn_health_checker(
         mut health_check_trigger: HealthCheckTrigger,
         health_cfg: HedgingAppHealthConfig,
-        position_sub: Subscriber,
         price_sub: memory::Subscriber<PriceStreamPayload>,
     ) {
         while let Some(check) = health_check_trigger.next().await {
-            match (
-                position_sub
-                    .healthy(health_cfg.unhealthy_msg_interval_position)
-                    .await,
-                price_sub
-                    .healthy(health_cfg.unhealthy_msg_interval_price)
-                    .await,
-            ) {
-                (Err(e), _) | (_, Err(e)) => {
+            match price_sub
+                .healthy(health_cfg.unhealthy_msg_interval_price)
+                .await
+            {
+                Err(e) => {
                     let _ = check.send(Err(e));
                 }
                 _ => {

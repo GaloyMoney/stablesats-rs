@@ -1,6 +1,7 @@
 #![cfg_attr(feature = "fail-on-warnings", deny(warnings))]
 #![cfg_attr(feature = "fail-on-warnings", deny(clippy::all))]
 
+use rust_decimal::Decimal;
 use sqlx::{PgPool, Postgres, Transaction};
 use tokio::sync::broadcast;
 use tracing::instrument;
@@ -38,16 +39,21 @@ impl Ledger {
         let inner = SqlxLedger::new(pool);
 
         Self::create_stablesats_journal(&inner).await?;
+        Self::create_hedging_journal(&inner).await?;
 
         Self::external_omnibus_account(&inner).await?;
         Self::stablesats_btc_wallet_account(&inner).await?;
         Self::stablesats_omnibus_account(&inner).await?;
         Self::stablesats_liability_account(&inner).await?;
+        Self::exchange_position_omnibus_account(&inner).await?;
+        Self::okex_position_account(&inner).await?;
 
         templates::UserBuysUsd::init(&inner).await?;
         templates::UserSellsUsd::init(&inner).await?;
         templates::RevertUserBuysUsd::init(&inner).await?;
         templates::RevertUserSellsUsd::init(&inner).await?;
+        templates::IncreaseExchangePosition::init(&inner).await?;
+        templates::DecreaseExchangePosition::init(&inner).await?;
 
         Ok(Self {
             events: inner.events(EventSubscriberOpts::default()).await?,
@@ -63,6 +69,103 @@ impl Ledger {
             usd: self.usd,
             btc: self.btc,
         }
+    }
+
+    #[instrument(name = "ledger.adjust_exchange_position", skip(self, tx))]
+    async fn adjust_exchange_position(
+        &self,
+        tx: Transaction<'_, Postgres>,
+        usd_cents_amount: Decimal,
+        exchange_position_id: uuid::Uuid,
+        exchange_id: String,
+        instrument_id: String,
+    ) -> Result<(), LedgerError> {
+        let current_balance = self
+            .balances()
+            .okex_position_account_balance()
+            .await?
+            .map(|b| b.settled())
+            .unwrap_or(Decimal::ZERO);
+        let diff = current_balance * CENTS_PER_USD + usd_cents_amount;
+        if diff < Decimal::ZERO {
+            let decrease_exchange_position_params = DecreaseExchangePositionParams {
+                usd_cents_amount: diff.abs(),
+                exchange_position_id,
+                meta: DecreaseExchangePositionMeta {
+                    timestamp: chrono::Utc::now(),
+                    exchange_id,
+                    instrument_id,
+                },
+            };
+            self.decrease_exchange_position(tx, decrease_exchange_position_params)
+                .await?
+        } else {
+            let increase_exchange_position_params = IncreaseExchangePositionParams {
+                usd_cents_amount: diff,
+                exchange_position_id,
+                meta: IncreaseExchangePositionMeta {
+                    timestamp: chrono::Utc::now(),
+                    exchange_id,
+                    instrument_id,
+                },
+            };
+            self.increase_exchange_position(tx, increase_exchange_position_params)
+                .await?
+        }
+        Ok(())
+    }
+
+    #[instrument(name = "ledger.increase_exchange_position", skip(self, tx))]
+    async fn increase_exchange_position(
+        &self,
+        tx: Transaction<'_, Postgres>,
+        params: IncreaseExchangePositionParams,
+    ) -> Result<(), LedgerError> {
+        self.inner
+            .post_transaction_in_tx(
+                tx,
+                LedgerTxId::new(),
+                INCREASE_EXCHANGE_POSITION_CODE,
+                Some(params),
+            )
+            .await?;
+        Ok(())
+    }
+
+    #[instrument(name = "ledger.decrease_exchange_position", skip(self, tx))]
+    async fn decrease_exchange_position(
+        &self,
+        tx: Transaction<'_, Postgres>,
+        params: DecreaseExchangePositionParams,
+    ) -> Result<(), LedgerError> {
+        self.inner
+            .post_transaction_in_tx(
+                tx,
+                LedgerTxId::new(),
+                DECREASE_EXCHANGE_POSITION_CODE,
+                Some(params),
+            )
+            .await?;
+        Ok(())
+    }
+
+    #[instrument(name = "ledger.adjust_okex_position", skip(self,))]
+    pub async fn adjust_okex_position(
+        &self,
+        tx: Transaction<'_, Postgres>,
+        usd_cents_amount: Decimal,
+        exchange_id: String,
+        instrument_id: String,
+    ) -> Result<(), LedgerError> {
+        self.adjust_exchange_position(
+            tx,
+            usd_cents_amount,
+            OKEX_POSITION_ID,
+            exchange_id,
+            instrument_id,
+        )
+        .await?;
+        Ok(())
     }
 
     #[instrument(name = "ledger.user_buys_usd", skip(self, tx))]
@@ -126,6 +229,15 @@ impl Ledger {
             .await?)
     }
 
+    pub async fn usd_okex_position_balance_events(
+        &self,
+    ) -> Result<broadcast::Receiver<SqlxLedgerEvent>, LedgerError> {
+        Ok(self
+            .events
+            .account_balance(EXCHANGE_POSITION_JOURNAL_ID.into(), OKEX_POSITION_ID.into())
+            .await?)
+    }
+
     #[instrument(name = "ledger.create_stablesats_journal", skip(ledger))]
     async fn create_stablesats_journal(ledger: &SqlxLedger) -> Result<(), LedgerError> {
         let new_journal = NewJournal::builder()
@@ -133,7 +245,21 @@ impl Ledger {
             .description("Stablesats journal".to_string())
             .name(STABLESATS_JOURNAL_NAME)
             .build()
-            .expect("Couldn't build NewJournal");
+            .expect("Couldn't build Stablesats journal");
+        match ledger.journals().create(new_journal).await {
+            Ok(_) | Err(SqlxLedgerError::DuplicateKey(_)) => Ok(()),
+            Err(e) => Err(e.into()),
+        }
+    }
+
+    #[instrument(name = "ledger.create_hedging_journal", skip(ledger))]
+    async fn create_hedging_journal(ledger: &SqlxLedger) -> Result<(), LedgerError> {
+        let new_journal = NewJournal::builder()
+            .id(EXCHANGE_POSITION_JOURNAL_ID)
+            .description("Hedging journal".to_string())
+            .name(EXCHANGE_POSITION_JOURNAL_NAME)
+            .build()
+            .expect("Couldn't build Hedging journal");
         match ledger.journals().create(new_journal).await {
             Ok(_) | Err(SqlxLedgerError::DuplicateKey(_)) => Ok(()),
             Err(e) => Err(e.into()),
@@ -196,6 +322,38 @@ impl Ledger {
             .description("Account for stablesats liability".to_string())
             .build()
             .expect("Couldn't create stablesats liability account");
+        match ledger.accounts().create(new_account).await {
+            Ok(_) | Err(SqlxLedgerError::DuplicateKey(_)) => Ok(()),
+            Err(e) => Err(e.into()),
+        }
+    }
+
+    #[instrument(name = "ledger.exchange_position_omnibus_account", skip_all)]
+    async fn exchange_position_omnibus_account(ledger: &SqlxLedger) -> Result<(), LedgerError> {
+        let new_account = NewAccount::builder()
+            .code(EXCHANGE_POSITION_OMNIBUS_CODE)
+            .id(EXCHANGE_POSITION_OMNIBUS_ID)
+            .name(EXCHANGE_POSITION_OMNIBUS_CODE)
+            .normal_balance_type(DebitOrCredit::Credit)
+            .description("Omnibus account for all exchange hedging".to_string())
+            .build()
+            .expect("Couldn't create exchange position omnibus account");
+        match ledger.accounts().create(new_account).await {
+            Ok(_) | Err(SqlxLedgerError::DuplicateKey(_)) => Ok(()),
+            Err(e) => Err(e.into()),
+        }
+    }
+
+    #[instrument(name = "ledger.okex_position_account", skip_all)]
+    async fn okex_position_account(ledger: &SqlxLedger) -> Result<(), LedgerError> {
+        let new_account = NewAccount::builder()
+            .code(OKEX_POSITION_CODE)
+            .id(OKEX_POSITION_ID)
+            .name(OKEX_POSITION_CODE)
+            .normal_balance_type(DebitOrCredit::Debit)
+            .description("Account for okex position".to_string())
+            .build()
+            .expect("Couldn't create okex position account");
         match ledger.accounts().create(new_account).await {
             Ok(_) | Err(SqlxLedgerError::DuplicateKey(_)) => Ok(()),
             Err(e) => Err(e.into()),
