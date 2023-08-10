@@ -3,7 +3,6 @@ services:
   integration-deps:
     image: busybox
     depends_on:
-    - redis
     - otel-agent
     - postgres
   postgres:
@@ -12,11 +11,6 @@ services:
       - POSTGRES_USER=user
       - POSTGRES_PASSWORD=password
       - POSTGRES_DB=pg
-  redis:
-    image: bitnami/redis:6.2
-    environment:
-    - ALLOW_EMPTY_PASSWORD=yes
-    - REDIS_DISABLE_COMMANDS=FLUSHDB,FLUSHALL
   integration-tests:
     image: us.gcr.io/galoy-org/rust-concourse
     depends_on:
@@ -25,7 +19,6 @@ services:
     env_file:
       - ${TMP_ENV_CI:-.env.ci}
     environment:
-    - REDIS_HOST=redis
     - RUST_BACKTRACE=1
     - PG_HOST=postgres
     - PG_PORT=5432
