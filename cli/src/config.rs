@@ -7,7 +7,6 @@ use hedging::{ExchangesConfig, HedgingAppConfig};
 use price_server::{
     ExchangePriceCacheConfig, FeeCalculatorConfig, PriceServerConfig, PriceServerHealthCheckConfig,
 };
-use shared::pubsub::PubSubConfig;
 use user_trades::UserTradesConfig;
 
 use super::{db::DbConfig, tracing::TracingConfig};
@@ -16,8 +15,6 @@ use super::{db::DbConfig, tracing::TracingConfig};
 pub struct Config {
     #[serde(default)]
     pub db: DbConfig,
-    #[serde(default)]
-    pub pubsub: PubSubConfig,
     #[serde(default)]
     pub tracing: TracingConfig,
     #[serde(default)]
@@ -35,7 +32,6 @@ pub struct Config {
 }
 
 pub struct EnvOverride {
-    pub redis_password: Option<String>,
     pub pg_con: String,
     pub okex_secret_key: String,
     pub okex_passphrase: String,
@@ -47,7 +43,6 @@ impl Config {
     pub fn from_path(
         path: impl AsRef<Path>,
         EnvOverride {
-            redis_password,
             galoy_phone_code,
             okex_passphrase,
             okex_secret_key,
@@ -58,9 +53,6 @@ impl Config {
         let config_file = std::fs::read_to_string(path).context("Couldn't read config file")?;
         let mut config: Config =
             serde_yaml::from_str(&config_file).context("Couldn't parse config file")?;
-        if let Some(redis_password) = redis_password {
-            config.pubsub.password = Some(redis_password);
-        }
 
         config.galoy.auth_code = galoy_phone_code;
 

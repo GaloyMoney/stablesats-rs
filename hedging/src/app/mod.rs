@@ -3,11 +3,7 @@ use sqlxmq::JobRunnerHandle;
 use tracing::instrument;
 
 use galoy_client::*;
-use shared::{
-    health::HealthCheckTrigger,
-    payload::PriceStreamPayload,
-    pubsub::{memory, PubSubConfig, Publisher},
-};
+use shared::{health::HealthCheckTrigger, payload::PriceStreamPayload, pubsub::memory};
 
 use crate::{config::*, error::*, okex::*};
 
@@ -26,7 +22,6 @@ impl HedgingApp {
         }: HedgingAppConfig,
         okex_config: OkexConfig,
         galoy_client_cfg: GaloyClientConfig,
-        pubsub_config: PubSubConfig,
         price_receiver: memory::Subscriber<PriceStreamPayload>,
     ) -> Result<Self, HedgingError> {
         let (mut jobs, mut channels) = (Vec::new(), Vec::new());
@@ -42,7 +37,6 @@ impl HedgingApp {
             })
             .await?,
         );
-        job_registry.set_context(Publisher::new(pubsub_config.clone()).await?);
 
         let okex_engine = OkexEngine::run(
             pool.clone(),

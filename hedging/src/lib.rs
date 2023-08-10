@@ -22,7 +22,6 @@ pub async fn run(
     config: HedgingAppConfig,
     okex_config: OkexConfig,
     galoy_config: GaloyClientConfig,
-    pubsub_cfg: PubSubConfig,
     tick_receiver: memory::Subscriber<PriceStreamPayload>,
 ) -> Result<(), HedgingError> {
     HedgingApp::run(
@@ -31,7 +30,6 @@ pub async fn run(
         config,
         okex_config,
         galoy_config,
-        pubsub_cfg,
         tick_receiver,
     )
     .await?;

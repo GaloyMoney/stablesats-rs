@@ -29,9 +29,6 @@ struct Cli {
 enum Command {
     /// Runs the configured processes
     Run {
-        /// Optional env var for redis password
-        #[clap(env = "REDIS_PASSWORD")]
-        redis_password: Option<String>,
         /// Output config on crash
         #[clap(env = "CRASH_REPORT_CONFIG")]
         crash_report_config: Option<bool>,
@@ -70,7 +67,6 @@ pub async fn run() -> anyhow::Result<()> {
 
     match cli.command {
         Command::Run {
-            redis_password,
             crash_report_config,
             galoy_phone_code,
             okex_passphrase,
@@ -81,7 +77,6 @@ pub async fn run() -> anyhow::Result<()> {
             let config = Config::from_path(
                 cli.config,
                 EnvOverride {
-                    redis_password,
                     galoy_phone_code,
                     okex_passphrase,
                     okex_secret_key,
@@ -112,7 +107,6 @@ pub async fn run() -> anyhow::Result<()> {
 async fn run_cmd(
     Config {
         db,
-        pubsub,
         price_server,
         bitfinex_price_feed,
         user_trades,
@@ -198,7 +192,6 @@ async fn run_cmd(
         println!("Starting hedging process");
 
         let hedging_send = send.clone();
-        let pubsub = pubsub.clone();
         let galoy = galoy.clone();
         let (snd, recv) = futures::channel::mpsc::unbounded();
         let price = price_recv.resubscribe();
@@ -210,17 +203,9 @@ async fn run_cmd(
             let pool = pool.as_ref().unwrap().clone();
             handles.push(tokio::spawn(async move {
                 let _ = hedging_send.try_send(
-                    hedging::run(
-                        pool,
-                        recv,
-                        hedging.config,
-                        okex_config,
-                        galoy,
-                        pubsub,
-                        price,
-                    )
-                    .await
-                    .context("Hedging error"),
+                    hedging::run(pool, recv, hedging.config, okex_config, galoy, price)
+                        .await
+                        .context("Hedging error"),
                 );
             }));
         }
