@@ -177,7 +177,7 @@ impl OkexEngine {
 
     async fn spawn_position_listener(self: Arc<Self>) -> Result<(), HedgingError> {
         use rust_decimal_macros::dec;
-        let mut events = self.ledger.usd_liability_balance_events().await?;
+        let mut events = self.ledger.usd_okex_position_balance_events().await?;
         tokio::spawn(async move {
             loop {
                 match events.recv().await {
