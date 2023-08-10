@@ -1,3 +1,10 @@
+# [stablesats release v0.9.14](https://github.com/GaloyMoney/stablesats-rs/releases/tag/0.9.14)
+
+
+### Features
+
+- Remove redis for exchange position tracking (#398)
+
 # [stablesats release v0.9.13](https://github.com/GaloyMoney/stablesats-rs/releases/tag/0.9.13)
 
 

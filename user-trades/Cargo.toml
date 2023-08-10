@@ -1,6 +1,6 @@
 [package]
 name = "user-trades"
-version = "0.9.14-dev"
+version = "0.9.14"
 edition = "2021"
 
 [features]
