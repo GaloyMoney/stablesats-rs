@@ -1,4 +1,3 @@
-use futures::stream::StreamExt;
 use sqlxmq::NamedJob;
 use tracing::{info_span, instrument, Instrument};
 use tracing_opentelemetry::OpenTelemetrySpanExt;
@@ -7,10 +6,7 @@ use std::sync::Arc;
 
 use ledger::Ledger;
 use okex_client::OkexClient;
-use shared::{
-    payload::*,
-    pubsub::{memory, PubSubConfig, Subscriber},
-};
+use shared::{payload::*, pubsub::memory};
 
 use super::{config::*, funding_adjustment::*, hedge_adjustment::*, job, orders::*, transfers::*};
 use crate::error::HedgingError;
@@ -31,9 +27,8 @@ impl OkexEngine {
         pool: sqlx::PgPool,
         config: OkexConfig,
         ledger: Ledger,
-        pubsub_config: PubSubConfig,
         price_receiver: memory::Subscriber<PriceStreamPayload>,
-    ) -> Result<(Arc<Self>, Subscriber), HedgingError> {
+    ) -> Result<Arc<Self>, HedgingError> {
         let okex_client = OkexClient::new(config.client.clone()).await?;
         let orders = OkexOrders::new(pool.clone()).await?;
         let transfers = OkexTransfers::new(pool.clone()).await?;
@@ -58,16 +53,13 @@ impl OkexEngine {
             .spawn_okex_price_listener(price_receiver)
             .await?;
 
-        // REMOVE AND REPLACE WITH ledger listener
-        let subscriber = Arc::clone(&ret)
-            .spawn_position_listener(pubsub_config)
-            .await?;
+        Arc::clone(&ret).spawn_position_listener().await?;
 
         Arc::clone(&ret).spawn_liability_listener().await?;
 
         Arc::clone(&ret).spawn_non_stop_polling().await?;
 
-        Ok((ret, subscriber))
+        Ok(ret)
     }
 
     pub fn add_context_to_job_registry(&self, runner: &mut sqlxmq::JobRegistry) {
@@ -78,6 +70,7 @@ impl OkexEngine {
         runner.set_context(self.funding_adjustment.clone());
         runner.set_context(self.hedging_adjustment.clone());
         runner.set_context(self.config.funding.clone());
+        runner.set_context(self.ledger.clone());
     }
 
     pub fn register_jobs(jobs: &mut Vec<&'static NamedJob>, channels: &mut Vec<&str>) {
@@ -182,48 +175,54 @@ impl OkexEngine {
         Ok(())
     }
 
-    async fn spawn_position_listener(
-        self: Arc<Self>,
-        config: PubSubConfig,
-    ) -> Result<Subscriber, HedgingError> {
-        let mut subscriber = Subscriber::new(config).await?;
-        let mut stream = subscriber
-            .subscribe::<OkexBtcUsdSwapPositionPayload>()
-            .await?;
+    async fn spawn_position_listener(self: Arc<Self>) -> Result<(), HedgingError> {
+        use rust_decimal_macros::dec;
+        let mut events = self.ledger.usd_liability_balance_events().await?;
         tokio::spawn(async move {
-            while let Some(msg) = stream.next().await {
-                let correlation_id = msg.meta.correlation_id;
-                let span = info_span!(
-                    "hedging.okex.okex_btc_usd_swap_position_received",
-                    message_type = %msg.payload_type,
-                    correlation_id = %correlation_id,
-                    signed_usd_exposure = %msg.payload.signed_usd_exposure,
-                    error = tracing::field::Empty,
-                    error.level = tracing::field::Empty,
-                    error.message = tracing::field::Empty,
-                    hedging_action = tracing::field::Empty,
-                    funding_action = tracing::field::Empty,
-                );
-                shared::tracing::inject_tracing_data(&span, &msg.meta.tracing_data);
-                async {
-                    let _ = self
-                        .conditionally_spawn_adjust_hedge(
-                            correlation_id,
-                            msg.payload.signed_usd_exposure,
-                        )
-                        .await;
-                    let _ = self
-                        .conditionally_spawn_adjust_funding(
-                            correlation_id,
-                            msg.payload.signed_usd_exposure,
-                        )
-                        .await;
+            loop {
+                match events.recv().await {
+                    Ok(received) => {
+                        if let ledger::LedgerEventData::BalanceUpdated(data) = received.data {
+                            let correlation_id = data.entry_id;
+                            let signed_usd_exposure = SyntheticCentExposure::from(
+                                (data.settled_cr_balance - data.settled_dr_balance) * dec!(100),
+                            );
+                            let span = info_span!(
+                                "hedging.okex.okex_btc_usd_swap_position_received",
+                                correlation_id = %correlation_id,
+                                signed_usd_exposure = %signed_usd_exposure,
+                                error = tracing::field::Empty,
+                                error.level = tracing::field::Empty,
+                                error.message = tracing::field::Empty,
+                                hedging_action = tracing::field::Empty,
+                                funding_action = tracing::field::Empty,
+                            );
+                            async {
+                                let _ = self
+                                    .conditionally_spawn_adjust_hedge(
+                                        correlation_id,
+                                        signed_usd_exposure,
+                                    )
+                                    .await;
+                                let _ = self
+                                    .conditionally_spawn_adjust_funding(
+                                        correlation_id,
+                                        signed_usd_exposure,
+                                    )
+                                    .await;
+                            }
+                            .instrument(span)
+                            .await;
+                        }
+                    }
+                    Err(tokio::sync::broadcast::error::RecvError::Lagged(_)) => (),
+                    _ => {
+                        break;
+                    }
                 }
-                .instrument(span)
-                .await;
             }
         });
-        Ok(subscriber)
+        Ok(())
     }
 
     #[instrument(name = "hedging.okex.conditionally_spawn_adjust_hedge", skip(self))]

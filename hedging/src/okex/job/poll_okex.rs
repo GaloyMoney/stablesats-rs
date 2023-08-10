@@ -1,37 +1,34 @@
 use tracing::instrument;
 
 use okex_client::{OkexClient, OkexClientError, PositionSize};
-use shared::{
-    payload::{
-        ExchangeIdRaw, InstrumentIdRaw, OkexBtcUsdSwapPositionPayload, SyntheticCentExposure,
-        OKEX_EXCHANGE_ID,
-    },
-    pubsub::Publisher,
-};
+use shared::payload::OKEX_EXCHANGE_ID;
 
 use crate::{error::HedgingError, okex::*};
 
 #[instrument(name = "hedging.okex.job.poll_okex", skip_all)]
 pub async fn execute(
+    pool: &sqlx::PgPool,
     okex_orders: OkexOrders,
     okex_transfers: OkexTransfers,
     okex: OkexClient,
-    publisher: Publisher,
     funding_config: OkexFundingConfig,
+    ledger: &ledger::Ledger,
 ) -> Result<(), HedgingError> {
     let PositionSize {
         usd_cents,
         instrument_id,
         ..
     } = okex.get_position_in_signed_usd_cents().await?;
-    ledger.adjust_okex_position(usd_cents).await?;
-    // publisher
-    //     .publish(OkexBtcUsdSwapPositionPayload {
-    //         exchange: ExchangeIdRaw::from(OKEX_EXCHANGE_ID),
-    //         instrument_id: InstrumentIdRaw::from(instrument_id.to_string()),
-    //         signed_usd_exposure: SyntheticCentExposure::from(usd_cents),
-    //     })
-    //     .await?;
+    let tx = pool.begin().await?;
+
+    ledger
+        .adjust_okex_position(
+            tx,
+            usd_cents,
+            OKEX_EXCHANGE_ID.to_string(),
+            instrument_id.to_string(),
+        )
+        .await?;
 
     let mut execute_sweep = false;
     for id in okex_orders.open_orders().await? {

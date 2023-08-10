@@ -12,10 +12,7 @@ use std::collections::HashMap;
 
 use galoy_client::GaloyClient;
 use okex_client::OkexClient;
-use shared::{
-    pubsub::{CorrelationId, Publisher},
-    sqlxmq::JobExecutor,
-};
+use shared::{pubsub::CorrelationId, sqlxmq::JobExecutor};
 
 use crate::{error::*, okex::*};
 
@@ -87,14 +84,23 @@ pub(super) async fn poll_okex(
     okex: OkexClient,
     okex_orders: OkexOrders,
     okex_transfers: OkexTransfers,
-    publisher: Publisher,
     funding_config: OkexFundingConfig,
+    ledger: ledger::Ledger,
 ) -> Result<(), HedgingError> {
+    let pool = current_job.pool().clone();
     JobExecutor::builder(&mut current_job)
         .build()
         .expect("couldn't build JobExecutor")
         .execute(|_| async move {
-            poll_okex::execute(okex_orders, okex_transfers, okex, publisher, funding_config).await
+            poll_okex::execute(
+                &pool,
+                okex_orders,
+                okex_transfers,
+                okex,
+                funding_config,
+                &ledger,
+            )
+            .await
         })
         .await?;
     spawn_poll_okex(current_job.pool(), delay).await?;
