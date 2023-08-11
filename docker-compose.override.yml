@@ -1,8 +1,5 @@
 version: "2"
 services:
-  redis:
-    ports:
-    - "6379:6379"
   otel-agent:
     ports:
       - "6831:6831/udp" # Jaeger receiver
