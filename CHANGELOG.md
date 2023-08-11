@@ -1,3 +1,12 @@
+# [stablesats release v0.9.16](https://github.com/GaloyMoney/stablesats-rs/releases/tag/0.9.16)
+
+
+### Miscellaneous Tasks
+
+- Remove redis from docker compose override (#406)
+- Remove redis from docker-compose
+- Remove files not required after removing redis (#404)
+
 # [stablesats release v0.9.15](https://github.com/GaloyMoney/stablesats-rs/releases/tag/0.9.15)
 
 
