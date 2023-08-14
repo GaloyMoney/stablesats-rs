@@ -153,6 +153,7 @@ fn galoy_client_config() -> GaloyClientConfig {
 #[serial]
 #[ignore]
 async fn hedging() -> anyhow::Result<()> {
+    let (send, mut receive) = tokio::sync::mpsc::channel(1);
     let (_, tick_recv) = memory::channel(chrono::Duration::from_std(
         std::time::Duration::from_secs(1),
     )?);
@@ -161,21 +162,25 @@ async fn hedging() -> anyhow::Result<()> {
     let pool = sqlx::PgPool::connect(&pg_con).await?;
     let ledger = ledger::Ledger::init(&pool).await?;
     let cloned_pool = pool.clone();
+    let hedging_send = send.clone();
     tokio::spawn(async move {
         let (_, recv) = futures::channel::mpsc::unbounded();
-        HedgingApp::run(
-            cloned_pool,
-            recv,
-            HedgingAppConfig {
-                ..Default::default()
-            },
-            okex_config(),
-            galoy_client_config(),
-            tick_recv.resubscribe(),
-        )
-        .await
-        .expect("HedgingApp failed");
+        let _ = hedging_send.try_send(
+            HedgingApp::run(
+                cloned_pool,
+                recv,
+                HedgingAppConfig {
+                    ..Default::default()
+                },
+                okex_config(),
+                galoy_client_config(),
+                tick_recv.resubscribe(),
+            )
+            .await
+            .expect("HedgingApp failed"),
+        );
     });
+    let _reason = receive.recv().await.expect("Didn't receive msg");
     tokio::time::sleep(std::time::Duration::from_secs(5)).await;
     ledger
         .user_buys_usd(
@@ -192,5 +197,6 @@ async fn hedging() -> anyhow::Result<()> {
             },
         )
         .await?;
+    tokio::time::sleep(std::time::Duration::from_secs(15)).await;
     Ok(())
 }
