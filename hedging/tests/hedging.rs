@@ -53,22 +53,6 @@ async fn hedging() -> anyhow::Result<()> {
     )?);
     let wait_duration = std::time::Duration::from_secs(30);
 
-    ledger
-        .user_buys_usd(
-            pool.begin().await?,
-            LedgerTxId::new(),
-            UserBuysUsdParams {
-                satoshi_amount: dec!(1000000),
-                usd_cents_amount: dec!(50000),
-                meta: UserBuysUsdMeta {
-                    timestamp: chrono::Utc::now(),
-                    btc_tx_id: "btc_tx_id".into(),
-                    usd_tx_id: "usd_tx_id".into(),
-                },
-            },
-        )
-        .await?;
-
     tokio::spawn(async move {
         let (_, recv) = futures::channel::mpsc::unbounded();
         let _ = send.try_send(
@@ -87,8 +71,25 @@ async fn hedging() -> anyhow::Result<()> {
         );
     });
     let _reason = receive.recv().await.expect("Didn't receive msg");
-    tokio::time::sleep(std::time::Duration::from_secs(5)).await;
+    tokio::time::sleep(std::time::Duration::from_secs(10)).await;
 
+    let pool = sqlx::PgPool::connect(&pg_con).await?;
+    ledger
+        .user_buys_usd(
+            pool.clone().begin().await?,
+            LedgerTxId::new(),
+            UserBuysUsdParams {
+                satoshi_amount: dec!(1000000),
+                usd_cents_amount: dec!(50000),
+                meta: UserBuysUsdMeta {
+                    timestamp: chrono::Utc::now(),
+                    btc_tx_id: "btc_tx_id".into(),
+                    usd_tx_id: "usd_tx_id".into(),
+                },
+            },
+        )
+        .await?;
+    tokio::time::sleep(std::time::Duration::from_secs(15)).await;
     let mut event = ledger.usd_okex_position_balance_events().await?;
     let user_buy_event = tokio::time::timeout(wait_duration, event.recv()).await??;
     // checks if a position of $-500 gets opened on the exchange.
@@ -101,7 +102,6 @@ async fn hedging() -> anyhow::Result<()> {
         return Err(anyhow::anyhow!("Unexpected event data!"));
     }
 
-    let pool = sqlx::PgPool::connect(&pg_con).await?;
     ledger
         .user_sells_usd(
             pool.begin().await?,
@@ -117,7 +117,7 @@ async fn hedging() -> anyhow::Result<()> {
             },
         )
         .await?;
-
+    tokio::time::sleep(std::time::Duration::from_secs(15)).await;
     let user_sell_event = tokio::time::timeout(wait_duration, event.recv()).await??;
     // checks if the position gets closed on the exchange.
     if let ledger::LedgerEventData::BalanceUpdated(data) = user_sell_event.data {
