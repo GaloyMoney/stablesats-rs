@@ -1,17 +1,18 @@
 #![allow(clippy::or_fun_call)]
 
-// use futures::{stream::StreamExt, Stream};
-// use galoy_client::GaloyClientConfig;
-// use rust_decimal::Decimal;
-// use rust_decimal_macros::dec;
-// use serial_test::serial;
+use futures::{stream::StreamExt, Stream};
+use galoy_client::GaloyClientConfig;
+use rust_decimal::Decimal;
+use rust_decimal_macros::dec;
+use serial_test::serial;
 
-// use std::{env, fs};
+use std::{env, fs};
 
-// use okex_client::*;
-// use shared::{payload::*, pubsub::*};
+use ledger::*;
+use okex_client::*;
+use shared::pubsub::*;
 
-// use hedging::*;
+use hedging::*;
 
 // #[derive(serde::Deserialize)]
 // struct Fixture {
@@ -23,32 +24,32 @@
 //     Ok(serde_json::from_str(&contents)?)
 // }
 
-// fn okex_config() -> OkexConfig {
-//     let api_key = env::var("OKEX_API_KEY").expect("OKEX_API_KEY not set");
-//     let passphrase = env::var("OKEX_PASSPHRASE").expect("OKEX_PASS_PHRASE not set");
-//     let secret_key = env::var("OKEX_SECRET_KEY").expect("OKEX_SECRET_KEY not set");
-//     OkexConfig {
-//         client: OkexClientConfig {
-//             api_key,
-//             passphrase,
-//             secret_key,
-//             simulated: true,
-//         },
-//         ..Default::default()
-//     }
-// }
+fn okex_config() -> OkexConfig {
+    let api_key = env::var("OKEX_API_KEY").expect("OKEX_API_KEY not set");
+    let passphrase = env::var("OKEX_PASSPHRASE").expect("OKEX_PASS_PHRASE not set");
+    let secret_key = env::var("OKEX_SECRET_KEY").expect("OKEX_SECRET_KEY not set");
+    OkexConfig {
+        client: OkexClientConfig {
+            api_key,
+            passphrase,
+            secret_key,
+            simulated: true,
+        },
+        ..Default::default()
+    }
+}
 
-// fn galoy_client_config() -> GaloyClientConfig {
-//     let api = env::var("GALOY_GRAPHQL_URI").expect("GALOY_GRAPHQL_URI not set");
-//     let phone_number = env::var("PHONE_NUMBER").expect("PHONE_NUMBER not set");
-//     let code = env::var("AUTH_CODE").expect("AUTH_CODE not set");
+fn galoy_client_config() -> GaloyClientConfig {
+    let api = env::var("GALOY_GRAPHQL_URI").expect("GALOY_GRAPHQL_URI not set");
+    let phone_number = env::var("PHONE_NUMBER").expect("PHONE_NUMBER not set");
+    let code = env::var("AUTH_CODE").expect("AUTH_CODE not set");
 
-//     GaloyClientConfig {
-//         api,
-//         phone_number,
-//         auth_code: code,
-//     }
-// }
+    GaloyClientConfig {
+        api,
+        phone_number,
+        auth_code: code,
+    }
+}
 
 // async fn expect_exposure_between(
 //     mut stream: impl Stream<Item = Envelope<OkexBtcUsdSwapPositionPayload>> + Unpin,
@@ -109,33 +110,12 @@
 //         host: Some(redis_host),
 //         ..PubSubConfig::default()
 //     };
-//     let pg_host = std::env::var("PG_HOST").unwrap_or("localhost".to_string());
-//     let pg_con = format!("postgres://user:password@{pg_host}:5432/pg",);
-//     let pool = sqlx::PgPool::connect(&pg_con).await?;
 
 //     let publisher = Publisher::new(pubsub_config.clone()).await?;
 //     let mut subscriber = Subscriber::new(pubsub_config.clone()).await?;
 //     let mut stream = subscriber
 //         .subscribe::<OkexBtcUsdSwapPositionPayload>()
 //         .await?;
-
-//     tokio::spawn(async move {
-//         let (_, recv) = futures::channel::mpsc::unbounded();
-//         HedgingApp::run(
-//             pool.clone(),
-//             recv,
-//             HedgingAppConfig {
-//                 ..Default::default()
-//             },
-//             okex_config(),
-//             galoy_client_config(),
-//             pubsub_config.clone(),
-//             tick_recv.resubscribe(),
-//         )
-//         .await
-//         .expect("HedgingApp failed");
-//     });
-//     tokio::time::sleep(std::time::Duration::from_secs(5)).await;
 
 //     let mut payloads = load_fixture("./tests/fixtures/hedging.json")
 //         .expect("Couldn't load fixtures")
@@ -168,3 +148,49 @@
 
 //     Ok(())
 // }
+
+#[tokio::test]
+#[serial]
+#[ignore]
+async fn hedging() -> anyhow::Result<()> {
+    let (_, tick_recv) = memory::channel(chrono::Duration::from_std(
+        std::time::Duration::from_secs(1),
+    )?);
+    let pg_host = std::env::var("PG_HOST").unwrap_or("localhost".to_string());
+    let pg_con = format!("postgres://user:password@{pg_host}:5432/pg",);
+    let pool = sqlx::PgPool::connect(&pg_con).await?;
+    let ledger = ledger::Ledger::init(&pool).await?;
+    let cloned_pool = pool.clone();
+    tokio::spawn(async move {
+        let (_, recv) = futures::channel::mpsc::unbounded();
+        HedgingApp::run(
+            cloned_pool,
+            recv,
+            HedgingAppConfig {
+                ..Default::default()
+            },
+            okex_config(),
+            galoy_client_config(),
+            tick_recv.resubscribe(),
+        )
+        .await
+        .expect("HedgingApp failed");
+    });
+    tokio::time::sleep(std::time::Duration::from_secs(5)).await;
+    ledger
+        .user_buys_usd(
+            pool.begin().await?,
+            LedgerTxId::new(),
+            UserBuysUsdParams {
+                satoshi_amount: dec!(1000000),
+                usd_cents_amount: dec!(50000),
+                meta: UserBuysUsdMeta {
+                    timestamp: chrono::Utc::now(),
+                    btc_tx_id: "btc_tx_id".to_string(),
+                    usd_tx_id: "usd_tx_id".to_string(),
+                },
+            },
+        )
+        .await?;
+    Ok(())
+}
