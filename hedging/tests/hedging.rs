@@ -1,28 +1,16 @@
 #![allow(clippy::or_fun_call)]
 
-use futures::{stream::StreamExt, Stream};
 use galoy_client::GaloyClientConfig;
-use rust_decimal::Decimal;
 use rust_decimal_macros::dec;
 use serial_test::serial;
 
-use std::{env, fs};
+use std::env;
 
 use ledger::*;
 use okex_client::*;
 use shared::pubsub::*;
 
 use hedging::*;
-
-// #[derive(serde::Deserialize)]
-// struct Fixture {
-//     payloads: Vec<SynthUsdLiabilityPayload>,
-// }
-
-// fn load_fixture(path: &str) -> anyhow::Result<Fixture> {
-//     let contents = fs::read_to_string(path).expect("Couldn't load fixtures");
-//     Ok(serde_json::from_str(&contents)?)
-// }
 
 fn okex_config() -> OkexConfig {
     let api_key = env::var("OKEX_API_KEY").expect("OKEX_API_KEY not set");
@@ -51,123 +39,41 @@ fn galoy_client_config() -> GaloyClientConfig {
     }
 }
 
-// async fn expect_exposure_between(
-//     mut stream: impl Stream<Item = Envelope<OkexBtcUsdSwapPositionPayload>> + Unpin,
-//     lower: Decimal,
-//     upper: Decimal,
-// ) {
-//     let mut passed = false;
-//     for _ in 0..=20 {
-//         let pos = stream.next().await.unwrap().payload.signed_usd_exposure;
-//         passed = pos < upper && pos > lower;
-//         if passed {
-//             break;
-//         }
-//     }
-//     assert!(passed);
-// }
-
-// async fn expect_exposure_below(
-//     mut stream: impl Stream<Item = Envelope<OkexBtcUsdSwapPositionPayload>> + Unpin,
-//     expected: Decimal,
-// ) {
-//     let mut passed = false;
-//     for _ in 0..=10 {
-//         let pos = stream.next().await.unwrap().payload.signed_usd_exposure;
-//         passed = pos < expected;
-//         if passed {
-//             break;
-//         }
-//         tokio::time::sleep(std::time::Duration::from_millis(200)).await;
-//     }
-//     assert!(passed);
-// }
-
-// async fn expect_exposure_equal(
-//     mut stream: impl Stream<Item = Envelope<OkexBtcUsdSwapPositionPayload>> + Unpin,
-//     expected: Decimal,
-// ) {
-//     let mut passed = false;
-//     for _ in 0..=20 {
-//         let pos = stream.next().await.unwrap().payload.signed_usd_exposure;
-//         passed = pos == expected;
-//         if passed {
-//             break;
-//         }
-//     }
-//     assert!(passed);
-// }
-
-// #[tokio::test]
-// #[serial]
-// #[ignore = "okex is very unstable"]
-// async fn hedging() -> anyhow::Result<()> {
-//     let (_, tick_recv) = memory::channel(chrono::Duration::from_std(
-//         std::time::Duration::from_secs(1),
-//     )?);
-//     let redis_host = std::env::var("REDIS_HOST").unwrap_or("localhost".to_string());
-//     let pubsub_config = PubSubConfig {
-//         host: Some(redis_host),
-//         ..PubSubConfig::default()
-//     };
-
-//     let publisher = Publisher::new(pubsub_config.clone()).await?;
-//     let mut subscriber = Subscriber::new(pubsub_config.clone()).await?;
-//     let mut stream = subscriber
-//         .subscribe::<OkexBtcUsdSwapPositionPayload>()
-//         .await?;
-
-//     let mut payloads = load_fixture("./tests/fixtures/hedging.json")
-//         .expect("Couldn't load fixtures")
-//         .payloads
-//         .into_iter();
-//     publisher.publish(payloads.next().unwrap()).await?;
-
-//     let okex = OkexClient::new(okex_config().client).await?;
-//     expect_exposure_equal(&mut stream, dec!(0)).await;
-
-//     publisher.publish(payloads.next().unwrap()).await?;
-
-//     for idx in 0..=1 {
-//         expect_exposure_between(&mut stream, dec!(-21000), dec!(-19000)).await;
-
-//         if idx == 0 {
-//             okex.place_order(
-//                 ClientOrderId::new(),
-//                 OkexOrderSide::Sell,
-//                 &BtcUsdSwapContracts::from(5),
-//             )
-//             .await?;
-//             expect_exposure_below(&mut stream, dec!(-50000)).await;
-//         }
-//     }
-
-//     publisher.publish(payloads.next().unwrap()).await?;
-
-//     expect_exposure_equal(&mut stream, dec!(0)).await;
-
-//     Ok(())
-// }
-
 #[tokio::test]
 #[serial]
-#[ignore]
 async fn hedging() -> anyhow::Result<()> {
+    let pg_host = std::env::var("PG_HOST").unwrap_or_else(|_| "localhost".into());
+    let pg_con = format!("postgres://user:password@{}:5432/pg", pg_host);
+    let pool = sqlx::PgPool::connect(&pg_con).await?;
+    let ledger = ledger::Ledger::init(&pool).await?;
+
     let (send, mut receive) = tokio::sync::mpsc::channel(1);
     let (_, tick_recv) = memory::channel(chrono::Duration::from_std(
         std::time::Duration::from_secs(1),
     )?);
-    let pg_host = std::env::var("PG_HOST").unwrap_or("localhost".to_string());
-    let pg_con = format!("postgres://user:password@{pg_host}:5432/pg",);
-    let pool = sqlx::PgPool::connect(&pg_con).await?;
-    let ledger = ledger::Ledger::init(&pool).await?;
-    let cloned_pool = pool.clone();
-    let hedging_send = send.clone();
+    let wait_duration = std::time::Duration::from_secs(30);
+
+    ledger
+        .user_buys_usd(
+            pool.begin().await?,
+            LedgerTxId::new(),
+            UserBuysUsdParams {
+                satoshi_amount: dec!(1000000),
+                usd_cents_amount: dec!(50000),
+                meta: UserBuysUsdMeta {
+                    timestamp: chrono::Utc::now(),
+                    btc_tx_id: "btc_tx_id".into(),
+                    usd_tx_id: "usd_tx_id".into(),
+                },
+            },
+        )
+        .await?;
+
     tokio::spawn(async move {
         let (_, recv) = futures::channel::mpsc::unbounded();
-        let _ = hedging_send.try_send(
+        let _ = send.try_send(
             HedgingApp::run(
-                cloned_pool,
+                pool,
                 recv,
                 HedgingAppConfig {
                     ..Default::default()
@@ -182,21 +88,43 @@ async fn hedging() -> anyhow::Result<()> {
     });
     let _reason = receive.recv().await.expect("Didn't receive msg");
     tokio::time::sleep(std::time::Duration::from_secs(5)).await;
+
+    let mut event = ledger.usd_okex_position_balance_events().await?;
+    let user_buy_event = tokio::time::timeout(wait_duration, event.recv()).await??;
+    // checks if a position of $-500 gets opened on the exchange.
+    if let ledger::LedgerEventData::BalanceUpdated(data) = user_buy_event.data {
+        assert_eq!(
+            (data.settled_cr_balance - data.settled_dr_balance),
+            dec!(-500)
+        )
+    } else {
+        return Err(anyhow::anyhow!("Unexpected event data!"));
+    }
+
+    let pool = sqlx::PgPool::connect(&pg_con).await?;
     ledger
-        .user_buys_usd(
+        .user_sells_usd(
             pool.begin().await?,
             LedgerTxId::new(),
-            UserBuysUsdParams {
+            UserSellsUsdParams {
                 satoshi_amount: dec!(1000000),
                 usd_cents_amount: dec!(50000),
-                meta: UserBuysUsdMeta {
+                meta: UserSellsUsdMeta {
                     timestamp: chrono::Utc::now(),
-                    btc_tx_id: "btc_tx_id".to_string(),
-                    usd_tx_id: "usd_tx_id".to_string(),
+                    btc_tx_id: "btc_tx_id".into(),
+                    usd_tx_id: "usd_tx_id".into(),
                 },
             },
         )
         .await?;
-    tokio::time::sleep(std::time::Duration::from_secs(15)).await;
+
+    let user_sell_event = tokio::time::timeout(wait_duration, event.recv()).await??;
+    // checks if the position gets closed on the exchange.
+    if let ledger::LedgerEventData::BalanceUpdated(data) = user_sell_event.data {
+        assert_eq!((data.settled_cr_balance - data.settled_dr_balance), dec!(0))
+    } else {
+        return Err(anyhow::anyhow!("Unexpected event data!"));
+    }
+
     Ok(())
 }
