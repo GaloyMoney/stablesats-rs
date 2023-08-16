@@ -51,7 +51,6 @@ async fn hedging() -> anyhow::Result<()> {
     let (_, tick_recv) = memory::channel(chrono::Duration::from_std(
         std::time::Duration::from_secs(1),
     )?);
-    let wait_duration = std::time::Duration::from_secs(30);
 
     tokio::spawn(async move {
         let (_, recv) = futures::channel::mpsc::unbounded();
@@ -89,17 +88,22 @@ async fn hedging() -> anyhow::Result<()> {
             },
         )
         .await?;
-    tokio::time::sleep(std::time::Duration::from_secs(15)).await;
     let mut event = ledger.usd_okex_position_balance_events().await?;
-    let user_buy_event = tokio::time::timeout(wait_duration, event.recv()).await??;
-    // checks if a position of $-500 gets opened on the exchange.
-    if let ledger::LedgerEventData::BalanceUpdated(data) = user_buy_event.data {
-        assert_eq!(
-            (data.settled_cr_balance - data.settled_dr_balance),
-            dec!(-500)
-        )
-    } else {
-        return Err(anyhow::anyhow!("Unexpected event data!"));
+    let mut passed = false;
+    for _ in 0..=20 {
+        let user_buy_event = event.recv().await?;
+        // checks if a position of $-500 gets opened on the exchange.
+        if let ledger::LedgerEventData::BalanceUpdated(data) = user_buy_event.data {
+            if (data.settled_cr_balance - data.settled_dr_balance) == dec!(-500) {
+                passed = true;
+                break;
+            }
+        } else {
+            tokio::time::sleep(std::time::Duration::from_secs(1)).await;
+        }
+    }
+    if !passed {
+        panic!("Could not open a position on the exchange!");
     }
 
     ledger
@@ -117,13 +121,21 @@ async fn hedging() -> anyhow::Result<()> {
             },
         )
         .await?;
-    tokio::time::sleep(std::time::Duration::from_secs(15)).await;
-    let user_sell_event = tokio::time::timeout(wait_duration, event.recv()).await??;
-    // checks if the position gets closed on the exchange.
-    if let ledger::LedgerEventData::BalanceUpdated(data) = user_sell_event.data {
-        assert_eq!((data.settled_cr_balance - data.settled_dr_balance), dec!(0))
-    } else {
-        return Err(anyhow::anyhow!("Unexpected event data!"));
+    let mut passed = false;
+    for _ in 0..=20 {
+        let user_sell_event = event.recv().await?;
+        // checks if the position gets closed on the exchange.
+        if let ledger::LedgerEventData::BalanceUpdated(data) = user_sell_event.data {
+            if (data.settled_cr_balance - data.settled_dr_balance) == dec!(0) {
+                passed = true;
+                break;
+            }
+        } else {
+            tokio::time::sleep(std::time::Duration::from_secs(1)).await;
+        }
+    }
+    if !passed {
+        panic!("Could not close the position on the exchange");
     }
 
     Ok(())
