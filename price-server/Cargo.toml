@@ -31,7 +31,7 @@ opentelemetry = { version = "0.18.0", features = ["trace"] }
 tracing-opentelemetry = "0.18.0"
 rust_decimal_macros = "1.29.0"
 rusty-money = "0.4.1"
-serde_with = { version = "2.3.1", features = ["chrono_0_4"] }
+serde_with = { version = "3.2.0", features = ["chrono_0_4"] }
 async-trait = "0.1.67"
 
 [build-dependencies]
