@@ -106,6 +106,45 @@ async fn hedging() -> anyhow::Result<()> {
         panic!("Could not open a position on the exchange!");
     }
 
+    let okex = OkexClient::new(okex_config().client).await?;
+    okex.place_order(
+        ClientOrderId::new(),
+        OkexOrderSide::Buy,
+        &BtcUsdSwapContracts::from(5),
+    )
+    .await?;
+    passed = false;
+    for _ in 0..20 {
+        let PositionSize { usd_cents, .. } = okex.get_position_in_signed_usd_cents().await?;
+        // checks if the position gets closed via OkexClient
+        if usd_cents / dec!(100) == dec!(0) {
+            passed = true;
+            break;
+        } else {
+            tokio::time::sleep(std::time::Duration::from_secs(1)).await;
+        }
+    }
+    if !passed {
+        panic!("Could not close the position via OkexClient!");
+    }
+
+    passed = false;
+    for _ in 0..=20 {
+        let user_buy_event = event.recv().await?;
+        // checks if a position of $-500 gets opened on the exchange.
+        if let ledger::LedgerEventData::BalanceUpdated(data) = user_buy_event.data {
+            if (data.settled_cr_balance - data.settled_dr_balance) == dec!(-500) {
+                passed = true;
+                break;
+            }
+        } else {
+            tokio::time::sleep(std::time::Duration::from_secs(1)).await;
+        }
+    }
+    if !passed {
+        panic!("Could not open a position on the exchange after closing it via OkexClient!");
+    }
+
     ledger
         .user_sells_usd(
             pool.begin().await?,
@@ -121,7 +160,7 @@ async fn hedging() -> anyhow::Result<()> {
             },
         )
         .await?;
-    let mut passed = false;
+    passed = false;
     for _ in 0..=20 {
         let user_sell_event = event.recv().await?;
         // checks if the position gets closed on the exchange.
