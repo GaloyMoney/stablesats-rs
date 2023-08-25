@@ -11,6 +11,7 @@ use crate::{error::*, okex::*};
 
 const SATS_PER_BTC: Decimal = dec!(100_000_000);
 
+#[allow(clippy::too_many_arguments)]
 #[instrument(name = "hedging.okex.job.adjust_funding", skip_all, fields(correlation_id = %correlation_id,
         target_liability, current_position, last_price_in_usd_cents, funding_available_balance,
         trading_available_balance, onchain_fees, action, client_transfer_id,
