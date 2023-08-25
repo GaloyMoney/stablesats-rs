@@ -40,7 +40,7 @@ impl BriaClient {
         request.metadata_mut().insert(
             PROFILE_API_KEY_HEADER,
             tonic::metadata::MetadataValue::try_from(key)
-                .map_err(|_| BriaClientError::InvalidMetadataValue(key.clone()))?,
+                .map_err(|_| BriaClientError::CouldNotCreateMetadataValue)?,
         );
         Ok(request)
     }
