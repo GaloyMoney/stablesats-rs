@@ -1,6 +1,5 @@
-use anyhow::Context;
-
 use super::{config::BriaClientConfig, proto};
+use crate::error::BriaClientError;
 
 type ProtoClient = proto::bria_service_client::BriaServiceClient<tonic::transport::Channel>;
 
@@ -11,60 +10,57 @@ pub struct OnchainAddress {
     pub address: String,
 }
 
+#[derive(Debug, Clone)]
 pub struct BriaClient {
     config: BriaClientConfig,
+    proto_client: ProtoClient,
 }
 
 impl BriaClient {
-    pub fn new(config: BriaClientConfig) -> Self {
-        Self { config }
-    }
+    pub async fn connect(config: BriaClientConfig) -> Result<Self, BriaClientError> {
+        let proto_client = ProtoClient::connect(config.url.clone())
+            .await
+            .map_err(|_| BriaClientError::ConnectionError(config.url.clone()))?;
 
-    async fn connect(&self) -> anyhow::Result<ProtoClient> {
-        match ProtoClient::connect(self.config.url.to_string()).await {
-            Ok(client) => Ok(client),
-            Err(err) => {
-                eprintln!(
-                    "Couldn't connect to daemon\nAre you sure its running on {}?\n",
-                    self.config.url
-                );
-                Err(anyhow::anyhow!(err))
-            }
+        if config.key.is_empty() {
+            return Err(BriaClientError::EmptyKeyError);
         }
+
+        Ok(Self {
+            config,
+            proto_client,
+        })
     }
 
     pub fn inject_auth_token<T>(
         &self,
         mut request: tonic::Request<T>,
-    ) -> anyhow::Result<tonic::Request<T>> {
-        if self.config.key.is_empty() {
-            return Err(anyhow::anyhow!("Bria key cannot be empty"));
-        }
+    ) -> Result<tonic::Request<T>, BriaClientError> {
         let key = &self.config.key;
         request.metadata_mut().insert(
             PROFILE_API_KEY_HEADER,
             tonic::metadata::MetadataValue::try_from(key)
-                .context("Couldn't create MetadataValue")?,
+                .map_err(|_| BriaClientError::InvalidMetadataValue(key.clone()))?,
         );
         Ok(request)
     }
 
-    pub async fn get_address(&self) -> anyhow::Result<OnchainAddress> {
+    pub async fn onchain_address(&mut self) -> Result<OnchainAddress, BriaClientError> {
         let request = tonic::Request::new(proto::GetAddressRequest {
             identifier: Some(proto::get_address_request::Identifier::ExternalId(
                 self.config.external_id.clone(),
             )),
         });
-        let response = self
-            .connect()
-            .await?
+
+        self.proto_client
             .get_address(self.inject_auth_token(request)?)
-            .await?;
-        if let Some(addr) = response.into_inner().address {
-            return Ok(OnchainAddress { address: addr });
-        }
-        Err(anyhow::anyhow!(
-            "Couldn't find address for the given external_id"
-        ))
+            .await
+            .ok()
+            .and_then(|res| {
+                res.into_inner()
+                    .address
+                    .map(|addr| OnchainAddress { address: addr })
+            })
+            .ok_or(BriaClientError::AddressNotFoundError)
     }
 }
