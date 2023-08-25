@@ -12,4 +12,5 @@ members = [
   "bitfinex-client",
   "bitfinex-price",
   "galoy-client",
+  "bria-client",
 ]
