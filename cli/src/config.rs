@@ -2,6 +2,7 @@ use anyhow::Context;
 use serde::{Deserialize, Serialize};
 use std::path::Path;
 
+use bria_client::BriaClientConfig;
 use galoy_client::GaloyClientConfig;
 use hedging::{ExchangesConfig, HedgingAppConfig};
 use price_server::{
@@ -29,6 +30,8 @@ pub struct Config {
     pub hedging: HedgingConfigWrapper,
     #[serde(default)]
     pub exchanges: ExchangesConfig,
+    #[serde(default)]
+    pub bria_client: BriaClientConfig,
 }
 
 pub struct EnvOverride {
@@ -37,6 +40,11 @@ pub struct EnvOverride {
     pub okex_passphrase: String,
     pub galoy_phone_code: String,
     pub bitfinex_secret_key: String,
+    pub bria_url: String,
+    pub bria_key: String,
+    pub bria_wallet_name: String,
+    pub bria_payout_queue_name: String,
+    pub bria_external_id: String,
 }
 
 impl Config {
@@ -48,6 +56,11 @@ impl Config {
             okex_secret_key,
             pg_con: stablesats_pg_con,
             bitfinex_secret_key: _,
+            bria_url,
+            bria_key,
+            bria_wallet_name,
+            bria_payout_queue_name,
+            bria_external_id,
         }: EnvOverride,
     ) -> anyhow::Result<Self> {
         let config_file = std::fs::read_to_string(path).context("Couldn't read config file")?;
@@ -62,7 +75,11 @@ impl Config {
         };
 
         config.db.pg_con = stablesats_pg_con;
-
+        config.bria_client.url = bria_url;
+        config.bria_client.key = bria_key;
+        config.bria_client.wallet_name = bria_wallet_name;
+        config.bria_client.payout_queue_name = bria_payout_queue_name;
+        config.bria_client.external_id = bria_external_id;
         Ok(config)
     }
 }
