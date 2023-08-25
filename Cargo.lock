@@ -1340,6 +1340,7 @@ version = "0.9.17-dev"
 dependencies = [
  "anyhow",
  "bitfinex-client",
+ "bria-client",
  "chrono",
  "futures",
  "galoy-client",

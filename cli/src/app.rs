@@ -134,7 +134,7 @@ async fn run_cmd(
         galoy,
         hedging,
         exchanges,
-        bria_client,
+        bria,
     }: Config,
 ) -> anyhow::Result<()> {
     println!("Stablesats - v{}", env!("CARGO_PKG_VERSION"));
@@ -214,6 +214,7 @@ async fn run_cmd(
 
         let hedging_send = send.clone();
         let galoy = galoy.clone();
+        let bria = bria.clone();
         let (snd, recv) = futures::channel::mpsc::unbounded();
         let price = price_recv.resubscribe();
         checkers.insert("hedging", snd);
@@ -224,7 +225,7 @@ async fn run_cmd(
             let pool = pool.as_ref().unwrap().clone();
             handles.push(tokio::spawn(async move {
                 let _ = hedging_send.try_send(
-                    hedging::run(pool, recv, hedging.config, okex_config, galoy, price)
+                    hedging::run(pool, recv, hedging.config, okex_config, galoy, bria, price)
                         .await
                         .context("Hedging error"),
                 );

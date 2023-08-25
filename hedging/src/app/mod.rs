@@ -1,3 +1,4 @@
+use bria_client::{BriaClient, BriaClientConfig};
 use futures::stream::StreamExt;
 use sqlxmq::JobRunnerHandle;
 use tracing::instrument;
@@ -22,6 +23,7 @@ impl HedgingApp {
         }: HedgingAppConfig,
         okex_config: OkexConfig,
         galoy_client_cfg: GaloyClientConfig,
+        bria_client_cfg: BriaClientConfig,
         price_receiver: memory::Subscriber<PriceStreamPayload>,
     ) -> Result<Self, HedgingError> {
         let (mut jobs, mut channels) = (Vec::new(), Vec::new());
@@ -34,6 +36,12 @@ impl HedgingApp {
         job_registry.set_context(
             shared::tracing::record_error(tracing::Level::ERROR, || async move {
                 GaloyClient::connect(galoy_client_cfg).await
+            })
+            .await?,
+        );
+        job_registry.set_context(
+            shared::tracing::record_error(tracing::Level::ERROR, || async move {
+                BriaClient::connect(bria_client_cfg).await
             })
             .await?,
         );

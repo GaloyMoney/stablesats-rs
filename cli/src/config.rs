@@ -31,7 +31,7 @@ pub struct Config {
     #[serde(default)]
     pub exchanges: ExchangesConfig,
     #[serde(default)]
-    pub bria_client: BriaClientConfig,
+    pub bria: BriaClientConfig,
 }
 
 pub struct EnvOverride {
@@ -75,11 +75,11 @@ impl Config {
         };
 
         config.db.pg_con = stablesats_pg_con;
-        config.bria_client.url = bria_url;
-        config.bria_client.key = bria_key;
-        config.bria_client.wallet_name = bria_wallet_name;
-        config.bria_client.payout_queue_name = bria_payout_queue_name;
-        config.bria_client.external_id = bria_external_id;
+        config.bria.url = bria_url;
+        config.bria.key = bria_key;
+        config.bria.wallet_name = bria_wallet_name;
+        config.bria.payout_queue_name = bria_payout_queue_name;
+        config.bria.external_id = bria_external_id;
         Ok(config)
     }
 }

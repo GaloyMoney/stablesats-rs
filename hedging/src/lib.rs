@@ -7,6 +7,7 @@ mod error;
 pub(crate) mod hack_user_trades_lag;
 mod okex;
 
+use bria_client::BriaClientConfig;
 use galoy_client::GaloyClientConfig;
 use shared::{health::HealthCheckTrigger, payload::*, pubsub::*};
 
@@ -22,6 +23,7 @@ pub async fn run(
     config: HedgingAppConfig,
     okex_config: OkexConfig,
     galoy_config: GaloyClientConfig,
+    bria_config: BriaClientConfig,
     tick_receiver: memory::Subscriber<PriceStreamPayload>,
 ) -> Result<(), HedgingError> {
     HedgingApp::run(
@@ -30,6 +32,7 @@ pub async fn run(
         config,
         okex_config,
         galoy_config,
+        bria_config,
         tick_receiver,
     )
     .await?;

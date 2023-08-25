@@ -2,6 +2,7 @@ use rust_decimal::Decimal;
 use rust_decimal_macros::dec;
 use tracing::instrument;
 
+use bria_client::*;
 use galoy_client::*;
 use okex_client::*;
 use shared::pubsub::CorrelationId;
@@ -21,6 +22,7 @@ pub(super) async fn execute(
     okex: OkexClient,
     okex_transfers: OkexTransfers,
     galoy: GaloyClient,
+    bria: &mut BriaClient,
     funding_adjustment: FundingAdjustment,
 ) -> Result<(), HedgingError> {
     let span = tracing::Span::current();
@@ -161,7 +163,7 @@ pub(super) async fn execute(
                         return Ok(());
                     }
 
-                    let deposit_address = galoy.onchain_address().await?.address;
+                    let deposit_address = bria.onchain_address().await?.address;
                     let reservation = TransferReservation {
                         shared: &shared,
                         action_size: Some(amount),

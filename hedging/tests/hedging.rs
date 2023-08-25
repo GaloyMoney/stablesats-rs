@@ -6,6 +6,7 @@ use serial_test::serial;
 
 use std::env;
 
+use bria_client::*;
 use ledger::*;
 use okex_client::*;
 use shared::pubsub::*;
@@ -39,6 +40,23 @@ fn galoy_client_config() -> GaloyClientConfig {
     }
 }
 
+fn bria_client_config() -> BriaClientConfig {
+    let url = env::var("BRIA_URL").expect("BRIA_URL not set");
+    let key = env::var("BRIA_KEY").expect("BRIA_KEY not set");
+    let wallet_name = env::var("BRIA_WALLET_NAME").expect("BRIA_WALLET_NAME not set");
+    let external_id = env::var("BRIA_EXTERNAL_ID").expect("BRIA_EXTERNAL_ID not set");
+    let payout_queue_name =
+        env::var("BRIA_PAYOUT_QUEUE_NAME").expect("BRIA_PAYOUT_QUEUE_NAME not set");
+
+    BriaClientConfig {
+        url,
+        key,
+        wallet_name,
+        external_id,
+        payout_queue_name,
+    }
+}
+
 #[tokio::test]
 #[serial]
 async fn hedging() -> anyhow::Result<()> {
@@ -63,6 +81,7 @@ async fn hedging() -> anyhow::Result<()> {
                 },
                 okex_config(),
                 galoy_client_config(),
+                bria_client_config(),
                 tick_recv.resubscribe(),
             )
             .await
