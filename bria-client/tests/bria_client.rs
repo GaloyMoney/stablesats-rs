@@ -20,12 +20,12 @@ fn client_configuration() -> BriaClientConfig {
 }
 
 #[tokio::test]
-async fn new_address() -> anyhow::Result<()> {
+async fn onchain_address() -> anyhow::Result<()> {
     let config = client_configuration();
-    let client = BriaClient::new(config);
+    let mut client = BriaClient::connect(config).await?;
 
-    let address = client.get_address().await?;
-    assert_eq!(address.address.len(), 44);
+    let onchain_address = client.onchain_address().await?;
+    assert_eq!(onchain_address.address.len(), 44);
 
     Ok(())
 }
