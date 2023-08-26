@@ -40,11 +40,7 @@ pub struct EnvOverride {
     pub okex_passphrase: String,
     pub galoy_phone_code: String,
     pub bitfinex_secret_key: String,
-    pub bria_url: String,
     pub bria_key: String,
-    pub bria_wallet_name: String,
-    pub bria_payout_queue_name: String,
-    pub bria_external_id: String,
 }
 
 impl Config {
@@ -56,11 +52,7 @@ impl Config {
             okex_secret_key,
             pg_con: stablesats_pg_con,
             bitfinex_secret_key: _,
-            bria_url,
             bria_key,
-            bria_wallet_name,
-            bria_payout_queue_name,
-            bria_external_id,
         }: EnvOverride,
     ) -> anyhow::Result<Self> {
         let config_file = std::fs::read_to_string(path).context("Couldn't read config file")?;
@@ -75,11 +67,7 @@ impl Config {
         };
 
         config.db.pg_con = stablesats_pg_con;
-        config.bria.url = bria_url;
         config.bria.key = bria_key;
-        config.bria.wallet_name = bria_wallet_name;
-        config.bria.payout_queue_name = bria_payout_queue_name;
-        config.bria.external_id = bria_external_id;
         Ok(config)
     }
 }

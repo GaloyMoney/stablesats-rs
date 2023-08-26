@@ -47,21 +47,9 @@ enum Command {
         /// Bitfinex secret key
         #[clap(env = "BITFINEX_SECRET_KEY", default_value = "")]
         bitfinex_secret_key: String,
-        /// Bria url
-        #[clap(env = "BRIA_URL", default_value = "")]
-        bria_url: String,
         /// Bria key
         #[clap(env = "BRIA_KEY", default_value = "")]
         bria_key: String,
-        /// Bria wallet name
-        #[clap(env = "BRIA_WALLET_NAME", default_value = "")]
-        bria_wallet_name: String,
-        /// Bria payout queue name
-        #[clap(env = "BRIA_PAYOUT_QUEUE_NAME", default_value = "")]
-        bria_payout_queue_name: String,
-        /// Bria address external id
-        #[clap(env = "BRIA_EXTERNAL_ID", default_value = "")]
-        bria_external_id: String,
     },
     /// Gets a quote from the price server
     Price {
@@ -88,11 +76,7 @@ pub async fn run() -> anyhow::Result<()> {
             okex_secret_key,
             bitfinex_secret_key,
             pg_con,
-            bria_url,
             bria_key,
-            bria_wallet_name,
-            bria_payout_queue_name,
-            bria_external_id,
         } => {
             let config = Config::from_path(
                 cli.config,
@@ -102,11 +86,7 @@ pub async fn run() -> anyhow::Result<()> {
                     okex_secret_key,
                     pg_con,
                     bitfinex_secret_key,
-                    bria_url,
                     bria_key,
-                    bria_wallet_name,
-                    bria_payout_queue_name,
-                    bria_external_id,
                 },
             )?;
             match (run_cmd(config.clone()).await, crash_report_config) {
