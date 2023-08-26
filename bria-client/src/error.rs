@@ -10,4 +10,6 @@ pub enum BriaClientError {
     CouldNotCreateMetadataValue,
     #[error("Couldn't find address for the given external_id")]
     AddressNotFoundError,
+    #[error("Couldn't generate a new address")]
+    CouldNotGenerateNewAddress,
 }
