@@ -28,3 +28,25 @@ async fn onchain_address() -> anyhow::Result<()> {
 
     Ok(())
 }
+
+#[tokio::test]
+async fn send_onchain_payment() -> anyhow::Result<()> {
+    let config = client_configuration();
+    let mut client = BriaClient::connect(config).await?;
+    let destination = "bcrt1q5cwegu66cf344du3ffrvnwjz9u246xlydqezsa".to_string();
+    let satoshis = 50000;
+    let metadata: String = serde_json::json!({
+        "deposit_amount": satoshis,
+        "to": "okex",
+        "from": "stablesats"
+    })
+    .to_string();
+    let _ = client
+        .send_onchain_payment(
+            destination,
+            satoshis,
+            Some(serde_json::Value::String(metadata)),
+        )
+        .await?;
+    Ok(())
+}
