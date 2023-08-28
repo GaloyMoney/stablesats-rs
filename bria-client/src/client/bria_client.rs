@@ -83,6 +83,35 @@ impl BriaClient {
             .map(|res| OnchainAddress {
                 address: res.into_inner().address,
             })
-            .map_err(|_| BriaClientError::CouldNotGenerateNewAddress)
+            .map_err(|e| {
+                BriaClientError::CouldNotGenerateNewAddress(format!("gRPC error {}", e.message()))
+            })
+    }
+
+    pub async fn send_onchain_payment(
+        &mut self,
+        destination: String,
+        satoshis: u64,
+        metadata: Option<serde_json::Value>,
+    ) -> Result<String, BriaClientError> {
+        let request = tonic::Request::new(proto::SubmitPayoutRequest {
+            wallet_name: self.config.wallet_name.clone(),
+            payout_queue_name: self.config.payout_queue_name.clone(),
+            destination: Some(proto::submit_payout_request::Destination::OnchainAddress(
+                destination,
+            )),
+            satoshis,
+            external_id: None,
+            metadata: metadata.map(serde_json::from_value).transpose()?,
+        });
+
+        let response = self
+            .proto_client
+            .submit_payout(self.inject_auth_token(request)?)
+            .await
+            .map_err(|e| {
+                BriaClientError::CouldNotSendOnchainPayment(format!("gRPC error: {}", e.message()))
+            })?;
+        Ok(response.into_inner().id)
     }
 }

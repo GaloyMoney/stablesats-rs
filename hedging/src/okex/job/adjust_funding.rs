@@ -1,5 +1,6 @@
-use rust_decimal::Decimal;
+use rust_decimal::{prelude::ToPrimitive, Decimal};
 use rust_decimal_macros::dec;
+use serde_json::json;
 use tracing::instrument;
 
 use bria_client::*;
@@ -152,10 +153,22 @@ pub(super) async fn execute(
                             &tracing::field::display(String::from(client_id)),
                         );
 
-                        let amount_in_sats = amount * SATS_PER_BTC;
-                        let memo: String = format!("deposit of {amount_in_sats} sats to OKX");
-                        let _ = galoy
-                            .send_onchain_payment(deposit_address, amount_in_sats, Some(memo), 1)
+                        let amount_in_sats = (amount * SATS_PER_BTC)
+                            .abs()
+                            .to_u64()
+                            .expect("should always convert to u64");
+                        let metadata: String = json!({
+                            "deposit_amount": amount_in_sats,
+                            "to": "okex",
+                            "from": "stablesats"
+                        })
+                        .to_string();
+                        let _ = bria
+                            .send_onchain_payment(
+                                deposit_address,
+                                amount_in_sats,
+                                Some(serde_json::Value::String(metadata)),
+                            )
                             .await?;
                     }
                 }

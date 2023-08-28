@@ -10,6 +10,16 @@ pub enum BriaClientError {
     CouldNotCreateMetadataValue,
     #[error("Couldn't find address for the given external_id")]
     AddressNotFoundError,
-    #[error("Couldn't generate a new address")]
-    CouldNotGenerateNewAddress,
+    #[error("Couldn't generate a new address: {0}")]
+    CouldNotGenerateNewAddress(String),
+    #[error("Couldn't send onchain payment: {0}")]
+    CouldNotSendOnchainPayment(String),
+    #[error("Could not parse Send Onchain Payment Metadata: {0}")]
+    CouldNotParseSendOnchainPaymentMetadata(serde_json::Error),
+}
+
+impl From<serde_json::Error> for BriaClientError {
+    fn from(err: serde_json::Error) -> BriaClientError {
+        BriaClientError::CouldNotParseSendOnchainPaymentMetadata(err)
+    }
 }
