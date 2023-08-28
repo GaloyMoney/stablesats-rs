@@ -41,12 +41,11 @@ fn galoy_client_config() -> GaloyClientConfig {
 }
 
 fn bria_client_config() -> BriaClientConfig {
-    let url = env::var("BRIA_URL").expect("BRIA_URL not set");
+    let url = "http://localhost:2742".to_string();
     let key = env::var("BRIA_KEY").expect("BRIA_KEY not set");
-    let wallet_name = env::var("BRIA_WALLET_NAME").expect("BRIA_WALLET_NAME not set");
-    let external_id = env::var("BRIA_EXTERNAL_ID").expect("BRIA_EXTERNAL_ID not set");
-    let payout_queue_name =
-        env::var("BRIA_PAYOUT_QUEUE_NAME").expect("BRIA_PAYOUT_QUEUE_NAME not set");
+    let wallet_name = "default".to_string();
+    let payout_queue_name = "default".to_string();
+    let external_id = "stablesats_external_id".to_string();
 
     BriaClientConfig {
         url,
