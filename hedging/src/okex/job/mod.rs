@@ -11,7 +11,6 @@ use uuid::{uuid, Uuid};
 
 use std::collections::HashMap;
 
-use galoy_client::GaloyClient;
 use okex_client::OkexClient;
 use shared::{pubsub::CorrelationId, sqlxmq::JobExecutor};
 
@@ -177,7 +176,6 @@ pub(super) async fn adjust_funding(
     ledger: ledger::Ledger,
     okex: OkexClient,
     okex_transfers: OkexTransfers,
-    galoy: GaloyClient,
     mut bria: BriaClient,
     funding_adjustment: FundingAdjustment,
 ) -> Result<(), HedgingError> {
@@ -193,7 +191,6 @@ pub(super) async fn adjust_funding(
                 ledger,
                 okex,
                 okex_transfers,
-                galoy,
                 &mut bria,
                 funding_adjustment,
             )

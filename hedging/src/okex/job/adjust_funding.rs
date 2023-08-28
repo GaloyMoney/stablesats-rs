@@ -4,7 +4,6 @@ use serde_json::json;
 use tracing::instrument;
 
 use bria_client::*;
-use galoy_client::*;
 use okex_client::*;
 use shared::pubsub::CorrelationId;
 
@@ -23,7 +22,6 @@ pub(super) async fn execute(
     ledger: ledger::Ledger,
     okex: OkexClient,
     okex_transfers: OkexTransfers,
-    galoy: GaloyClient,
     bria: &mut BriaClient,
     funding_adjustment: FundingAdjustment,
 ) -> Result<(), HedgingError> {
