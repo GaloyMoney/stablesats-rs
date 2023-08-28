@@ -5,11 +5,11 @@ pub enum BriaClientError {
     #[error("Couldn't connect to bria at url: {0}")]
     ConnectionError(String),
     #[error("Bria key cannot be empty")]
-    EmptyKeyError,
+    EmptyKey,
     #[error("Couldn't create MetadataValue")]
     CouldNotCreateMetadataValue,
     #[error("Couldn't find address for the given external_id")]
-    AddressNotFoundError,
+    AddressNotFound,
     #[error("Couldn't generate a new address: {0}")]
     CouldNotGenerateNewAddress(String),
     #[error("Couldn't send onchain payment: {0}")]

@@ -23,7 +23,7 @@ impl BriaClient {
             .map_err(|_| BriaClientError::ConnectionError(config.url.clone()))?;
 
         if config.key.is_empty() {
-            return Err(BriaClientError::EmptyKeyError);
+            return Err(BriaClientError::EmptyKey);
         }
 
         Ok(Self {
@@ -68,7 +68,7 @@ impl BriaClient {
                     .address
                     .map(|addr| OnchainAddress { address: addr })
             })
-            .ok_or(BriaClientError::AddressNotFoundError)
+            .ok_or(BriaClientError::AddressNotFound)
     }
 
     async fn new_address(&mut self) -> Result<OnchainAddress, BriaClientError> {
