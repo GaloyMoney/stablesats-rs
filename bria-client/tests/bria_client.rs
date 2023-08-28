@@ -35,18 +35,16 @@ async fn send_onchain_payment() -> anyhow::Result<()> {
     let mut client = BriaClient::connect(config).await?;
     let destination = "bcrt1q5cwegu66cf344du3ffrvnwjz9u246xlydqezsa".to_string();
     let satoshis = 50000;
-    let metadata: String = serde_json::json!({
+    let metadata: serde_json::Value = serde_json::json!({
         "deposit_amount": satoshis,
         "to": "okex",
         "from": "stablesats"
-    })
-    .to_string();
-    let _ = client
-        .send_onchain_payment(
-            destination,
-            satoshis,
-            Some(serde_json::Value::String(metadata)),
-        )
+    });
+
+    let id = client
+        .send_onchain_payment(destination, satoshis, Some(metadata))
         .await?;
+    assert!(!id.is_empty());
+
     Ok(())
 }

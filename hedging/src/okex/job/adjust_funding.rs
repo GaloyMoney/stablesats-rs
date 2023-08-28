@@ -155,18 +155,14 @@ pub(super) async fn execute(
                             .abs()
                             .to_u64()
                             .expect("should always convert to u64");
-                        let metadata: String = json!({
+                        let metadata: serde_json::Value = json!({
                             "deposit_amount": amount_in_sats,
                             "to": "okex",
                             "from": "stablesats"
                         })
                         .to_string();
                         let _ = bria
-                            .send_onchain_payment(
-                                deposit_address,
-                                amount_in_sats,
-                                Some(serde_json::Value::String(metadata)),
-                            )
+                            .send_onchain_payment(deposit_address, amount_in_sats, Some(metadata))
                             .await?;
                     }
                 }

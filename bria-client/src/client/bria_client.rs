@@ -83,9 +83,7 @@ impl BriaClient {
             .map(|res| OnchainAddress {
                 address: res.into_inner().address,
             })
-            .map_err(|e| {
-                BriaClientError::CouldNotGenerateNewAddress(format!("gRPC error {}", e.message()))
-            })
+            .map_err(|e| BriaClientError::CouldNotGenerateNewAddress(e.message().to_string()))
     }
 
     pub async fn send_onchain_payment(
@@ -109,9 +107,7 @@ impl BriaClient {
             .proto_client
             .submit_payout(self.inject_auth_token(request)?)
             .await
-            .map_err(|e| {
-                BriaClientError::CouldNotSendOnchainPayment(format!("gRPC error: {}", e.message()))
-            })?;
+            .map_err(|e| BriaClientError::CouldNotSendOnchainPayment(e.message().to_string()))?;
         Ok(response.into_inner().id)
     }
 }
