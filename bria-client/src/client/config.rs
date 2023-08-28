@@ -5,13 +5,13 @@ pub struct BriaClientConfig {
     #[serde(default = "default_url")]
     pub url: String,
     #[serde(default)]
-    pub key: String,
+    pub profile_api_key: String,
     #[serde(default)]
     pub wallet_name: String,
     #[serde(default)]
     pub payout_queue_name: String,
     #[serde(default)]
-    pub external_id: String,
+    pub onchain_address_external_id: String,
 }
 
 fn default_url() -> String {

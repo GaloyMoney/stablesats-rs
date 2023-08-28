@@ -22,10 +22,6 @@ impl BriaClient {
             .await
             .map_err(|_| BriaClientError::ConnectionError(config.url.clone()))?;
 
-        if config.key.is_empty() {
-            return Err(BriaClientError::EmptyKey);
-        }
-
         Ok(Self {
             config,
             proto_client,
@@ -36,10 +32,10 @@ impl BriaClient {
         &self,
         mut request: tonic::Request<T>,
     ) -> Result<tonic::Request<T>, BriaClientError> {
-        let key = &self.config.key;
+        let profile_api_key = &self.config.profile_api_key;
         request.metadata_mut().insert(
             PROFILE_API_KEY_HEADER,
-            tonic::metadata::MetadataValue::try_from(key)
+            tonic::metadata::MetadataValue::try_from(profile_api_key)
                 .map_err(|_| BriaClientError::CouldNotCreateMetadataValue)?,
         );
         Ok(request)
@@ -48,14 +44,15 @@ impl BriaClient {
     pub async fn onchain_address(&mut self) -> Result<OnchainAddress, BriaClientError> {
         match self.get_address().await {
             Ok(addr) => Ok(addr),
-            Err(_) => self.new_address().await,
+            Err(BriaClientError::AddressNotFound) => self.new_address().await,
+            Err(e) => Err(e),
         }
     }
 
     async fn get_address(&mut self) -> Result<OnchainAddress, BriaClientError> {
         let request = tonic::Request::new(proto::GetAddressRequest {
             identifier: Some(proto::get_address_request::Identifier::ExternalId(
-                self.config.external_id.clone(),
+                self.config.onchain_address_external_id.clone(),
             )),
         });
 
@@ -74,7 +71,7 @@ impl BriaClient {
     async fn new_address(&mut self) -> Result<OnchainAddress, BriaClientError> {
         let request = tonic::Request::new(proto::NewAddressRequest {
             wallet_name: self.config.wallet_name.clone(),
-            external_id: Some(self.config.external_id.clone()),
+            external_id: Some(self.config.onchain_address_external_id.clone()),
             metadata: None,
         });
         self.proto_client
@@ -89,16 +86,26 @@ impl BriaClient {
     pub async fn send_onchain_payment(
         &mut self,
         destination: String,
-        satoshis: u64,
-        metadata: Option<serde_json::Value>,
+        satoshis: rust_decimal::Decimal,
     ) -> Result<String, BriaClientError> {
+        use rust_decimal::prelude::ToPrimitive;
+
+        let metadata = Some(serde_json::json!({
+            "deposit_amount": satoshis,
+            "to": "okex",
+            "from": "stablesats"
+        }));
+
         let request = tonic::Request::new(proto::SubmitPayoutRequest {
             wallet_name: self.config.wallet_name.clone(),
             payout_queue_name: self.config.payout_queue_name.clone(),
             destination: Some(proto::submit_payout_request::Destination::OnchainAddress(
                 destination,
             )),
-            satoshis,
+            satoshis: satoshis
+                .abs()
+                .to_u64()
+                .ok_or(BriaClientError::CouldNotConvertSatoshisToU64)?,
             external_id: None,
             metadata: metadata.map(serde_json::from_value).transpose()?,
         });
