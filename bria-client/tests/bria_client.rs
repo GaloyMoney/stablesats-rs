@@ -1,12 +1,10 @@
-use std::env;
-
 use ::bria_client::*;
 
 fn client_configuration() -> BriaClientConfig {
     let url = "http://localhost:2742".to_string();
-    let profile_api_key = env::var("BRIA_KEY").expect("BRIA_KEY not set");
-    let wallet_name = "default".to_string();
-    let payout_queue_name = "default".to_string();
+    let profile_api_key = "bria_dev_000000000000000000000".to_string();
+    let wallet_name = "dev-wallet".to_string();
+    let payout_queue_name = "dev-queue".to_string();
     let onchain_address_external_id = "stablesats_external_id".to_string();
 
     BriaClientConfig {
