@@ -61,11 +61,11 @@ impl BriaClient {
             .get_address(self.inject_auth_token(request)?)
             .await?;
 
-        Ok(response
+        response
             .into_inner()
             .address
             .map(|addr| OnchainAddress { address: addr })
-            .ok_or(BriaClientError::AddressNotFound)?)
+            .ok_or(BriaClientError::AddressNotFound)
     }
 
     async fn new_address(&mut self) -> Result<OnchainAddress, BriaClientError> {
