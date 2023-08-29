@@ -42,45 +42,28 @@ impl BriaClient {
     }
 
     pub async fn onchain_address(&mut self) -> Result<OnchainAddress, BriaClientError> {
-        match self.get_address().await {
-            Ok(addr) => Ok(addr),
-            Err(BriaClientError::AddressNotFound) => self.new_address().await,
-            Err(e) => Err(e),
-        }
-    }
-
-    async fn get_address(&mut self) -> Result<OnchainAddress, BriaClientError> {
         let request = tonic::Request::new(proto::GetAddressRequest {
             identifier: Some(proto::get_address_request::Identifier::ExternalId(
                 self.config.onchain_address_external_id.clone(),
             )),
         });
 
-        let response = self
+        if let Ok(response) = self
             .proto_client
             .get_address(self.inject_auth_token(request)?)
             .await
-            .map_err(|e| {
-                if e.code() == tonic::Code::NotFound {
-                    BriaClientError::AddressNotFound
-                } else {
-                    BriaClientError::TonicError(e)
-                }
-            })?;
+        {
+            if let Some(address) = response.into_inner().address {
+                return Ok(OnchainAddress { address });
+            }
+        }
 
-        response
-            .into_inner()
-            .address
-            .map(|addr| OnchainAddress { address: addr })
-            .ok_or(BriaClientError::AddressNotFound)
-    }
-
-    async fn new_address(&mut self) -> Result<OnchainAddress, BriaClientError> {
         let request = tonic::Request::new(proto::NewAddressRequest {
             wallet_name: self.config.wallet_name.clone(),
             external_id: Some(self.config.onchain_address_external_id.clone()),
             metadata: None,
         });
+
         self.proto_client
             .new_address(self.inject_auth_token(request)?)
             .await
