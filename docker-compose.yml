@@ -93,7 +93,7 @@ services:
     - RUST_BACKTRACE=1
     - PG_HOST=postgres
     - PG_PORT=5432
-    - BRIA_URL=bria:2742
+    - BRIA_URL=http://bria:2742
     - GALOY_GRAPHQL_URI=https://api.staging.galoy.io/graphql
     working_dir: /repo
     volumes:
