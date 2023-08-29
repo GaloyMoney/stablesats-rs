@@ -16,10 +16,18 @@ pub enum BriaClientError {
     CouldNotParseSendOnchainPaymentMetadata(serde_json::Error),
     #[error("Could not convert Satoshis to u64")]
     CouldNotConvertSatoshisToU64,
+    #[error("Tonic Error: {0}")]
+    TonicError(tonic::Status),
 }
 
 impl From<serde_json::Error> for BriaClientError {
     fn from(err: serde_json::Error) -> BriaClientError {
         BriaClientError::CouldNotParseSendOnchainPaymentMetadata(err)
+    }
+}
+
+impl From<tonic::Status> for BriaClientError {
+    fn from(err: tonic::Status) -> BriaClientError {
+        BriaClientError::TonicError(err)
     }
 }

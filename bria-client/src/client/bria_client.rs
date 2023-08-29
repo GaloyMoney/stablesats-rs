@@ -56,16 +56,16 @@ impl BriaClient {
             )),
         });
 
-        self.proto_client
+        let response = self
+            .proto_client
             .get_address(self.inject_auth_token(request)?)
-            .await
-            .ok()
-            .and_then(|res| {
-                res.into_inner()
-                    .address
-                    .map(|addr| OnchainAddress { address: addr })
-            })
-            .ok_or(BriaClientError::AddressNotFound)
+            .await?;
+
+        Ok(response
+            .into_inner()
+            .address
+            .map(|addr| OnchainAddress { address: addr })
+            .ok_or(BriaClientError::AddressNotFound)?)
     }
 
     async fn new_address(&mut self) -> Result<OnchainAddress, BriaClientError> {
