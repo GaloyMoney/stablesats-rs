@@ -59,7 +59,14 @@ impl BriaClient {
         let response = self
             .proto_client
             .get_address(self.inject_auth_token(request)?)
-            .await?;
+            .await
+            .map_err(|e| {
+                if e.code() == tonic::Code::NotFound {
+                    BriaClientError::AddressNotFound
+                } else {
+                    BriaClientError::TonicError(e)
+                }
+            })?;
 
         response
             .into_inner()
