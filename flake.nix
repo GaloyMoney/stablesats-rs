@@ -47,6 +47,7 @@
             cargo-watch
             postgresql
             docker-compose
+            openssl
           ];
           shellHook = ''
             export PGDATABASE=pg
