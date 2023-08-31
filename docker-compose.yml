@@ -5,12 +5,83 @@ services:
     depends_on:
     - otel-agent
     - postgres
+    - bria
+    - bitcoind
+    - bitcoind-signer
   postgres:
     image: postgres:14.1
     environment:
       - POSTGRES_USER=user
       - POSTGRES_PASSWORD=password
       - POSTGRES_DB=pg
+  bitcoind:
+    image: lncm/bitcoind:v24.0.1
+    ports: []
+    volumes:
+      - ${HOST_PROJECT_PATH:-.}/dev/bitcoind/bitcoin.conf:/data/.bitcoin/bitcoin.conf
+  bitcoind-signer:
+    image: lncm/bitcoind:v24.0.1
+    ports: []
+    volumes:
+      - ${HOST_PROJECT_PATH:-.}/dev/bitcoind/bitcoin.conf:/data/.bitcoin/bitcoin.conf
+    depends_on: [bitcoind]
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - |
+        bitcoind -connect=bitcoind:18444
+  bria:
+    image: us.gcr.io/galoy-org/bria:latest
+    ports: []
+    environment:
+      - PG_CON=postgres://user:password@postgres-bria:5432/pg
+      - BITCOIND_SIGNER_ENDPOINT=https://bitcoind-signer:18443
+    command:
+      - bria
+      - daemon
+      - --config
+      - /repo/dev/bria.yml
+      - dev
+      - -x
+      - tpubDDDDGYiFda8HfJRc2AHFJDxVzzEtBPrKsbh35EaW2UGd5qfzrF2G87ewAgeeRyHEz4iB3kvhAYW1sH6dpLepTkFUzAktumBN8AXeXWE9nd1
+      - -d
+      - m/84h/0h/0h
+    depends_on:
+      bitcoind-signer:
+        condition: service_started
+      otel-agent:
+        condition: service_started
+      fulcrum:
+        condition: service_started
+      postgres-bria:
+        condition: service_healthy
+    restart: on-failure:10
+    volumes:
+      - ${HOST_PROJECT_PATH:-.}/:/repo
+  postgres-bria:
+    image: postgres:14.1
+    environment:
+      - POSTGRES_USER=user
+      - POSTGRES_PASSWORD=password
+      - POSTGRES_DB=pg
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready"]
+      interval: 5s
+      timeout: 30s
+      retries: 5
+  fulcrum:
+    image: cculianu/fulcrum:latest
+    ports: []
+    depends_on: [bitcoind]
+    volumes:
+      - ${HOST_PROJECT_PATH:-.}/dev/fulcrum/fulcrum.conf:/fulcrum.conf
+      - ${HOST_PROJECT_PATH:-.}/dev/fulcrum/tls.key:/tls.key
+      - ${HOST_PROJECT_PATH:-.}/dev/fulcrum/tls.cert:/tls.cert
+    environment:
+      - DATA_DIR=/db
+      - SSL_CERTFILE=/tls.cert
+      - SSL_KEYFILE=/tls.key
+    command: ["Fulcrum", "/fulcrum.conf"]
+
   integration-tests:
     image: us.gcr.io/galoy-org/rust-concourse
     depends_on:
@@ -22,6 +93,7 @@ services:
     - RUST_BACKTRACE=1
     - PG_HOST=postgres
     - PG_PORT=5432
+    - BRIA_URL=http://bria:2742
     - GALOY_GRAPHQL_URI=https://api.staging.galoy.io/graphql
     working_dir: /repo
     volumes:

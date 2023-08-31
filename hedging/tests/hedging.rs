@@ -6,6 +6,7 @@ use serial_test::serial;
 
 use std::env;
 
+use bria_client::*;
 use ledger::*;
 use okex_client::*;
 use shared::pubsub::*;
@@ -39,6 +40,22 @@ fn galoy_client_config() -> GaloyClientConfig {
     }
 }
 
+fn bria_client_config() -> BriaClientConfig {
+    let url = env::var("BRIA_URL").unwrap_or("http://localhost:2742".to_string());
+    let profile_api_key = "bria_dev_000000000000000000000".to_string();
+    let wallet_name = "dev-wallet".to_string();
+    let payout_queue_name = "dev-queue".to_string();
+    let onchain_address_external_id = "stablesats_external_id".to_string();
+
+    BriaClientConfig {
+        url,
+        profile_api_key,
+        wallet_name,
+        onchain_address_external_id,
+        payout_queue_name,
+    }
+}
+
 #[tokio::test]
 #[serial]
 async fn hedging() -> anyhow::Result<()> {
@@ -63,6 +80,7 @@ async fn hedging() -> anyhow::Result<()> {
                 },
                 okex_config(),
                 galoy_client_config(),
+                bria_client_config(),
                 tick_recv.resubscribe(),
             )
             .await
@@ -90,7 +108,7 @@ async fn hedging() -> anyhow::Result<()> {
         .await?;
     let mut event = ledger.usd_okex_position_balance_events().await?;
     let mut passed = false;
-    for _ in 0..=20 {
+    for _ in 0..=30 {
         let user_buy_event = event.recv().await?;
         // checks if a position of $-500 gets opened on the exchange.
         if let ledger::LedgerEventData::BalanceUpdated(data) = user_buy_event.data {
@@ -114,7 +132,7 @@ async fn hedging() -> anyhow::Result<()> {
     )
     .await?;
     passed = false;
-    for _ in 0..20 {
+    for _ in 0..30 {
         let PositionSize { usd_cents, .. } = okex.get_position_in_signed_usd_cents().await?;
         // checks if the position gets closed via OkexClient
         if usd_cents / dec!(100) == dec!(0) {
@@ -129,7 +147,7 @@ async fn hedging() -> anyhow::Result<()> {
     }
 
     passed = false;
-    for _ in 0..=20 {
+    for _ in 0..=30 {
         let user_buy_event = event.recv().await?;
         // checks if a position of $-500 gets opened on the exchange.
         if let ledger::LedgerEventData::BalanceUpdated(data) = user_buy_event.data {
@@ -161,7 +179,7 @@ async fn hedging() -> anyhow::Result<()> {
         )
         .await?;
     passed = false;
-    for _ in 0..=20 {
+    for _ in 0..=30 {
         let user_sell_event = event.recv().await?;
         // checks if the position gets closed on the exchange.
         if let ledger::LedgerEventData::BalanceUpdated(data) = user_sell_event.data {

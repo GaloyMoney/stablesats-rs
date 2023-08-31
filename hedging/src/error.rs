@@ -21,6 +21,8 @@ pub enum HedgingError {
     NoJobDataPresent,
     #[error("UserTradesError - Leger: {0}")]
     Ledger(#[from] ledger::LedgerError),
+    #[error("BriaClientError - BriaClient: {0}")]
+    BriaClient(#[from] bria_client::BriaClientError),
 }
 
 impl JobExecutionError for HedgingError {}

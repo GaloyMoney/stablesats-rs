@@ -7,3 +7,16 @@ services:
   postgres:
     ports:
     - "5432:5432"
+  bria:
+    ports:
+    - "2743:2743"
+    - "2742:2742"
+  bitcoind:
+    ports:
+      - "18443:18443"
+  bitcoind-signer:
+    ports:
+      - "18543:18443"
+  fulcrum:
+    ports:
+      - "50001:50001"

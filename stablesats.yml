@@ -1,9 +1,5 @@
 ## This file documents the defaults:
 
-# pubsub:
-  # host: localhost
-  # rate_limit_duration: 2
-
 # db:
 #   pool_size: 20
 #   migrate_on_start: true
@@ -12,6 +8,12 @@
 # galoy:
 #   api: galoy-endpoint
 #   phone_number: "+0123456"
+#
+# bria:
+#   url:
+#   wallet_name:
+#   payout_queue_name:
+#   onchain_address_external_id:
 
 # user_trades:
 #   enabled: true

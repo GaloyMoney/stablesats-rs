@@ -2,7 +2,7 @@ use rust_decimal::Decimal;
 use rust_decimal_macros::dec;
 use tracing::instrument;
 
-use galoy_client::*;
+use bria_client::*;
 use okex_client::*;
 use shared::pubsub::CorrelationId;
 
@@ -10,6 +10,7 @@ use crate::{error::*, okex::*};
 
 const SATS_PER_BTC: Decimal = dec!(100_000_000);
 
+#[allow(clippy::too_many_arguments)]
 #[instrument(name = "hedging.okex.job.adjust_funding", skip_all, fields(correlation_id = %correlation_id,
         target_liability, current_position, last_price_in_usd_cents, funding_available_balance,
         trading_available_balance, onchain_fees, action, client_transfer_id,
@@ -20,7 +21,7 @@ pub(super) async fn execute(
     ledger: ledger::Ledger,
     okex: OkexClient,
     okex_transfers: OkexTransfers,
-    galoy: GaloyClient,
+    bria: &mut BriaClient,
     funding_adjustment: FundingAdjustment,
 ) -> Result<(), HedgingError> {
     let span = tracing::Span::current();
@@ -150,9 +151,8 @@ pub(super) async fn execute(
                         );
 
                         let amount_in_sats = amount * SATS_PER_BTC;
-                        let memo: String = format!("deposit of {amount_in_sats} sats to OKX");
-                        let _ = galoy
-                            .send_onchain_payment(deposit_address, amount_in_sats, Some(memo), 1)
+                        let _ = bria
+                            .send_onchain_payment(deposit_address, amount_in_sats)
                             .await?;
                     }
                 }
@@ -161,7 +161,7 @@ pub(super) async fn execute(
                         return Ok(());
                     }
 
-                    let deposit_address = galoy.onchain_address().await?.address;
+                    let deposit_address = bria.onchain_address().await?.address;
                     let reservation = TransferReservation {
                         shared: &shared,
                         action_size: Some(amount),

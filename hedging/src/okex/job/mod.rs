@@ -2,6 +2,7 @@ mod adjust_funding;
 mod adjust_hedge;
 mod poll_okex;
 
+use bria_client::BriaClient;
 use serde::{Deserialize, Serialize};
 use sqlx::{Executor, Postgres};
 use sqlxmq::{job, CurrentJob, JobBuilder};
@@ -10,7 +11,6 @@ use uuid::{uuid, Uuid};
 
 use std::collections::HashMap;
 
-use galoy_client::GaloyClient;
 use okex_client::OkexClient;
 use shared::{pubsub::CorrelationId, sqlxmq::JobExecutor};
 
@@ -176,7 +176,7 @@ pub(super) async fn adjust_funding(
     ledger: ledger::Ledger,
     okex: OkexClient,
     okex_transfers: OkexTransfers,
-    galoy: GaloyClient,
+    mut bria: BriaClient,
     funding_adjustment: FundingAdjustment,
 ) -> Result<(), HedgingError> {
     let pool = current_job.pool().clone();
@@ -191,7 +191,7 @@ pub(super) async fn adjust_funding(
                 ledger,
                 okex,
                 okex_transfers,
-                galoy,
+                &mut bria,
                 funding_adjustment,
             )
             .await?;

@@ -2,6 +2,7 @@ use anyhow::Context;
 use serde::{Deserialize, Serialize};
 use std::path::Path;
 
+use bria_client::BriaClientConfig;
 use galoy_client::GaloyClientConfig;
 use hedging::{ExchangesConfig, HedgingAppConfig};
 use price_server::{
@@ -29,6 +30,8 @@ pub struct Config {
     pub hedging: HedgingConfigWrapper,
     #[serde(default)]
     pub exchanges: ExchangesConfig,
+    #[serde(default)]
+    pub bria: BriaClientConfig,
 }
 
 pub struct EnvOverride {
@@ -37,6 +40,7 @@ pub struct EnvOverride {
     pub okex_passphrase: String,
     pub galoy_phone_code: String,
     pub bitfinex_secret_key: String,
+    pub bria_profile_api_key: String,
 }
 
 impl Config {
@@ -48,6 +52,7 @@ impl Config {
             okex_secret_key,
             pg_con: stablesats_pg_con,
             bitfinex_secret_key: _,
+            bria_profile_api_key,
         }: EnvOverride,
     ) -> anyhow::Result<Self> {
         let config_file = std::fs::read_to_string(path).context("Couldn't read config file")?;
@@ -62,6 +67,11 @@ impl Config {
         };
 
         config.db.pg_con = stablesats_pg_con;
+
+        if bria_profile_api_key.is_empty() {
+            return Err(anyhow::anyhow!("Bria key can not be empty"));
+        }
+        config.bria.profile_api_key = bria_profile_api_key;
 
         Ok(config)
     }
