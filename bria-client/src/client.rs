@@ -24,9 +24,7 @@ pub struct BriaClient {
 
 impl BriaClient {
     pub async fn connect(config: BriaClientConfig) -> Result<Self, BriaClientError> {
-        let proto_client = ProtoClient::connect(config.url.clone())
-            .await
-            .map_err(|_| BriaClientError::ConnectionError(config.url.clone()))?;
+        let proto_client = ProtoClient::connect(config.url.clone()).await?;
 
         Ok(Self {
             config,
@@ -41,8 +39,7 @@ impl BriaClient {
         let profile_api_key = &self.config.profile_api_key;
         request.metadata_mut().insert(
             PROFILE_API_KEY_HEADER,
-            tonic::metadata::MetadataValue::try_from(profile_api_key)
-                .map_err(|_| BriaClientError::CouldNotCreateMetadataValue)?,
+            tonic::metadata::MetadataValue::try_from(profile_api_key)?,
         );
         Ok(request)
     }
@@ -55,29 +52,37 @@ impl BriaClient {
             )),
         });
 
-        if let Ok(response) = self
+        match self
             .proto_client
             .get_address(self.inject_auth_token(request)?)
             .await
         {
-            if let Some(address) = response.into_inner().address {
-                return Ok(OnchainAddress { address });
+            Ok(response) => {
+                if let Some(address) = response.into_inner().address {
+                    Ok(OnchainAddress { address })
+                } else {
+                    Err(BriaClientError::TonicError(tonic::Status::not_found(
+                        "Address did not exist in response",
+                    )))
+                }
             }
+            Err(status) if status.code() == tonic::Code::NotFound => {
+                let request = tonic::Request::new(proto::NewAddressRequest {
+                    wallet_name: self.config.wallet_name.clone(),
+                    external_id: Some(self.config.onchain_address_external_id.clone()),
+                    metadata: None,
+                });
+
+                let response = self
+                    .proto_client
+                    .new_address(self.inject_auth_token(request)?)
+                    .await?;
+                Ok(OnchainAddress {
+                    address: response.into_inner().address,
+                })
+            }
+            Err(e) => Err(e.into()),
         }
-
-        let request = tonic::Request::new(proto::NewAddressRequest {
-            wallet_name: self.config.wallet_name.clone(),
-            external_id: Some(self.config.onchain_address_external_id.clone()),
-            metadata: None,
-        });
-
-        let response = self
-            .proto_client
-            .new_address(self.inject_auth_token(request)?)
-            .await?;
-        Ok(OnchainAddress {
-            address: response.into_inner().address,
-        })
     }
 
     #[instrument(name = "bria_client.send_onchain_payment", skip(self), err)]

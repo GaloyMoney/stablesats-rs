@@ -1,27 +1,16 @@
 use thiserror::Error;
+use tonic::{metadata::errors::InvalidMetadataValue, transport};
 
 #[derive(Error, Debug)]
 pub enum BriaClientError {
     #[error("Couldn't connect to bria at url: {0}")]
-    ConnectionError(String),
+    ConnectionError(#[from] transport::Error),
     #[error("Couldn't create MetadataValue")]
-    CouldNotCreateMetadataValue,
+    CouldNotInjectApiKey(#[from] InvalidMetadataValue),
     #[error("Could not parse Send Onchain Payment Metadata: {0}")]
-    CouldNotParseSendOnchainPaymentMetadata(serde_json::Error),
+    CouldNotParseSendOnchainPaymentMetadata(#[from] serde_json::Error),
     #[error("Could not convert Satoshis to u64")]
     CouldNotConvertSatoshisToU64,
     #[error("Tonic Error: {0}")]
-    TonicError(tonic::Status),
-}
-
-impl From<serde_json::Error> for BriaClientError {
-    fn from(err: serde_json::Error) -> BriaClientError {
-        BriaClientError::CouldNotParseSendOnchainPaymentMetadata(err)
-    }
-}
-
-impl From<tonic::Status> for BriaClientError {
-    fn from(err: tonic::Status) -> BriaClientError {
-        BriaClientError::TonicError(err)
-    }
+    TonicError(#[from] tonic::Status),
 }
