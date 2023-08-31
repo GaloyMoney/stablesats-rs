@@ -64,13 +64,13 @@ impl BriaClient {
             metadata: None,
         });
 
-        self.proto_client
+        let response = self
+            .proto_client
             .new_address(self.inject_auth_token(request)?)
-            .await
-            .map(|res| OnchainAddress {
-                address: res.into_inner().address,
-            })
-            .map_err(|e| BriaClientError::CouldNotGenerateNewAddress(e.message().to_string()))
+            .await?;
+        Ok(OnchainAddress {
+            address: response.into_inner().address,
+        })
     }
 
     pub async fn send_onchain_payment(
@@ -103,8 +103,7 @@ impl BriaClient {
         let response = self
             .proto_client
             .submit_payout(self.inject_auth_token(request)?)
-            .await
-            .map_err(|e| BriaClientError::CouldNotSendOnchainPayment(e.message().to_string()))?;
+            .await?;
         Ok(response.into_inner().id)
     }
 }

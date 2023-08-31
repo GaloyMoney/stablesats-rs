@@ -6,10 +6,6 @@ pub enum BriaClientError {
     ConnectionError(String),
     #[error("Couldn't create MetadataValue")]
     CouldNotCreateMetadataValue,
-    #[error("Couldn't generate a new address: {0}")]
-    CouldNotGenerateNewAddress(String),
-    #[error("Couldn't send onchain payment: {0}")]
-    CouldNotSendOnchainPayment(String),
     #[error("Could not parse Send Onchain Payment Metadata: {0}")]
     CouldNotParseSendOnchainPaymentMetadata(serde_json::Error),
     #[error("Could not convert Satoshis to u64")]
