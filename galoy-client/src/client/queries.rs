@@ -56,11 +56,3 @@ pub type WalletId = String;
 pub type Timestamp = GraphqlTimeStamp;
 pub type Memo = String;
 pub(crate) type SignedAmount = Decimal;
-
-#[derive(GraphQLQuery)]
-#[graphql(
-    schema_path = "src/client/graphql/schema.graphql",
-    query_path = "src/client/graphql/queries/wallets.graphql",
-    response_derives = "Debug, PartialEq, Eq, Clone"
-)]
-pub struct StablesatsWallets;

@@ -10,32 +10,23 @@ use reqwest::{
     header::{HeaderValue, AUTHORIZATION},
     Client as ReqwestClient, Method,
 };
-use rust_decimal::Decimal;
 use tracing::instrument;
 
+pub use self::convert::PathString;
 use crate::error::*;
 use queries::*;
 pub use queries::{
-    stablesats_transactions_list::WalletCurrency as SettlementCurrency,
-    stablesats_wallets::WalletCurrency, StablesatsAuthToken, WalletId,
+    stablesats_transactions_list::WalletCurrency as SettlementCurrency, StablesatsAuthToken,
+    WalletId,
 };
 
 pub use config::*;
 pub use transaction::*;
 
-pub use self::convert::PathString;
-
-#[derive(Debug)]
-pub struct WalletBalances {
-    pub btc: Decimal,
-    pub usd: Decimal,
-}
-
 #[derive(Debug, Clone)]
 pub struct GaloyClient {
     client: ReqwestClient,
     config: GaloyClientConfig,
-    btc_wallet_id: String,
 }
 
 impl GaloyClient {
@@ -55,13 +46,7 @@ impl GaloyClient {
             )
             .build()?;
 
-        let btc_wallet_id = Self::wallet_ids(client.clone(), config.clone()).await?;
-
-        Ok(Self {
-            client,
-            config,
-            btc_wallet_id,
-        })
+        Ok(Self { client, config })
     }
 
     #[instrument(name = "galoy_client.login_jwt", skip_all, err)]
@@ -105,42 +90,6 @@ impl GaloyClient {
         Ok(auth_token)
     }
 
-    #[instrument(name = "galoy_client.wallet_ids", skip_all, err)]
-    async fn wallet_ids(
-        client: ReqwestClient,
-        config: GaloyClientConfig,
-    ) -> Result<WalletId, GaloyClientError> {
-        let variables = stablesats_wallets::Variables;
-        let response = GaloyClient::traced_gql_request::<StablesatsWallets, _>(
-            &client,
-            &config.api,
-            variables,
-        )
-        .await?;
-        if response.errors.is_some() {
-            if let Some(errors) = response.errors {
-                let zeroth_error = errors[0].clone();
-
-                return Err(GaloyClientError::GraphQLTopLevel {
-                    message: zeroth_error.message,
-                    path: zeroth_error.path.into(),
-                    locations: zeroth_error.locations,
-                    extensions: zeroth_error.extensions,
-                });
-            }
-        }
-
-        let response_data = response.data;
-        let result = response_data.ok_or_else(|| GaloyClientError::GraphQLNested {
-            message: "Empty `me` in response data".to_string(),
-            path: None,
-        })?;
-
-        let wallet_id = WalletId::try_from(result)?;
-
-        Ok(wallet_id)
-    }
-
     #[instrument(name = "galoy_client.transactions_list", skip(self), err)]
     pub async fn transactions_list(
         &self,
@@ -175,37 +124,6 @@ impl GaloyClient {
                 path: None,
             })?;
         GaloyTransactions::try_from(result)
-    }
-
-    #[instrument(name = "galoy_client.wallet_balances", skip(self), err)]
-    pub async fn wallet_balances(&self) -> Result<WalletBalances, GaloyClientError> {
-        let variables = stablesats_wallets::Variables;
-        let response = GaloyClient::traced_gql_request::<StablesatsWallets, _>(
-            &self.client,
-            &self.config.api,
-            variables,
-        )
-        .await?;
-        if response.errors.is_some() {
-            if let Some(errors) = response.errors {
-                let zeroth_error = errors[0].clone();
-
-                return Err(GaloyClientError::GraphQLTopLevel {
-                    message: zeroth_error.message,
-                    path: zeroth_error.path.into(),
-                    locations: zeroth_error.locations,
-                    extensions: zeroth_error.extensions,
-                });
-            }
-        }
-
-        let response_data = response.data;
-        let result = response_data.ok_or_else(|| GaloyClientError::GraphQLNested {
-            message: "Empty `me` in response data".to_string(),
-            path: None,
-        })?;
-
-        WalletBalances::try_from(result)
     }
 
     async fn traced_gql_request<Q: GraphQLQuery, U: reqwest::IntoUrl>(

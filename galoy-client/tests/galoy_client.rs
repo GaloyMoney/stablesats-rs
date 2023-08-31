@@ -1,4 +1,3 @@
-use rust_decimal_macros::dec;
 use std::env;
 
 use galoy_client::*;
@@ -25,20 +24,6 @@ async fn transactions_list() -> anyhow::Result<()> {
 
     let transactions = client.transactions_list(None).await?;
     assert!(transactions.list.len() > 0);
-
-    Ok(())
-}
-
-/// Test to get wallet balances
-#[tokio::test]
-async fn wallet_balance() -> anyhow::Result<()> {
-    let config = client_configuration();
-    let wallet_client = GaloyClient::connect(config).await?;
-
-    let balances = wallet_client.wallet_balances().await?;
-
-    assert!(balances.btc >= dec!(0));
-    assert!(balances.usd <= dec!(0));
 
     Ok(())
 }
