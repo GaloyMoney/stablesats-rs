@@ -1,3 +1,10 @@
+# [stablesats release v0.9.18](https://github.com/GaloyMoney/stablesats-rs/releases/tag/0.9.18)
+
+
+### Bug Fixes
+
+- Add profile_api_key only if hedging is enabled
+
 # [stablesats release v0.9.17](https://github.com/GaloyMoney/stablesats-rs/releases/tag/0.9.17)
 
 
