@@ -1,3 +1,14 @@
+# [stablesats release v0.9.17](https://github.com/GaloyMoney/stablesats-rs/releases/tag/0.9.17)
+
+
+### Features
+
+- Add bria-client to stablesats (#411)
+
+### Testing
+
+- Remove redis from hedging test (#407)
+
 # [stablesats release v0.9.16](https://github.com/GaloyMoney/stablesats-rs/releases/tag/0.9.16)
 
 
