@@ -1,3 +1,5 @@
+use tracing::instrument;
+
 use super::{config::BriaClientConfig, proto};
 use crate::error::BriaClientError;
 
@@ -41,6 +43,7 @@ impl BriaClient {
         Ok(request)
     }
 
+    #[instrument(name = "bria_client.onchain_address", skip(self), err)]
     pub async fn onchain_address(&mut self) -> Result<OnchainAddress, BriaClientError> {
         let request = tonic::Request::new(proto::GetAddressRequest {
             identifier: Some(proto::get_address_request::Identifier::ExternalId(
@@ -73,6 +76,7 @@ impl BriaClient {
         })
     }
 
+    #[instrument(name = "bria_client.send_onchain_payment", skip(self), err)]
     pub async fn send_onchain_payment(
         &mut self,
         destination: String,
