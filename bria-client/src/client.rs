@@ -1,7 +1,11 @@
+#[allow(clippy::all)]
+mod proto {
+    tonic::include_proto!("services.bria.v1");
+}
+
 use tracing::instrument;
 
-use super::{config::BriaClientConfig, proto};
-use crate::error::BriaClientError;
+use super::{config::BriaClientConfig, error::BriaClientError};
 
 type ProtoClient = proto::bria_service_client::BriaServiceClient<tonic::transport::Channel>;
 
