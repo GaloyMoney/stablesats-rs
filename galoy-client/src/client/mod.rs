@@ -16,7 +16,6 @@ use tracing::instrument;
 use crate::error::*;
 use queries::*;
 pub use queries::{
-    stablesats_on_chain_payment::PaymentSendResult,
     stablesats_transactions_list::WalletCurrency as SettlementCurrency,
     stablesats_wallets::WalletCurrency, StablesatsAuthToken, WalletId,
 };
@@ -37,11 +36,6 @@ pub struct GaloyClient {
     client: ReqwestClient,
     config: GaloyClientConfig,
     btc_wallet_id: String,
-}
-
-#[derive(Debug)]
-pub struct OnchainAddress {
-    pub address: String,
 }
 
 impl GaloyClient {
@@ -212,153 +206,6 @@ impl GaloyClient {
         })?;
 
         WalletBalances::try_from(result)
-    }
-
-    #[instrument(name = "galoy_client.onchain_address", skip(self), err)]
-    pub async fn onchain_address(&self) -> Result<OnchainAddress, GaloyClientError> {
-        let variables = stablesats_deposit_address::Variables {
-            input: stablesats_deposit_address::OnChainAddressCurrentInput {
-                wallet_id: self.btc_wallet_id.clone(),
-            },
-        };
-        let response = GaloyClient::traced_gql_request::<StablesatsDepositAddress, _>(
-            &self.client,
-            &self.config.api,
-            variables,
-        )
-        .await?;
-        if response.errors.is_some() {
-            if let Some(errors) = response.errors {
-                let zeroth_error = errors[0].clone();
-
-                return Err(GaloyClientError::GraphQLTopLevel {
-                    message: zeroth_error.message,
-                    path: zeroth_error.path.into(),
-                    locations: zeroth_error.locations,
-                    extensions: zeroth_error.extensions,
-                });
-            }
-        }
-
-        let response_data = response.data;
-        let result = response_data.ok_or_else(|| GaloyClientError::GraphQLNested {
-            message: "Empty `on chain address create` in response data".to_string(),
-            path: None,
-        })?;
-
-        let onchain_address_create = StablesatsOnchainAddress::try_from(result)?;
-        let address =
-            onchain_address_create
-                .address
-                .ok_or_else(|| GaloyClientError::GraphQLNested {
-                    message: "Empty `address` in response data".to_string(),
-                    path: None,
-                })?;
-
-        Ok(OnchainAddress { address })
-    }
-
-    #[instrument(name = "galoy_client.send_onchain_payment", skip(self), err)]
-    pub async fn send_onchain_payment(
-        &self,
-        address: String,
-        amount: Decimal,
-        memo: Option<Memo>,
-        target_conf: TargetConfirmations,
-    ) -> Result<PaymentSendResult, GaloyClientError> {
-        let variables = stablesats_on_chain_payment::Variables {
-            input: stablesats_on_chain_payment::OnChainPaymentSendInput {
-                address,
-                amount,
-                memo,
-                target_confirmations: Some(target_conf),
-                wallet_id: self.btc_wallet_id.clone(),
-            },
-        };
-        let response = GaloyClient::traced_gql_request::<StablesatsOnChainPayment, _>(
-            &self.client,
-            &self.config.api,
-            variables,
-        )
-        .await?;
-        if response.errors.is_some() {
-            if let Some(errors) = response.errors {
-                let zeroth_error = errors[0].clone();
-
-                return Err(GaloyClientError::GraphQLTopLevel {
-                    message: zeroth_error.message,
-                    path: zeroth_error.path.into(),
-                    locations: zeroth_error.locations,
-                    extensions: zeroth_error.extensions,
-                });
-            }
-        }
-
-        let response_data = response.data;
-        let result = response_data.ok_or_else(|| GaloyClientError::GraphQLNested {
-            message: "Empty `onChainPaymentSend` in response data".to_string(),
-            path: None,
-        })?;
-
-        let onchain_payment_send = StablesatsPaymentSend::try_from(result)?;
-        if !onchain_payment_send.errors.is_empty() {
-            let zeroth_error = onchain_payment_send.errors[0].clone();
-            return Err(GaloyClientError::GraphQLNested {
-                message: zeroth_error.message,
-                path: zeroth_error.path,
-            });
-        };
-
-        let payment_status = onchain_payment_send.status;
-        let status = payment_status.ok_or_else(|| GaloyClientError::GraphQLNested {
-            message: "Empty `status` in response data".to_string(),
-            path: None,
-        })?;
-
-        Ok(status)
-    }
-
-    #[instrument(name = "galoy_client.onchain_tx_fee", skip(self), err)]
-    pub async fn onchain_tx_fee(
-        &self,
-        address: OnChainAddress,
-        amount: SatAmount,
-        target_conf: TargetConfirmations,
-    ) -> Result<StablesatsTxFee, GaloyClientError> {
-        let variables = stablesats_on_chain_tx_fee::Variables {
-            address,
-            amount,
-            target_confirmations: Some(target_conf),
-            wallet_id: self.btc_wallet_id.clone(),
-        };
-        let response = GaloyClient::traced_gql_request::<StablesatsOnChainTxFee, _>(
-            &self.client,
-            &self.config.api,
-            variables,
-        )
-        .await?;
-        if response.errors.is_some() {
-            if let Some(errors) = response.errors {
-                let zeroth_error = errors[0].clone();
-
-                return Err(GaloyClientError::GraphQLTopLevel {
-                    message: zeroth_error.message,
-                    path: zeroth_error.path.into(),
-                    locations: zeroth_error.locations,
-                    extensions: zeroth_error.extensions,
-                });
-            }
-        }
-
-        let response_data = response.data;
-        let result = response_data.ok_or_else(|| GaloyClientError::GraphQLNested {
-            message: "Empty `onChainTxFee` in response data".to_string(),
-            path: None,
-        })?;
-
-        let onchain_tx_fee = StablesatsTxFee::try_from(result)?;
-
-        Ok(onchain_tx_fee)
     }
 
     async fn traced_gql_request<Q: GraphQLQuery, U: reqwest::IntoUrl>(
