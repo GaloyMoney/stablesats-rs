@@ -68,10 +68,9 @@ impl Config {
 
         config.db.pg_con = stablesats_pg_con;
 
-        if bria_profile_api_key.is_empty() {
-            return Err(anyhow::anyhow!("Bria key can not be empty"));
+        if config.hedging.enabled {
+            config.bria.profile_api_key = bria_profile_api_key;
         }
-        config.bria.profile_api_key = bria_profile_api_key;
 
         Ok(config)
     }
