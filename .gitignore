@@ -14,3 +14,4 @@
 # Ignore here so that secrets are not committed
 .env
 .direnv
+staging.yml
