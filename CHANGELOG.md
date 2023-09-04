@@ -1,3 +1,17 @@
+# [stablesats release v0.9.19](https://github.com/GaloyMoney/stablesats-rs/releases/tag/0.9.19)
+
+
+### Features
+
+- Add openssl in flake.nix (#414)
+
+### Miscellaneous Tasks
+
+- Use workspace = true everywhere (#415)
+- Specify devEnvVars
+- Ignore staging.yml
+- Wipe .env
+
 # [stablesats release v0.9.18](https://github.com/GaloyMoney/stablesats-rs/releases/tag/0.9.18)
 
 
