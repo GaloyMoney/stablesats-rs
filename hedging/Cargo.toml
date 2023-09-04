@@ -15,21 +15,21 @@ bitfinex-client = { path = "../bitfinex-client" }
 bria-client = { path = "../bria-client" }
 galoy-client = { path = "../galoy-client" }
 
-rust_decimal_macros = "1.29.0"
-serde = "1.0.158"
-serde_json = "1.0.93"
-tokio = "1.29.1"
-futures = "0.3.27"
-thiserror = "1.0.40"
-opentelemetry = { version = "0.19.0", features = ["trace"] }
-tracing-opentelemetry = "0.19.0"
-tracing = "0.1.37"
-chrono = { version = "0.4", features = ["clock", "serde"], default-features = false }
-sqlx = { version = "0.7.1", features = ["runtime-tokio-rustls", "postgres", "rust_decimal", "uuid", "chrono"] }
-sqlxmq = { git = "https://github.com/GaloyMoney/sqlxmq", rev = "f03f73c", default-features = false, features = ["runtime-tokio-rustls"] }
-rust_decimal = "1.29.0"
-uuid = "1.3.0"
-serde_with = { version = "2.3.1", features = ["chrono_0_4"] }
+rust_decimal_macros = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+tokio = { workspace = true }
+futures = { workspace = true }
+thiserror = { workspace = true }
+opentelemetry = { workspace = true }
+tracing-opentelemetry = { workspace = true }
+tracing = { workspace = true }
+chrono = { workspace = true }
+sqlx = { workspace = true }
+sqlxmq = { workspace = true }
+rust_decimal = { workspace = true }
+uuid = { workspace = true }
+serde_with = { workspace = true }
 
 # To fix vulnerability
 h2 = "0.3.17"
