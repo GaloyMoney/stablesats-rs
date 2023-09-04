@@ -34,7 +34,11 @@
         ]
         ++ lib.optionals pkgs.stdenv.isDarwin [
           darwin.apple_sdk.frameworks.SystemConfiguration
+        ]
+        ++ lib.optionals pkgs.stdenv.isLinux [
+          openssl
         ];
+
       devEnvVars = rec {
         PGDATABASE = "pg";
         PGUSER = "user";
