@@ -1,3 +1,10 @@
+# [stablesats release v0.9.20](https://github.com/GaloyMoney/stablesats-rs/releases/tag/0.9.20)
+
+
+### Miscellaneous Tasks
+
+- Update serde_with to 3.3.0 (#417)
+
 # [stablesats release v0.9.19](https://github.com/GaloyMoney/stablesats-rs/releases/tag/0.9.19)
 
 
