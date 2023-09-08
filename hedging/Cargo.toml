@@ -1,6 +1,6 @@
 [package]
 name = "hedging"
-version = "0.9.21"
+version = "0.9.22-dev"
 edition = "2021"
 
 [features]
