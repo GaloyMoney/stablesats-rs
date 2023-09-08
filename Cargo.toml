@@ -36,8 +36,8 @@ anyhow = "1.0.70"
 tracing = "0.1.37"
 tracing-subscriber = { version = "0.3.16", features = ["env-filter", "json"] }
 tracing-opentelemetry = "0.20.0"
-opentelemetry-jaeger = { version = "0.19.0", features = ["rt-tokio"] }
-opentelemetry = { version = "0.20.0", features = ["trace"]}
+opentelemetry-otlp = { version = "0.13.0", features = ["http-proto", "reqwest-client"] }
+opentelemetry = { version = "0.20.0", features = ["trace", "rt-tokio"]}
 opentelemetry-http = "0.9.0"
 chrono = { version = "0.4", features = ["clock", "serde"], default-features = false }
 ring = "0.16.20"
