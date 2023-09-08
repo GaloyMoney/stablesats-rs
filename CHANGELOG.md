@@ -1,3 +1,11 @@
+# [stablesats release v0.9.21](https://github.com/GaloyMoney/stablesats-rs/releases/tag/0.9.21)
+
+
+### Miscellaneous Tasks
+
+- Use otel instead of jaeger (#424)
+- Bump chrono from 0.4.27 to 0.4.29 (#422)
+
 # [stablesats release v0.9.20](https://github.com/GaloyMoney/stablesats-rs/releases/tag/0.9.20)
 
 

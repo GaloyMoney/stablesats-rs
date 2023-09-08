@@ -1,6 +1,6 @@
 [package]
 name = "bitfinex-price"
-version = "0.9.21-dev"
+version = "0.9.21"
 edition = "2021"
 authors = ["Sebastien Verreault <sv@galoy.io>"]
 license = "MIT"
