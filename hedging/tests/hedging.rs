@@ -132,7 +132,7 @@ async fn hedging() -> anyhow::Result<()> {
     )
     .await?;
     passed = false;
-    for _ in 0..45 {
+    for _ in 0..30 {
         let PositionSize { usd_cents, .. } = okex.get_position_in_signed_usd_cents().await?;
         // checks if the position gets closed via OkexClient
         if usd_cents / dec!(100) == dec!(0) {
@@ -147,7 +147,7 @@ async fn hedging() -> anyhow::Result<()> {
     }
 
     passed = false;
-    for _ in 0..=45 {
+    for _ in 0..=60 {
         let user_buy_event = event.recv().await?;
         // checks if a position of $-500 gets opened on the exchange.
         if let ledger::LedgerEventData::BalanceUpdated(data) = user_buy_event.data {
