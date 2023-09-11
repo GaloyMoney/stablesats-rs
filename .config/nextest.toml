@@ -1,2 +1,4 @@
 [profile.default]
 slow-timeout = { period = "90s", terminate-after = 3 }
+retries = 3
+fail-fast = false
