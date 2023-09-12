@@ -18,5 +18,5 @@ jobs:
           BITFINEX_API_KEY: ${{ secrets.BITFINEX_API_KEY }}
           BITFINEX_SECRET_KEY: ${{ secrets.BITFINEX_SECRET_KEY }}
           GALOY_PHONE_CODE: ${{ secrets.GALOY_PHONE_CODE }}
-          PHONE_NUMBER: ${{ secrets.PHONE_NUMBER }}
+          GALOY_PHONE_NUMBER: ${{ secrets.GALOY_PHONE_NUMBER }}
         run: docker compose -f docker-compose.yml run integration-tests
