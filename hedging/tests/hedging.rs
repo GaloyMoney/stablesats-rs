@@ -179,8 +179,8 @@ async fn hedging() -> anyhow::Result<()> {
         )
         .await?;
     passed = false;
-    let user_sell_event = event.recv().await?;
     for _ in 0..=30 {
+        let user_sell_event = event.recv().await?;
         // checks if the position gets closed on the exchange.
         if let ledger::LedgerEventData::BalanceUpdated(data) = user_sell_event.data {
             if (data.settled_cr_balance - data.settled_dr_balance) == dec!(0) {
