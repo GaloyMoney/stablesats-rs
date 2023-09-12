@@ -108,7 +108,7 @@ async fn hedging() -> anyhow::Result<()> {
         .await?;
     let mut event = ledger.usd_okex_position_balance_events().await?;
     let mut passed = false;
-    for _ in 0..=60 {
+    for _ in 0..=30 {
         let user_buy_event = event.recv().await?;
         // checks if a position of $-500 gets opened on the exchange.
         if let ledger::LedgerEventData::BalanceUpdated(data) = user_buy_event.data {
@@ -132,7 +132,7 @@ async fn hedging() -> anyhow::Result<()> {
     )
     .await?;
     passed = false;
-    for _ in 0..60 {
+    for _ in 0..30 {
         let PositionSize { usd_cents, .. } = okex.get_position_in_signed_usd_cents().await?;
         // checks if the position gets closed via OkexClient
         if usd_cents / dec!(100) == dec!(0) {
@@ -147,7 +147,7 @@ async fn hedging() -> anyhow::Result<()> {
     }
 
     passed = false;
-    for _ in 0..=60 {
+    for _ in 0..=30 {
         let user_buy_event = event.recv().await?;
         // checks if a position of $-500 gets opened on the exchange.
         if let ledger::LedgerEventData::BalanceUpdated(data) = user_buy_event.data {
@@ -179,8 +179,8 @@ async fn hedging() -> anyhow::Result<()> {
         )
         .await?;
     passed = false;
-    for _ in 0..=60 {
-        let user_sell_event = event.recv().await?;
+    let user_sell_event = event.recv().await?;
+    for _ in 0..=30 {
         // checks if the position gets closed on the exchange.
         if let ledger::LedgerEventData::BalanceUpdated(data) = user_sell_event.data {
             if (data.settled_cr_balance - data.settled_dr_balance) == dec!(0) {
