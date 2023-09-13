@@ -19,7 +19,7 @@ okex_secret_key: ((okex-creds.secret_key))
 bitfinex_api_key: ((bitfinex-creds.api_key))
 bitfinex_secret_key: ((bitfinex-creds.secret_key))
 galoy_phone_number: ((galoy-creds.phone_number))
-galoy_phone_code: ((galoy-creds.phone_code))
+galoy_phone_code: ((galoy-creds.auth_code))
 
 docker_host_ip: ((staging-ssh.docker_host_ip))
 artifacts_bucket_name: ((staging-gcp-creds.bucket_name))
