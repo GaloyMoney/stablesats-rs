@@ -31,6 +31,14 @@
       nativeBuildInputs = with pkgs;
         [
           rustToolchain
+          alejandra
+          sqlx-cli
+          cargo-nextest
+          cargo-audit
+          cargo-watch
+          postgresql
+          docker-compose
+          ytt
         ]
         ++ lib.optionals pkgs.stdenv.isDarwin [
           darwin.apple_sdk.frameworks.SystemConfiguration
@@ -52,15 +60,6 @@
         devShells.default = mkShell (devEnvVars
           // {
             inherit nativeBuildInputs;
-            packages = [
-              alejandra
-              sqlx-cli
-              cargo-nextest
-              cargo-audit
-              cargo-watch
-              postgresql
-              docker-compose
-            ];
           });
 
         formatter = alejandra;
