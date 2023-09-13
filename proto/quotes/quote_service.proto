@@ -1,0 +1,48 @@
+syntax = "proto3";
+package services.quotes.v1;
+
+service QuoteService {
+  rpc GetQuoteToBuyCents(GetQuoteToBuyCentsRequest) returns (GetQuoteToBuyCentsResponse) {}
+  rpc GetQuoteToSellCents(GetQuoteToSellCentsRequest) returns (GetQuoteToSellCentsResponse) {}
+  rpc AcceptQuote(AcceptQuoteRequest) returns (AcceptQuoteResponse) {}
+}
+
+message GetQuoteToBuyCentsRequest {
+  oneof quote_for {
+    uint64 amount_to_sell_in_sats = 1;
+    uint64 amount_to_buy_in_cents = 2;
+  }
+
+  bool execute_instantly = 3;
+}
+
+message GetQuoteToBuyCentsResponse {
+  string quote_id = 1;
+  uint64 amount_to_sell_in_sats = 2;
+  uint64 amount_to_buy_in_cents = 3;
+  uint32 expires_at = 4;
+  bool already_executed = 5;
+}
+
+message GetQuoteToSellCentsRequest {
+  oneof quote_for {
+    uint64 amount_to_buy_in_sats = 1;
+    uint64 amount_to_sell_in_cents = 2;
+  }
+
+  bool execute_instantly = 3;
+}
+
+message GetQuoteToSellCentsResponse {
+  string quote_id = 1;
+  uint64 amount_to_buy_in_sats = 2;
+  uint64 amount_to_sell_in_cents = 3;
+  uint32 expires_at = 4;
+  bool already_executed = 5;
+}
+
+message AcceptQuoteRequest {
+  string quote_id = 1;
+}
+
+message AcceptQuoteResponse {}

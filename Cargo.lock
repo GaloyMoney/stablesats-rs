@@ -2475,6 +2475,25 @@ dependencies = [
 ]
 
 [[package]]
+name = "quotes-server"
+version = "0.9.22-dev"
+dependencies = [
+ "anyhow",
+ "opentelemetry",
+ "prost",
+ "protobuf-src",
+ "serde",
+ "serde_json",
+ "serde_with 3.3.0",
+ "stablesats-shared",
+ "thiserror",
+ "tonic",
+ "tonic-build",
+ "tracing",
+ "tracing-opentelemetry",
+]
+
+[[package]]
 name = "radium"
 version = "0.7.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
