@@ -8,7 +8,7 @@ use tokio::sync::RwLock;
 use tracing::Span;
 use tracing_opentelemetry::OpenTelemetrySpanExt;
 
-use crate::{currency::*, currency_exchange::*, error::*, price_mixer::*};
+use crate::{currency::*, currency_exchange::*};
 use shared::{payload::*, pubsub::CorrelationId, time::*};
 
 pub use config::*;
@@ -72,11 +72,11 @@ pub struct BtcSatTick {
 
 impl SidePicker for BtcSatTick {
     fn buy_usd<'a>(&'a self) -> Box<dyn VolumePicker + 'a> {
-        Box::new(CurrencyConverter::new(&self.bid_price_of_one_sat))
+        Box::new(TickCurrencyConverter::new(&self.bid_price_of_one_sat))
     }
 
     fn sell_usd<'a>(&'a self) -> Box<dyn VolumePicker + 'a> {
-        Box::new(CurrencyConverter::new(&self.ask_price_of_one_sat))
+        Box::new(TickCurrencyConverter::new(&self.ask_price_of_one_sat))
     }
 
     fn mid_price_of_one_sat(&self) -> UsdCents {

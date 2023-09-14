@@ -1,13 +1,7 @@
-use async_trait::async_trait;
 use rust_decimal::Decimal;
-
-use crate::{currency_exchange::*, error::ExchangePriceCacheError};
 use std::collections::HashMap;
 
-#[async_trait]
-pub trait PriceProvider {
-    async fn latest(&self) -> Result<Box<dyn SidePicker>, ExchangePriceCacheError>;
-}
+use super::{error::ExchangePriceCacheError, traits::*};
 
 pub struct PriceMixer {
     providers: HashMap<&'static str, (Box<dyn PriceProvider + Sync + Send>, Decimal)>,
@@ -67,10 +61,7 @@ mod tests {
     use shared::pubsub::CorrelationId;
     use shared::time::TimeStamp;
 
-    pub use super::PriceMixer;
-    pub use super::PriceProvider;
-    pub use crate::currency::UsdCents;
-    pub use crate::{cache::*, currency::Satoshis};
+    pub use crate::{cache::*, currency::*, currency_exchange::*};
     pub use serde_json::*;
 
     #[tokio::test]
