@@ -1,4 +1,5 @@
 mod config;
+mod convert;
 mod error;
 
 #[allow(clippy::all)]
@@ -11,6 +12,7 @@ use opentelemetry::{
     sdk::propagation::TraceContextPropagator,
 };
 use proto::{quote_service_server::QuoteService, *};
+use rust_decimal::Decimal;
 use tonic::{transport::Server, Request, Response, Status};
 use tracing::instrument;
 use tracing_opentelemetry::OpenTelemetrySpanExt;
@@ -26,11 +28,34 @@ pub struct Quotes {
 
 #[tonic::async_trait]
 impl QuoteService for Quotes {
+    #[instrument(name = "quotes_server.get_quote_to_buy_cents", skip_all,
+        fields(error, error.level, error.message),
+        err
+    )]
     async fn get_quote_to_buy_cents(
         &self,
         request: Request<GetQuoteToBuyCentsRequest>,
     ) -> Result<Response<GetQuoteToBuyCentsResponse>, Status> {
-        unimplemented!()
+        shared::tracing::record_error(tracing::Level::ERROR, || async move {
+            extract_tracing(&request);
+            let req = request.into_inner();
+            let quote = match req.quote_for {
+                Some(get_quote_to_buy_cents_request::QuoteFor::AmountToSellInSats(amount)) => {
+                    self.app
+                        .quote_buy_cents_from_sats(Decimal::from(amount), req.immediate_execution)
+                        .await?
+                }
+                _ => unimplemented!(),
+            };
+            Ok(Response::new(GetQuoteToBuyCentsResponse {
+                quote_id: quote.id.to_string(),
+                amount_to_sell_in_sats: 0,
+                amount_to_buy_in_cents: 0,
+                expires_at: 0,
+                executed: false,
+            }))
+        })
+        .await
     }
 
     async fn get_quote_to_sell_cents(

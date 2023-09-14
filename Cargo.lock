@@ -2479,18 +2479,26 @@ name = "quotes-server"
 version = "0.9.22-dev"
 dependencies = [
  "anyhow",
+ "async-trait",
+ "chrono",
+ "derive_builder",
  "opentelemetry",
  "prost",
  "protobuf-src",
+ "rust_decimal",
+ "rust_decimal_macros",
  "serde",
  "serde_json",
  "serde_with 3.3.0",
+ "sqlx",
  "stablesats-shared",
  "thiserror",
+ "tokio",
  "tonic",
  "tonic-build",
  "tracing",
  "tracing-opentelemetry",
+ "uuid",
 ]
 
 [[package]]

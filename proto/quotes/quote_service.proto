@@ -13,7 +13,7 @@ message GetQuoteToBuyCentsRequest {
     uint64 amount_to_buy_in_cents = 2;
   }
 
-  bool execute_instantly = 3;
+  bool immediate_execution = 3;
 }
 
 message GetQuoteToBuyCentsResponse {
@@ -21,7 +21,7 @@ message GetQuoteToBuyCentsResponse {
   uint64 amount_to_sell_in_sats = 2;
   uint64 amount_to_buy_in_cents = 3;
   uint32 expires_at = 4;
-  bool already_executed = 5;
+  bool executed = 5;
 }
 
 message GetQuoteToSellCentsRequest {
@@ -30,7 +30,7 @@ message GetQuoteToSellCentsRequest {
     uint64 amount_to_sell_in_cents = 2;
   }
 
-  bool execute_instantly = 3;
+  bool immediate_execution = 3;
 }
 
 message GetQuoteToSellCentsResponse {
@@ -38,7 +38,7 @@ message GetQuoteToSellCentsResponse {
   uint64 amount_to_buy_in_sats = 2;
   uint64 amount_to_sell_in_cents = 3;
   uint32 expires_at = 4;
-  bool already_executed = 5;
+  bool executed = 5;
 }
 
 message AcceptQuoteRequest {

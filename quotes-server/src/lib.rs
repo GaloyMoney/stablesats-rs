@@ -2,7 +2,12 @@
 #![cfg_attr(feature = "fail-on-warnings", deny(clippy::all))]
 
 pub mod app;
+pub mod cache;
+pub mod currency;
+pub mod currency_exchange;
 pub mod error;
+pub mod price_mixer;
+pub mod quote;
 pub mod server;
 
 pub use app::*;
