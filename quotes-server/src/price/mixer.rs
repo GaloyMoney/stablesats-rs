@@ -61,7 +61,7 @@ mod tests {
     use shared::pubsub::CorrelationId;
     use shared::time::TimeStamp;
 
-    pub use crate::{cache::*, currency::*, currency_exchange::*};
+    pub use crate::{cache::*, currency::*, price::*};
     pub use serde_json::*;
 
     #[tokio::test]

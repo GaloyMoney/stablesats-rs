@@ -8,7 +8,7 @@ use shared::{
     pubsub::*,
 };
 
-use crate::{cache::*, currency_exchange::*, error::*, quote::*};
+use crate::{cache::*, error::*, price::*, quote::*};
 pub use config::*;
 
 pub struct QuotesApp {}

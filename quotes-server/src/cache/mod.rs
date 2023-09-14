@@ -8,7 +8,7 @@ use tokio::sync::RwLock;
 use tracing::Span;
 use tracing_opentelemetry::OpenTelemetrySpanExt;
 
-use crate::{currency::*, currency_exchange::*};
+use crate::{currency::*, price::*};
 use shared::{payload::*, pubsub::CorrelationId, time::*};
 
 pub use config::*;

@@ -4,8 +4,8 @@
 pub mod app;
 pub mod cache;
 pub mod currency;
-pub mod currency_exchange;
 pub mod error;
+pub mod price;
 pub mod quote;
 pub mod server;
 
@@ -13,7 +13,7 @@ use shared::{health::HealthCheckTrigger, payload::*, pubsub::memory};
 
 pub use app::*;
 pub use cache::ExchangePriceCacheConfig;
-pub use currency_exchange::*;
+pub use price::*;
 pub use server::*;
 
 pub async fn run(
