@@ -1,6 +1,8 @@
 mod config;
 
+use futures::stream::StreamExt;
 use rust_decimal::Decimal;
+use tracing::{info_span, instrument, Instrument};
 
 use shared::{
     health::HealthCheckTrigger,
@@ -11,18 +13,52 @@ use shared::{
 use crate::{cache::*, error::*, price::*, quote::*};
 pub use config::*;
 
-pub struct QuotesApp {}
+pub struct QuotesApp {
+    price_calculator: PriceCalculator,
+}
 
 impl QuotesApp {
     pub async fn run(
-        health_check_trigger: HealthCheckTrigger,
+        mut health_check_trigger: HealthCheckTrigger,
         health_check_cfg: QuotesServerHealthCheckConfig,
         fee_calc_cfg: FeeCalculatorConfig,
         subscriber: memory::Subscriber<PriceStreamPayload>,
         price_cache_config: ExchangePriceCacheConfig,
         exchange_weights: ExchangeWeights,
     ) -> Result<Self, QuotesAppError> {
-        Ok(Self {})
+        let health_subscriber = subscriber.resubscribe();
+        tokio::spawn(async move {
+            while let Some(check) = health_check_trigger.next().await {
+                let _ = check.send(
+                    health_subscriber
+                        .healthy(health_check_cfg.unhealthy_msg_interval_price)
+                        .await,
+                );
+            }
+        });
+
+        let mut price_mixer = PriceMixer::new();
+
+        if let Some(weight) = exchange_weights.okex {
+            if weight > Decimal::ZERO {
+                let okex_price_cache = ExchangeTickCache::new(price_cache_config.clone());
+                Self::subscribe_okex(subscriber.resubscribe(), okex_price_cache.clone()).await?;
+                price_mixer.add_provider(OKEX_EXCHANGE_ID, okex_price_cache, weight);
+            }
+        }
+
+        if let Some(weight) = exchange_weights.bitfinex {
+            if weight > Decimal::ZERO {
+                let bitfinex_price_cache = ExchangeTickCache::new(price_cache_config.clone());
+                Self::subscribe_bitfinex(subscriber.resubscribe(), bitfinex_price_cache.clone())
+                    .await?;
+                price_mixer.add_provider(BITFINEX_EXCHANGE_ID, bitfinex_price_cache, weight);
+            }
+        }
+
+        Ok(Self {
+            price_calculator: PriceCalculator::new(fee_calc_cfg, price_mixer),
+        })
     }
 
     pub async fn quote_buy_cents_from_sats(
@@ -36,5 +72,59 @@ impl QuotesApp {
             .build()
             .expect("Could not build quote");
         unimplemented!()
+    }
+
+    async fn subscribe_okex(
+        mut subscriber: memory::Subscriber<PriceStreamPayload>,
+        price_cache: ExchangeTickCache,
+    ) -> Result<(), QuotesAppError> {
+        tokio::spawn(async move {
+            while let Some(msg) = subscriber.next().await {
+                if let PriceStreamPayload::OkexBtcSwapPricePayload(price_msg) = msg.payload {
+                    let span = info_span!(
+                        "price_server.okex_price_tick_received",
+                        message_type = %msg.payload_type,
+                        correlation_id = %msg.meta.correlation_id
+                    );
+                    shared::tracing::inject_tracing_data(&span, &msg.meta.tracing_data);
+                    async {
+                        price_cache
+                            .apply_update(price_msg, msg.meta.correlation_id)
+                            .await;
+                    }
+                    .instrument(span)
+                    .await;
+                }
+            }
+        });
+
+        Ok(())
+    }
+
+    async fn subscribe_bitfinex(
+        mut subscriber: memory::Subscriber<PriceStreamPayload>,
+        price_cache: ExchangeTickCache,
+    ) -> Result<(), QuotesAppError> {
+        tokio::spawn(async move {
+            while let Some(msg) = subscriber.next().await {
+                if let PriceStreamPayload::BitfinexBtcUsdSwapPricePayload(price_msg) = msg.payload {
+                    let span = info_span!(
+                        "price_server.bitfinex_price_tick_received",
+                        message_type = %msg.payload_type,
+                        correlation_id = %msg.meta.correlation_id
+                    );
+                    shared::tracing::inject_tracing_data(&span, &msg.meta.tracing_data);
+                    async {
+                        price_cache
+                            .apply_update(price_msg, msg.meta.correlation_id)
+                            .await;
+                    }
+                    .instrument(span)
+                    .await;
+                }
+            }
+        });
+
+        Ok(())
     }
 }

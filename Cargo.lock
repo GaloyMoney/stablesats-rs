@@ -2482,6 +2482,7 @@ dependencies = [
  "async-trait",
  "chrono",
  "derive_builder",
+ "futures",
  "opentelemetry",
  "prost",
  "protobuf-src",

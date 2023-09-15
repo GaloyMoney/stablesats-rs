@@ -15,6 +15,7 @@ fail-on-warnings = []
 shared = { path = "../shared", package = "stablesats-shared" }
 
 sqlx = { workspace = true }
+futures = { workspace = true }
 uuid = { workspace = true }
 chrono = { workspace = true }
 async-trait = { workspace = true }
