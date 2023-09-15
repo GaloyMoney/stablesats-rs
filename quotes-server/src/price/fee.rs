@@ -22,32 +22,32 @@ impl FeeCalculator {
         }
     }
 
-    pub fn increase_by_immediate_fee<T: Mul<Decimal>>(
+    pub fn increase_by_fee<T: Mul<Decimal>>(
         &self,
+        immediate_execution: bool,
         currency: T,
     ) -> <T as Mul<Decimal>>::Output {
-        currency * (dec!(1) + self.immediate_rate)
+        currency
+            * (dec!(1)
+                + if immediate_execution {
+                    self.immediate_rate
+                } else {
+                    self.delayed_rate
+                })
     }
 
-    pub fn increase_by_delayed_fee<T: Mul<Decimal>>(
+    pub fn decrease_by_fee<T: Mul<Decimal>>(
         &self,
+        immediate_execution: bool,
         currency: T,
     ) -> <T as Mul<Decimal>>::Output {
-        currency * (dec!(1) + self.delayed_rate)
-    }
-
-    pub fn decrease_by_immediate_fee<T: Mul<Decimal>>(
-        &self,
-        currency: T,
-    ) -> <T as Mul<Decimal>>::Output {
-        currency * (dec!(1) - self.immediate_rate)
-    }
-
-    pub fn decrease_by_delayed_fee<T: Mul<Decimal>>(
-        &self,
-        currency: T,
-    ) -> <T as Mul<Decimal>>::Output {
-        currency * (dec!(1) - self.delayed_rate)
+        currency
+            * (dec!(1)
+                - if immediate_execution {
+                    self.immediate_rate
+                } else {
+                    self.delayed_rate
+                })
     }
 }
 
@@ -98,19 +98,19 @@ mod tests {
 
         let usd_in = UsdCents::from(dec!(10_000));
         assert_eq!(
-            fees.decrease_by_immediate_fee(usd_in.clone()),
+            fees.decrease_by_fee(true, usd_in.clone()),
             UsdCents::from(Decimal::from(10_000 - 110))
         );
         assert_eq!(
-            fees.decrease_by_delayed_fee(usd_in.clone()),
+            fees.decrease_by_fee(false, usd_in.clone()),
             UsdCents::from(Decimal::from(10_000 - 1010))
         );
         assert_eq!(
-            fees.increase_by_immediate_fee(usd_in.clone()),
+            fees.increase_by_fee(true, usd_in.clone()),
             UsdCents::from(Decimal::from(10_000 + 110))
         );
         assert_eq!(
-            fees.increase_by_delayed_fee(usd_in),
+            fees.increase_by_fee(false, usd_in),
             UsdCents::from(Decimal::from(10_000 + 1010))
         );
     }

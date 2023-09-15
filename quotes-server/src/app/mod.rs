@@ -10,7 +10,7 @@ use shared::{
     pubsub::*,
 };
 
-use crate::{cache::*, error::*, price::*, quote::*};
+use crate::{cache::*, currency::*, error::*, price::*, quote::*};
 pub use config::*;
 
 pub struct QuotesApp {
@@ -61,11 +61,15 @@ impl QuotesApp {
         })
     }
 
-    pub async fn quote_buy_cents_from_sats(
+    pub async fn quote_cents_from_sats_for_buy(
         &self,
         sats: Decimal,
         execute: bool,
     ) -> Result<Quote, QuotesAppError> {
+        let usd_amount = self
+            .price_calculator
+            .cents_from_sats_for_buy(Satoshis::from(sats), execute)
+            .await?;
         let quote = NewQuote::builder()
             .direction(Direction::BuyCents)
             .immediate_execution(execute)

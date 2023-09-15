@@ -42,7 +42,10 @@ impl QuoteService for Quotes {
             let quote = match req.quote_for {
                 Some(get_quote_to_buy_cents_request::QuoteFor::AmountToSellInSats(amount)) => {
                     self.app
-                        .quote_buy_cents_from_sats(Decimal::from(amount), req.immediate_execution)
+                        .quote_cents_from_sats_for_buy(
+                            Decimal::from(amount),
+                            req.immediate_execution,
+                        )
                         .await?
                 }
                 _ => unimplemented!(),
