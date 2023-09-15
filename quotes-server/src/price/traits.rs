@@ -32,12 +32,14 @@ mod dummy_impls {
     use super::*;
 
     pub struct DummyProvider {
-        price_of_one_sat: Decimal,
+        ask_price_of_one_sat: Decimal,
+        sell_price_of_one_sat: Decimal,
     }
     impl DummyProvider {
-        pub fn new(price_of_one_sat: UsdCents) -> Self {
+        pub fn new(ask_price_of_one_sat: UsdCents, sell_price_of_one_sat: UsdCents) -> Self {
             Self {
-                price_of_one_sat: price_of_one_sat.into(),
+                ask_price_of_one_sat: ask_price_of_one_sat.into(),
+                sell_price_of_one_sat: sell_price_of_one_sat.into(),
             }
         }
     }
@@ -45,23 +47,25 @@ mod dummy_impls {
     impl PriceProvider for DummyProvider {
         async fn latest(&self) -> Result<Box<dyn SidePicker>, ExchangePriceCacheError> {
             Ok(Box::new(DummySidePicker {
-                price_of_one_sat: self.price_of_one_sat,
+                ask_price_of_one_sat: self.ask_price_of_one_sat,
+                sell_price_of_one_sat: self.sell_price_of_one_sat,
             }))
         }
     }
 
     pub struct DummySidePicker {
-        price_of_one_sat: Decimal,
+        ask_price_of_one_sat: Decimal,
+        sell_price_of_one_sat: Decimal,
     }
     impl SidePicker for DummySidePicker {
         fn buy_usd<'a>(&'a self) -> Box<dyn VolumePicker + 'a> {
             Box::new(DummyVolumePicker {
-                price_of_one_sat: &self.price_of_one_sat,
+                price_of_one_sat: &self.ask_price_of_one_sat,
             })
         }
         fn sell_usd<'a>(&'a self) -> Box<dyn VolumePicker + 'a> {
             Box::new(DummyVolumePicker {
-                price_of_one_sat: &self.price_of_one_sat,
+                price_of_one_sat: &self.sell_price_of_one_sat,
             })
         }
         fn mid_price_of_one_sat(&self) -> UsdCents {

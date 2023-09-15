@@ -64,15 +64,15 @@ impl QuotesApp {
     pub async fn quote_cents_from_sats_for_buy(
         &self,
         sats: Decimal,
-        execute: bool,
+        immediate_execution: bool,
     ) -> Result<Quote, QuotesAppError> {
         let usd_amount = self
             .price_calculator
-            .cents_from_sats_for_buy(Satoshis::from(sats), execute)
+            .cents_from_sats_for_buy(Satoshis::from(sats), immediate_execution)
             .await?;
         let quote = NewQuote::builder()
             .direction(Direction::BuyCents)
-            .immediate_execution(execute)
+            .immediate_execution(immediate_execution)
             .build()
             .expect("Could not build quote");
         unimplemented!()

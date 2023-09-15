@@ -59,14 +59,13 @@ mod tests {
     use rust_decimal_macros::dec;
 
     use crate::{currency::*, price::*};
-    use serde_json::*;
 
     #[tokio::test]
-    async fn test_price_mixer() -> anyhow::Result<(), Error> {
+    async fn test_price_mixer() -> anyhow::Result<()> {
         let mut price_mixer = PriceMixer::new();
-        let one = DummyProvider::new(UsdCents::from(Decimal::ONE));
+        let one = DummyProvider::new(UsdCents::from(Decimal::ONE), UsdCents::from(Decimal::ONE));
         price_mixer.add_provider("one", one, Decimal::ONE);
-        let two = DummyProvider::new(UsdCents::from(Decimal::TWO));
+        let two = DummyProvider::new(UsdCents::from(Decimal::TWO), UsdCents::from(Decimal::TWO));
         price_mixer.add_provider("two", two, Decimal::ONE);
 
         let price = price_mixer
