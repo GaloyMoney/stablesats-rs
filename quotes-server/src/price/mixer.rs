@@ -24,10 +24,10 @@ impl PriceMixer {
             .insert(exchange_id, (Box::new(provider), weight));
     }
 
-    pub async fn apply(
+    pub async fn apply<R: ExchangeableCurrency>(
         &self,
-        f: impl Fn(&Box<dyn SidePicker>) -> Decimal,
-    ) -> Result<Decimal, ExchangePriceCacheError> {
+        f: impl Fn(&Box<dyn SidePicker>) -> R,
+    ) -> Result<R, ExchangePriceCacheError> {
         let mut total = Decimal::ZERO;
         let mut total_weights = Decimal::ZERO;
         let mut prev_error: Option<ExchangePriceCacheError> = None;
@@ -40,11 +40,11 @@ impl PriceMixer {
                 }
             };
             total_weights += weight;
-            total += f(&side_picker) * weight;
+            total += f(&side_picker).into() * weight;
         }
 
         if total_weights > Decimal::ZERO {
-            Ok(total / total_weights)
+            Ok(R::from(total / total_weights))
         } else {
             Err(prev_error.unwrap_or(ExchangePriceCacheError::NoPriceAvailable))
         }
@@ -55,58 +55,25 @@ impl PriceMixer {
 mod tests {
     pub use std::collections::HashMap;
 
-    pub use chrono::Duration;
-    pub use rust_decimal::Decimal;
-    use shared::payload::PriceMessagePayload;
-    use shared::pubsub::CorrelationId;
-    use shared::time::TimeStamp;
+    use rust_decimal::Decimal;
+    use rust_decimal_macros::dec;
 
-    pub use crate::{cache::*, currency::*, price::*};
-    pub use serde_json::*;
+    use crate::{currency::*, price::*};
+    use serde_json::*;
 
     #[tokio::test]
     async fn test_price_mixer() -> anyhow::Result<(), Error> {
-        let cache = ExchangeTickCache::new(ExchangePriceCacheConfig::default());
         let mut price_mixer = PriceMixer::new();
-        price_mixer.add_provider("okex", cache.clone(), Decimal::from(1));
-
-        cache
-            .apply_update(get_payload(), CorrelationId::new())
-            .await;
+        let one = DummyProvider::new(UsdCents::from(Decimal::ONE));
+        price_mixer.add_provider("one", one, Decimal::ONE);
+        let two = DummyProvider::new(UsdCents::from(Decimal::TWO));
+        price_mixer.add_provider("two", two, Decimal::ONE);
 
         let price = price_mixer
-            .apply(|p| {
-                *p.sell_usd()
-                    .sats_from_cents(UsdCents::from(Decimal::ONE))
-                    .amount()
-            })
+            .apply(|p| p.sell_usd().sats_from_cents(UsdCents::from(dec!(4))))
             .await
             .expect("Price should be available");
-        assert_ne!(Decimal::ZERO, price);
+        assert_eq!(dec!(3), *price.amount());
         Ok(())
-    }
-
-    fn get_payload() -> PriceMessagePayload {
-        let raw = r#"{
-            "exchange": "okex",
-            "instrumentId": "BTC-USD-SWAP",
-            "timestamp": 1,
-            "bidPrice": {
-                "numeratorUnit": "USD_CENT",
-                "denominatorUnit": "BTC_SAT",
-                "offset": 12,
-                "base": "1000000000"
-            },
-            "askPrice": {
-                "numeratorUnit": "USD_CENT",
-                "denominatorUnit": "BTC_SAT",
-                "offset": 12,
-                "base": "10000000000"
-            }
-            }"#;
-        let mut price_message_payload =
-            serde_json::from_str::<PriceMessagePayload>(raw).expect("Could not parse payload");
-        price_message_payload.timestamp = TimeStamp::now();
-        price_message_payload
     }
 }

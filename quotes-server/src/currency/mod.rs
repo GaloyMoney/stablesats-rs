@@ -67,6 +67,12 @@ macro_rules! currency {
             }
         }
 
+        impl From<$name> for Decimal {
+            fn from(amount: $name) -> Self {
+                amount.0
+            }
+        }
+
         impl TryFrom<$name> for u64 {
             type Error = CurrencyError;
 
