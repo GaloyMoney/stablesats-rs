@@ -28,19 +28,19 @@ pub struct Quotes {
 
 #[tonic::async_trait]
 impl QuoteService for Quotes {
-    #[instrument(name = "quotes_server.get_quote_to_buy_cents", skip_all,
+    #[instrument(name = "quotes_server.get_quote_to_buy_usd", skip_all,
         fields(error, error.level, error.message),
         err
     )]
-    async fn get_quote_to_buy_cents(
+    async fn get_quote_to_buy_usd(
         &self,
-        request: Request<GetQuoteToBuyCentsRequest>,
-    ) -> Result<Response<GetQuoteToBuyCentsResponse>, Status> {
+        request: Request<GetQuoteToBuyUsdRequest>,
+    ) -> Result<Response<GetQuoteToBuyUsdResponse>, Status> {
         shared::tracing::record_error(tracing::Level::ERROR, || async move {
             extract_tracing(&request);
             let req = request.into_inner();
             let quote = match req.quote_for {
-                Some(get_quote_to_buy_cents_request::QuoteFor::AmountToSellInSats(amount)) => {
+                Some(get_quote_to_buy_usd_request::QuoteFor::AmountToSellInSats(amount)) => {
                     self.app
                         .quote_cents_from_sats_for_buy(
                             Decimal::from(amount),
@@ -50,7 +50,7 @@ impl QuoteService for Quotes {
                 }
                 _ => unimplemented!(),
             };
-            Ok(Response::new(GetQuoteToBuyCentsResponse {
+            Ok(Response::new(GetQuoteToBuyUsdResponse {
                 quote_id: quote.id.to_string(),
                 amount_to_sell_in_sats: 0,
                 amount_to_buy_in_cents: 0,
@@ -61,10 +61,10 @@ impl QuoteService for Quotes {
         .await
     }
 
-    async fn get_quote_to_sell_cents(
+    async fn get_quote_to_sell_usd(
         &self,
-        request: Request<GetQuoteToSellCentsRequest>,
-    ) -> Result<Response<GetQuoteToSellCentsResponse>, Status> {
+        request: Request<GetQuoteToSellUsdRequest>,
+    ) -> Result<Response<GetQuoteToSellUsdResponse>, Status> {
         unimplemented!()
     }
 

@@ -2,12 +2,12 @@ syntax = "proto3";
 package services.quotes.v1;
 
 service QuoteService {
-  rpc GetQuoteToBuyCents(GetQuoteToBuyCentsRequest) returns (GetQuoteToBuyCentsResponse) {}
-  rpc GetQuoteToSellCents(GetQuoteToSellCentsRequest) returns (GetQuoteToSellCentsResponse) {}
+  rpc GetQuoteToBuyUsd(GetQuoteToBuyUsdRequest) returns (GetQuoteToBuyUsdResponse) {}
+  rpc GetQuoteToSellUsd(GetQuoteToSellUsdRequest) returns (GetQuoteToSellUsdResponse) {}
   rpc AcceptQuote(AcceptQuoteRequest) returns (AcceptQuoteResponse) {}
 }
 
-message GetQuoteToBuyCentsRequest {
+message GetQuoteToBuyUsdRequest {
   oneof quote_for {
     uint64 amount_to_sell_in_sats = 1;
     uint64 amount_to_buy_in_cents = 2;
@@ -16,7 +16,7 @@ message GetQuoteToBuyCentsRequest {
   bool immediate_execution = 3;
 }
 
-message GetQuoteToBuyCentsResponse {
+message GetQuoteToBuyUsdResponse {
   string quote_id = 1;
   uint64 amount_to_sell_in_sats = 2;
   uint64 amount_to_buy_in_cents = 3;
@@ -24,7 +24,7 @@ message GetQuoteToBuyCentsResponse {
   bool executed = 5;
 }
 
-message GetQuoteToSellCentsRequest {
+message GetQuoteToSellUsdRequest {
   oneof quote_for {
     uint64 amount_to_buy_in_sats = 1;
     uint64 amount_to_sell_in_cents = 2;
@@ -33,7 +33,7 @@ message GetQuoteToSellCentsRequest {
   bool immediate_execution = 3;
 }
 
-message GetQuoteToSellCentsResponse {
+message GetQuoteToSellUsdResponse {
   string quote_id = 1;
   uint64 amount_to_buy_in_sats = 2;
   uint64 amount_to_sell_in_cents = 3;
