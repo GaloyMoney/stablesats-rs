@@ -1,3 +1,14 @@
+# [stablesats release v0.9.22](https://github.com/GaloyMoney/stablesats-rs/releases/tag/0.9.22)
+
+
+### Bug Fixes
+
+- Consistent naming of env variables (#428)
+
+### Miscellaneous Tasks
+
+- Untrack .env (#427)
+
 # [stablesats release v0.9.21](https://github.com/GaloyMoney/stablesats-rs/releases/tag/0.9.21)
 
 
