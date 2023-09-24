@@ -1,9 +1,8 @@
-use rust_decimal::Decimal;
-
 use crate::{
-    currency::{Sats, UsdCents},
+    currency::{Sats, UsdCents, VolumePicker},
     QuotePrice,
 };
+use rust_decimal::Decimal;
 
 pub struct VolumeBasedPriceConverter<'a, I: Iterator<Item = (&'a QuotePrice, &'a Decimal)> + Clone>
 {
@@ -45,44 +44,58 @@ impl<'a, I: Iterator<Item = (&'a QuotePrice, &'a Decimal)> + Clone>
     }
 }
 
+impl<'a, I: Iterator<Item = (&'a QuotePrice, &'a Decimal)> + Clone> VolumePicker
+    for VolumeBasedPriceConverter<'a, I>
+{
+    fn cents_from_sats(&self, sats: Sats) -> UsdCents {
+        UsdCents::from_decimal(*sats.amount() * self.weighted_price_of_volume(*sats.amount()))
+    }
+
+    fn sats_from_cents(&self, cents: UsdCents) -> Sats {
+        Sats::from_decimal(*cents.amount() / self.weighted_price_of_volume(*cents.amount()))
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use rust_decimal_macros::dec;
-    use serde::Deserialize;
-    use std::fs;
+    use shared::payload::OrderBookPayload;
 
     use crate::OrderBookView;
 
     use super::*;
 
-    #[derive(Debug, Deserialize)]
-    struct SnapshotFixture {
-        payload: OrderBookView,
+    fn get_payload() -> OrderBookView {
+        let raw = r#"{
+            "asks": {
+                "0.1": "10",
+                "0.2": "90",
+                "0.3": "1000"
+            },
+            "bids": {
+                "0.1": "500",
+                "0.15": "90",
+                "0.2": "10"
+            },
+            "timestamp": 1667454784,
+            "exchange": "okex"
+            }"#;
+        let price_message_payload =
+            serde_json::from_str::<OrderBookPayload>(raw).expect("Could not parse payload");
+        price_message_payload.into()
     }
-
-    fn load_order_book(filename: &str) -> anyhow::Result<SnapshotFixture> {
-        let contents = fs::read_to_string(format!(
-            "./tests/fixtures/order-book-payload-{}.json",
-            filename
-        ))
-        .expect(&format!("Couldn't load fixture {}", filename));
-
-        let res = serde_json::from_str::<SnapshotFixture>(&contents)?;
-        Ok(res)
-    }
-
     #[test]
     fn weighted_average_ask_price() -> anyhow::Result<()> {
-        let latest_snapshot = load_order_book("real")?.payload;
+        let latest_snapshot = get_payload();
         let converter = VolumeBasedPriceConverter::new(latest_snapshot.asks.iter());
-        let volumes = vec![
+        let volumes = [
             Sats::from_decimal(dec!(1)),
             Sats::from_decimal(dec!(10)),
             Sats::from_decimal(dec!(20)),
             Sats::from_decimal(dec!(100)),
             Sats::from_decimal(dec!(110)),
         ];
-        let expected_prices = vec![dec!(0.1), dec!(0.1), dec!(0.15), dec!(0.19), dec!(0.2)];
+        let expected_prices = [dec!(0.1), dec!(0.1), dec!(0.15), dec!(0.19), dec!(0.2)];
 
         for (idx, sats) in volumes.into_iter().enumerate() {
             let mut price = converter.weighted_price_of_volume(*sats.amount());
@@ -96,16 +109,16 @@ mod tests {
 
     #[test]
     fn weighted_average_bid_price() -> anyhow::Result<()> {
-        let latest_snapshot = load_order_book("real")?.payload;
+        let latest_snapshot = get_payload();
         let converter = VolumeBasedPriceConverter::new(latest_snapshot.bids.iter().rev());
-        let volumes = vec![
+        let volumes = [
             Sats::from_decimal(dec!(1)),
             Sats::from_decimal(dec!(10)),
             Sats::from_decimal(dec!(20)),
             Sats::from_decimal(dec!(100)),
             Sats::from_decimal(dec!(200)),
         ];
-        let expected_prices = vec![dec!(0.2), dec!(0.2), dec!(0.175), dec!(0.155), dec!(0.1275)];
+        let expected_prices = [dec!(0.2), dec!(0.2), dec!(0.175), dec!(0.155), dec!(0.1275)];
 
         for (idx, sats) in volumes.into_iter().enumerate() {
             let mut price = converter.weighted_price_of_volume(*sats.amount());
@@ -119,7 +132,7 @@ mod tests {
 
     #[test]
     fn cents_from_sats_volume() -> anyhow::Result<()> {
-        let latest_snapshot = load_order_book("real")?.payload;
+        let latest_snapshot = get_payload();
         let converter = VolumeBasedPriceConverter::new(latest_snapshot.bids.iter().rev());
         let sats_volume = Sats::from_decimal(dec!(100_000_000));
 
@@ -132,7 +145,7 @@ mod tests {
 
     #[test]
     fn sats_from_cents_volume() -> anyhow::Result<()> {
-        let latest_snapshot = load_order_book("real")?.payload;
+        let latest_snapshot = get_payload();
         let converter = VolumeBasedPriceConverter::new(latest_snapshot.bids.iter().rev());
         let cents_volume = UsdCents::from_decimal(dec!(10));
 

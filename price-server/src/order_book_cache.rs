@@ -3,15 +3,19 @@ use rust_decimal::Decimal;
 use rust_decimal_macros::dec;
 use serde::Deserialize;
 use shared::{
-    payload::{OkexBtcUsdSwapOrderBookPayload, OrderBookPayload, PriceRaw},
-    pubsub::Envelope,
+    payload::{OrderBookPayload, PriceRaw},
     time::TimeStamp,
 };
 use std::{collections::BTreeMap, sync::Arc};
 use thiserror::Error;
 use tokio::sync::RwLock;
 
-use crate::VolumeBasedPriceConverter;
+use crate::{
+    currency::{UsdCents, VolumePicker},
+    error::ExchangePriceCacheError,
+    price_mixer::{PriceProvider, SidePicker},
+    ExchangePriceCacheConfig, VolumeBasedPriceConverter,
+};
 
 #[derive(Debug, Error)]
 pub enum OrderBookCacheError {
@@ -29,14 +33,23 @@ pub enum OrderBookCacheError {
 pub struct OrderBookCache {
     inner: Arc<RwLock<SnapshotInner>>,
 }
+
+#[async_trait::async_trait]
+impl PriceProvider for OrderBookCache {
+    async fn latest(&self) -> Result<Box<dyn SidePicker>, ExchangePriceCacheError> {
+        let order_book = self.latest_snapshot().await?;
+        Ok(Box::new(order_book))
+    }
+}
+
 impl OrderBookCache {
-    pub fn new(stale_after: Duration) -> Self {
+    pub fn new(config: ExchangePriceCacheConfig) -> Self {
         Self {
-            inner: Arc::new(RwLock::new(SnapshotInner::new(stale_after))),
+            inner: Arc::new(RwLock::new(SnapshotInner::new(config.stale_after))),
         }
     }
 
-    pub async fn apply_update(&self, snapshot: Envelope<OkexBtcUsdSwapOrderBookPayload>) {
+    pub async fn apply_update(&self, snapshot: OrderBookPayload) {
         self.inner.write().await.update_snapshot(snapshot);
     }
 
@@ -59,8 +72,8 @@ impl SnapshotInner {
         }
     }
 
-    fn update_snapshot(&mut self, snap: Envelope<OkexBtcUsdSwapOrderBookPayload>) {
-        let payload = snap.payload.0;
+    fn update_snapshot(&mut self, snap: OrderBookPayload) {
+        let payload = snap;
 
         if let Some(ref snap) = self.snapshot {
             if snap.timestamp > payload.timestamp {
@@ -125,6 +138,29 @@ impl From<OrderBookPayload> for OrderBookView {
             bids,
             timestamp: value.timestamp,
         }
+    }
+}
+
+impl SidePicker for OrderBookView {
+    fn sell_usd(&self) -> Box<dyn VolumePicker + '_> {
+        Box::new(VolumeBasedPriceConverter::new(self.asks.iter()))
+    }
+
+    fn buy_usd(&self) -> Box<dyn VolumePicker + '_> {
+        Box::new(VolumeBasedPriceConverter::new(self.bids.iter().rev()))
+    }
+
+    fn mid_price_of_one_sat(&self) -> UsdCents {
+        let best_ask = self
+            .best_ask_price_of_one_sat()
+            .expect("Failed to retrieve best ask price");
+        let best_bid = self
+            .best_bid_price_of_one_sat()
+            .expect("Failed to retrieve best bid price");
+
+        let mid_price = (best_ask + best_bid) / dec!(2);
+
+        UsdCents::from_decimal(mid_price)
     }
 }
 

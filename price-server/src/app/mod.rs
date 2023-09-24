@@ -12,8 +12,9 @@ use shared::{
 
 use crate::{
     cache_config::ExchangePriceCacheConfig, exchange_tick_cache::ExchangeTickCache,
-    price_mixer::PriceMixer,
+    price_mixer::PriceMixer, OrderBookCache,
 };
+
 pub use crate::{currency::*, error::*, fee_calculator::*};
 pub use config::*;
 
@@ -46,9 +47,10 @@ impl PriceApp {
 
         if let Some(weight) = exchange_weights.okex {
             if weight > Decimal::ZERO {
-                let okex_price_cache = ExchangeTickCache::new(price_cache_config.clone());
-                Self::subscribe_okex(subscriber.resubscribe(), okex_price_cache.clone()).await?;
-                price_mixer.add_provider(OKEX_EXCHANGE_ID, okex_price_cache, weight);
+                let okex_order_book_cache = OrderBookCache::new(price_cache_config.clone());
+                Self::subscribe_okex(subscriber.resubscribe(), okex_order_book_cache.clone())
+                    .await?;
+                price_mixer.add_provider(OKEX_EXCHANGE_ID, okex_order_book_cache, weight);
             }
         }
 
@@ -72,21 +74,19 @@ impl PriceApp {
 
     async fn subscribe_okex(
         mut subscriber: memory::Subscriber<PriceStreamPayload>,
-        price_cache: ExchangeTickCache,
+        order_book_cache: OrderBookCache,
     ) -> Result<(), PriceAppError> {
         tokio::spawn(async move {
             while let Some(msg) = subscriber.next().await {
-                if let PriceStreamPayload::OkexBtcSwapPricePayload(price_msg) = msg.payload {
+                if let PriceStreamPayload::OkexBtcUsdSwapOrderBookPayload(price_msg) = msg.payload {
                     let span = info_span!(
-                        "price_server.okex_price_tick_received",
+                        "price_server.okex_order_book_received",
                         message_type = %msg.payload_type,
                         correlation_id = %msg.meta.correlation_id
                     );
                     shared::tracing::inject_tracing_data(&span, &msg.meta.tracing_data);
                     async {
-                        price_cache
-                            .apply_update(price_msg, msg.meta.correlation_id)
-                            .await;
+                        order_book_cache.apply_update(price_msg).await;
                     }
                     .instrument(span)
                     .await;

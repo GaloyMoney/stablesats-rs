@@ -25,6 +25,7 @@ pub struct PriceMessagePayload {
 pub enum PriceStreamPayload {
     OkexBtcSwapPricePayload(PriceMessagePayload),
     BitfinexBtcUsdSwapPricePayload(PriceMessagePayload),
+    OkexBtcUsdSwapOrderBookPayload(OrderBookPayload),
 }
 
 crate::payload! { PriceStreamPayload, "price.stream" }

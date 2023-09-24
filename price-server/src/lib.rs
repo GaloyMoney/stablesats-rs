@@ -7,6 +7,8 @@ pub mod currency;
 mod error;
 mod exchange_tick_cache;
 mod fee_calculator;
+mod order_book_cache;
+mod price_converter;
 mod price_mixer;
 mod server;
 
@@ -16,6 +18,8 @@ use shared::{health::HealthCheckTrigger, payload::*, pubsub::memory};
 pub use app::{ExchangeWeights, PriceServerHealthCheckConfig};
 pub use cache_config::ExchangePriceCacheConfig;
 pub use fee_calculator::FeeCalculatorConfig;
+pub use order_book_cache::*;
+pub use price_converter::*;
 pub use server::*;
 
 pub async fn run(

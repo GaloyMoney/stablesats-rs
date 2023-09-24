@@ -59,12 +59,18 @@ async fn publishes_to_price_stream() -> anyhow::Result<()> {
         let _res = okex_price::run(tick_send).await;
     });
 
-    let received_tick = tick_recv.next().await.expect("expected price tick");
+    let recv = tick_recv.next().await.expect("expected price tick");
 
     assert!(matches!(
-        received_tick.payload,
+        recv.payload,
         PriceStreamPayload::OkexBtcSwapPricePayload(_)
     ));
 
+    let recv = tick_recv.next().await.expect("expected order book");
+
+    assert!(matches!(
+        recv.payload,
+        PriceStreamPayload::OkexBtcUsdSwapOrderBookPayload(_)
+    ));
     Ok(())
 }

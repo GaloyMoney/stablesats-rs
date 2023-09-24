@@ -21,23 +21,21 @@ pub async fn run(
 ) -> Result<(), PriceFeedError> {
     let _ = tokio::spawn(async move {
         loop {
-            let publisher = price_stream_publisher.clone();
+            let tick_publisher = price_stream_publisher.clone();
             if let Ok(mut stream) = subscribe_btc_usd_swap_price_tick().await {
                 let tick_task = tokio::spawn(async move {
                     while let Some(tick) = stream.next().await {
-                        let _res = okex_price_tick_received(&publisher, tick).await;
+                        let _res = okex_price_tick_received(&tick_publisher, tick).await;
                     }
                 });
-
-                // let order_book_task = tokio::spawn(async move {
-                //     loop {
-                //         let _res = order_book_subscription(books_publisher.clone(), &price_feed_config).await;
-                //         tokio::time::sleep(Duration::from_secs(5_u64)).await;
-                //     }
-                // });
-
-                // let _ = join!(tick_task, order_book_task);
-                let _ = join!(tick_task);
+                let order_book_publisher = price_stream_publisher.clone();
+                let order_book_task = tokio::spawn(async move {
+                    loop {
+                        let _res = order_book_subscription(order_book_publisher.clone()).await;
+                        tokio::time::sleep(std::time::Duration::from_secs(5_u64)).await;
+                    }
+                });
+                let _ = join!(tick_task, order_book_task);
             }
         }
     })
@@ -46,9 +44,8 @@ pub async fn run(
     Ok(())
 }
 
-#[allow(dead_code)]
 async fn order_book_subscription(
-    publisher: memory::Publisher<OkexBtcUsdSwapOrderBookPayload>,
+    publisher: memory::Publisher<PriceStreamPayload>,
 ) -> Result<(), PriceFeedError> {
     let mut stream = subscribe_btc_usd_swap_order_book().await?;
     let full_load = stream.next().await.ok_or(PriceFeedError::InitialFullLoad)?;
@@ -81,9 +78,8 @@ async fn okex_price_tick_received(
     Ok(())
 }
 
-#[allow(dead_code)]
 async fn okex_order_book_received(
-    publisher: &memory::Publisher<OkexBtcUsdSwapOrderBookPayload>,
+    publisher: &memory::Publisher<PriceStreamPayload>,
     book: OkexOrderBook,
     mut cache: OrderBookCache,
 ) -> Result<(), PriceFeedError> {
@@ -93,7 +89,10 @@ async fn okex_order_book_received(
             OkexBtcUsdSwapOrderBookPayload::try_from(cache.latest().clone())
         {
             publisher
-                .throttle_publish("OKEX_ORDER_BOOK", complete_order_book)
+                .throttle_publish(
+                    "OKEX_ORDER_BOOK",
+                    PriceStreamPayload::OkexBtcUsdSwapOrderBookPayload(complete_order_book.into()),
+                )
                 .await?;
         }
     }

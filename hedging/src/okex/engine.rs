@@ -86,7 +86,7 @@ impl OkexEngine {
     ) -> Result<(), HedgingError> {
         tokio::spawn(async move {
             while let Some(msg) = tick_recv.next().await {
-                if let PriceStreamPayload::OkexBtcSwapPricePayload(_) = msg.payload {
+                if let PriceStreamPayload::OkexBtcUsdSwapOrderBookPayload(_) = msg.payload {
                     let correlation_id = msg.meta.correlation_id;
                     let span = info_span!(
                         "hedging.okex.okex_btc_usd_swap_price_received",
