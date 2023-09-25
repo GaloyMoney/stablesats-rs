@@ -1946,6 +1946,7 @@ dependencies = [
  "futures",
  "itertools",
  "rust_decimal",
+ "rust_decimal_macros",
  "serde",
  "serde_json",
  "serde_with 3.3.0",

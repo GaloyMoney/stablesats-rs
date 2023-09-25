@@ -1,14 +1,16 @@
 use crate::{
     currency::{Sats, UsdCents, VolumePicker},
-    QuotePrice,
+    QuotePriceCentsForOneSat, VolumeInCents,
 };
 use rust_decimal::Decimal;
 
-pub struct VolumeBasedPriceConverter<'a, I: Iterator<Item = (&'a QuotePrice, &'a Decimal)> + Clone>
-{
+pub struct VolumeBasedPriceConverter<
+    'a,
+    I: Iterator<Item = (&'a QuotePriceCentsForOneSat, &'a VolumeInCents)> + Clone,
+> {
     pairs: I,
 }
-impl<'a, I: Iterator<Item = (&'a QuotePrice, &'a Decimal)> + Clone>
+impl<'a, I: Iterator<Item = (&'a QuotePriceCentsForOneSat, &'a VolumeInCents)> + Clone>
     VolumeBasedPriceConverter<'a, I>
 {
     pub fn new(pairs: I) -> Self {
@@ -29,9 +31,9 @@ impl<'a, I: Iterator<Item = (&'a QuotePrice, &'a Decimal)> + Clone>
 
         let pairs = self.pairs.clone();
         for (price, qty) in pairs {
-            if (volume_acc + qty) < total_volume {
-                volume_acc += qty;
-                price_acc += price.inner() * qty;
+            if (volume_acc + qty.inner()) < total_volume {
+                volume_acc += qty.inner();
+                price_acc += price.inner() * qty.inner();
                 continue;
             } else {
                 let remaining_volume = total_volume - volume_acc;
@@ -44,7 +46,7 @@ impl<'a, I: Iterator<Item = (&'a QuotePrice, &'a Decimal)> + Clone>
     }
 }
 
-impl<'a, I: Iterator<Item = (&'a QuotePrice, &'a Decimal)> + Clone> VolumePicker
+impl<'a, I: Iterator<Item = (&'a QuotePriceCentsForOneSat, &'a VolumeInCents)> + Clone> VolumePicker
     for VolumeBasedPriceConverter<'a, I>
 {
     fn cents_from_sats(&self, sats: Sats) -> UsdCents {

@@ -1,5 +1,6 @@
 use itertools::Itertools;
 use rust_decimal::Decimal;
+use rust_decimal_macros::dec;
 use serde::{Deserialize, Serialize};
 use shared::{payload::*, time::*};
 use std::collections::BTreeMap;
@@ -7,6 +8,7 @@ use std::collections::BTreeMap;
 use crate::{ChannelArgs, PriceFeedError};
 
 const CHECKSUM_DEPTH_LIMIT: usize = 25;
+const CENTS_PER_OKEX_SWAP_CONTRACT: Decimal = dec!(10000);
 
 #[derive(Debug, Deserialize, PartialEq, Eq, Clone, Serialize)]
 #[serde(rename_all = "lowercase")]
@@ -173,13 +175,19 @@ impl From<CompleteOrderBook> for OrderBookPayload {
         let mut asks_map = BTreeMap::new();
         for (ask_price, ask_qty) in book.asks {
             let price = PriceRatioRaw::from_one_btc_in_usd_price(ask_price.0).numerator_amount();
-            let _ = asks_map.insert(PriceRaw::from(price), QuantityRaw::from(ask_qty));
+            let _ = asks_map.insert(
+                PriceRaw::from(price),
+                VolumeInCentsRaw::from(ask_qty * CENTS_PER_OKEX_SWAP_CONTRACT),
+            );
         }
 
         let mut bids_map = BTreeMap::new();
         for (bid_price, bid_qty) in book.bids {
             let price = PriceRatioRaw::from_one_btc_in_usd_price(bid_price.0).numerator_amount();
-            let _ = bids_map.insert(PriceRaw::from(price), QuantityRaw::from(bid_qty));
+            let _ = bids_map.insert(
+                PriceRaw::from(price),
+                VolumeInCentsRaw::from(bid_qty * CENTS_PER_OKEX_SWAP_CONTRACT),
+            );
         }
 
         Self {

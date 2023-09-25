@@ -22,6 +22,7 @@ tokio = { workspace = true }
 tokio-tungstenite = { workspace = true }
 url = { workspace = true }
 rust_decimal = { workspace = true }
+rust_decimal_macros = { workspace = true }
 tracing = { workspace = true }
 anyhow = { workspace = true }
 itertools = { workspace = true }

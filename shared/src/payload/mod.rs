@@ -47,8 +47,8 @@ crate::payload! { OkexBtcUsdSwapPositionPayload, "position.okex.btc-usd-swap" }
 /// Payload of snapshot of an order book
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct OrderBookPayload {
-    pub asks: BTreeMap<PriceRaw, QuantityRaw>,
-    pub bids: BTreeMap<PriceRaw, QuantityRaw>,
+    pub asks: BTreeMap<PriceRaw, VolumeInCentsRaw>,
+    pub bids: BTreeMap<PriceRaw, VolumeInCentsRaw>,
     pub timestamp: TimeStamp,
     pub exchange: ExchangeIdRaw,
 }
