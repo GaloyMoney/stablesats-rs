@@ -4,18 +4,20 @@
         "correlationId": "97b37536-e953-4c5b-821f-8058ae986080"
     },
     "payloadType": "OkexBtcUsdSwapOrderBookPayload",
-    "payload": {
-        "asks": {
-            "0.1": "10",
-            "0.2": "90",
-            "0.3": "1000"
-        },
-        "bids": {
-            "0.1": "500",
-            "0.15": "90",
-            "0.2": "10"
-        },
-        "timestamp": 1667454784,
-        "exchange": "okex"
-    }
+    "payloads": [
+        {
+            "asks": {
+                "0.1": "10",
+                "0.2": "90",
+                "0.3": "1000"
+            },
+            "bids": {
+                "0.1": "500",
+                "0.15": "90",
+                "0.2": "10"
+            },
+            "timestamp": 1667454784,
+            "exchange": "okex"
+        }
+    ]
 }
