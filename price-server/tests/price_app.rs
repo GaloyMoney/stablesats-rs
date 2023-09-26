@@ -1,17 +1,17 @@
 use rust_decimal_macros::dec;
 use std::fs;
 
-use price_server::{app::*, ExchangePriceCacheConfig};
+use price_server::{app::*, ExchangePriceCacheConfig, OrderBookCacheError};
 use shared::{payload::*, pubsub::*, time::*};
 
 #[derive(serde::Deserialize)]
 struct Fixture {
-    payloads: Vec<PriceMessagePayload>,
+    payloads: Vec<OrderBookPayload>,
 }
 
 fn load_fixture() -> anyhow::Result<Fixture> {
-    let contents =
-        fs::read_to_string("./tests/fixtures/price_app.json").expect("Couldn't load fixtures");
+    let contents = fs::read_to_string("./tests/fixtures/order-book-payload-real.json")
+        .expect("Couldn't load fixtures");
     Ok(serde_json::from_str(&contents)?)
 }
 
@@ -46,8 +46,9 @@ async fn price_app() -> anyhow::Result<()> {
     let err = app
         .get_cents_from_sats_for_immediate_buy(Sats::from_major(100_000_000))
         .await;
-    if let Err(PriceAppError::ExchangePriceCacheError(ExchangePriceCacheError::NoPriceAvailable)) =
-        err
+    if let Err(PriceAppError::ExchangePriceCacheError(ExchangePriceCacheError::OrderBookCache(
+        OrderBookCacheError::NoSnapshotAvailable,
+    ))) = err
     {
         assert!(true)
     } else {
@@ -57,7 +58,9 @@ async fn price_app() -> anyhow::Result<()> {
     let mut payloads = load_fixture()?.payloads.into_iter();
     let mut payload = payloads.next().unwrap();
     tick_send
-        .publish(PriceStreamPayload::OkexBtcSwapPricePayload(payload.clone()))
+        .publish(PriceStreamPayload::OkexBtcUsdSwapOrderBookPayload(
+            payload.clone(),
+        ))
         .await?;
     subscriber.next().await;
     tokio::time::sleep(std::time::Duration::from_millis(100)).await;
@@ -65,7 +68,9 @@ async fn price_app() -> anyhow::Result<()> {
     let err = app
         .get_cents_from_sats_for_immediate_buy(Sats::from_major(100_000_000))
         .await;
-    if let Err(PriceAppError::ExchangePriceCacheError(ExchangePriceCacheError::StalePrice(_))) = err
+    if let Err(PriceAppError::ExchangePriceCacheError(ExchangePriceCacheError::OrderBookCache(
+        OrderBookCacheError::OutdatedSnapshot(_),
+    ))) = err
     {
         assert!(true)
     } else {
@@ -74,7 +79,7 @@ async fn price_app() -> anyhow::Result<()> {
 
     payload.timestamp = TimeStamp::now();
     publisher
-        .publish(PriceStreamPayload::OkexBtcSwapPricePayload(payload))
+        .publish(PriceStreamPayload::OkexBtcUsdSwapOrderBookPayload(payload))
         .await?;
     subscriber.next().await;
     tokio::time::sleep(std::time::Duration::from_millis(100)).await;
@@ -82,7 +87,7 @@ async fn price_app() -> anyhow::Result<()> {
     let cents = app
         .get_cents_from_sats_for_immediate_buy(Sats::from_major(100_000_000))
         .await?;
-    assert_eq!(cents, UsdCents::from_major(98900));
+    assert_eq!(cents, UsdCents::from_major(12362500));
     let cents = app
         .get_cents_from_sats_for_immediate_buy(Sats::from_major(1))
         .await?;
@@ -91,7 +96,7 @@ async fn price_app() -> anyhow::Result<()> {
     let cents = app
         .get_cents_from_sats_for_immediate_sell(Sats::from_major(100_000_000))
         .await?;
-    assert_eq!(cents, UsdCents::from_major(1011000));
+    assert_eq!(cents, UsdCents::from_major(25022249));
     let cents = app
         .get_cents_from_sats_for_immediate_sell(Sats::from_major(1))
         .await?;
@@ -100,55 +105,52 @@ async fn price_app() -> anyhow::Result<()> {
     let cents = app
         .get_cents_from_sats_for_future_buy(Sats::from_major(100_000_000))
         .await?;
-    assert_eq!(cents, UsdCents::from_major(89900));
+    assert_eq!(cents, UsdCents::from_major(11237500));
     let cents = app
         .get_cents_from_sats_for_future_buy(Sats::from_major(1))
         .await?;
     assert_eq!(cents, UsdCents::from_major(0));
 
-    let future_buy = app
+    let cents = app
         .get_cents_from_sats_for_future_sell(Sats::from_major(100_000_000))
         .await?;
-    assert_eq!(future_buy, UsdCents::from_major(1101000));
-    let future_buy = app
+    assert_eq!(cents, UsdCents::from_major(27249749));
+    let cents = app
         .get_cents_from_sats_for_future_sell(Sats::from_major(1))
         .await?;
-    assert_eq!(future_buy, UsdCents::from_major(1));
+    assert_eq!(cents, UsdCents::from_major(1));
 
     let sats = app
         .get_sats_from_cents_for_immediate_buy(UsdCents::from_major(1000000))
         .await?;
-    assert_eq!(sats, Sats::from_major(1011000000));
+    assert_eq!(sats, Sats::from_major(5054996));
 
     let sats = app
         .get_sats_from_cents_for_immediate_sell(UsdCents::from_major(1000000))
         .await?;
-    assert_eq!(sats, Sats::from_major(98900000));
+    assert_eq!(sats, Sats::from_major(4945004));
     let sats = app
         .get_sats_from_cents_for_immediate_sell(UsdCents::from_major(1))
         .await?;
-    assert_eq!(sats, Sats::from_major(98));
+    assert_eq!(sats, Sats::from_major(9));
 
     let sats = app
         .get_sats_from_cents_for_future_buy(UsdCents::from_major(1000000))
         .await?;
-    assert_eq!(sats, Sats::from_major(1101000000));
+    assert_eq!(sats, Sats::from_major(5504996));
     let sats = app
         .get_sats_from_cents_for_future_buy(UsdCents::from_major(1))
         .await?;
-    assert_eq!(sats, Sats::from_major(1101));
+    assert_eq!(sats, Sats::from_major(2));
 
     let sats = app
         .get_sats_from_cents_for_future_sell(UsdCents::from_major(1000000))
         .await?;
-    assert_eq!(sats, Sats::from_major(89900000));
+    assert_eq!(sats, Sats::from_major(4495004));
     let sats = app
         .get_sats_from_cents_for_future_sell(UsdCents::from_major(1))
         .await?;
-    assert_eq!(sats, Sats::from_major(89));
-
-    let ratio = app.get_cents_per_sat_exchange_mid_rate().await?;
-    assert_eq!(ratio, 0.0055);
+    assert_eq!(sats, Sats::from_major(8));
 
     Ok(())
 }
