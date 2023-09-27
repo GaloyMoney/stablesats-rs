@@ -172,6 +172,7 @@ impl CompleteOrderBook {
 
 impl TryFrom<CompleteOrderBook> for OrderBookPayload {
     type Error = PriceFeedError;
+
     fn try_from(book: CompleteOrderBook) -> Result<Self, Self::Error> {
         if book.asks.is_empty() || book.bids.is_empty() {
             return Err(PriceFeedError::EmptyBookSide);
