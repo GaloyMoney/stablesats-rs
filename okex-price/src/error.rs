@@ -17,6 +17,8 @@ pub enum PriceFeedError {
     EmptyPriceData,
     #[error("PriceFeedError - EmptyOrderBookData: OkexOrderBook.data was empty")]
     EmptyOrderBookData,
+    #[error("PriceFeedError - EmptyBookSide: OkexOrderBook had empty book side")]
+    EmptyBookSide,
     #[error("PriceFeedError - InvalidTimestamp: {0}")]
     InvalidTimestamp(#[from] shared::time::TimeStampError),
     #[error("PriceFeedError - SerdeError: {0}")]

@@ -85,13 +85,11 @@ async fn okex_order_book_received(
 ) -> Result<(), PriceFeedError> {
     if let Ok(increment) = OrderBookIncrement::try_from(book) {
         cache.update_order_book(increment)?;
-        if let Ok(complete_order_book) =
-            OkexBtcUsdSwapOrderBookPayload::try_from(cache.latest().clone())
-        {
+        if let Ok(complete_order_book) = OrderBookPayload::try_from(cache.latest().clone()) {
             publisher
                 .throttle_publish(
                     "OKEX_ORDER_BOOK",
-                    PriceStreamPayload::OkexBtcUsdSwapOrderBookPayload(complete_order_book.into()),
+                    PriceStreamPayload::OkexBtcUsdSwapOrderBookPayload(complete_order_book),
                 )
                 .await?;
         }

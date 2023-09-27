@@ -170,8 +170,12 @@ impl CompleteOrderBook {
     }
 }
 
-impl From<CompleteOrderBook> for OrderBookPayload {
-    fn from(book: CompleteOrderBook) -> Self {
+impl TryFrom<CompleteOrderBook> for OrderBookPayload {
+    type Error = PriceFeedError;
+    fn try_from(book: CompleteOrderBook) -> Result<Self, Self::Error> {
+        if book.asks.is_empty() || book.bids.is_empty() {
+            return Err(PriceFeedError::EmptyBookSide);
+        }
         let mut asks_map = BTreeMap::new();
         for (ask_price, ask_qty) in book.asks {
             let price = PriceRatioRaw::from_one_btc_in_usd_price(ask_price.0).numerator_amount();
@@ -190,12 +194,12 @@ impl From<CompleteOrderBook> for OrderBookPayload {
             );
         }
 
-        Self {
+        Ok(Self {
             asks: asks_map,
             bids: bids_map,
             timestamp: book.timestamp,
             exchange: ExchangeIdRaw::from(OKEX_EXCHANGE_ID),
-        }
+        })
     }
 }
 

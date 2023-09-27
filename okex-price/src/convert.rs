@@ -59,9 +59,3 @@ impl TryFrom<OkexOrderBook> for OrderBookIncrement {
         Ok(inner)
     }
 }
-
-impl From<CompleteOrderBook> for OkexBtcUsdSwapOrderBookPayload {
-    fn from(book: CompleteOrderBook) -> Self {
-        Self(OrderBookPayload::from(book))
-    }
-}
