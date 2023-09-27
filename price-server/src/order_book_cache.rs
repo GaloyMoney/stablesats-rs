@@ -254,26 +254,25 @@ mod tests {
         assert_eq!(lob_snapshot.asks.len(), payload.asks.len());
     }
 
-    // make sure this test is useful
     #[test]
     fn mid_price() -> anyhow::Result<()> {
         let mut asks = BTreeMap::new();
         asks.insert(
-            QuotePriceCentsForOneSat(dec!(10000)),
+            QuotePriceCentsForOneSat(dec!(10_000)),
             VolumeInCents(dec!(10)),
         );
         asks.insert(
-            QuotePriceCentsForOneSat(dec!(15000)),
+            QuotePriceCentsForOneSat(dec!(25_000)),
             VolumeInCents(dec!(10)),
         );
 
         let mut bids = BTreeMap::new();
         bids.insert(
-            QuotePriceCentsForOneSat(dec!(5000)),
+            QuotePriceCentsForOneSat(dec!(5_000)),
             VolumeInCents(dec!(10)),
         );
         bids.insert(
-            QuotePriceCentsForOneSat(dec!(10000)),
+            QuotePriceCentsForOneSat(dec!(15_000)),
             VolumeInCents(dec!(10)),
         );
 
@@ -284,7 +283,7 @@ mod tests {
         };
         let mid_price = snapshot.mid_price_of_one_sat()?;
 
-        assert_eq!(mid_price, dec!(7500));
+        assert_eq!(mid_price, dec!(12_500));
 
         Ok(())
     }
