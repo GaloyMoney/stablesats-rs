@@ -218,7 +218,7 @@ impl OrderBookView {
     }
 
     fn best_ask_price_of_one_sat(&self) -> Result<Decimal, OrderBookCacheError> {
-        let ask_length = self.bids.iter().next();
+        let ask_length = self.asks.iter().next();
 
         let (best_price, _) = ask_length.ok_or(OrderBookCacheError::EmptySide)?;
 
@@ -254,6 +254,7 @@ mod tests {
         assert_eq!(lob_snapshot.asks.len(), payload.asks.len());
     }
 
+    // make sure this test is useful
     #[test]
     fn mid_price() -> anyhow::Result<()> {
         let mut asks = BTreeMap::new();

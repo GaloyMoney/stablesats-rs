@@ -34,7 +34,7 @@ impl PriceProvider for ExchangeTickCache {
     async fn latest(&self) -> Result<Box<dyn SidePicker>, ExchangePriceCacheError> {
         if let Some(mock_price) = self.config.dev_mock_price_btc_in_usd {
             let price = PriceRatioRaw::from_one_btc_in_usd_price(mock_price);
-            let cent_price = UsdCents::try_from(price).expect("couldn't create mack UsdCents");
+            let cent_price = UsdCents::try_from(price).expect("couldn't create mock UsdCents");
             return Ok(Box::new(BtcSatTick {
                 timestamp: TimeStamp::now(),
                 correlation_id: CorrelationId::new(),

@@ -1,18 +1,25 @@
 use rust_decimal_macros::dec;
-use std::fs;
 
 use price_server::{app::*, ExchangePriceCacheConfig, OrderBookCacheError};
 use shared::{payload::*, pubsub::*, time::*};
 
-#[derive(serde::Deserialize)]
-struct Fixture {
-    payloads: Vec<OrderBookPayload>,
-}
-
-fn load_fixture() -> anyhow::Result<Fixture> {
-    let contents = fs::read_to_string("./tests/fixtures/order-book-payload-real.json")
-        .expect("Couldn't load fixtures");
-    Ok(serde_json::from_str(&contents)?)
+fn load_fixture() -> OrderBookPayload {
+    OrderBookPayload {
+        bids: [(
+            PriceRaw::from(dec!(0.001)),
+            VolumeInCentsRaw::from(dec!(100_000_000)),
+        )]
+        .into_iter()
+        .collect(),
+        asks: [(
+            PriceRaw::from(dec!(0.01)),
+            VolumeInCentsRaw::from(dec!(100_000_000)),
+        )]
+        .into_iter()
+        .collect(),
+        timestamp: TimeStamp::from(10000000),
+        exchange: "okex".into(),
+    }
 }
 
 #[tokio::test]
@@ -29,13 +36,16 @@ async fn price_app() -> anyhow::Result<()> {
         bitfinex: None,
     };
 
+    let base_fee_rate = dec!(0.001);
+    let immediate_fee_rate = dec!(0.01);
+    let delayed_fee_rate = dec!(0.1);
     let app = PriceApp::run(
         recv,
         PriceServerHealthCheckConfig::default(),
         FeeCalculatorConfig {
-            base_fee_rate: dec!(0.001),
-            immediate_fee_rate: dec!(0.01),
-            delayed_fee_rate: dec!(0.1),
+            base_fee_rate,
+            immediate_fee_rate,
+            delayed_fee_rate,
         },
         tick_recv,
         ExchangePriceCacheConfig::default(),
@@ -55,8 +65,7 @@ async fn price_app() -> anyhow::Result<()> {
         assert!(false)
     }
 
-    let mut payloads = load_fixture()?.payloads.into_iter();
-    let mut payload = payloads.next().unwrap();
+    let mut payload = load_fixture();
     tick_send
         .publish(PriceStreamPayload::OkexBtcUsdSwapOrderBookPayload(
             payload.clone(),
@@ -84,10 +93,22 @@ async fn price_app() -> anyhow::Result<()> {
     subscriber.next().await;
     tokio::time::sleep(std::time::Duration::from_millis(100)).await;
 
+    let ratio = app.get_cents_per_sat_exchange_mid_rate().await?;
+    assert_eq!(ratio, 0.0055);
+
     let cents = app
         .get_cents_from_sats_for_immediate_buy(Sats::from_major(100_000_000))
         .await?;
-    assert_eq!(cents, UsdCents::from_major(12362500));
+    // assert_eq!(
+    //     cents,
+    //     UsdCents::from_major(100_000_00) * (total_immediate_fee_rate + Decimal::ONE)
+    // );
+    assert_eq!(cents, UsdCents::from_major(123_625_00));
+    let cents = app
+        .get_cents_from_sats_for_future_buy(Sats::from_major(100_000_000))
+        .await?;
+    assert_eq!(cents, UsdCents::from_major(112_375_00));
+
     let cents = app
         .get_cents_from_sats_for_immediate_buy(Sats::from_major(1))
         .await?;
@@ -101,11 +122,6 @@ async fn price_app() -> anyhow::Result<()> {
         .get_cents_from_sats_for_immediate_sell(Sats::from_major(1))
         .await?;
     assert_eq!(cents, UsdCents::from_major(1));
-
-    let cents = app
-        .get_cents_from_sats_for_future_buy(Sats::from_major(100_000_000))
-        .await?;
-    assert_eq!(cents, UsdCents::from_major(11237500));
     let cents = app
         .get_cents_from_sats_for_future_buy(Sats::from_major(1))
         .await?;
