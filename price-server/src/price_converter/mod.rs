@@ -10,6 +10,7 @@ pub struct VolumeBasedPriceConverter<
 > {
     pairs: I,
 }
+
 impl<'a, I: Iterator<Item = (&'a QuotePriceCentsForOneSat, &'a VolumeInCents)> + Clone>
     VolumeBasedPriceConverter<'a, I>
 {
@@ -43,9 +44,10 @@ impl<'a, I: Iterator<Item = (&'a QuotePriceCentsForOneSat, &'a VolumeInCents)> +
         // to account for when the order book depth is not enough to fill the volume
         if *sats.amount() > volume_acc {
             let remaining_volume = *sats.amount() - volume_acc;
-            if let Some(quote_price) = last_quote_price {
-                cents += quote_price.inner() * remaining_volume
-            }
+            cents += last_quote_price
+                .expect("should always have a last quote price")
+                .inner()
+                * remaining_volume
         }
 
         UsdCents::from_decimal(cents)
@@ -73,9 +75,10 @@ impl<'a, I: Iterator<Item = (&'a QuotePriceCentsForOneSat, &'a VolumeInCents)> +
         // to account for when the order book depth is not enough to fill the volume
         if *cents.amount() > volume_acc {
             let remaining_volume = *cents.amount() - volume_acc;
-            if let Some(quote_price) = last_quote_price {
-                sats += remaining_volume / quote_price.inner();
-            }
+            sats += remaining_volume
+                / last_quote_price
+                    .expect("should always have a last quote price")
+                    .inner();
         }
 
         Sats::from_decimal(sats)
