@@ -1,3 +1,10 @@
+# [stablesats release v0.9.24](https://github.com/GaloyMoney/stablesats-rs/releases/tag/0.9.24)
+
+
+### Bug Fixes
+
+- OrderBookCache supports mock price
+
 # [stablesats release v0.9.23](https://github.com/GaloyMoney/stablesats-rs/releases/tag/0.9.23)
 
 
