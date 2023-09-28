@@ -1,3 +1,18 @@
+# [stablesats release v0.9.23](https://github.com/GaloyMoney/stablesats-rs/releases/tag/0.9.23)
+
+
+### Features
+
+- Use order book cache (#432)
+
+### Miscellaneous Tasks
+
+- Bump sqlx from 0.7.1 to 0.7.2 (#438)
+- Bump serde_json from 1.0.105 to 1.0.107 (#431)
+- Bump chrono from 0.4.29 to 0.4.31 (#433)
+- Bump clap from 4.4.1 to 4.4.5 (#436)
+- Bump thiserror from 1.0.47 to 1.0.49 (#437)
+
 # [stablesats release v0.9.22](https://github.com/GaloyMoney/stablesats-rs/releases/tag/0.9.22)
 
 
