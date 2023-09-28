@@ -3,15 +3,19 @@ use rust_decimal::Decimal;
 use rust_decimal_macros::dec;
 use serde::Deserialize;
 use shared::{
-    payload::{OkexBtcUsdSwapOrderBookPayload, OrderBookPayload, PriceRaw},
-    pubsub::Envelope,
+    payload::{OrderBookPayload, PriceRaw, VolumeInCentsRaw},
     time::TimeStamp,
 };
 use std::{collections::BTreeMap, sync::Arc};
 use thiserror::Error;
 use tokio::sync::RwLock;
 
-use crate::VolumeBasedPriceConverter;
+use crate::{
+    currency::{UsdCents, VolumePicker},
+    error::ExchangePriceCacheError,
+    price_mixer::{PriceProvider, SidePicker},
+    ExchangePriceCacheConfig, VolumeBasedPriceConverter,
+};
 
 #[derive(Debug, Error)]
 pub enum OrderBookCacheError {
@@ -29,14 +33,23 @@ pub enum OrderBookCacheError {
 pub struct OrderBookCache {
     inner: Arc<RwLock<SnapshotInner>>,
 }
+
+#[async_trait::async_trait]
+impl PriceProvider for OrderBookCache {
+    async fn latest(&self) -> Result<Box<dyn SidePicker>, ExchangePriceCacheError> {
+        let order_book = self.latest_snapshot().await?;
+        Ok(Box::new(order_book))
+    }
+}
+
 impl OrderBookCache {
-    pub fn new(stale_after: Duration) -> Self {
+    pub fn new(config: ExchangePriceCacheConfig) -> Self {
         Self {
-            inner: Arc::new(RwLock::new(SnapshotInner::new(stale_after))),
+            inner: Arc::new(RwLock::new(SnapshotInner::new(config.stale_after))),
         }
     }
 
-    pub async fn apply_update(&self, snapshot: Envelope<OkexBtcUsdSwapOrderBookPayload>) {
+    pub async fn apply_update(&self, snapshot: OrderBookPayload) {
         self.inner.write().await.update_snapshot(snapshot);
     }
 
@@ -59,8 +72,8 @@ impl SnapshotInner {
         }
     }
 
-    fn update_snapshot(&mut self, snap: Envelope<OkexBtcUsdSwapOrderBookPayload>) {
-        let payload = snap.payload.0;
+    fn update_snapshot(&mut self, snap: OrderBookPayload) {
+        let payload = snap;
 
         if let Some(ref snap) = self.snapshot {
             if snap.timestamp > payload.timestamp {
@@ -86,24 +99,35 @@ impl SnapshotInner {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Deserialize)]
-pub struct QuotePrice(Decimal);
-impl From<PriceRaw> for QuotePrice {
+pub struct QuotePriceCentsForOneSat(Decimal);
+impl From<PriceRaw> for QuotePriceCentsForOneSat {
     fn from(price: PriceRaw) -> Self {
-        let price = price.into();
-
-        QuotePrice(price)
+        Self(Decimal::from(price))
     }
 }
-impl QuotePrice {
+impl QuotePriceCentsForOneSat {
     pub fn inner(&self) -> Decimal {
         self.0
     }
 }
 
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Deserialize)]
+pub struct VolumeInCents(Decimal);
+impl VolumeInCents {
+    pub fn inner(&self) -> Decimal {
+        self.0
+    }
+}
+impl From<VolumeInCentsRaw> for VolumeInCents {
+    fn from(volume: VolumeInCentsRaw) -> Self {
+        Self(Decimal::from(volume))
+    }
+}
+
 #[derive(Debug, Clone, Deserialize)]
 pub struct OrderBookView {
-    pub asks: BTreeMap<QuotePrice, Decimal>,
-    pub bids: BTreeMap<QuotePrice, Decimal>,
+    pub asks: BTreeMap<QuotePriceCentsForOneSat, VolumeInCents>,
+    pub bids: BTreeMap<QuotePriceCentsForOneSat, VolumeInCents>,
     pub timestamp: TimeStamp,
 }
 impl From<OrderBookPayload> for OrderBookView {
@@ -111,14 +135,24 @@ impl From<OrderBookPayload> for OrderBookView {
         let asks = value
             .asks
             .into_iter()
-            .map(|(price, qty)| (QuotePrice::from(price), qty.into()))
-            .collect::<BTreeMap<QuotePrice, Decimal>>();
+            .map(|(price, qty)| {
+                (
+                    QuotePriceCentsForOneSat::from(price),
+                    VolumeInCents::from(qty),
+                )
+            })
+            .collect::<BTreeMap<QuotePriceCentsForOneSat, VolumeInCents>>();
 
         let bids = value
             .bids
             .into_iter()
-            .map(|(price, qty)| (QuotePrice::from(price), qty.into()))
-            .collect::<BTreeMap<QuotePrice, Decimal>>();
+            .map(|(price, qty)| {
+                (
+                    QuotePriceCentsForOneSat::from(price),
+                    VolumeInCents::from(qty),
+                )
+            })
+            .collect::<BTreeMap<QuotePriceCentsForOneSat, VolumeInCents>>();
 
         Self {
             asks,
@@ -128,11 +162,34 @@ impl From<OrderBookPayload> for OrderBookView {
     }
 }
 
+impl SidePicker for OrderBookView {
+    fn sell_usd(&self) -> Box<dyn VolumePicker + '_> {
+        Box::new(VolumeBasedPriceConverter::new(self.asks.iter()))
+    }
+
+    fn buy_usd(&self) -> Box<dyn VolumePicker + '_> {
+        Box::new(VolumeBasedPriceConverter::new(self.bids.iter().rev()))
+    }
+
+    fn mid_price_of_one_sat(&self) -> UsdCents {
+        let best_ask = self
+            .best_ask_price_of_one_sat()
+            .expect("Failed to retrieve best ask price");
+        let best_bid = self
+            .best_bid_price_of_one_sat()
+            .expect("Failed to retrieve best bid price");
+
+        let mid_price = (best_ask + best_bid) / dec!(2);
+
+        UsdCents::from_decimal(mid_price)
+    }
+}
+
 impl OrderBookView {
     pub fn sell_usd(
         &self,
     ) -> VolumeBasedPriceConverter<
-        std::collections::btree_map::Iter<QuotePrice, rust_decimal::Decimal>,
+        std::collections::btree_map::Iter<QuotePriceCentsForOneSat, VolumeInCents>,
     > {
         VolumeBasedPriceConverter::new(self.asks.iter())
     }
@@ -140,7 +197,7 @@ impl OrderBookView {
     pub fn buy_usd(
         &self,
     ) -> VolumeBasedPriceConverter<
-        std::iter::Rev<std::collections::btree_map::Iter<QuotePrice, rust_decimal::Decimal>>,
+        std::iter::Rev<std::collections::btree_map::Iter<QuotePriceCentsForOneSat, VolumeInCents>>,
     > {
         VolumeBasedPriceConverter::new(self.bids.iter().rev())
     }
@@ -161,7 +218,7 @@ impl OrderBookView {
     }
 
     fn best_ask_price_of_one_sat(&self) -> Result<Decimal, OrderBookCacheError> {
-        let ask_length = self.bids.iter().next();
+        let ask_length = self.asks.iter().next();
 
         let (best_price, _) = ask_length.ok_or(OrderBookCacheError::EmptySide)?;
 
@@ -174,14 +231,14 @@ mod tests {
 
     use super::*;
     use rust_decimal_macros::dec;
-    use shared::payload::{ExchangeIdRaw, QuantityRaw};
+    use shared::payload::{ExchangeIdRaw, VolumeInCentsRaw};
 
     #[test]
     fn convert_payload_to_snapshot() {
         let mut bids = BTreeMap::new();
-        bids.insert(PriceRaw::from(dec!(100)), QuantityRaw::from(dec!(10)));
+        bids.insert(PriceRaw::from(dec!(100)), VolumeInCentsRaw::from(dec!(10)));
         let mut asks = BTreeMap::new();
-        asks.insert(PriceRaw::from(dec!(100)), QuantityRaw::from(dec!(10)));
+        asks.insert(PriceRaw::from(dec!(100)), VolumeInCentsRaw::from(dec!(10)));
 
         let payload = OrderBookPayload {
             asks,
@@ -200,12 +257,24 @@ mod tests {
     #[test]
     fn mid_price() -> anyhow::Result<()> {
         let mut asks = BTreeMap::new();
-        asks.insert(QuotePrice(dec!(10000)), dec!(10));
-        asks.insert(QuotePrice(dec!(15000)), dec!(10));
+        asks.insert(
+            QuotePriceCentsForOneSat(dec!(10_000)),
+            VolumeInCents(dec!(10)),
+        );
+        asks.insert(
+            QuotePriceCentsForOneSat(dec!(25_000)),
+            VolumeInCents(dec!(10)),
+        );
 
         let mut bids = BTreeMap::new();
-        bids.insert(QuotePrice(dec!(5000)), dec!(10));
-        bids.insert(QuotePrice(dec!(10000)), dec!(10));
+        bids.insert(
+            QuotePriceCentsForOneSat(dec!(5_000)),
+            VolumeInCents(dec!(10)),
+        );
+        bids.insert(
+            QuotePriceCentsForOneSat(dec!(15_000)),
+            VolumeInCents(dec!(10)),
+        );
 
         let snapshot = OrderBookView {
             asks,
@@ -214,7 +283,7 @@ mod tests {
         };
         let mid_price = snapshot.mid_price_of_one_sat()?;
 
-        assert_eq!(mid_price, dec!(7500));
+        assert_eq!(mid_price, dec!(12_500));
 
         Ok(())
     }

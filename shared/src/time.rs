@@ -26,6 +26,12 @@ impl PartialOrd for TimeStamp {
         self.0.partial_cmp(&other.0)
     }
 }
+impl From<u64> for TimeStamp {
+    fn from(secs: u64) -> Self {
+        Self(Utc.timestamp_opt(secs as i64, 0).unwrap())
+    }
+}
+
 impl std::fmt::Display for TimeStamp {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         write!(f, "{}", self.0.timestamp())

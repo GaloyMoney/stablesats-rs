@@ -5,7 +5,7 @@ use serde::{Deserialize, Serialize};
 crate::string_wrapper! { ExchangeIdRaw }
 crate::string_wrapper! { InstrumentIdRaw }
 crate::string_wrapper! { CurrencyRaw }
-crate::decimal_wrapper! { QuantityRaw }
+crate::decimal_wrapper! { VolumeInCentsRaw }
 crate::decimal_wrapper! { PriceRaw }
 
 crate::abs_decimal_wrapper! { SyntheticCentLiability }

@@ -1,6 +1,6 @@
 use thiserror::Error;
 
-use crate::currency::CurrencyError;
+use crate::{currency::CurrencyError, order_book_cache::OrderBookCacheError};
 use shared::{pubsub::SubscriberError, time::*};
 
 #[allow(clippy::large_enum_variant)]
@@ -22,4 +22,6 @@ pub enum ExchangePriceCacheError {
     StalePrice(TimeStamp),
     #[error("No price data available")]
     NoPriceAvailable,
+    #[error("OrderBook: {0:?}")]
+    OrderBookCache(#[from] OrderBookCacheError),
 }
