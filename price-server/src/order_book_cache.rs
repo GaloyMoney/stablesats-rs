@@ -2,17 +2,19 @@ use chrono::Duration;
 use rust_decimal::Decimal;
 use rust_decimal_macros::dec;
 use serde::Deserialize;
-use shared::{
-    payload::{OrderBookPayload, PriceRaw, VolumeInCentsRaw},
-    time::TimeStamp,
-};
 use std::{collections::BTreeMap, sync::Arc};
 use thiserror::Error;
 use tokio::sync::RwLock;
 
+use shared::{
+    payload::{OrderBookPayload, PriceRaw, VolumeInCentsRaw},
+    time::TimeStamp,
+};
+
 use crate::{
     currency::{UsdCents, VolumePicker},
     error::ExchangePriceCacheError,
+    exchange_tick_cache,
     price_mixer::{PriceProvider, SidePicker},
     ExchangePriceCacheConfig, VolumeBasedPriceConverter,
 };
@@ -32,11 +34,15 @@ pub enum OrderBookCacheError {
 #[derive(Debug, Clone)]
 pub struct OrderBookCache {
     inner: Arc<RwLock<SnapshotInner>>,
+    config: ExchangePriceCacheConfig,
 }
 
 #[async_trait::async_trait]
 impl PriceProvider for OrderBookCache {
     async fn latest(&self) -> Result<Box<dyn SidePicker>, ExchangePriceCacheError> {
+        if let Some(mock_price) = self.config.dev_mock_price_btc_in_usd {
+            return Ok(Box::new(exchange_tick_cache::mock_price_tick(mock_price)));
+        }
         let order_book = self.latest_snapshot().await?;
         Ok(Box::new(order_book))
     }
@@ -46,6 +52,7 @@ impl OrderBookCache {
     pub fn new(config: ExchangePriceCacheConfig) -> Self {
         Self {
             inner: Arc::new(RwLock::new(SnapshotInner::new(config.stale_after))),
+            config,
         }
     }
 

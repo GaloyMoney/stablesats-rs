@@ -33,15 +33,7 @@ impl ExchangeTickCache {
 impl PriceProvider for ExchangeTickCache {
     async fn latest(&self) -> Result<Box<dyn SidePicker>, ExchangePriceCacheError> {
         if let Some(mock_price) = self.config.dev_mock_price_btc_in_usd {
-            let price = PriceRatioRaw::from_one_btc_in_usd_price(mock_price);
-            let cent_price = UsdCents::try_from(price).expect("couldn't create mock UsdCents");
-            return Ok(Box::new(BtcSatTick {
-                timestamp: TimeStamp::now(),
-                correlation_id: CorrelationId::new(),
-                span_context: Span::current().context().span().span_context().clone(),
-                ask_price_of_one_sat: cent_price.clone(),
-                bid_price_of_one_sat: cent_price,
-            }));
+            return Ok(Box::new(mock_price_tick(mock_price)));
         }
         let inner = self.inner.read().await;
         let tick = inner.latest_tick()?;
@@ -53,6 +45,18 @@ impl PriceProvider for ExchangeTickCache {
             &tracing::field::display(tick.correlation_id),
         );
         Ok(Box::new(tick))
+    }
+}
+
+pub fn mock_price_tick(mock_price: rust_decimal::Decimal) -> BtcSatTick {
+    let price = PriceRatioRaw::from_one_btc_in_usd_price(mock_price);
+    let cent_price = UsdCents::try_from(price).expect("couldn't create mock UsdCents");
+    BtcSatTick {
+        timestamp: TimeStamp::now(),
+        correlation_id: CorrelationId::new(),
+        span_context: Span::current().context().span().span_context().clone(),
+        ask_price_of_one_sat: cent_price.clone(),
+        bid_price_of_one_sat: cent_price,
     }
 }
 
