@@ -1,3 +1,4 @@
+mod converter;
 mod error;
 mod fee;
 mod mixer;
@@ -6,6 +7,7 @@ mod traits;
 
 use crate::currency::*;
 
+pub use converter::*;
 pub use error::*;
 pub use fee::*;
 pub use mixer::*;
