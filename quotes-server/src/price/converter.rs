@@ -136,13 +136,13 @@ mod tests {
         let latest_snapshot = get_trivial_payload();
         let converter = VolumeBasedPriceConverter::new(latest_snapshot.asks.iter());
 
-        let sats = converter.sats_from_cents(UsdCents::from_decimal(dec!(10)));
+        let sats = converter.sats_from_cents(UsdCents::from(dec!(10)));
         assert_eq!(sats, Satoshis::from(dec!(100)));
 
-        let sats = converter.sats_from_cents(UsdCents::from_decimal(dec!(150)));
+        let sats = converter.sats_from_cents(UsdCents::from(dec!(150)));
         assert_eq!(sats, Satoshis::from(dec!(1010)));
 
-        let sats = converter.sats_from_cents(UsdCents::from_decimal(dec!(1500)));
+        let sats = converter.sats_from_cents(UsdCents::from(dec!(1500)));
         assert_eq!(sats, Satoshis::from(dec!(1280)));
 
         Ok(())

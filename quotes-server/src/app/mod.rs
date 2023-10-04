@@ -71,7 +71,7 @@ impl QuotesApp {
             .price_calculator
             .cents_from_sats_for_buy(Satoshis::from(sats), immediate_execution)
             .await?;
-        let _quote = NewQuote::builder()
+        let quote = NewQuote::builder()
             .direction(Direction::BuyCents)
             .immediate_execution(immediate_execution)
             .build()
