@@ -4,6 +4,7 @@
 pub mod app;
 pub mod cache;
 pub mod currency;
+pub mod entity;
 pub mod error;
 pub mod price;
 pub mod quote;
@@ -13,6 +14,7 @@ use shared::{health::HealthCheckTrigger, payload::*, pubsub::memory};
 
 pub use app::*;
 pub use cache::ExchangePriceCacheConfig;
+pub use entity::*;
 pub use price::*;
 pub use server::*;
 

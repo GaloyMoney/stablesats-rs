@@ -27,6 +27,7 @@ tracing-opentelemetry = { workspace = true }
 tracing = { workspace = true }
 serde = { workspace = true }
 serde_with = { workspace = true }
+serde_json = { workspace = true }
 prost = { workspace = true }
 thiserror = { workspace = true }
 tonic = { workspace = true }
