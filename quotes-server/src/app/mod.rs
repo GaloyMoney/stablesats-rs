@@ -88,6 +88,69 @@ impl QuotesApp {
         Ok(quote)
     }
 
+    pub async fn quote_cents_from_sats_for_sell(
+        &self,
+        sats: Decimal,
+        immediate_execution: bool,
+    ) -> Result<Quote, QuotesAppError> {
+        let usd_amount = self
+            .price_calculator
+            .cents_from_sats_for_sell(Satoshis::from(sats), immediate_execution)
+            .await?;
+        let new_quote = NewQuote::builder()
+            .direction(Direction::SellCents)
+            .immediate_execution(immediate_execution)
+            .cent_amount(usd_amount)
+            .sat_amount(Satoshis::from(sats))
+            .build()
+            .expect("Could not build quote");
+        let quote = self.quotes.create(new_quote).await?;
+
+        Ok(quote)
+    }
+
+    pub async fn quote_sats_from_cents_for_sell(
+        &self,
+        cents: Decimal,
+        immediate_execution: bool,
+    ) -> Result<Quote, QuotesAppError> {
+        let sat_amount = self
+            .price_calculator
+            .sats_from_cents_for_sell(UsdCents::from(cents), immediate_execution)
+            .await?;
+        let new_quote = NewQuote::builder()
+            .direction(Direction::SellCents)
+            .immediate_execution(immediate_execution)
+            .cent_amount(UsdCents::from(cents))
+            .sat_amount(sat_amount)
+            .build()
+            .expect("Could not build quote");
+        let quote = self.quotes.create(new_quote).await?;
+
+        Ok(quote)
+    }
+
+    pub async fn quote_sats_from_cents_for_buy(
+        &self,
+        cents: Decimal,
+        immediate_execution: bool,
+    ) -> Result<Quote, QuotesAppError> {
+        let sat_amount = self
+            .price_calculator
+            .sats_from_cents_for_buy(UsdCents::from(cents), immediate_execution)
+            .await?;
+        let new_quote = NewQuote::builder()
+            .direction(Direction::BuyCents)
+            .immediate_execution(immediate_execution)
+            .cent_amount(UsdCents::from(cents))
+            .sat_amount(sat_amount)
+            .build()
+            .expect("Could not build quote");
+        let quote = self.quotes.create(new_quote).await?;
+
+        Ok(quote)
+    }
+
     async fn subscribe_okex(
         mut subscriber: memory::Subscriber<PriceStreamPayload>,
         order_book_cache: OrderBookCache,

@@ -4,7 +4,7 @@ use tracing::instrument;
 
 use crate::entity::*;
 
-use super::{pg, NewQuote, Quote, QuoteError, QuoteEvent, QuoteId};
+use super::{entity::*, error::QuoteError};
 
 #[derive(Debug, Clone)]
 pub struct Quotes {
