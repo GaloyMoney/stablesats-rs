@@ -120,6 +120,7 @@ async fn run_cmd(
         hedging,
         exchanges,
         bria,
+        quotes_server,
     }: Config,
 ) -> anyhow::Result<()> {
     println!("Stablesats - v{}", env!("CARGO_PKG_VERSION"));
@@ -218,6 +219,36 @@ async fn run_cmd(
         }
     }
 
+    if quotes_server.enabled {
+        println!("Starting quotes_server");
+
+        let quotes_send = send.clone();
+        let pool = if let Some(pool) = pool.as_ref() {
+            pool.clone()
+        } else {
+            crate::db::init_pool(&db).await?
+        };
+        let (snd, recv) = futures::channel::mpsc::unbounded();
+        checkers.insert("quotes", snd);
+        let price = price_recv.resubscribe();
+        let weights = extract_weights_for_quotes_server(&exchanges);
+        handles.push(tokio::spawn(async move {
+            let _ = quotes_send.try_send(
+                quotes_server::run(
+                    recv,
+                    quotes_server.health,
+                    quotes_server.fees,
+                    price,
+                    quotes_server.price_cache,
+                    weights,
+                    pool,
+                )
+                .await
+                .context("Price Server error"),
+            );
+        }));
+    }
+
     if user_trades.enabled {
         println!("Starting user trades process");
 
@@ -266,6 +297,16 @@ fn price_stream_throttle_period() -> Duration {
 fn extract_weights(config: &hedging::ExchangesConfig) -> price_server::ExchangeWeights {
     price_server::ExchangeWeights {
         okex: config.okex.as_ref().map(|c| c.weight),
+        bitfinex: None,
+    }
+}
+
+fn extract_weights_for_quotes_server(
+    config: &hedging::ExchangesConfig,
+) -> quotes_server::ExchangeWeights {
+    quotes_server::ExchangeWeights {
+        okex: config.okex.as_ref().map(|c| c.weight),
+
         bitfinex: None,
     }
 }

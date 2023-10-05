@@ -10,11 +10,11 @@ pub struct FeeCalculator {
 
 impl FeeCalculator {
     pub fn new(
-        FeeCalculatorConfig {
+        QuotesFeeCalculatorConfig {
             base_fee_rate,
             immediate_fee_rate,
             delayed_fee_rate,
-        }: FeeCalculatorConfig,
+        }: QuotesFeeCalculatorConfig,
     ) -> Self {
         Self {
             immediate_rate: base_fee_rate + immediate_fee_rate,
@@ -52,7 +52,7 @@ impl FeeCalculator {
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
-pub struct FeeCalculatorConfig {
+pub struct QuotesFeeCalculatorConfig {
     #[serde(default = "default_base_fee_rate")]
     pub base_fee_rate: Decimal,
     #[serde(default = "default_immediate_fee_rate")]
@@ -73,7 +73,7 @@ fn default_delayed_fee_rate() -> Decimal {
     dec!(0.0007)
 }
 
-impl Default for FeeCalculatorConfig {
+impl Default for QuotesFeeCalculatorConfig {
     fn default() -> Self {
         Self {
             base_fee_rate: default_base_fee_rate(),
@@ -90,7 +90,7 @@ mod tests {
 
     #[test]
     fn fee_calculator() {
-        let fees = FeeCalculator::new(FeeCalculatorConfig {
+        let fees = FeeCalculator::new(QuotesFeeCalculatorConfig {
             base_fee_rate: dec!(0.001),
             immediate_fee_rate: dec!(0.01),
             delayed_fee_rate: dec!(0.1),

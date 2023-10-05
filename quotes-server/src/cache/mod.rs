@@ -18,11 +18,11 @@ pub use order_book_cache::*;
 #[derive(Clone)]
 pub struct ExchangeTickCache {
     inner: Arc<RwLock<ExchangePriceCacheInner>>,
-    config: ExchangePriceCacheConfig,
+    config: QuotesExchangePriceCacheConfig,
 }
 
 impl ExchangeTickCache {
-    pub fn new(config: ExchangePriceCacheConfig) -> Self {
+    pub fn new(config: QuotesExchangePriceCacheConfig) -> Self {
         Self {
             inner: Arc::new(RwLock::new(ExchangePriceCacheInner::new(
                 config.stale_after,

@@ -13,7 +13,7 @@ pub mod server;
 use shared::{health::HealthCheckTrigger, payload::*, pubsub::memory};
 
 pub use app::*;
-pub use cache::ExchangePriceCacheConfig;
+pub use cache::QuotesExchangePriceCacheConfig;
 pub use entity::*;
 pub use price::*;
 pub use server::*;
@@ -21,10 +21,11 @@ pub use server::*;
 pub async fn run(
     health_check_trigger: HealthCheckTrigger,
     health_check_cfg: QuotesServerHealthCheckConfig,
-    fee_calc_cfg: FeeCalculatorConfig,
+    fee_calc_cfg: QuotesFeeCalculatorConfig,
     subscriber: memory::Subscriber<PriceStreamPayload>,
-    price_cache_config: ExchangePriceCacheConfig,
+    price_cache_config: QuotesExchangePriceCacheConfig,
     exchange_weights: ExchangeWeights,
+    pool: sqlx::PgPool,
 ) -> Result<(), QuotesServerError> {
     let app = QuotesApp::run(
         health_check_trigger,
@@ -33,6 +34,7 @@ pub async fn run(
         subscriber,
         price_cache_config,
         exchange_weights,
+        pool,
     )
     .await?;
 

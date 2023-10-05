@@ -16,7 +16,7 @@ use crate::{
     price::{PriceProvider, SidePicker, VolumeBasedPriceConverter, VolumePicker},
 };
 
-use super::{ExchangePriceCacheConfig, ExchangePriceCacheError};
+use super::{QuotesExchangePriceCacheConfig, ExchangePriceCacheError};
 
 #[derive(Debug, Error)]
 pub enum OrderBookCacheError {
@@ -33,7 +33,7 @@ pub enum OrderBookCacheError {
 #[derive(Debug, Clone)]
 pub struct OrderBookCache {
     inner: Arc<RwLock<SnapshotInner>>,
-    config: ExchangePriceCacheConfig,
+    config: QuotesExchangePriceCacheConfig,
 }
 
 #[async_trait::async_trait]
@@ -48,7 +48,7 @@ impl PriceProvider for OrderBookCache {
 }
 
 impl OrderBookCache {
-    pub fn new(config: ExchangePriceCacheConfig) -> Self {
+    pub fn new(config: QuotesExchangePriceCacheConfig) -> Self {
         Self {
             inner: Arc::new(RwLock::new(SnapshotInner::new(config.stale_after))),
             config,

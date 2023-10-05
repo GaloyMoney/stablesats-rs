@@ -20,7 +20,7 @@ pub struct PriceCalculator {
 }
 
 impl PriceCalculator {
-    pub fn new(fee_cfg: FeeCalculatorConfig, price_mixer: PriceMixer) -> Self {
+    pub fn new(fee_cfg: QuotesFeeCalculatorConfig, price_mixer: PriceMixer) -> Self {
         Self {
             fee_calculator: FeeCalculator::new(fee_cfg),
             price_mixer,
@@ -105,8 +105,8 @@ mod tests {
         price_mixer
     }
 
-    fn fee_config() -> FeeCalculatorConfig {
-        FeeCalculatorConfig {
+    fn fee_config() -> QuotesFeeCalculatorConfig {
+        QuotesFeeCalculatorConfig {
             base_fee_rate: dec!(0.001),
             immediate_fee_rate: dec!(0.01),
             delayed_fee_rate: dec!(0.1),

@@ -3484,6 +3484,7 @@ dependencies = [
  "opentelemetry",
  "opentelemetry-otlp",
  "price-server",
+ "quotes-server",
  "rust_decimal",
  "serde",
  "serde_yaml",

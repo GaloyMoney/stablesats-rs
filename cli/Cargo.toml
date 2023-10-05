@@ -10,6 +10,7 @@ description = "The stablesats cli binary"
 [dependencies]
 shared = { path = "../shared", package = "stablesats-shared" }
 price-server = { path = "../price-server" }
+quotes-server = { path = "../quotes-server" }
 user-trades = { path = "../user-trades" }
 galoy-client = { path = "../galoy-client" }
 okex-client = { path = "../okex-client" }

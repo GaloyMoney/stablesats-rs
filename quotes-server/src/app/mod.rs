@@ -15,16 +15,18 @@ pub use config::*;
 
 pub struct QuotesApp {
     price_calculator: PriceCalculator,
+    quotes: Quotes,
 }
 
 impl QuotesApp {
     pub async fn run(
         mut health_check_trigger: HealthCheckTrigger,
         health_check_cfg: QuotesServerHealthCheckConfig,
-        fee_calc_cfg: FeeCalculatorConfig,
+        fee_calc_cfg: QuotesFeeCalculatorConfig,
         subscriber: memory::Subscriber<PriceStreamPayload>,
-        price_cache_config: ExchangePriceCacheConfig,
+        price_cache_config: QuotesExchangePriceCacheConfig,
         exchange_weights: ExchangeWeights,
+        pool: sqlx::PgPool,
     ) -> Result<Self, QuotesAppError> {
         let health_subscriber = subscriber.resubscribe();
         tokio::spawn(async move {
@@ -57,8 +59,11 @@ impl QuotesApp {
             }
         }
 
+        let quotes = Quotes::new(&pool);
+
         Ok(Self {
             price_calculator: PriceCalculator::new(fee_calc_cfg, price_mixer),
+            quotes,
         })
     }
 
@@ -71,12 +76,14 @@ impl QuotesApp {
             .price_calculator
             .cents_from_sats_for_buy(Satoshis::from(sats), immediate_execution)
             .await?;
-        let quote = NewQuote::builder()
+        let new_quote = NewQuote::builder()
             .direction(Direction::BuyCents)
             .immediate_execution(immediate_execution)
             .build()
             .expect("Could not build quote");
-        unimplemented!()
+        let quote = self.quotes.create(new_quote).await?;
+
+        Ok(quote)
     }
 
     async fn subscribe_okex(

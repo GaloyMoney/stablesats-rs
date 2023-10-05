@@ -8,6 +8,10 @@ use hedging::{ExchangesConfig, HedgingAppConfig};
 use price_server::{
     ExchangePriceCacheConfig, FeeCalculatorConfig, PriceServerConfig, PriceServerHealthCheckConfig,
 };
+use quotes_server::{
+    QuoteServerConfig, QuotesExchangePriceCacheConfig, QuotesFeeCalculatorConfig,
+    QuotesServerHealthCheckConfig,
+};
 use user_trades::UserTradesConfig;
 
 use super::{db::DbConfig, tracing::TracingConfig};
@@ -32,6 +36,8 @@ pub struct Config {
     pub exchanges: ExchangesConfig,
     #[serde(default)]
     pub bria: BriaClientConfig,
+    #[serde(default)]
+    pub quotes_server: QuotesServerWrapper,
 }
 
 pub struct EnvOverride {
@@ -97,6 +103,31 @@ impl Default for PriceServerWrapper {
             health: PriceServerHealthCheckConfig::default(),
             fees: FeeCalculatorConfig::default(),
             price_cache: ExchangePriceCacheConfig::default(),
+        }
+    }
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct QuotesServerWrapper {
+    #[serde(default = "bool_true")]
+    pub enabled: bool,
+    #[serde(default)]
+    pub health: QuotesServerHealthCheckConfig,
+    #[serde(default)]
+    pub server: QuoteServerConfig,
+    #[serde(default)]
+    pub fees: QuotesFeeCalculatorConfig,
+    #[serde(default)]
+    pub price_cache: QuotesExchangePriceCacheConfig,
+}
+impl Default for QuotesServerWrapper {
+    fn default() -> Self {
+        Self {
+            enabled: true,
+            server: QuoteServerConfig::default(),
+            health: QuotesServerHealthCheckConfig::default(),
+            fees: QuotesFeeCalculatorConfig::default(),
+            price_cache: QuotesExchangePriceCacheConfig::default(),
         }
     }
 }
