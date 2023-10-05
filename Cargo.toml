@@ -17,7 +17,7 @@ members = [
 
 [workspace.dependencies]
 reqwest = { version = "0.11.15", default-features = false, features = ["json", "rustls-tls"] }
-tokio-tungstenite = { version = "0.18.0", features = ["rustls-tls-webpki-roots"]  }
+tokio-tungstenite = { version = "0.20.1", features = ["rustls-tls-webpki-roots"]  }
 url = { version = "2.3.1", features = ["serde"] }
 axum = "0.6.11"
 axum-core = "0.3.4"
