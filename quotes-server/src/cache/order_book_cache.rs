@@ -16,7 +16,7 @@ use crate::{
     price::{PriceProvider, SidePicker, VolumeBasedPriceConverter, VolumePicker},
 };
 
-use super::{QuotesExchangePriceCacheConfig, ExchangePriceCacheError};
+use super::{ExchangePriceCacheError, QuotesExchangePriceCacheConfig};
 
 #[derive(Debug, Error)]
 pub enum OrderBookCacheError {

@@ -46,15 +46,14 @@ impl NewQuote {
     }
 
     pub(super) fn initial_events(self) -> EntityEvents<QuoteEvent> {
-        let mut events = EntityEvents::init([QuoteEvent::Initialized {
+        EntityEvents::init([QuoteEvent::Initialized {
             id: self.id,
             direction: self.direction,
             immediate_execution: self.immediate_execution,
             sat_amount: self.sat_amount,
             cent_amount: self.cent_amount,
             expires_at: self.expires_at,
-        }]);
-        events
+        }])
     }
 }
 
