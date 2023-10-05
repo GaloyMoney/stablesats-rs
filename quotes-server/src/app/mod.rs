@@ -1,5 +1,6 @@
 mod config;
 
+use chrono::Utc;
 use futures::stream::StreamExt;
 use rust_decimal::Decimal;
 use tracing::{info_span, Instrument};
@@ -72,15 +73,17 @@ impl QuotesApp {
         sats: Decimal,
         immediate_execution: bool,
     ) -> Result<Quote, QuotesAppError> {
+        let sats = Satoshis::from(sats);
         let usd_amount = self
             .price_calculator
-            .cents_from_sats_for_buy(Satoshis::from(sats), immediate_execution)
+            .cents_from_sats_for_buy(sats.clone(), immediate_execution)
             .await?;
         let new_quote = NewQuote::builder()
             .direction(Direction::BuyCents)
             .immediate_execution(immediate_execution)
             .cent_amount(usd_amount)
-            .sat_amount(Satoshis::from(sats))
+            .sat_amount(sats)
+            .expires_at(Utc::now() + chrono::Duration::minutes(2)) //hardcoded for now
             .build()
             .expect("Could not build quote");
         let quote = self.quotes.create(new_quote).await?;
@@ -93,15 +96,17 @@ impl QuotesApp {
         sats: Decimal,
         immediate_execution: bool,
     ) -> Result<Quote, QuotesAppError> {
+        let sats = Satoshis::from(sats);
         let usd_amount = self
             .price_calculator
-            .cents_from_sats_for_sell(Satoshis::from(sats), immediate_execution)
+            .cents_from_sats_for_sell(sats.clone(), immediate_execution)
             .await?;
         let new_quote = NewQuote::builder()
             .direction(Direction::SellCents)
             .immediate_execution(immediate_execution)
             .cent_amount(usd_amount)
-            .sat_amount(Satoshis::from(sats))
+            .sat_amount(sats)
+            .expires_at(Utc::now() + chrono::Duration::minutes(2)) //hardcoded for now
             .build()
             .expect("Could not build quote");
         let quote = self.quotes.create(new_quote).await?;
@@ -114,15 +119,17 @@ impl QuotesApp {
         cents: Decimal,
         immediate_execution: bool,
     ) -> Result<Quote, QuotesAppError> {
+        let cents = UsdCents::from(cents);
         let sat_amount = self
             .price_calculator
-            .sats_from_cents_for_sell(UsdCents::from(cents), immediate_execution)
+            .sats_from_cents_for_sell(cents.clone(), immediate_execution)
             .await?;
         let new_quote = NewQuote::builder()
             .direction(Direction::SellCents)
             .immediate_execution(immediate_execution)
-            .cent_amount(UsdCents::from(cents))
+            .cent_amount(cents)
             .sat_amount(sat_amount)
+            .expires_at(Utc::now() + chrono::Duration::minutes(2)) //hardcoded for now
             .build()
             .expect("Could not build quote");
         let quote = self.quotes.create(new_quote).await?;
@@ -135,15 +142,17 @@ impl QuotesApp {
         cents: Decimal,
         immediate_execution: bool,
     ) -> Result<Quote, QuotesAppError> {
+        let cents = UsdCents::from(cents);
         let sat_amount = self
             .price_calculator
-            .sats_from_cents_for_buy(UsdCents::from(cents), immediate_execution)
+            .sats_from_cents_for_buy(cents.clone(), immediate_execution)
             .await?;
         let new_quote = NewQuote::builder()
             .direction(Direction::BuyCents)
             .immediate_execution(immediate_execution)
-            .cent_amount(UsdCents::from(cents))
+            .cent_amount(cents)
             .sat_amount(sat_amount)
+            .expires_at(Utc::now() + chrono::Duration::minutes(2)) //hardcoded for now
             .build()
             .expect("Could not build quote");
         let quote = self.quotes.create(new_quote).await?;

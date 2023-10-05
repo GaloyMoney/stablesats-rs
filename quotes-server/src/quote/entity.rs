@@ -2,8 +2,7 @@ use chrono::{DateTime, Utc};
 use derive_builder::Builder;
 use serde::{Deserialize, Serialize};
 
-use crate::currency::*;
-use crate::EntityEvents;
+use crate::{currency::*, entity::*};
 
 shared::entity_id! { QuoteId }
 
