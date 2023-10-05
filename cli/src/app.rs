@@ -306,7 +306,6 @@ fn extract_weights_for_quotes_server(
 ) -> quotes_server::ExchangeWeights {
     quotes_server::ExchangeWeights {
         okex: config.okex.as_ref().map(|c| c.weight),
-
         bitfinex: None,
     }
 }

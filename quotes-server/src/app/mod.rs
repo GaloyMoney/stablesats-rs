@@ -72,13 +72,15 @@ impl QuotesApp {
         sats: Decimal,
         immediate_execution: bool,
     ) -> Result<Quote, QuotesAppError> {
-        let _usd_amount = self
+        let usd_amount = self
             .price_calculator
             .cents_from_sats_for_buy(Satoshis::from(sats), immediate_execution)
             .await?;
         let new_quote = NewQuote::builder()
             .direction(Direction::BuyCents)
             .immediate_execution(immediate_execution)
+            .cent_amount(usd_amount)
+            .sat_amount(Satoshis::from(sats))
             .build()
             .expect("Could not build quote");
         let quote = self.quotes.create(new_quote).await?;
