@@ -1,3 +1,11 @@
+# [stablesats release v0.9.25](https://github.com/GaloyMoney/stablesats-rs/releases/tag/0.9.25)
+
+
+### Miscellaneous Tasks
+
+- Upgrade tokio-tungstenite (#443)
+- Bump clap from 4.4.5 to 4.4.6 (#440)
+
 # [stablesats release v0.9.24](https://github.com/GaloyMoney/stablesats-rs/releases/tag/0.9.24)
 
 

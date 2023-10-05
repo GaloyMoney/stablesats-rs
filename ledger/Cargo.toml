@@ -1,6 +1,6 @@
 [package]
 name = "stablesats-ledger"
-version = "0.9.25-dev"
+version = "0.9.25"
 edition = "2021"
 
 
