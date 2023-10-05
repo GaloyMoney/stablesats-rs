@@ -20,19 +20,12 @@ impl Quotes {
     pub async fn create(&self, quote: NewQuote) -> Result<Quote, QuoteError> {
         let mut tx = self.pool.begin().await?;
         sqlx::query!(
-        r#"
-        INSERT INTO stablesats_quote (id, direction, immediate_execution, sat_amount, cent_amount, expires_at)
-        VALUES ($1, $2, $3, $4, $5, $6)
-        "#,
-        quote.id as QuoteId,
-        pg::PgDirection::from(quote.direction.clone()) as pg::PgDirection,
-        quote.immediate_execution,
-        quote.sat_amount.amount().to_i64(),
-        quote.cent_amount.amount().to_i64(),
-        quote.expires_at
-    )
-            .execute(&mut *tx)
-            .await?;
+            r#"INSERT INTO stablesats_quote (id)
+               VALUES ($1)"#,
+            quote.id as QuoteId
+        )
+        .execute(&mut *tx)
+        .await?;
         let res = Quote {
             id: quote.id,
             direction: quote.direction.clone(),
