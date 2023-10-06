@@ -48,15 +48,19 @@ impl QuoteService for Quotes {
                         )
                         .await?
                 }
-                _ => unimplemented!(),
+                Some(get_quote_to_buy_usd_request::QuoteFor::AmountToBuyInCents(amount)) => {
+                    self.app
+                        .quote_sats_from_cents_for_buy(
+                            Decimal::from(amount),
+                            req.immediate_execution,
+                        )
+                        .await?
+                }
+                _ => return Err(Status::invalid_argument("invalid argument for quote")),
             };
-            Ok(Response::new(GetQuoteToBuyUsdResponse {
-                quote_id: quote.id.to_string(),
-                amount_to_sell_in_sats: 0,
-                amount_to_buy_in_cents: 0,
-                expires_at: 0,
-                executed: false,
-            }))
+            let response = GetQuoteToBuyUsdResponse::from(quote);
+
+            Ok(Response::new(response))
         })
         .await
     }
@@ -65,7 +69,33 @@ impl QuoteService for Quotes {
         &self,
         request: Request<GetQuoteToSellUsdRequest>,
     ) -> Result<Response<GetQuoteToSellUsdResponse>, Status> {
-        unimplemented!()
+        shared::tracing::record_error(tracing::Level::ERROR, || async move {
+            extract_tracing(&request);
+            let req = request.into_inner();
+            let quote = match req.quote_for {
+                Some(get_quote_to_sell_usd_request::QuoteFor::AmountToSellInCents(amount)) => {
+                    self.app
+                        .quote_sats_from_cents_for_sell(
+                            Decimal::from(amount),
+                            req.immediate_execution,
+                        )
+                        .await?
+                }
+                Some(get_quote_to_sell_usd_request::QuoteFor::AmountToBuyInSats(amount)) => {
+                    self.app
+                        .quote_cents_from_sats_for_sell(
+                            Decimal::from(amount),
+                            req.immediate_execution,
+                        )
+                        .await?
+                }
+                _ => return Err(Status::invalid_argument("invalid argument for quote")),
+            };
+            let response = GetQuoteToSellUsdResponse::from(quote);
+
+            Ok(Response::new(response))
+        })
+        .await
     }
 
     async fn accept_quote(
@@ -82,9 +112,7 @@ pub(crate) async fn start(
 ) -> Result<(), QuotesServerError> {
     let quote_service = Quotes { app };
     Server::builder()
-        .add_service(proto::quote_service_server::QuoteServiceServer::new(
-            quote_service,
-        ))
+        .add_service(quote_service_server::QuoteServiceServer::new(quote_service))
         .serve(([0, 0, 0, 0], server_config.listen_port).into())
         .await?;
     Ok(())

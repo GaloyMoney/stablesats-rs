@@ -168,7 +168,7 @@ impl QuotesApp {
             while let Some(msg) = subscriber.next().await {
                 if let PriceStreamPayload::OkexBtcUsdSwapOrderBookPayload(price_msg) = msg.payload {
                     let span = info_span!(
-                        "price_server.okex_order_book_received",
+                        "quotes_server.okex_order_book_received",
                         message_type = %msg.payload_type,
                         correlation_id = %msg.meta.correlation_id
                     );
@@ -193,7 +193,7 @@ impl QuotesApp {
             while let Some(msg) = subscriber.next().await {
                 if let PriceStreamPayload::BitfinexBtcUsdSwapPricePayload(price_msg) = msg.payload {
                     let span = info_span!(
-                        "price_server.bitfinex_price_tick_received",
+                        "quotes_server.bitfinex_price_tick_received",
                         message_type = %msg.payload_type,
                         correlation_id = %msg.meta.correlation_id
                     );

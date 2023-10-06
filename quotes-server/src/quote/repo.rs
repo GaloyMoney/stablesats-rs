@@ -1,4 +1,3 @@
-use rust_decimal::prelude::ToPrimitive;
 use sqlx::{Pool, Postgres};
 use tracing::instrument;
 
@@ -32,6 +31,7 @@ impl Quotes {
             immediate_execution: quote.immediate_execution,
             sat_amount: quote.sat_amount.clone(),
             cent_amount: quote.cent_amount.clone(),
+            expires_at: quote.expires_at,
             events: quote.clone().initial_events(),
         };
 

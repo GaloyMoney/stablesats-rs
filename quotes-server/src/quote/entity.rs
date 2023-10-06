@@ -59,9 +59,10 @@ impl NewQuote {
 pub struct Quote {
     pub id: QuoteId,
     pub direction: Direction,
-    pub immediate_execution: bool,
     pub sat_amount: Satoshis,
     pub cent_amount: UsdCents,
+    pub immediate_execution: bool,
+    pub expires_at: DateTime<Utc>,
 
     pub(super) events: EntityEvents<QuoteEvent>,
 }
