@@ -18,9 +18,11 @@ pub use entity::*;
 pub use price::*;
 pub use server::*;
 
+#[allow(clippy::too_many_arguments)]
 pub async fn run(
     health_check_trigger: HealthCheckTrigger,
     health_check_cfg: QuotesServerHealthCheckConfig,
+    server_config: QuotesServerConfig,
     fee_calc_cfg: QuotesFeeCalculatorConfig,
     subscriber: memory::Subscriber<PriceStreamPayload>,
     price_cache_config: QuotesExchangePriceCacheConfig,
@@ -38,7 +40,7 @@ pub async fn run(
     )
     .await?;
 
-    // server::start(server_config, app).await?;
+    server::start(server_config, app).await?;
 
     Ok(())
 }

@@ -237,6 +237,7 @@ async fn run_cmd(
                 quotes_server::run(
                     recv,
                     quotes_server.health,
+                    quotes_server.server,
                     quotes_server.fees,
                     price,
                     quotes_server.price_cache,

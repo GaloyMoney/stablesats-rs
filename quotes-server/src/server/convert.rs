@@ -31,7 +31,7 @@ impl From<Quote> for GetQuoteToBuyUsdResponse {
                 .timestamp()
                 .to_u32()
                 .expect("timestamp should always parse to u32"),
-            executed: false, // hardcoded for now
+            executed: quote.executed(),
         }
     }
 }
@@ -55,7 +55,7 @@ impl From<Quote> for GetQuoteToSellUsdResponse {
                 .timestamp()
                 .to_u32()
                 .expect("timestamp should always parse to u32"),
-            executed: false, // hardcoded for now
+            executed: quote.executed(),
         }
     }
 }

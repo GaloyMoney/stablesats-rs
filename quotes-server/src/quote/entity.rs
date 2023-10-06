@@ -67,6 +67,12 @@ pub struct Quote {
     pub(super) events: EntityEvents<QuoteEvent>,
 }
 
+impl Quote {
+    pub fn executed(&self) -> bool {
+        false
+    }
+}
+
 pub mod pg {
     #[derive(Debug, Clone, Copy, PartialEq, Eq, sqlx::Type)]
     #[sqlx(type_name = "direction_enum", rename_all = "snake_case")]

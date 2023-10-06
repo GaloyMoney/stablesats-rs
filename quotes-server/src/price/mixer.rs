@@ -51,6 +51,12 @@ impl PriceMixer {
     }
 }
 
+impl Default for PriceMixer {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 #[cfg(test)]
 mod tests {
     pub use std::collections::HashMap;

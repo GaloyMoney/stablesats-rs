@@ -1,6 +1,6 @@
 mod config;
 
-use chrono::Utc;
+use chrono::{DateTime, Utc};
 use futures::stream::StreamExt;
 use rust_decimal::Decimal;
 use tracing::{info_span, Instrument};
@@ -83,7 +83,7 @@ impl QuotesApp {
             .immediate_execution(immediate_execution)
             .cent_amount(usd_amount)
             .sat_amount(sats)
-            .expires_at(Utc::now() + chrono::Duration::minutes(2)) //hardcoded for now
+            .expires_at(default_expiration_time()) //hardcoded for now
             .build()
             .expect("Could not build quote");
         let quote = self.quotes.create(new_quote).await?;
@@ -106,7 +106,7 @@ impl QuotesApp {
             .immediate_execution(immediate_execution)
             .cent_amount(usd_amount)
             .sat_amount(sats)
-            .expires_at(Utc::now() + chrono::Duration::minutes(2)) //hardcoded for now
+            .expires_at(default_expiration_time()) //hardcoded for now
             .build()
             .expect("Could not build quote");
         let quote = self.quotes.create(new_quote).await?;
@@ -129,7 +129,7 @@ impl QuotesApp {
             .immediate_execution(immediate_execution)
             .cent_amount(cents)
             .sat_amount(sat_amount)
-            .expires_at(Utc::now() + chrono::Duration::minutes(2)) //hardcoded for now
+            .expires_at(default_expiration_time()) //hardcoded for now
             .build()
             .expect("Could not build quote");
         let quote = self.quotes.create(new_quote).await?;
@@ -152,7 +152,7 @@ impl QuotesApp {
             .immediate_execution(immediate_execution)
             .cent_amount(cents)
             .sat_amount(sat_amount)
-            .expires_at(Utc::now() + chrono::Duration::minutes(2)) //hardcoded for now
+            .expires_at(default_expiration_time()) //hardcoded for now
             .build()
             .expect("Could not build quote");
         let quote = self.quotes.create(new_quote).await?;
@@ -211,4 +211,9 @@ impl QuotesApp {
 
         Ok(())
     }
+}
+
+// helper fn. remove later
+fn default_expiration_time() -> DateTime<Utc> {
+    Utc::now() + chrono::Duration::minutes(2)
 }

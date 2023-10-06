@@ -1,11 +1,11 @@
 use serde::{Deserialize, Serialize};
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
-pub struct QuoteServerConfig {
+pub struct QuotesServerConfig {
     #[serde(default = "default_port")]
     pub listen_port: u16,
 }
-impl Default for QuoteServerConfig {
+impl Default for QuotesServerConfig {
     fn default() -> Self {
         Self {
             listen_port: default_port(),

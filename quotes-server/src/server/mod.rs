@@ -65,6 +65,10 @@ impl QuoteService for Quotes {
         .await
     }
 
+    #[instrument(name = "quotes_server.get_quote_to_buy_usd", skip_all,
+    fields(error, error.level, error.message),
+    err
+    )]
     async fn get_quote_to_sell_usd(
         &self,
         request: Request<GetQuoteToSellUsdRequest>,
@@ -98,16 +102,20 @@ impl QuoteService for Quotes {
         .await
     }
 
+    #[instrument(name = "quotes_server.get_quote_to_buy_usd", skip_all,
+    fields(error, error.level, error.message),
+    err
+    )]
     async fn accept_quote(
         &self,
-        request: Request<AcceptQuoteRequest>,
+        _request: Request<AcceptQuoteRequest>,
     ) -> Result<Response<AcceptQuoteResponse>, Status> {
         unimplemented!()
     }
 }
 
 pub(crate) async fn start(
-    server_config: QuoteServerConfig,
+    server_config: QuotesServerConfig,
     app: QuotesApp,
 ) -> Result<(), QuotesServerError> {
     let quote_service = Quotes { app };

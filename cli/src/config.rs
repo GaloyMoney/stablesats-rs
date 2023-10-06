@@ -9,7 +9,7 @@ use price_server::{
     ExchangePriceCacheConfig, FeeCalculatorConfig, PriceServerConfig, PriceServerHealthCheckConfig,
 };
 use quotes_server::{
-    QuoteServerConfig, QuotesExchangePriceCacheConfig, QuotesFeeCalculatorConfig,
+    QuotesExchangePriceCacheConfig, QuotesFeeCalculatorConfig, QuotesServerConfig,
     QuotesServerHealthCheckConfig,
 };
 use user_trades::UserTradesConfig;
@@ -114,7 +114,7 @@ pub struct QuotesServerWrapper {
     #[serde(default)]
     pub health: QuotesServerHealthCheckConfig,
     #[serde(default)]
-    pub server: QuoteServerConfig,
+    pub server: QuotesServerConfig,
     #[serde(default)]
     pub fees: QuotesFeeCalculatorConfig,
     #[serde(default)]
@@ -124,7 +124,7 @@ impl Default for QuotesServerWrapper {
     fn default() -> Self {
         Self {
             enabled: true,
-            server: QuoteServerConfig::default(),
+            server: QuotesServerConfig::default(),
             health: QuotesServerHealthCheckConfig::default(),
             fees: QuotesFeeCalculatorConfig::default(),
             price_cache: QuotesExchangePriceCacheConfig::default(),
