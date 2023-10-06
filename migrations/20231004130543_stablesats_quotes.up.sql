@@ -1,7 +1,7 @@
 CREATE TYPE direction_enum AS ENUM ('BuyCents', 'SellCents');
 
 CREATE TABLE stablesats_quote (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid()
 );
 
 CREATE TABLE stablesats_quote_events (
