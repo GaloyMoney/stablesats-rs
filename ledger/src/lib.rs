@@ -54,6 +54,8 @@ impl Ledger {
         templates::RevertUserSellsUsd::init(&inner).await?;
         templates::IncreaseExchangePosition::init(&inner).await?;
         templates::DecreaseExchangePosition::init(&inner).await?;
+        templates::QuoteBuyUsd::init(&inner).await?;
+        templates::RevertQuoteBuyUsd::init(&inner).await?;
 
         Ok(Self {
             events: inner.events(EventSubscriberOpts::default()).await?,
@@ -216,6 +218,34 @@ impl Ledger {
     ) -> Result<(), LedgerError> {
         self.inner
             .post_transaction_in_tx(tx, id, REVERT_USER_SELLS_USD_CODE, Some(params))
+            .await?;
+        Ok(())
+    }
+
+    #[instrument(name = "ledger.quote_buy_usd", skip(self, tx))]
+    pub async fn quote_buy_usd(
+        &self,
+        tx: Transaction<'_, Postgres>,
+        id: LedgerTxId,
+        params: QuoteBuyUsdParams,
+    ) -> Result<(), LedgerError> {
+        self.inner
+            .post_transaction_in_tx(tx, id, QUOTE_BUY_USD_CODE, Some(params))
+            .await?;
+        Ok(())
+    }
+
+    // todo: should i construct the params from the corelation_id?
+
+    #[instrument(name = "ledger.revert_quote_buy_usd", skip(self, tx))]
+    pub async fn revert_quote_buy_usd(
+        &self,
+        tx: Transaction<'_, Postgres>,
+        id: LedgerTxId,
+        params: RevertQuoteBuyUsdParams,
+    ) -> Result<(), LedgerError> {
+        self.inner
+            .post_transaction_in_tx(tx, id, REVERT_QUOTE_BUY_USD_CODE, Some(params))
             .await?;
         Ok(())
     }

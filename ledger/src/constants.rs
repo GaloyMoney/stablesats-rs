@@ -17,6 +17,10 @@ pub(super) const INCREASE_EXCHANGE_POSITION_ID: Uuid =
 pub(super) const DECREASE_EXCHANGE_POSITION_CODE: &str = "DECREASE_EXCHANGE_POSITION";
 pub(super) const DECREASE_EXCHANGE_POSITION_ID: Uuid =
     uuid!("00000000-0000-0000-0000-000000000004");
+pub(super) const QUOTE_BUY_USD_CODE: &str = "QUOTE_BUY_USD";
+pub(super) const QUOTE_BUY_USD_ID: Uuid = uuid!("00000000-0000-0000-0000-000000000005");
+pub(super) const REVERT_QUOTE_BUY_USD_CODE: &str = "REVERT_QUOTE_BUY_USD";
+pub(super) const REVERT_QUOTE_BUY_USD_ID: Uuid = uuid!("00000000-0000-0000-0000-100000000005");
 
 // Journal
 pub(super) const STABLESATS_JOURNAL_NAME: &str = "Stablesats";

@@ -132,3 +132,76 @@ async fn adjust_exchange_position() -> anyhow::Result<()> {
     );
     Ok(())
 }
+
+#[tokio::test]
+// make this quote_buy_and_sell_usd later ?
+async fn quote_buy_usd() -> anyhow::Result<()> {
+    let pool = init_pool().await?;
+
+    let ledger = Ledger::init(&pool).await?;
+
+    let before_liability = ledger
+        .balances()
+        .stablesats_liability()
+        .await?
+        .map(|b| b.settled())
+        .unwrap_or(Decimal::ZERO);
+    let before_btc = ledger
+        .balances()
+        .stablesats_btc_wallet()
+        .await?
+        .map(|b| b.settled())
+        .unwrap_or(Decimal::ZERO);
+    ledger
+        .quote_buy_usd(
+            pool.begin().await?,
+            LedgerTxId::new(),
+            QuoteBuyUsdParams {
+                satoshi_amount: dec!(1000000),
+                usd_cents_amount: dec!(500),
+                meta: QuoteBuyUsdMeta {
+                    timestamp: chrono::Utc::now(),
+                    btc_tx_id: "btc_tx_id".to_string(),
+                    usd_tx_id: "usd_tx_id".to_string(),
+                },
+            },
+        )
+        .await?;
+
+    let after_liability = ledger
+        .balances()
+        .stablesats_liability()
+        .await?
+        .unwrap()
+        .encumbered();
+    let after_btc = ledger
+        .balances()
+        .stablesats_btc_wallet()
+        .await?
+        .unwrap()
+        .encumbered();
+    assert_eq!(after_liability - before_liability, dec!(5));
+    assert_eq!(after_btc - before_btc, dec!(0.01));
+
+    ledger
+        .revert_quote_buy_usd(
+            pool.begin().await?,
+            LedgerTxId::new(),
+            RevertQuoteBuyUsdParams {
+                satoshi_amount: dec!(1000000),
+                usd_cents_amount: dec!(500),
+                meta: RevertQuoteBuyUsdMeta {
+                    timestamp: chrono::Utc::now(),
+                    btc_tx_id: "btc_tx_id".to_string(),
+                    usd_tx_id: "usd_tx_id".to_string(),
+                },
+            },
+        )
+        .await?;
+    let end_balance = ledger.balances().stablesats_liability().await?.unwrap();
+    let end_btc = ledger.balances().stablesats_btc_wallet().await?.unwrap();
+    assert_eq!(end_balance.encumbered(), before_liability);
+    assert_eq!(end_btc.encumbered(), before_btc);
+
+    Ok(())
+}
