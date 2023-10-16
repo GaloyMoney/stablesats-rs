@@ -1,3 +1,10 @@
+# [stablesats release v0.9.26](https://github.com/GaloyMoney/stablesats-rs/releases/tag/0.9.26)
+
+
+### Miscellaneous Tasks
+
+- Auto-resubsribe when no msg arrived (#446)
+
 # [stablesats release v0.9.25](https://github.com/GaloyMoney/stablesats-rs/releases/tag/0.9.25)
 
 
