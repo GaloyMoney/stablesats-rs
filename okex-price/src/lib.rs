@@ -9,7 +9,7 @@ pub mod price_feed;
 
 use futures::StreamExt;
 use shared::{payload::*, pubsub::*};
-use tokio::{join, time::timeout};
+use tokio::join;
 
 pub use error::*;
 pub use okex_shared::*;
@@ -18,7 +18,6 @@ pub use price_feed::*;
 
 pub async fn run(
     price_stream_publisher: memory::Publisher<PriceStreamPayload>,
-    unhealthy_msg_interval: std::time::Duration,
 ) -> Result<(), PriceFeedError> {
     let _ = tokio::spawn(async move {
         loop {
@@ -32,11 +31,7 @@ pub async fn run(
                 let order_book_publisher = price_stream_publisher.clone();
                 let order_book_task = tokio::spawn(async move {
                     loop {
-                        let _res = order_book_subscription(
-                            order_book_publisher.clone(),
-                            unhealthy_msg_interval,
-                        )
-                        .await;
+                        let _res = order_book_subscription(order_book_publisher.clone()).await;
                         tokio::time::sleep(std::time::Duration::from_secs(5_u64)).await;
                     }
                 });
@@ -51,7 +46,6 @@ pub async fn run(
 
 async fn order_book_subscription(
     publisher: memory::Publisher<PriceStreamPayload>,
-    unhealthy_msg_interval: std::time::Duration,
 ) -> Result<(), PriceFeedError> {
     let mut stream = subscribe_btc_usd_swap_order_book().await?;
     let full_load = stream.next().await.ok_or(PriceFeedError::InitialFullLoad)?;
@@ -61,23 +55,10 @@ async fn order_book_subscription(
     let (send, recv) = tokio::sync::oneshot::channel();
 
     tokio::spawn(async move {
-        loop {
-            match timeout(unhealthy_msg_interval, stream.next()).await {
-                Ok(Some(book)) => {
-                    if let Err(e) = okex_order_book_received(&publisher, book, cache.clone()).await
-                    {
-                        let _ = send.send(e);
-                        break;
-                    }
-                }
-                Ok(None) => {
-                    let _ = send.send(PriceFeedError::StreamEnded);
-                    break;
-                }
-                Err(_) => {
-                    let _ = send.send(PriceFeedError::StreamStalled);
-                    break;
-                }
+        while let Some(book) = stream.next().await {
+            if let Err(e) = okex_order_book_received(&publisher, book, cache.clone()).await {
+                let _ = send.send(e);
+                break;
             }
         }
     });

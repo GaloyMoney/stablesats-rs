@@ -56,7 +56,7 @@ async fn publishes_to_price_stream() -> anyhow::Result<()> {
         memory::channel(chrono::Duration::from_std(std::time::Duration::from_secs(2)).unwrap());
 
     let _ = tokio::spawn(async move {
-        let _res = okex_price::run(tick_send, std::time::Duration::from_secs(20)).await;
+        let _res = okex_price::run(tick_send).await;
     });
 
     let recv = tick_recv.next().await.expect("expected price tick");
