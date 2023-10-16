@@ -75,7 +75,7 @@ async fn order_book_subscription(
                     break;
                 }
                 Err(_) => {
-                    let _ = send.send(PriceFeedError::StreamEnded);
+                    let _ = send.send(PriceFeedError::StreamStalled);
                     break;
                 }
             }
