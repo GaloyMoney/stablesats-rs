@@ -131,6 +131,11 @@ async fn run_cmd(
     let mut checkers = HashMap::new();
     let (price_send, price_recv) = memory::channel(price_stream_throttle_period());
 
+    let unhealthy_msg_interval = price_server
+        .health
+        .unhealthy_msg_interval_price
+        .to_std()
+        .expect("Could not convert Duration to_std");
     if exchanges
         .okex
         .as_ref()
@@ -143,7 +148,7 @@ async fn run_cmd(
         let price_send = price_send.clone();
         handles.push(tokio::spawn(async move {
             let _ = okex_send.try_send(
-                okex_price::run(price_send)
+                okex_price::run(price_send, unhealthy_msg_interval)
                     .await
                     .context("Okex Price Feed error"),
             );
