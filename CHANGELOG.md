@@ -1,3 +1,10 @@
+# [stablesats release v0.9.27](https://github.com/GaloyMoney/stablesats-rs/releases/tag/0.9.27)
+
+
+### Bug Fixes
+
+- Pass mutable cache to update order book (#448)
+
 # [stablesats release v0.9.26](https://github.com/GaloyMoney/stablesats-rs/releases/tag/0.9.26)
 
 
