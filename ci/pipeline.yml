@@ -266,6 +266,7 @@ jobs:
         platform: linux
         image_resource: #@ nodejs_task_image_config()
         inputs:
+          - name: repo
           - name: pipeline-tasks
           - name: latest-image
           - name: charts-repo

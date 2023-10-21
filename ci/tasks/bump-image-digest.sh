@@ -8,9 +8,10 @@ export app_version=$(cat version/version)
 
 pushd charts-repo
 
-yq -i e '.stablesats.image.digest = strenv(digest)' ./charts/${CHARTS_SUBDIR}/values.yaml
-yq -i e '.stablesats.image.git_ref = strenv(ref)' ./charts/${CHARTS_SUBDIR}/values.yaml
-yq -i e '.appVersion = strenv(app_version)' ./charts/${CHARTS_SUBDIR}/Chart.yaml
+yq -i e '.stablesats.image.digest = strenv(digest)' ./charts/stablesats/values.yaml
+sed -i "s|\(digest: \"${digest}\"\).*$|\1 # METADATA:: repository=https://github.com/GaloyMoney/stablesats-rs;commit_ref=${ref};app=stablesats;|g" "./charts/stablesats/values.yaml"
+
+yq -i e '.appVersion = strenv(app_version)' ./charts/stablesats/Chart.yaml
 
 if [[ -z $(git config --global user.email) ]]; then
   git config --global user.email "bot@galoy.io"
@@ -24,5 +25,5 @@ fi
   git merge --no-edit ${BRANCH}
   git add -A
   git status
-  git commit -m "chore(${CHARTS_SUBDIR}): bump ${CHARTS_SUBDIR} image to '${digest}'"
+  git commit -m "chore(stablesats): bump stablesats image to '${digest}'"
 )
