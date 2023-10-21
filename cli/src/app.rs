@@ -148,7 +148,7 @@ async fn run_cmd(
         let price_send = price_send.clone();
         handles.push(tokio::spawn(async move {
             let _ = okex_send.try_send(
-                okex_price::run(price_send, unhealthy_msg_interval)
+                okex_price::run(price_send, unhealthy_msg_interval / 2)
                     .await
                     .context("Okex Price Feed error"),
             );
@@ -265,7 +265,7 @@ async fn price_cmd(
 }
 
 fn price_stream_throttle_period() -> Duration {
-    Duration::from_std(std::time::Duration::from_secs(2)).unwrap()
+    Duration::from_std(std::time::Duration::from_millis(500)).unwrap()
 }
 
 fn extract_weights(config: &hedging::ExchangesConfig) -> price_server::ExchangeWeights {
