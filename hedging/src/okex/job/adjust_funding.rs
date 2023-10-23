@@ -145,15 +145,16 @@ pub(super) async fn execute(
                     if let Some(client_id) =
                         okex_transfers.reserve_transfer_slot(reservation).await?
                     {
-                        span.record(
-                            "client_transfer_id",
-                            &tracing::field::display(String::from(client_id)),
-                        );
+                        let client_transfer_id = String::from(client_id.clone());
+                        span.record("client_transfer_id", &client_transfer_id);
 
                         let amount_in_sats = amount * SATS_PER_BTC;
-                        let _ = bria
-                            .send_onchain_payment(deposit_address, amount_in_sats)
-                            .await?;
+                        bria.send_onchain_payment(
+                            deposit_address,
+                            amount_in_sats,
+                            client_transfer_id,
+                        )
+                        .await?;
                     }
                 }
                 OkexFundingAdjustment::OnchainWithdraw(amount) => {

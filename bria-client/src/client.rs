@@ -90,6 +90,7 @@ impl BriaClient {
         &mut self,
         destination: String,
         satoshis: rust_decimal::Decimal,
+        external_id: String,
     ) -> Result<String, BriaClientError> {
         use rust_decimal::prelude::ToPrimitive;
 
@@ -109,7 +110,7 @@ impl BriaClient {
                 .abs()
                 .to_u64()
                 .ok_or(BriaClientError::CouldNotConvertSatoshisToU64)?,
-            external_id: None,
+            external_id: Some(external_id),
             metadata: metadata.map(serde_json::from_value).transpose()?,
         });
 

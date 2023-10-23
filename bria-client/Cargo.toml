@@ -39,3 +39,4 @@ tonic-build = { version = "0.8", features = ["prost"] }
 
 [dev-dependencies]
 anyhow = "1.0.70"
+rand = { workspace = true }

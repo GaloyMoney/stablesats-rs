@@ -423,6 +423,7 @@ dependencies = [
  "prost",
  "prost-wkt-types",
  "protobuf-src",
+ "rand",
  "rust_decimal",
  "rust_decimal_macros",
  "rusty-money",
