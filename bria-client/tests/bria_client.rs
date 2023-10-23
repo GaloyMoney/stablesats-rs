@@ -36,7 +36,11 @@ async fn send_onchain_payment() -> anyhow::Result<()> {
     let destination = "bcrt1q5cwegu66cf344du3ffrvnwjz9u246xlydqezsa".to_string();
     let satoshis = rust_decimal::Decimal::from(5000);
 
-    let id = client.send_onchain_payment(destination, satoshis).await?;
+    use rand::distributions::{Alphanumeric, DistString};
+    let external_id = Alphanumeric.sample_string(&mut rand::thread_rng(), 32);
+    let id = client
+        .send_onchain_payment(destination, satoshis, external_id)
+        .await?;
     assert!(!id.is_empty());
 
     Ok(())

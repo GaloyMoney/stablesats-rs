@@ -257,6 +257,7 @@ impl OkexClient {
         })
     }
 
+    /// https://www.okx.com/docs-v5/en/#funding-account-rest-api-get-balance
     #[instrument(name = "okex_client.funding_account_balance", skip(self), err)]
     pub async fn funding_account_balance(&self) -> Result<AvailableBalance, OkexClientError> {
         let request_path = "/api/v5/asset/balances?ccy=BTC";
@@ -403,7 +404,13 @@ impl OkexClient {
         })
     }
 
-    #[instrument(name = "okex_client.fetch_deposit", skip(self), err)]
+    /// https://www.okx.com/docs-v5/en/#funding-account-rest-api-get-deposit-history
+    #[instrument(
+        name = "okex_client.fetch_deposit",
+        fields(deposit_found, okex_deposit_state),
+        skip(self),
+        err
+    )]
     pub async fn fetch_deposit(
         &self,
         depo_addr: String,
@@ -428,10 +435,12 @@ impl OkexClient {
         });
 
         if let Some(deposit_data) = deposit {
+            tracing::Span::current().record("deposit_found", true);
+            tracing::Span::current().record("okex_deposit_state", &deposit_data.state);
             Ok(DepositStatus {
                 state: match &deposit_data.state[..] {
                     "0" => "pending".to_string(),  // waiting for confirmation
-                    "1" => "success".to_string(),  // deposit credited, cannot withdraw
+                    "1" => "pending".to_string(),  // deposit credited, cannot withdraw
                     "2" => "success".to_string(),  // deposit successful, can withdraw
                     "8" => "pending".to_string(), // pending due to temporary deposit suspension on this crypto currency
                     "12" => "pending".to_string(), // account or deposit is frozen
