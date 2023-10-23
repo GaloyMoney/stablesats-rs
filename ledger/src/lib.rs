@@ -57,9 +57,7 @@ impl Ledger {
         templates::IncreaseExchangePosition::init(&inner).await?;
         templates::DecreaseExchangePosition::init(&inner).await?;
         templates::BuyUsdQuoteAccepted::init(&inner).await?;
-        templates::RevertBuyUsdQuoteAccepted::init(&inner).await?;
         templates::SellUsdQuoteAccepted::init(&inner).await?;
-        templates::RevertSellUsdQuoteAccepted::init(&inner).await?;
 
         Ok(Self {
             events: inner.events(EventSubscriberOpts::default()).await?,
@@ -239,56 +237,6 @@ impl Ledger {
         Ok(())
     }
 
-    #[instrument(name = "ledger.revert_buy_usd_quote_accepted", skip(self, tx))]
-    pub async fn revert_buy_usd_quote_accepted(
-        &self,
-        tx: Transaction<'_, Postgres>,
-        id: LedgerTxId,
-        correlation_id: impl Into<LedgerTxId> + std::fmt::Debug,
-    ) -> Result<(), LedgerError> {
-        let correlation_id = correlation_id.into();
-        let txs = self
-            .inner
-            .transactions()
-            .list_by_ids(std::iter::once(correlation_id))
-            .await?;
-        let txn = txs.get(0).ok_or(LedgerError::TransactionNotFound)?;
-        let metadata = txn.metadata()?.ok_or(LedgerError::MissingTxMetadata)?;
-        let mut satoshi_amount = None;
-        let mut usd_cents_amount = None;
-        let entries = self
-            .inner
-            .entries()
-            .list_by_transaction_ids(std::iter::once(correlation_id))
-            .await?;
-        for entry in entries.into_values().flatten() {
-            match entry.entry_type.as_str() {
-                "BUY_USD_QUOTE_ACCEPTED_BTC_CR" => {
-                    satoshi_amount = Some(entry.units * SATS_PER_BTC)
-                }
-                "BUY_USD_QUOTE_ACCEPTED_USD_CR" => {
-                    usd_cents_amount = Some(entry.units * CENTS_PER_USD)
-                }
-                _ => {}
-            }
-        }
-        let satoshi_amount =
-            satoshi_amount.ok_or(LedgerError::ExpectedEntryNotFoundInTx("satoshi amount"))?;
-        let usd_cents_amount =
-            usd_cents_amount.ok_or(LedgerError::ExpectedEntryNotFoundInTx("usd cent amount"))?;
-
-        let params = RevertBuyUsdQuoteAcceptedParams {
-            usd_cents_amount,
-            satoshi_amount,
-            correlation_id,
-            meta: metadata,
-        };
-        self.inner
-            .post_transaction_in_tx(tx, id, REVERT_BUY_USD_QUOTE_ACCEPTED_CODE, Some(params))
-            .await?;
-        Ok(())
-    }
-
     #[instrument(name = "ledger.sell_usd_quote_accepted", skip(self, tx))]
     pub async fn sell_usd_quote_accepted(
         &self,
@@ -298,56 +246,6 @@ impl Ledger {
     ) -> Result<(), LedgerError> {
         self.inner
             .post_transaction_in_tx(tx, id, SELL_USD_QUOTE_ACCEPTED_CODE, Some(params))
-            .await?;
-        Ok(())
-    }
-
-    #[instrument(name = "ledger.revert_sell_usd_quote_accepted", skip(self, tx))]
-    pub async fn revert_sell_usd_quote_accepted(
-        &self,
-        tx: Transaction<'_, Postgres>,
-        id: LedgerTxId,
-        correlation_id: impl Into<LedgerTxId> + std::fmt::Debug,
-    ) -> Result<(), LedgerError> {
-        let correlation_id = correlation_id.into();
-        let txs = self
-            .inner
-            .transactions()
-            .list_by_ids(std::iter::once(correlation_id))
-            .await?;
-        let txn = txs.get(0).ok_or(LedgerError::TransactionNotFound)?;
-        let metadata = txn.metadata()?.ok_or(LedgerError::MissingTxMetadata)?;
-        let mut satoshi_amount = None;
-        let mut usd_cents_amount = None;
-        let entries = self
-            .inner
-            .entries()
-            .list_by_transaction_ids(std::iter::once(correlation_id))
-            .await?;
-        for entry in entries.into_values().flatten() {
-            match entry.entry_type.as_str() {
-                "SELL_USD_QUOTE_ACCEPTED_BTC_CR" => {
-                    satoshi_amount = Some(-entry.units * SATS_PER_BTC)
-                }
-                "SELL_USD_QUOTE_ACCEPTED_USD_CR" => {
-                    usd_cents_amount = Some(-entry.units * CENTS_PER_USD)
-                }
-                _ => {}
-            }
-        }
-        let satoshi_amount =
-            satoshi_amount.ok_or(LedgerError::ExpectedEntryNotFoundInTx("satoshi amount"))?;
-        let usd_cents_amount =
-            usd_cents_amount.ok_or(LedgerError::ExpectedEntryNotFoundInTx("usd cent amount"))?;
-
-        let params = RevertSellUsdQuoteAcceptedParams {
-            usd_cents_amount,
-            satoshi_amount,
-            correlation_id,
-            meta: metadata,
-        };
-        self.inner
-            .post_transaction_in_tx(tx, id, REVERT_BUY_USD_QUOTE_ACCEPTED_CODE, Some(params))
             .await?;
         Ok(())
     }
