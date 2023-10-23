@@ -7,20 +7,18 @@ use tracing::instrument;
 use crate::{constants::*, error::*};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct RevertQuoteBuyUsdMeta {
+pub struct BuyUsdQuoteAcceptedMeta {
     #[serde(with = "chrono::serde::ts_seconds")]
     pub timestamp: DateTime<Utc>,
-    pub btc_tx_id: String,
-    pub usd_tx_id: String,
 }
 
 #[derive(Debug, Clone)]
-pub struct RevertQuoteBuyUsdParams {
+pub struct BuyUsdQuoteAcceptedParams {
     pub satoshi_amount: Decimal,
     pub usd_cents_amount: Decimal,
-    pub meta: RevertQuoteBuyUsdMeta,
+    pub meta: BuyUsdQuoteAcceptedMeta,
 }
-impl RevertQuoteBuyUsdParams {
+impl BuyUsdQuoteAcceptedParams {
     pub fn defs() -> Vec<ParamDefinition> {
         vec![
             ParamDefinition::builder()
@@ -47,13 +45,13 @@ impl RevertQuoteBuyUsdParams {
     }
 }
 
-impl From<RevertQuoteBuyUsdParams> for TxParams {
+impl From<BuyUsdQuoteAcceptedParams> for TxParams {
     fn from(
-        RevertQuoteBuyUsdParams {
+        BuyUsdQuoteAcceptedParams {
             satoshi_amount,
             usd_cents_amount,
             meta,
-        }: RevertQuoteBuyUsdParams,
+        }: BuyUsdQuoteAcceptedParams,
     ) -> Self {
         let effective = meta.timestamp.naive_utc().date();
         let meta = serde_json::to_value(meta).expect("Couldn't serialize meta");
@@ -65,66 +63,66 @@ impl From<RevertQuoteBuyUsdParams> for TxParams {
         params
     }
 }
-pub struct RevertQuoteBuyUsd {}
+pub struct BuyUsdQuoteAccepted {}
 
-impl RevertQuoteBuyUsd {
-    #[instrument(name = "ledger.revert_quote_buy_usd.init", skip_all)]
+impl BuyUsdQuoteAccepted {
+    #[instrument(name = "ledger.buy_usd_quote_accepted.init", skip_all)]
     pub async fn init(ledger: &SqlxLedger) -> Result<(), LedgerError> {
         let tx_input = TxInput::builder()
             .journal_id(format!("uuid('{STABLESATS_JOURNAL_ID}')"))
             .effective("params.effective")
             .metadata("params.meta")
-            .description("' Revert Quote buy USD'")
+            .description("'Buy Usd Quote Accepted'")
             .build()
             .expect("Couldn't build TxInput");
         let entries = vec![
             EntryInput::builder()
-                .entry_type("'REVERT_QUOTE_BUY_USD_BTC_DR'")
+                .entry_type("'BUY_USD_QUOTE_ACCEPTED_BTC_CR'")
                 .currency("'BTC'")
-                .account_id(format!("uuid('{STABLESATS_BTC_WALLET_ID}')"))
-                .direction("DEBIT")
-                .layer("ENCUMBERED")
+                .account_id(format!("uuid('{QUOTES_LIABILITY_ID}')"))
+                .direction("CREDIT")
+                .layer("SETTLED")
                 .units("params.btc_amount")
                 .build()
-                .expect("Couldn't build REVERT_QUOTE_BUY_USD_BTC_DR entry"),
+                .expect("Couldn't build BUY_USD_QUOTE_ACCEPTED_BTC_CR entry"),
             EntryInput::builder()
-                .entry_type("'REVERT_QUOTE_BUY_USD_BTC_CR'")
+                .entry_type("'BUY_USD_QUOTE_ACCEPTED_BTC_DR'")
                 .currency("'BTC'")
-                .account_id(format!("uuid('{EXTERNAL_OMNIBUS_ID}')"))
-                .direction("CREDIT")
-                .layer("ENCUMBERED")
+                .account_id(format!("uuid('{QUOTES_OMNIBUS_ID}')"))
+                .direction("DEBIT")
+                .layer("SETTLED")
                 .units("params.btc_amount")
                 .build()
-                .expect("Couldn't build REVERT_QUOTE_BUY_USD_BTC_CR entry"),
+                .expect("Couldn't build BUY_USD_QUOTE_ACCEPTED_BTC_DR entry"),
             EntryInput::builder()
-                .entry_type("'REVERT_QUOTE_BUY_USD_USD_DR'")
+                .entry_type("'BUY_USD_QUOTE_ACCEPTED_USD_CR'")
                 .currency("'USD'")
-                .account_id(format!("uuid('{STABLESATS_LIABILITY_ID}')"))
-                .direction("DEBIT")
-                .layer("ENCUMBERED")
-                .units("params.usd_amount")
-                .build()
-                .expect("Couldn't build REVERT_QUOTE_BUY_USD_USD_DR entry"),
-            EntryInput::builder()
-                .entry_type("'REVERT_USER_BUYS_USD_USD_CR'")
-                .currency("'USD'")
-                .account_id(format!("uuid('{STABLESATS_OMNIBUS_ID}')"))
+                .account_id(format!("uuid('{QUOTES_LIABILITY_ID}')"))
                 .direction("CREDIT")
-                .layer("ENCUMBERED")
+                .layer("SETTLED")
                 .units("params.usd_amount")
                 .build()
-                .expect("Couldn't build REVERT_QUOTE_BUY_USD_USD_CR entry"),
+                .expect("Couldn't build BUY_USD_QUOTE_ACCEPTED_USD_CR entry"),
+            EntryInput::builder()
+                .entry_type("'BUY_USD_QUOTE_ACCEPTED_USD_DR'")
+                .currency("'USD'")
+                .account_id(format!("uuid('{QUOTES_OMNIBUS_ID}')"))
+                .direction("DEBIT")
+                .layer("SETTLED")
+                .units("params.usd_amount")
+                .build()
+                .expect("Couldn't build BUY_USD_QUOTE_ACCEPTED_USD_DR entry"),
         ];
 
-        let params = RevertQuoteBuyUsdParams::defs();
+        let params = BuyUsdQuoteAcceptedParams::defs();
         let template = NewTxTemplate::builder()
-            .id(REVERT_QUOTE_BUY_USD_ID)
-            .code(REVERT_QUOTE_BUY_USD_CODE)
+            .id(BUY_USD_QUOTE_ACCEPTED_ID)
+            .code(BUY_USD_QUOTE_ACCEPTED_CODE)
             .tx_input(tx_input)
             .entries(entries)
             .params(params)
             .build()
-            .expect("Couldn't build REVERT_QUOTE_BUY_USD_CODE");
+            .expect("Couldn't build BUY_USD_QUOTE_ACCEPTED_CODE");
         match ledger.tx_templates().create(template).await {
             Ok(_) | Err(SqlxLedgerError::DuplicateKey(_)) => Ok(()),
             Err(e) => Err(e.into()),

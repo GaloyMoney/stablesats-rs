@@ -47,6 +47,8 @@ impl Ledger {
         Self::stablesats_liability_account(&inner).await?;
         Self::exchange_position_omnibus_account(&inner).await?;
         Self::okex_position_account(&inner).await?;
+        Self::quotes_omnibus_account(&inner).await?;
+        Self::quotes_liability_account(&inner).await?;
 
         templates::UserBuysUsd::init(&inner).await?;
         templates::UserSellsUsd::init(&inner).await?;
@@ -54,8 +56,10 @@ impl Ledger {
         templates::RevertUserSellsUsd::init(&inner).await?;
         templates::IncreaseExchangePosition::init(&inner).await?;
         templates::DecreaseExchangePosition::init(&inner).await?;
-        templates::QuoteBuyUsd::init(&inner).await?;
-        templates::RevertQuoteBuyUsd::init(&inner).await?;
+        templates::BuyUsdQuoteAccepted::init(&inner).await?;
+        templates::RevertBuyUsdQuoteAccepted::init(&inner).await?;
+        templates::SellUsdQuoteAccepted::init(&inner).await?;
+        templates::RevertSellUsdQuoteAccepted::init(&inner).await?;
 
         Ok(Self {
             events: inner.events(EventSubscriberOpts::default()).await?,
@@ -222,30 +226,128 @@ impl Ledger {
         Ok(())
     }
 
-    #[instrument(name = "ledger.quote_buy_usd", skip(self, tx))]
-    pub async fn quote_buy_usd(
+    #[instrument(name = "ledger.buy_usd_quote_accepted", skip(self, tx))]
+    pub async fn buy_usd_quote_accepted(
         &self,
         tx: Transaction<'_, Postgres>,
         id: LedgerTxId,
-        params: QuoteBuyUsdParams,
+        params: BuyUsdQuoteAcceptedParams,
     ) -> Result<(), LedgerError> {
         self.inner
-            .post_transaction_in_tx(tx, id, QUOTE_BUY_USD_CODE, Some(params))
+            .post_transaction_in_tx(tx, id, BUY_USD_QUOTE_ACCEPTED_CODE, Some(params))
             .await?;
         Ok(())
     }
 
-    // todo: should i construct the params from the corelation_id?
-
-    #[instrument(name = "ledger.revert_quote_buy_usd", skip(self, tx))]
-    pub async fn revert_quote_buy_usd(
+    #[instrument(name = "ledger.revert_buy_usd_quote_accepted", skip(self, tx))]
+    pub async fn revert_buy_usd_quote_accepted(
         &self,
         tx: Transaction<'_, Postgres>,
         id: LedgerTxId,
-        params: RevertQuoteBuyUsdParams,
+        correlation_id: impl Into<LedgerTxId> + std::fmt::Debug,
+    ) -> Result<(), LedgerError> {
+        let correlation_id = correlation_id.into();
+        let txs = self
+            .inner
+            .transactions()
+            .list_by_ids(std::iter::once(correlation_id))
+            .await?;
+        let txn = txs.get(0).ok_or(LedgerError::TransactionNotFound)?;
+        let metadata = txn.metadata()?.ok_or(LedgerError::MissingTxMetadata)?;
+        let mut satoshi_amount = None;
+        let mut usd_cents_amount = None;
+        let entries = self
+            .inner
+            .entries()
+            .list_by_transaction_ids(std::iter::once(correlation_id))
+            .await?;
+        for entry in entries.into_values().flatten() {
+            match entry.entry_type.as_str() {
+                "BUY_USD_QUOTE_ACCEPTED_BTC_CR" => {
+                    satoshi_amount = Some(entry.units * SATS_PER_BTC)
+                }
+                "BUY_USD_QUOTE_ACCEPTED_USD_CR" => {
+                    usd_cents_amount = Some(entry.units * CENTS_PER_USD)
+                }
+                _ => {}
+            }
+        }
+        let satoshi_amount =
+            satoshi_amount.ok_or(LedgerError::ExpectedEntryNotFoundInTx("satoshi amount"))?;
+        let usd_cents_amount =
+            usd_cents_amount.ok_or(LedgerError::ExpectedEntryNotFoundInTx("usd cent amount"))?;
+
+        let params = RevertBuyUsdQuoteAcceptedParams {
+            usd_cents_amount,
+            satoshi_amount,
+            correlation_id,
+            meta: metadata,
+        };
+        self.inner
+            .post_transaction_in_tx(tx, id, REVERT_BUY_USD_QUOTE_ACCEPTED_CODE, Some(params))
+            .await?;
+        Ok(())
+    }
+
+    #[instrument(name = "ledger.sell_usd_quote_accepted", skip(self, tx))]
+    pub async fn sell_usd_quote_accepted(
+        &self,
+        tx: Transaction<'_, Postgres>,
+        id: LedgerTxId,
+        params: SellUsdQuoteAcceptedParams,
     ) -> Result<(), LedgerError> {
         self.inner
-            .post_transaction_in_tx(tx, id, REVERT_QUOTE_BUY_USD_CODE, Some(params))
+            .post_transaction_in_tx(tx, id, SELL_USD_QUOTE_ACCEPTED_CODE, Some(params))
+            .await?;
+        Ok(())
+    }
+
+    #[instrument(name = "ledger.revert_sell_usd_quote_accepted", skip(self, tx))]
+    pub async fn revert_sell_usd_quote_accepted(
+        &self,
+        tx: Transaction<'_, Postgres>,
+        id: LedgerTxId,
+        correlation_id: impl Into<LedgerTxId> + std::fmt::Debug,
+    ) -> Result<(), LedgerError> {
+        let correlation_id = correlation_id.into();
+        let txs = self
+            .inner
+            .transactions()
+            .list_by_ids(std::iter::once(correlation_id))
+            .await?;
+        let txn = txs.get(0).ok_or(LedgerError::TransactionNotFound)?;
+        let metadata = txn.metadata()?.ok_or(LedgerError::MissingTxMetadata)?;
+        let mut satoshi_amount = None;
+        let mut usd_cents_amount = None;
+        let entries = self
+            .inner
+            .entries()
+            .list_by_transaction_ids(std::iter::once(correlation_id))
+            .await?;
+        for entry in entries.into_values().flatten() {
+            match entry.entry_type.as_str() {
+                "SELL_USD_QUOTE_ACCEPTED_BTC_CR" => {
+                    satoshi_amount = Some(-entry.units * SATS_PER_BTC)
+                }
+                "SELL_USD_QUOTE_ACCEPTED_USD_CR" => {
+                    usd_cents_amount = Some(-entry.units * CENTS_PER_USD)
+                }
+                _ => {}
+            }
+        }
+        let satoshi_amount =
+            satoshi_amount.ok_or(LedgerError::ExpectedEntryNotFoundInTx("satoshi amount"))?;
+        let usd_cents_amount =
+            usd_cents_amount.ok_or(LedgerError::ExpectedEntryNotFoundInTx("usd cent amount"))?;
+
+        let params = RevertSellUsdQuoteAcceptedParams {
+            usd_cents_amount,
+            satoshi_amount,
+            correlation_id,
+            meta: metadata,
+        };
+        self.inner
+            .post_transaction_in_tx(tx, id, REVERT_BUY_USD_QUOTE_ACCEPTED_CODE, Some(params))
             .await?;
         Ok(())
     }
@@ -384,6 +486,38 @@ impl Ledger {
             .description("Account for okex position".to_string())
             .build()
             .expect("Couldn't create okex position account");
+        match ledger.accounts().create(new_account).await {
+            Ok(_) | Err(SqlxLedgerError::DuplicateKey(_)) => Ok(()),
+            Err(e) => Err(e.into()),
+        }
+    }
+
+    #[instrument(name = "ledger.quotes_omnibus_account", skip_all)]
+    async fn quotes_omnibus_account(ledger: &SqlxLedger) -> Result<(), LedgerError> {
+        let new_account = NewAccount::builder()
+            .code(QUOTES_OMNIBUS)
+            .id(QUOTES_OMNIBUS_ID)
+            .name(QUOTES_OMNIBUS)
+            .normal_balance_type(DebitOrCredit::Debit)
+            .description("Account for quotes omnibus".to_string())
+            .build()
+            .expect("Couldn't create quotes omnibus account");
+        match ledger.accounts().create(new_account).await {
+            Ok(_) | Err(SqlxLedgerError::DuplicateKey(_)) => Ok(()),
+            Err(e) => Err(e.into()),
+        }
+    }
+
+    #[instrument(name = "ledger.quotes_liability_account", skip_all)]
+    async fn quotes_liability_account(ledger: &SqlxLedger) -> Result<(), LedgerError> {
+        let new_account = NewAccount::builder()
+            .code(QUOTES_LIABILITY)
+            .id(QUOTES_LIABILITY_ID)
+            .name(QUOTES_LIABILITY)
+            .normal_balance_type(DebitOrCredit::Credit)
+            .description("Account for quotes liability".to_string())
+            .build()
+            .expect("Couldn't create quotes liability account");
         match ledger.accounts().create(new_account).await {
             Ok(_) | Err(SqlxLedgerError::DuplicateKey(_)) => Ok(()),
             Err(e) => Err(e.into()),

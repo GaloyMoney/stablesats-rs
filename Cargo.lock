@@ -435,7 +435,7 @@ dependencies = [
  "tonic",
  "tonic-build",
  "tracing",
- "tracing-opentelemetry",
+ "tracing-opentelemetry 0.20.0",
  "url",
 ]
 
@@ -481,15 +481,16 @@ checksum = "89b2fd2a0dcf38d7971e2194b6b6eebab45ae01067456a7fd93d5547a61b70be"
 
 [[package]]
 name = "cached"
-version = "0.44.0"
+version = "0.46.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b195e4fbc4b6862bbd065b991a34750399c119797efff72492f28a5864de8700"
+checksum = "8cead8ece0da6b744b2ad8ef9c58a4cdc7ef2921e60a6ddfb9eaaa86839b5fc5"
 dependencies = [
+ "ahash 0.8.3",
  "async-trait",
  "cached_proc_macro",
  "cached_proc_macro_types",
  "futures",
- "hashbrown 0.13.2",
+ "hashbrown 0.14.0",
  "instant",
  "once_cell",
  "thiserror",
@@ -498,11 +499,10 @@ dependencies = [
 
 [[package]]
 name = "cached_proc_macro"
-version = "0.17.0"
+version = "0.18.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b48814962d2fd604c50d2b9433c2a41a0ab567779ee2c02f7fba6eca1221f082"
+checksum = "7da8245dd5f576a41c3b76247b54c15b0e43139ceeb4f732033e15be7c005176"
 dependencies = [
- "cached_proc_macro_types",
  "darling 0.14.4",
  "proc-macro2",
  "quote",
@@ -1158,7 +1158,7 @@ dependencies = [
  "thiserror",
  "tokio",
  "tracing",
- "tracing-opentelemetry",
+ "tracing-opentelemetry 0.20.0",
 ]
 
 [[package]]
@@ -1356,7 +1356,7 @@ dependencies = [
  "thiserror",
  "tokio",
  "tracing",
- "tracing-opentelemetry",
+ "tracing-opentelemetry 0.20.0",
  "uuid",
 ]
 
@@ -2298,7 +2298,7 @@ dependencies = [
  "tonic",
  "tonic-build",
  "tracing",
- "tracing-opentelemetry",
+ "tracing-opentelemetry 0.20.0",
 ]
 
 [[package]]
@@ -2498,7 +2498,7 @@ dependencies = [
  "tonic",
  "tonic-build",
  "tracing",
- "tracing-opentelemetry",
+ "tracing-opentelemetry 0.20.0",
  "uuid",
 ]
 
@@ -3242,9 +3242,9 @@ dependencies = [
 
 [[package]]
 name = "sqlx-ledger"
-version = "0.10.0"
+version = "0.11.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "4d3890f6906dc1d5e0f94aaa10b7ff5380900de0df39545cee40e409a61ee284"
+checksum = "19f4b38fe617e4a53871c31f48274e125954f0e0e14ef1a1f007efe90101cccd"
 dependencies = [
  "cached",
  "chrono",
@@ -3259,15 +3259,15 @@ dependencies = [
  "thiserror",
  "tokio",
  "tracing",
- "tracing-opentelemetry",
+ "tracing-opentelemetry 0.21.0",
  "uuid",
 ]
 
 [[package]]
 name = "sqlx-ledger-cel-interpreter"
-version = "0.10.0"
+version = "0.11.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "be48027e036ced66cd9c971cae609b14d594b2163952ac5adcfeb62d8f48c58a"
+checksum = "9e057027e7da4b4606c50044fca9161d7c0bb99961fd4604b1aed7abbc5ca0f5"
 dependencies = [
  "chrono",
  "rust_decimal",
@@ -3280,9 +3280,9 @@ dependencies = [
 
 [[package]]
 name = "sqlx-ledger-cel-parser"
-version = "0.10.0"
+version = "0.11.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "3d54d3ab27343923c3b29b07e25a46e611ad08e97e5e1e306f89fee2b9b6ff6f"
+checksum = "923566642deb6e15b96efd86bb6bbb1d9f6ca5dd5f7ec1ad2b0c36bde5b0e5c7"
 dependencies = [
  "lalrpop",
  "lalrpop-util",
@@ -3493,7 +3493,7 @@ dependencies = [
  "tokio",
  "tonic",
  "tracing",
- "tracing-opentelemetry",
+ "tracing-opentelemetry 0.20.0",
  "tracing-subscriber",
  "url",
  "user-trades",
@@ -3540,7 +3540,7 @@ dependencies = [
  "thiserror",
  "tokio",
  "tracing",
- "tracing-opentelemetry",
+ "tracing-opentelemetry 0.20.0",
  "uuid",
 ]
 
@@ -3966,6 +3966,22 @@ checksum = "fc09e402904a5261e42cf27aea09ccb7d5318c6717a9eec3d8e2e65c56b18f19"
 dependencies = [
  "once_cell",
  "opentelemetry",
+ "tracing",
+ "tracing-core",
+ "tracing-log",
+ "tracing-subscriber",
+]
+
+[[package]]
+name = "tracing-opentelemetry"
+version = "0.21.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "75327c6b667828ddc28f5e3f169036cb793c3f588d83bf0f262a7f062ffed3c8"
+dependencies = [
+ "once_cell",
+ "opentelemetry",
+ "opentelemetry_sdk",
+ "smallvec",
  "tracing",
  "tracing-core",
  "tracing-log",
