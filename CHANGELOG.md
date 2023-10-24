@@ -1,3 +1,10 @@
+# [stablesats release v0.9.29](https://github.com/GaloyMoney/stablesats-rs/releases/tag/0.9.29)
+
+
+### Miscellaneous Tasks
+
+- Use jitter to dedup deposits (#450)
+
 # [stablesats release v0.9.28](https://github.com/GaloyMoney/stablesats-rs/releases/tag/0.9.28)
 
 
