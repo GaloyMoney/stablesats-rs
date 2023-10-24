@@ -14,6 +14,7 @@ const SATS_PER_BTC: Decimal = dec!(100_000_000);
 #[instrument(name = "hedging.okex.job.adjust_funding", skip_all, fields(correlation_id = %correlation_id,
         target_liability, current_position, last_price_in_usd_cents, funding_available_balance,
         trading_available_balance, onchain_fees, action, client_transfer_id,
+        amount_with_jitter,
         transferred_funding, lag_ok), err)]
 pub(super) async fn execute(
     correlation_id: CorrelationId,
@@ -134,10 +135,16 @@ pub(super) async fn execute(
                         return Ok(());
                     }
 
+                    let amount_with_jitter = {
+                        use rand::Rng;
+                        let mut rng = rand::thread_rng();
+                        let jitter: f64 = rng.gen_range(0.00000001..=0.00001);
+                        amount + Decimal::try_from(jitter).expect("jitter")
+                    };
                     let deposit_address = okex.get_funding_deposit_address().await?.value;
                     let reservation = TransferReservation {
                         shared: &shared,
-                        action_size: Some(amount),
+                        action_size: Some(amount_with_jitter),
                         fee: Decimal::ZERO,
                         transfer_from: "galoy".to_string(),
                         transfer_to: deposit_address.clone(),
@@ -147,8 +154,12 @@ pub(super) async fn execute(
                     {
                         let client_transfer_id = String::from(client_id.clone());
                         span.record("client_transfer_id", &client_transfer_id);
+                        span.record(
+                            "amount_with_jitter",
+                            &tracing::field::display(amount_with_jitter),
+                        );
 
-                        let amount_in_sats = amount * SATS_PER_BTC;
+                        let amount_in_sats = amount_with_jitter * SATS_PER_BTC;
                         bria.send_onchain_payment(
                             deposit_address,
                             amount_in_sats,

@@ -15,6 +15,7 @@ bitfinex-client = { path = "../bitfinex-client" }
 bria-client = { path = "../bria-client" }
 galoy-client = { path = "../galoy-client" }
 
+rand = { workspace = true }
 rust_decimal_macros = { workspace = true }
 serde = { workspace = true }
 serde_json = { workspace = true }

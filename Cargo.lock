@@ -1344,6 +1344,7 @@ dependencies = [
  "h2",
  "okex-client",
  "opentelemetry",
+ "rand",
  "rust_decimal",
  "rust_decimal_macros",
  "serde",
