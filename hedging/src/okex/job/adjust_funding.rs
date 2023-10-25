@@ -138,8 +138,8 @@ pub(super) async fn execute(
                     let amount_with_jitter = {
                         use rand::Rng;
                         let mut rng = rand::thread_rng();
-                        let jitter: f64 = rng.gen_range(0.00000001..=0.00001);
-                        amount + Decimal::try_from(jitter).expect("jitter")
+                        let jitter: i32 = rng.gen_range(1..=1000);
+                        amount + (Decimal::from(jitter) / SATS_PER_BTC)
                     };
                     let deposit_address = okex.get_funding_deposit_address().await?.value;
                     let reservation = TransferReservation {
