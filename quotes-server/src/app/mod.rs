@@ -11,12 +11,16 @@ use shared::{
     pubsub::*,
 };
 
+use ledger::*;
+
 use crate::{cache::*, currency::*, error::*, price::*, quote::*};
 pub use config::*;
 
 pub struct QuotesApp {
     price_calculator: PriceCalculator,
     quotes: Quotes,
+    ledger: Ledger,
+    pool: sqlx::PgPool,
 }
 
 impl QuotesApp {
@@ -61,10 +65,13 @@ impl QuotesApp {
         }
 
         let quotes = Quotes::new(&pool);
+        let ledger = Ledger::init(&pool).await?;
 
         Ok(Self {
             price_calculator: PriceCalculator::new(fee_calc_cfg, price_mixer),
             quotes,
+            ledger,
+            pool,
         })
     }
 
@@ -87,6 +94,9 @@ impl QuotesApp {
             .build()
             .expect("Could not build quote");
         let quote = self.quotes.create(new_quote).await?;
+        if immediate_execution {
+            self.accept_quote(quote.id).await?;
+        }
 
         Ok(quote)
     }
@@ -110,6 +120,9 @@ impl QuotesApp {
             .build()
             .expect("Could not build quote");
         let quote = self.quotes.create(new_quote).await?;
+        if immediate_execution {
+            self.accept_quote(quote.id).await?;
+        }
 
         Ok(quote)
     }
@@ -133,6 +146,9 @@ impl QuotesApp {
             .build()
             .expect("Could not build quote");
         let quote = self.quotes.create(new_quote).await?;
+        if immediate_execution {
+            self.accept_quote(quote.id).await?;
+        }
 
         Ok(quote)
     }
@@ -156,8 +172,49 @@ impl QuotesApp {
             .build()
             .expect("Could not build quote");
         let quote = self.quotes.create(new_quote).await?;
+        if immediate_execution {
+            self.accept_quote(quote.id).await?;
+        }
 
         Ok(quote)
+    }
+
+    pub async fn accept_quote(&self, id: QuoteId) -> Result<(), QuotesAppError> {
+        let mut quote = self.quotes.find_by_id(id).await?;
+        if !quote.is_accepted() {
+            quote.accept();
+            let tx = self.pool.begin().await?;
+            if quote.direction == Direction::SellCents {
+                self.ledger
+                    .sell_usd_quote_accepted(
+                        tx,
+                        LedgerTxId::new(),
+                        SellUsdQuoteAcceptedParams {
+                            usd_cents_amount: Decimal::from(quote.cent_amount),
+                            satoshi_amount: Decimal::from(quote.sat_amount),
+                            meta: SellUsdQuoteAcceptedMeta {
+                                timestamp: Utc::now(),
+                            },
+                        },
+                    )
+                    .await?;
+            } else {
+                self.ledger
+                    .buy_usd_quote_accepted(
+                        tx,
+                        LedgerTxId::new(),
+                        BuyUsdQuoteAcceptedParams {
+                            usd_cents_amount: Decimal::from(quote.cent_amount),
+                            satoshi_amount: Decimal::from(quote.sat_amount),
+                            meta: BuyUsdQuoteAcceptedMeta {
+                                timestamp: Utc::now(),
+                            },
+                        },
+                    )
+                    .await?;
+            }
+        }
+        Ok(())
     }
 
     async fn subscribe_okex(

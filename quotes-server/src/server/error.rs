@@ -9,4 +9,6 @@ pub enum QuotesServerError {
     TonicError(#[from] tonic::transport::Error),
     #[error("PriceServerError - AppError: {0}")]
     AppError(#[from] QuotesAppError),
+    #[error("CouldNotParseIncomingUuid: {0}")]
+    CouldNotParseIncomingUuid(uuid::Error),
 }

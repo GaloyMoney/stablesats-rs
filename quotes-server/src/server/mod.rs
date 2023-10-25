@@ -65,7 +65,7 @@ impl QuoteService for Quotes {
         .await
     }
 
-    #[instrument(name = "quotes_server.get_quote_to_buy_usd", skip_all,
+    #[instrument(name = "quotes_server.get_quote_to_sell_usd", skip_all,
     fields(error, error.level, error.message),
     err
     )]
@@ -102,15 +102,27 @@ impl QuoteService for Quotes {
         .await
     }
 
-    #[instrument(name = "quotes_server.get_quote_to_buy_usd", skip_all,
+    #[instrument(name = "quotes_server.accept_quote", skip_all,
     fields(error, error.level, error.message),
     err
     )]
     async fn accept_quote(
         &self,
-        _request: Request<AcceptQuoteRequest>,
+        request: Request<AcceptQuoteRequest>,
     ) -> Result<Response<AcceptQuoteResponse>, Status> {
-        unimplemented!()
+        shared::tracing::record_error(tracing::Level::ERROR, || async move {
+            extract_tracing(&request);
+            let req = request.into_inner();
+            self.app
+                .accept_quote(
+                    req.quote_id
+                        .parse()
+                        .map_err(QuotesServerError::CouldNotParseIncomingUuid)?,
+                )
+                .await?;
+            Ok(Response::new(AcceptQuoteResponse {}))
+        })
+        .await
     }
 }
 

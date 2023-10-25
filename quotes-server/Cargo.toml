@@ -13,6 +13,7 @@ fail-on-warnings = []
 
 [dependencies]
 shared = { path = "../shared", package = "stablesats-shared" }
+ledger = { path = "../ledger", package = "stablesats-ledger" }
 
 sqlx = { workspace = true }
 futures = { workspace = true }

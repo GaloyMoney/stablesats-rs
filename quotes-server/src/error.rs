@@ -8,4 +8,8 @@ pub enum QuotesAppError {
     ExchangePriceCacheError(#[from] ExchangePriceCacheError),
     #[error("QuotesAppError: {0}")]
     QuoteError(#[from] QuoteError),
+    #[error("{0}")]
+    LedgerError(#[from] ledger::LedgerError),
+    #[error("{0}")]
+    Sqlx(#[from] sqlx::Error),
 }

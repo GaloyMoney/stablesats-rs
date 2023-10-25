@@ -19,7 +19,7 @@ impl Quotes {
     pub async fn create(&self, quote: NewQuote) -> Result<Quote, QuoteError> {
         let mut tx = self.pool.begin().await?;
         sqlx::query!(
-            r#"INSERT INTO stablesats_quote (id)
+            r#"INSERT INTO stablesats_quotes (id)
                VALUES ($1)"#,
             quote.id as QuoteId
         )
@@ -44,5 +44,27 @@ impl Quotes {
 
         tx.commit().await?;
         Ok(res)
+    }
+
+    pub async fn find_by_id(&self, id: QuoteId) -> Result<Quote, QuoteError> {
+        let rows = sqlx::query!(
+            r#"
+                SELECT q.id, e.sequence, e.event
+                FROM stablesats_quotes q
+                JOIN stablesats_quote_events e ON q.id = e.id
+                WHERE q.id = $1
+                ORDER BY q.created_at, q.id, e.sequence
+            "#,
+            id as QuoteId
+        )
+        .fetch_all(&self.pool)
+        .await?;
+
+        let mut entity_events = EntityEvents::new();
+        for row in rows {
+            entity_events.load_event(row.sequence as usize, row.event)?;
+        }
+
+        Ok(Quote::try_from(entity_events)?)
     }
 }

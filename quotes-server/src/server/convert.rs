@@ -4,6 +4,7 @@ use crate::{
     error::QuotesAppError,
     proto::{GetQuoteToBuyUsdResponse, GetQuoteToSellUsdResponse},
     quote::Quote,
+    QuotesServerError,
 };
 
 impl From<QuotesAppError> for tonic::Status {
@@ -31,7 +32,7 @@ impl From<Quote> for GetQuoteToBuyUsdResponse {
                 .timestamp()
                 .to_u32()
                 .expect("timestamp should always parse to u32"),
-            executed: quote.executed(),
+            executed: quote.is_accepted(),
         }
     }
 }
@@ -55,7 +56,18 @@ impl From<Quote> for GetQuoteToSellUsdResponse {
                 .timestamp()
                 .to_u32()
                 .expect("timestamp should always parse to u32"),
-            executed: quote.executed(),
+            executed: quote.is_accepted(),
+        }
+    }
+}
+
+impl From<QuotesServerError> for tonic::Status {
+    fn from(err: QuotesServerError) -> Self {
+        match err {
+            QuotesServerError::CouldNotParseIncomingUuid(_) => {
+                tonic::Status::invalid_argument(err.to_string())
+            }
+            _ => tonic::Status::internal(err.to_string()),
         }
     }
 }
