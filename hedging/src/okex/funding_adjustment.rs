@@ -204,6 +204,17 @@ impl FundingAdjustment {
         } else if !abs_exposure_in_btc.is_zero()
             && funding_btc_total_balance
                 < self.config.minimum_funding_balance_btc * self.config.high_bound_buffer_percentage
+            && abs_exposure_in_btc
+                < total_collateral_in_btc * self.config.high_safebound_ratio_leverage
+        {
+            let new_collateral_in_btc =
+                abs_exposure_in_btc / self.config.high_safebound_ratio_leverage;
+            let transfer_size_in_btc = floor_btc(total_collateral_in_btc - new_collateral_in_btc);
+
+            calculate_transfer_out(transfer_size_in_btc)
+        } else if !abs_exposure_in_btc.is_zero()
+            && funding_btc_total_balance
+                < self.config.minimum_funding_balance_btc * self.config.high_bound_buffer_percentage
         {
             let transfer_size_in_btc = Decimal::ZERO;
 
@@ -612,6 +623,36 @@ mod tests {
         assert_eq!(
             adjustment,
             OkexFundingAdjustment::OnchainDeposit(expected_external)
+        );
+    }
+
+    #[test]
+    fn prefer_internal_transfer_to_deposit() {
+        let funding_adjustment = FundingAdjustment {
+            config: OkexFundingConfig::default(),
+            hedging_config: OkexHedgingConfig::default(),
+        };
+        let liability = SyntheticCentLiability::try_from(dec!(10_000)).unwrap();
+        let exposure = dec!(10_100);
+        let signed_exposure = SyntheticCentExposure::from(-exposure);
+        let total_collateral: Decimal =
+            exposure / funding_adjustment.config.low_bound_ratio_leverage;
+        let keep_collateral: Decimal =
+            exposure / funding_adjustment.config.high_safebound_ratio_leverage;
+        let funding_btc_total_balance: Decimal = dec!(0);
+        let btc_price: Decimal = dec!(1);
+        let adjustment = funding_adjustment.determine_action(
+            liability,
+            signed_exposure,
+            total_collateral,
+            btc_price,
+            funding_btc_total_balance,
+        );
+        assert_eq!(
+            adjustment,
+            OkexFundingAdjustment::TransferTradingToFunding(round_btc(
+                total_collateral - keep_collateral
+            ))
         );
     }
 
