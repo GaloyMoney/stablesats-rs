@@ -151,10 +151,26 @@ impl OkexClient {
             .send()
             .await?;
 
-        let addr_data = Self::extract_response_data::<DepositAddressData>(response).await?;
-        Ok(DepositAddress {
-            value: addr_data.addr,
-        })
+        let addresses = Self::extract_response_data_array::<DepositAddressData>(response).await?;
+
+        // Filter through results from above and find the selected BTC on-chain address that feeds the funding account
+        let deposit_address = addresses.into_iter().find(|address_entry| {
+            address_entry.selected
+                && address_entry.ccy == TradeCurrency::BTC
+                && address_entry.chain == Chain::BITCOIN
+                && address_entry.to == Account::FUNDING
+        });
+
+        if let Some(address_data) = deposit_address {
+            Ok(DepositAddress {
+                value: address_data.addr,
+            })
+        } else {
+            Err(OkexClientError::UnexpectedResponse {
+                msg: "No valid OKX deposit address".to_string(),
+                code: "0".to_string(),
+            })
+        }
     }
 
     #[instrument(name = "okex_client.get_onchain_fees", skip(self), err)]
