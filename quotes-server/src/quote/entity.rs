@@ -27,7 +27,7 @@ pub enum QuoteEvent {
     Accepted {},
 }
 
-#[derive(Builder)]
+#[derive(Builder, Debug)]
 #[builder(pattern = "owned", build_fn(error = "EntityError"))]
 pub struct Quote {
     pub id: QuoteId,
@@ -52,6 +52,10 @@ impl Quote {
 
     pub fn accept(&mut self) {
         self.events.push(QuoteEvent::Accepted {});
+    }
+
+    pub fn is_expired(&self) -> bool {
+        self.expires_at < Utc::now()
     }
 }
 
