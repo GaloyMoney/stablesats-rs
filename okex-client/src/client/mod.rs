@@ -166,10 +166,7 @@ impl OkexClient {
                 value: address_data.addr,
             })
         } else {
-            Err(OkexClientError::UnexpectedResponse {
-                msg: "No valid OKX deposit address".to_string(),
-                code: "0".to_string(),
-            })
+            Err(OkexClientError::NoFundingAccountDepositAddressFound)
         }
     }
 
