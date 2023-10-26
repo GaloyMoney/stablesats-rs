@@ -264,7 +264,7 @@ mod tests {
 
     #[test]
     fn btc_on_chain_funding_deposit_address_details() {
-        let response_text = "{\"code\":\"0\",\"data\":[{\"chain\":\"BTC-Bitcoin\",\"ctAddr\":\"\",\"ccy\":\"BTC\",\"to\":\"6\",\"addr\":\"address\",\"selected\":false},{\"chain\":\"BTC-Bitcoin\",\"ctAddr\":\"\",\"ccy\":\"BTC\",\"to\":\"6\",\"addr\":\"adress_02\",\"selected\":false},{\"chain\":\"BTC-Bitcoin\",\"ctAddr\":\"\",\"ccy\":\"BTC\",\"to\":\"6\",\"addr\":\"address\",\"selected\":true},{\"chain\":\"BTC-Bitcoin\",\"ctAddr\":\"\",\"ccy\":\"BTC\",\"to\":\"6\",\"addr\":\"address\",\"selected\":false},{\"chain\":\"BTC-Bitcoin\",\"ctAddr\":\"\",\"ccy\":\"BTC\",\"to\":\"6\",\"addr\":\"address\",\"selected\":false},{\"chain\":\"BTCK-OKTC\",\"ctAddr\":\"99a7ff\",\"ccy\":\"BTC\",\"to\":\"6\",\"addr\":\"address\",\"selected\":true}],\"msg\":\"\"}";
+        let response_text = "{\"code\":\"0\",\"data\":[{\"chain\":\"BTC-Bitcoin\",\"ctAddr\":\"\",\"ccy\":\"BTC\",\"to\":\"6\",\"addr\":\"address\",\"selected\":false},{\"chain\":\"BTC-Bitcoin\",\"ctAddr\":\"\",\"ccy\":\"BTC\",\"to\":\"6\",\"addr\":\"address\",\"selected\":false},{\"chain\":\"BTC-Bitcoin\",\"ctAddr\":\"\",\"ccy\":\"BTC\",\"to\":\"6\",\"addr\":\"address\",\"selected\":true},{\"chain\":\"BTC-Bitcoin\",\"ctAddr\":\"\",\"ccy\":\"BTC\",\"to\":\"6\",\"addr\":\"address\",\"selected\":false},{\"chain\":\"BTC-Bitcoin\",\"ctAddr\":\"\",\"ccy\":\"BTC\",\"to\":\"6\",\"addr\":\"address\",\"selected\":false},{\"chain\":\"BTCK-OKTC\",\"ctAddr\":\"99a7ff\",\"ccy\":\"BTC\",\"to\":\"6\",\"addr\":\"address\",\"selected\":true}],\"msg\":\"\"}";
         let OkexResponse { data, .. } =
             serde_json::from_str::<OkexResponse<DepositAddressData>>(response_text).unwrap();
         if let Some(data) = data {
@@ -277,7 +277,7 @@ mod tests {
 
     #[test]
     fn btc_on_chain_trading_deposit_address_details() {
-        let response_text = "{\"code\":\"0\",\"data\":[{\"chain\":\"BTC-Bitcoin\",\"ctAddr\":\"\",\"ccy\":\"BTC\",\"to\":\"18\",\"addr\":\"address\",\"selected\":false},{\"chain\":\"BTC-Bitcoin\",\"ctAddr\":\"\",\"ccy\":\"BTC\",\"to\":\"18\",\"addr\":\"adress_02\",\"selected\":false},{\"chain\":\"BTC-Bitcoin\",\"ctAddr\":\"\",\"ccy\":\"BTC\",\"to\":\"18\",\"addr\":\"address\",\"selected\":true},{\"chain\":\"BTC-Bitcoin\",\"ctAddr\":\"\",\"ccy\":\"BTC\",\"to\":\"18\",\"addr\":\"address\",\"selected\":false},{\"chain\":\"BTC-Bitcoin\",\"ctAddr\":\"\",\"ccy\":\"BTC\",\"to\":\"18\",\"addr\":\"address\",\"selected\":false},{\"chain\":\"BTCK-OKTC\",\"ctAddr\":\"99a7ff\",\"ccy\":\"BTC\",\"to\":\"18\",\"addr\":\"address\",\"selected\":true}],\"msg\":\"\"}";
+        let response_text = "{\"code\":\"0\",\"data\":[{\"chain\":\"BTC-Bitcoin\",\"ctAddr\":\"\",\"ccy\":\"BTC\",\"to\":\"18\",\"addr\":\"address\",\"selected\":false},{\"chain\":\"BTC-Bitcoin\",\"ctAddr\":\"\",\"ccy\":\"BTC\",\"to\":\"18\",\"addr\":\"address\",\"selected\":false},{\"chain\":\"BTC-Bitcoin\",\"ctAddr\":\"\",\"ccy\":\"BTC\",\"to\":\"18\",\"addr\":\"address\",\"selected\":true},{\"chain\":\"BTC-Bitcoin\",\"ctAddr\":\"\",\"ccy\":\"BTC\",\"to\":\"18\",\"addr\":\"address\",\"selected\":false},{\"chain\":\"BTC-Bitcoin\",\"ctAddr\":\"\",\"ccy\":\"BTC\",\"to\":\"18\",\"addr\":\"address\",\"selected\":false},{\"chain\":\"BTCK-OKTC\",\"ctAddr\":\"99a7ff\",\"ccy\":\"BTC\",\"to\":\"18\",\"addr\":\"address\",\"selected\":true}],\"msg\":\"\"}";
         let OkexResponse { data, .. } =
             serde_json::from_str::<OkexResponse<DepositAddressData>>(response_text).unwrap();
         if let Some(data) = data {
@@ -290,7 +290,7 @@ mod tests {
 
     #[test]
     fn btc_on_chain_select_funding_deposit_address_details() {
-        let response_text = "{\"code\":\"0\",\"data\":[{\"chain\":\"BTC-Bitcoin\",\"ctAddr\":\"\",\"ccy\":\"BTC\",\"to\":\"6\",\"addr\":\"address\",\"selected\":false},{\"chain\":\"BTC-Bitcoin\",\"ctAddr\":\"\",\"ccy\":\"BTC\",\"to\":\"6\",\"addr\":\"adress_02\",\"selected\":false},{\"chain\":\"BTC-Bitcoin\",\"ctAddr\":\"\",\"ccy\":\"BTC\",\"to\":\"6\",\"addr\":\"address\",\"selected\":true},{\"chain\":\"BTC-Bitcoin\",\"ctAddr\":\"\",\"ccy\":\"BTC\",\"to\":\"6\",\"addr\":\"address\",\"selected\":false},{\"chain\":\"BTC-Bitcoin\",\"ctAddr\":\"\",\"ccy\":\"BTC\",\"to\":\"6\",\"addr\":\"address\",\"selected\":false},{\"chain\":\"BTCK-OKTC\",\"ctAddr\":\"99a7ff\",\"ccy\":\"BTC\",\"to\":\"6\",\"addr\":\"address\",\"selected\":true}],\"msg\":\"\"}";
+        let response_text = "{\"code\":\"0\",\"data\":[{\"chain\":\"BTC-Bitcoin\",\"ctAddr\":\"\",\"ccy\":\"BTC\",\"to\":\"6\",\"addr\":\"address\",\"selected\":false},{\"chain\":\"BTC-Bitcoin\",\"ctAddr\":\"\",\"ccy\":\"BTC\",\"to\":\"6\",\"addr\":\"address\",\"selected\":false},{\"chain\":\"BTC-Bitcoin\",\"ctAddr\":\"\",\"ccy\":\"BTC\",\"to\":\"6\",\"addr\":\"address\",\"selected\":true},{\"chain\":\"BTC-Bitcoin\",\"ctAddr\":\"\",\"ccy\":\"BTC\",\"to\":\"6\",\"addr\":\"address\",\"selected\":false},{\"chain\":\"BTC-Bitcoin\",\"ctAddr\":\"\",\"ccy\":\"BTC\",\"to\":\"6\",\"addr\":\"address\",\"selected\":false},{\"chain\":\"BTCK-OKTC\",\"ctAddr\":\"99a7ff\",\"ccy\":\"BTC\",\"to\":\"6\",\"addr\":\"address\",\"selected\":true}],\"msg\":\"\"}";
         let OkexResponse { data, .. } =
             serde_json::from_str::<OkexResponse<DepositAddressData>>(response_text).unwrap();
         if let Some(data) = data {
