@@ -67,4 +67,20 @@ impl Quotes {
 
         Ok(Quote::try_from(entity_events)?)
     }
+
+    pub async fn update(&self, quote: Quote) -> Result<(), QuoteError> {
+        if !quote.events.is_dirty() {
+            return Ok(());
+        }
+
+        let mut tx = self.pool.begin().await?;
+        EntityEvents::<QuoteEvent>::persist(
+            "stablesats_quote_events",
+            &mut tx,
+            quote.events.new_serialized_events(quote.id),
+        )
+        .await?;
+        tx.commit().await?;
+        Ok(())
+    }
 }

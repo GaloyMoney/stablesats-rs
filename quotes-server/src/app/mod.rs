@@ -190,8 +190,8 @@ impl QuotesApp {
                         tx,
                         LedgerTxId::new(),
                         SellUsdQuoteAcceptedParams {
-                            usd_cents_amount: Decimal::from(quote.cent_amount),
-                            satoshi_amount: Decimal::from(quote.sat_amount),
+                            usd_cents_amount: Decimal::from(quote.cent_amount.clone()),
+                            satoshi_amount: Decimal::from(quote.sat_amount.clone()),
                             meta: SellUsdQuoteAcceptedMeta {
                                 timestamp: Utc::now(),
                             },
@@ -204,8 +204,8 @@ impl QuotesApp {
                         tx,
                         LedgerTxId::new(),
                         BuyUsdQuoteAcceptedParams {
-                            usd_cents_amount: Decimal::from(quote.cent_amount),
-                            satoshi_amount: Decimal::from(quote.sat_amount),
+                            usd_cents_amount: Decimal::from(quote.cent_amount.clone()),
+                            satoshi_amount: Decimal::from(quote.sat_amount.clone()),
                             meta: BuyUsdQuoteAcceptedMeta {
                                 timestamp: Utc::now(),
                             },
@@ -213,6 +213,7 @@ impl QuotesApp {
                     )
                     .await?;
             }
+            self.quotes.update(quote).await?;
         }
         Ok(())
     }
