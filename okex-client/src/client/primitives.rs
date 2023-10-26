@@ -1,5 +1,6 @@
 use rust_decimal::Decimal;
-use std::fmt::Display;
+use serde::Deserialize;
+use std::{fmt::Display, str::FromStr};
 
 #[derive(serde::Deserialize, Debug, Clone)]
 #[serde(transparent)]
@@ -91,6 +92,59 @@ impl Display for OnchainFees {
             "ccy={}, chain={}, min_fee={}, max_fee={}, min_withdraw={}, max_withdraw={}",
             self.ccy, self.chain, self.min_fee, self.max_fee, self.min_withdraw, self.max_withdraw
         )
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum Chain {
+    BITCOIN,
+    UNSUPPORTED,
+}
+
+impl Display for Chain {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match *self {
+            Chain::BITCOIN => write!(f, "BTC-Bitcoin"),
+            Chain::UNSUPPORTED => write!(f, "UNSUPPORTED"),
+        }
+    }
+}
+
+impl FromStr for Chain {
+    type Err = String;
+
+    fn from_str(s: &str) -> Result<Chain, String> {
+        match s {
+            "BTC-Bitcoin" => Ok(Chain::BITCOIN),
+            _ => Ok(Chain::UNSUPPORTED),
+        }
+    }
+}
+
+impl<'de> Deserialize<'de> for Chain {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        let s = String::deserialize(deserializer)?;
+        FromStr::from_str(&s).map_err(serde::de::Error::custom)
+    }
+}
+
+#[derive(serde::Deserialize, Debug, Clone, PartialEq, Eq)]
+pub enum Account {
+    #[serde(rename = "6")]
+    FUNDING,
+    #[serde(rename = "18")]
+    TRADING,
+}
+
+impl Display for Account {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match *self {
+            Account::FUNDING => write!(f, "6"),
+            Account::TRADING => write!(f, "18"),
+        }
     }
 }
 
@@ -251,7 +305,7 @@ impl Display for OkexOrderType {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(serde::Deserialize, Debug, Clone, PartialEq, Eq)]
 pub enum TradeCurrency {
     BTC,
     USD,
