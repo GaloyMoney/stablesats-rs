@@ -14,6 +14,8 @@ pub enum OkexClientError {
     ServiceUnavailable { msg: String, code: String },
     #[error("OkexClientError - OrderDoesNotExist")]
     OrderDoesNotExist,
+    #[error("OkexClientError - NoFundingAccountDepositAddressFound")]
+    NoFundingAccountDepositAddressFound,
     #[error("OkexClientError - ParameterClientIdNotFound")]
     ParameterClientIdNotFound,
     #[error("OkexClientError - ParameterClientIdError")]
