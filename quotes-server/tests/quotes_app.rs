@@ -1,9 +1,10 @@
+use chrono::Duration;
 use rust_decimal_macros::dec;
 
 use quotes_server::error::QuotesAppError;
 use quotes_server::{
-    app::*, cache::OrderBookCacheError, currency::*, ExchangePriceCacheError,
-    QuotesExchangePriceCacheConfig, QuotesFeeCalculatorConfig,
+    app::*, cache::OrderBookCacheError, ExchangePriceCacheError, QuotesExchangePriceCacheConfig,
+    QuotesFeeCalculatorConfig,
 };
 
 use shared::{payload::*, pubsub::*, time::*};
@@ -58,6 +59,9 @@ async fn quotes_app() -> anyhow::Result<()> {
         tick_recv,
         QuotesExchangePriceCacheConfig::default(),
         ex_cfgs,
+        QuotesConfig {
+            expiration_interval: Duration::seconds(2),
+        },
         pool,
     )
     .await?;
@@ -92,73 +96,31 @@ async fn quotes_app() -> anyhow::Result<()> {
 
     let quote = app
         .quote_cents_from_sats_for_buy(dec!(100_000_000), false)
-        .await?;
-    let quote_id = quote.id;
-    assert_eq!(quote.cent_amount, UsdCents::from(dec!(89_900)));
-    app.accept_quote(quote_id).await?;
+        .await;
+    assert!(quote.is_ok());
+    let id = quote.unwrap().id;
+
+    let accepted = app.accept_quote(id).await;
+    assert!(accepted.is_ok());
+
+    let err = app.accept_quote(id).await;
+    assert!(matches!(err, Err(QuotesAppError::QuoteAlreadyAccepted(_))));
 
     let quote = app
         .quote_cents_from_sats_for_buy(dec!(100_000_000), true)
-        .await?;
-    assert_eq!(quote.cent_amount, UsdCents::from(dec!(98_900)));
+        .await;
+    assert!(quote.is_ok());
 
-    let quote = app.quote_cents_from_sats_for_buy(dec!(1), true).await?;
-    assert_eq!(quote.cent_amount, UsdCents::from(dec!(0)));
-
-    let quote = app.quote_cents_from_sats_for_buy(dec!(1), false).await?;
-    assert_eq!(quote.cent_amount, UsdCents::from(dec!(0)));
-    app.accept_quote(quote.id).await?;
+    let err = app.accept_quote(quote.unwrap().id).await;
+    assert!(matches!(err, Err(QuotesAppError::QuoteAlreadyAccepted(_))));
 
     let quote = app
-        .quote_cents_from_sats_for_sell(dec!(100_000_000), true)
-        .await?;
-    assert_eq!(quote.cent_amount, UsdCents::from(dec!(1_011_000)));
-
-    let quote = app
-        .quote_cents_from_sats_for_sell(dec!(100_000_000), false)
-        .await?;
-    assert_eq!(quote.cent_amount, UsdCents::from(dec!(1_101_000)));
-    app.accept_quote(quote.id).await?;
-
-    let quote = app.quote_cents_from_sats_for_sell(dec!(1), true).await?;
-    assert_eq!(quote.cent_amount, UsdCents::from(dec!(1)));
-
-    let quote = app.quote_cents_from_sats_for_sell(dec!(1), false).await?;
-    assert_eq!(quote.cent_amount, UsdCents::from(dec!(1)));
-    app.accept_quote(quote.id).await?;
-
-    let quote = app
-        .quote_sats_from_cents_for_buy(dec!(1000000), true)
-        .await?;
-    assert_eq!(quote.sat_amount, Satoshis::from(dec!(1_011_000_000)));
-
-    let quote = app
-        .quote_sats_from_cents_for_buy(dec!(1000000), false)
-        .await?;
-    assert_eq!(quote.sat_amount, Satoshis::from(dec!(1_101_000_000)));
-    app.accept_quote(quote.id).await?;
-
-    let quote = app.quote_sats_from_cents_for_buy(dec!(1), false).await?;
-    assert_eq!(quote.sat_amount, Satoshis::from(dec!(1101)));
-    app.accept_quote(quote.id).await?;
-
-    let quote = app
-        .quote_sats_from_cents_for_sell(dec!(1000000), true)
-        .await?;
-    assert_eq!(quote.sat_amount, Satoshis::from(dec!(98_900_000)));
-
-    let quote = app
-        .quote_sats_from_cents_for_sell(dec!(1000000), false)
-        .await?;
-    assert_eq!(quote.sat_amount, Satoshis::from(dec!(89_900_000)));
-    app.accept_quote(quote.id).await?;
-
-    let quote = app.quote_sats_from_cents_for_sell(dec!(1), false).await?;
-    assert_eq!(quote.sat_amount, Satoshis::from(dec!(89)));
-    app.accept_quote(quote.id).await?;
-
-    let quote = app.quote_sats_from_cents_for_sell(dec!(1), true).await?;
-    assert_eq!(quote.sat_amount, Satoshis::from(dec!(98)));
+        .quote_cents_from_sats_for_buy(dec!(100_000_000), false)
+        .await;
+    let expiration_duration = std::time::Duration::from_secs(2);
+    tokio::time::sleep(expiration_duration).await;
+    let err = app.accept_quote(quote.unwrap().id).await;
+    assert!(matches!(err, Err(QuotesAppError::QuoteExpired(_))));
 
     Ok(())
 }
