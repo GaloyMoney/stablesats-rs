@@ -1,7 +1,7 @@
 use rust_decimal::Decimal;
 use serde::Deserialize;
 
-use super::primitives::ClientOrderId;
+use crate::{Account, Chain, ClientOrderId, TradeCurrency};
 
 #[derive(Deserialize, Debug)]
 pub struct OkexResponse<T> {
@@ -13,10 +13,10 @@ pub struct OkexResponse<T> {
 #[derive(Deserialize, Debug)]
 #[serde(rename_all = "camelCase")]
 pub struct DepositAddressData {
-    pub chain: String,
+    pub chain: Chain,
     pub ct_addr: String,
-    pub ccy: String,
-    pub to: String,
+    pub ccy: TradeCurrency,
+    pub to: Account,
     pub addr: String,
     pub selected: bool,
 }
@@ -256,4 +256,53 @@ pub struct OkexLeverageInfoData {
     pub mgn_mode: String,
     pub pos_side: String,
     pub lever: Decimal,
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn btc_on_chain_funding_deposit_address_details() {
+        let response_text = "{\"code\":\"0\",\"data\":[{\"chain\":\"BTC-Bitcoin\",\"ctAddr\":\"\",\"ccy\":\"BTC\",\"to\":\"6\",\"addr\":\"address\",\"selected\":false},{\"chain\":\"BTC-Bitcoin\",\"ctAddr\":\"\",\"ccy\":\"BTC\",\"to\":\"6\",\"addr\":\"adress_02\",\"selected\":false},{\"chain\":\"BTC-Bitcoin\",\"ctAddr\":\"\",\"ccy\":\"BTC\",\"to\":\"6\",\"addr\":\"address\",\"selected\":true},{\"chain\":\"BTC-Bitcoin\",\"ctAddr\":\"\",\"ccy\":\"BTC\",\"to\":\"6\",\"addr\":\"address\",\"selected\":false},{\"chain\":\"BTC-Bitcoin\",\"ctAddr\":\"\",\"ccy\":\"BTC\",\"to\":\"6\",\"addr\":\"address\",\"selected\":false},{\"chain\":\"BTCK-OKTC\",\"ctAddr\":\"99a7ff\",\"ccy\":\"BTC\",\"to\":\"6\",\"addr\":\"address\",\"selected\":true}],\"msg\":\"\"}";
+        let OkexResponse { data, .. } =
+            serde_json::from_str::<OkexResponse<DepositAddressData>>(response_text).unwrap();
+        if let Some(data) = data {
+            if let Some(address_data) = data.into_iter().next() {
+                return assert_eq!(address_data.addr, "address");
+            }
+        }
+        panic!()
+    }
+
+    #[test]
+    fn btc_on_chain_trading_deposit_address_details() {
+        let response_text = "{\"code\":\"0\",\"data\":[{\"chain\":\"BTC-Bitcoin\",\"ctAddr\":\"\",\"ccy\":\"BTC\",\"to\":\"18\",\"addr\":\"address\",\"selected\":false},{\"chain\":\"BTC-Bitcoin\",\"ctAddr\":\"\",\"ccy\":\"BTC\",\"to\":\"18\",\"addr\":\"adress_02\",\"selected\":false},{\"chain\":\"BTC-Bitcoin\",\"ctAddr\":\"\",\"ccy\":\"BTC\",\"to\":\"18\",\"addr\":\"address\",\"selected\":true},{\"chain\":\"BTC-Bitcoin\",\"ctAddr\":\"\",\"ccy\":\"BTC\",\"to\":\"18\",\"addr\":\"address\",\"selected\":false},{\"chain\":\"BTC-Bitcoin\",\"ctAddr\":\"\",\"ccy\":\"BTC\",\"to\":\"18\",\"addr\":\"address\",\"selected\":false},{\"chain\":\"BTCK-OKTC\",\"ctAddr\":\"99a7ff\",\"ccy\":\"BTC\",\"to\":\"18\",\"addr\":\"address\",\"selected\":true}],\"msg\":\"\"}";
+        let OkexResponse { data, .. } =
+            serde_json::from_str::<OkexResponse<DepositAddressData>>(response_text).unwrap();
+        if let Some(data) = data {
+            if let Some(address_data) = data.into_iter().next() {
+                return assert_eq!(address_data.addr, "address");
+            }
+        }
+        panic!()
+    }
+
+    #[test]
+    fn btc_on_chain_select_funding_deposit_address_details() {
+        let response_text = "{\"code\":\"0\",\"data\":[{\"chain\":\"BTC-Bitcoin\",\"ctAddr\":\"\",\"ccy\":\"BTC\",\"to\":\"6\",\"addr\":\"address\",\"selected\":false},{\"chain\":\"BTC-Bitcoin\",\"ctAddr\":\"\",\"ccy\":\"BTC\",\"to\":\"6\",\"addr\":\"adress_02\",\"selected\":false},{\"chain\":\"BTC-Bitcoin\",\"ctAddr\":\"\",\"ccy\":\"BTC\",\"to\":\"6\",\"addr\":\"address\",\"selected\":true},{\"chain\":\"BTC-Bitcoin\",\"ctAddr\":\"\",\"ccy\":\"BTC\",\"to\":\"6\",\"addr\":\"address\",\"selected\":false},{\"chain\":\"BTC-Bitcoin\",\"ctAddr\":\"\",\"ccy\":\"BTC\",\"to\":\"6\",\"addr\":\"address\",\"selected\":false},{\"chain\":\"BTCK-OKTC\",\"ctAddr\":\"99a7ff\",\"ccy\":\"BTC\",\"to\":\"6\",\"addr\":\"address\",\"selected\":true}],\"msg\":\"\"}";
+        let OkexResponse { data, .. } =
+            serde_json::from_str::<OkexResponse<DepositAddressData>>(response_text).unwrap();
+        if let Some(data) = data {
+            // Filter through results from above and find the selected BTC on-chain address that feeds the funding account
+            let deposit_address = data.into_iter().find(|address_entry| {
+                address_entry.selected
+                    && address_entry.ccy == TradeCurrency::BTC
+                    && address_entry.chain == Chain::BITCOIN
+                    && address_entry.to == Account::FUNDING
+            });
+            return assert!(deposit_address.is_some());
+        }
+        panic!()
+    }
 }
