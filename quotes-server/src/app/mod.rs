@@ -1,6 +1,6 @@
 mod config;
 
-use chrono::{DateTime, Utc};
+use chrono::{DateTime, Duration, Utc};
 use futures::stream::StreamExt;
 use rust_decimal::Decimal;
 use tracing::{info_span, Instrument};
@@ -21,8 +21,10 @@ pub struct QuotesApp {
     quotes: Quotes,
     ledger: Ledger,
     pool: sqlx::PgPool,
+    config: QuotesConfig,
 }
 
+#[allow(clippy::too_many_arguments)]
 impl QuotesApp {
     pub async fn run(
         mut health_check_trigger: HealthCheckTrigger,
@@ -31,6 +33,7 @@ impl QuotesApp {
         subscriber: memory::Subscriber<PriceStreamPayload>,
         price_cache_config: QuotesExchangePriceCacheConfig,
         exchange_weights: ExchangeWeights,
+        config: QuotesConfig,
         pool: sqlx::PgPool,
     ) -> Result<Self, QuotesAppError> {
         let health_subscriber = subscriber.resubscribe();
@@ -72,6 +75,7 @@ impl QuotesApp {
             quotes,
             ledger,
             pool,
+            config,
         })
     }
 
@@ -85,12 +89,13 @@ impl QuotesApp {
             .price_calculator
             .cents_from_sats_for_buy(sats.clone(), immediate_execution)
             .await?;
+        let expiry_time = expiration_time_from_duration(self.config.expiration_interval);
         let new_quote = NewQuote::builder()
             .direction(Direction::BuyCents)
             .immediate_execution(immediate_execution)
             .cent_amount(usd_amount)
             .sat_amount(sats)
-            .expires_at(default_expiration_time()) //hardcoded for now
+            .expires_at(expiry_time)
             .build()
             .expect("Could not build quote");
         let quote = self.quotes.create(new_quote).await?;
@@ -111,12 +116,13 @@ impl QuotesApp {
             .price_calculator
             .cents_from_sats_for_sell(sats.clone(), immediate_execution)
             .await?;
+        let expiry_time = expiration_time_from_duration(self.config.expiration_interval);
         let new_quote = NewQuote::builder()
             .direction(Direction::SellCents)
             .immediate_execution(immediate_execution)
             .cent_amount(usd_amount)
             .sat_amount(sats)
-            .expires_at(default_expiration_time()) //hardcoded for now
+            .expires_at(expiry_time)
             .build()
             .expect("Could not build quote");
         let quote = self.quotes.create(new_quote).await?;
@@ -137,12 +143,13 @@ impl QuotesApp {
             .price_calculator
             .sats_from_cents_for_sell(cents.clone(), immediate_execution)
             .await?;
+        let expiry_time = expiration_time_from_duration(self.config.expiration_interval);
         let new_quote = NewQuote::builder()
             .direction(Direction::SellCents)
             .immediate_execution(immediate_execution)
             .cent_amount(cents)
             .sat_amount(sat_amount)
-            .expires_at(default_expiration_time()) //hardcoded for now
+            .expires_at(expiry_time)
             .build()
             .expect("Could not build quote");
         let quote = self.quotes.create(new_quote).await?;
@@ -163,12 +170,13 @@ impl QuotesApp {
             .price_calculator
             .sats_from_cents_for_buy(cents.clone(), immediate_execution)
             .await?;
+        let expiry_time = expiration_time_from_duration(self.config.expiration_interval);
         let new_quote = NewQuote::builder()
             .direction(Direction::BuyCents)
             .immediate_execution(immediate_execution)
             .cent_amount(cents)
             .sat_amount(sat_amount)
-            .expires_at(default_expiration_time()) //hardcoded for now
+            .expires_at(expiry_time)
             .build()
             .expect("Could not build quote");
         let quote = self.quotes.create(new_quote).await?;
@@ -181,40 +189,48 @@ impl QuotesApp {
 
     pub async fn accept_quote(&self, id: QuoteId) -> Result<(), QuotesAppError> {
         let mut quote = self.quotes.find_by_id(id).await?;
-        if !quote.is_accepted() {
-            quote.accept();
-            let tx = self.pool.begin().await?;
-            if quote.direction == Direction::SellCents {
-                self.ledger
-                    .sell_usd_quote_accepted(
-                        tx,
-                        LedgerTxId::new(),
-                        SellUsdQuoteAcceptedParams {
-                            usd_cents_amount: Decimal::from(quote.cent_amount.clone()),
-                            satoshi_amount: Decimal::from(quote.sat_amount.clone()),
-                            meta: SellUsdQuoteAcceptedMeta {
-                                timestamp: Utc::now(),
-                            },
-                        },
-                    )
-                    .await?;
-            } else {
-                self.ledger
-                    .buy_usd_quote_accepted(
-                        tx,
-                        LedgerTxId::new(),
-                        BuyUsdQuoteAcceptedParams {
-                            usd_cents_amount: Decimal::from(quote.cent_amount.clone()),
-                            satoshi_amount: Decimal::from(quote.sat_amount.clone()),
-                            meta: BuyUsdQuoteAcceptedMeta {
-                                timestamp: Utc::now(),
-                            },
-                        },
-                    )
-                    .await?;
-            }
-            self.quotes.update(quote).await?;
+
+        if quote.is_accepted() {
+            return Err(QuotesAppError::QuoteAlreadyAccepted(id.to_string()));
         }
+
+        if quote.is_expired() {
+            return Err(QuotesAppError::QuoteExpired(id.to_string()));
+        }
+
+        quote.accept();
+        let tx = self.pool.begin().await?;
+        if quote.direction == Direction::SellCents {
+            self.ledger
+                .sell_usd_quote_accepted(
+                    tx,
+                    LedgerTxId::new(),
+                    SellUsdQuoteAcceptedParams {
+                        usd_cents_amount: Decimal::from(quote.cent_amount.clone()),
+                        satoshi_amount: Decimal::from(quote.sat_amount.clone()),
+                        meta: SellUsdQuoteAcceptedMeta {
+                            timestamp: Utc::now(),
+                        },
+                    },
+                )
+                .await?;
+        } else {
+            self.ledger
+                .buy_usd_quote_accepted(
+                    tx,
+                    LedgerTxId::new(),
+                    BuyUsdQuoteAcceptedParams {
+                        usd_cents_amount: Decimal::from(quote.cent_amount.clone()),
+                        satoshi_amount: Decimal::from(quote.sat_amount.clone()),
+                        meta: BuyUsdQuoteAcceptedMeta {
+                            timestamp: Utc::now(),
+                        },
+                    },
+                )
+                .await?;
+        }
+        self.quotes.update(quote).await?;
+
         Ok(())
     }
 
@@ -271,7 +287,8 @@ impl QuotesApp {
     }
 }
 
-// helper fn. remove later
-fn default_expiration_time() -> DateTime<Utc> {
-    Utc::now() + chrono::Duration::minutes(2)
+fn expiration_time_from_duration(duration: Duration) -> DateTime<Utc> {
+    Utc::now()
+        + chrono::Duration::from_std(duration.to_std().expect("Failed to convert duration"))
+            .expect("Failed to create chrono::Duration")
 }

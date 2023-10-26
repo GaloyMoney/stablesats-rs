@@ -28,6 +28,7 @@ pub async fn run(
     price_cache_config: QuotesExchangePriceCacheConfig,
     exchange_weights: ExchangeWeights,
     pool: sqlx::PgPool,
+    quotes_config: QuotesConfig,
 ) -> Result<(), QuotesServerError> {
     let app = QuotesApp::run(
         health_check_trigger,
@@ -36,6 +37,7 @@ pub async fn run(
         subscriber,
         price_cache_config,
         exchange_weights,
+        quotes_config,
         pool,
     )
     .await?;

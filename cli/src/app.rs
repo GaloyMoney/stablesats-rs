@@ -243,6 +243,7 @@ async fn run_cmd(
                     quotes_server.price_cache,
                     weights,
                     pool,
+                    quotes_server.config,
                 )
                 .await
                 .context("Price Server error"),

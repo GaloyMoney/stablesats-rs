@@ -9,7 +9,7 @@ use price_server::{
     ExchangePriceCacheConfig, FeeCalculatorConfig, PriceServerConfig, PriceServerHealthCheckConfig,
 };
 use quotes_server::{
-    QuotesExchangePriceCacheConfig, QuotesFeeCalculatorConfig, QuotesServerConfig,
+    QuotesConfig, QuotesExchangePriceCacheConfig, QuotesFeeCalculatorConfig, QuotesServerConfig,
     QuotesServerHealthCheckConfig,
 };
 use user_trades::UserTradesConfig;
@@ -119,6 +119,8 @@ pub struct QuotesServerWrapper {
     pub fees: QuotesFeeCalculatorConfig,
     #[serde(default)]
     pub price_cache: QuotesExchangePriceCacheConfig,
+    #[serde(default)]
+    pub config: QuotesConfig,
 }
 impl Default for QuotesServerWrapper {
     fn default() -> Self {
@@ -128,6 +130,7 @@ impl Default for QuotesServerWrapper {
             health: QuotesServerHealthCheckConfig::default(),
             fees: QuotesFeeCalculatorConfig::default(),
             price_cache: QuotesExchangePriceCacheConfig::default(),
+            config: QuotesConfig::default(),
         }
     }
 }
