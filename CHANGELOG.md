@@ -1,3 +1,17 @@
+# [stablesats release v0.9.30](https://github.com/GaloyMoney/stablesats-rs/releases/tag/0.9.30)
+
+
+### Bug Fixes
+
+- Typo
+- Validate funding account for okx deposit addr
+- Correctly quantize jitter
+
+### Miscellaneous Tasks
+
+- Explicit error type
+- Explicit types for okx deposit address data
+
 # [stablesats release v0.9.29](https://github.com/GaloyMoney/stablesats-rs/releases/tag/0.9.29)
 
 
