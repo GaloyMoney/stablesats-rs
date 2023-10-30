@@ -1,3 +1,11 @@
+# [stablesats release v0.9.31](https://github.com/GaloyMoney/stablesats-rs/releases/tag/0.9.31)
+
+
+### Miscellaneous Tasks
+
+- Update sqlx-ledger and sqlxmq (#455)
+- Use { workspace = true } in user-trades (#454)
+
 # [stablesats release v0.9.30](https://github.com/GaloyMoney/stablesats-rs/releases/tag/0.9.30)
 
 
