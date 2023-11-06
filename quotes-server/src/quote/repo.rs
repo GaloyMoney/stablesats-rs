@@ -1,4 +1,4 @@
-use sqlx::{Pool, Postgres};
+use sqlx::{Pool, Postgres, Transaction};
 use tracing::instrument;
 
 use crate::entity::*;
@@ -16,14 +16,17 @@ impl Quotes {
     }
 
     #[instrument(name = "quotes.create", skip(self))]
-    pub async fn create(&self, quote: NewQuote) -> Result<Quote, QuoteError> {
-        let mut tx = self.pool.begin().await?;
+    pub async fn create(
+        &self,
+        mut tx: &mut Transaction<'_, Postgres>,
+        quote: NewQuote,
+    ) -> Result<Quote, QuoteError> {
         sqlx::query!(
             r#"INSERT INTO stablesats_quotes (id)
                VALUES ($1)"#,
             quote.id as QuoteId
         )
-        .execute(&mut *tx)
+        .execute(&mut **tx)
         .await?;
         let res = Quote {
             id: quote.id,
@@ -41,8 +44,6 @@ impl Quotes {
             quote.initial_events().new_serialized_events(res.id),
         )
         .await?;
-
-        tx.commit().await?;
         Ok(res)
     }
 
@@ -68,19 +69,20 @@ impl Quotes {
         Ok(Quote::try_from(entity_events)?)
     }
 
-    pub async fn update(&self, quote: Quote) -> Result<(), QuoteError> {
+    pub async fn update(
+        &self,
+        quote: &Quote,
+        mut tx: &mut Transaction<'_, Postgres>,
+    ) -> Result<(), QuoteError> {
         if !quote.events.is_dirty() {
             return Ok(());
         }
-
-        let mut tx = self.pool.begin().await?;
         EntityEvents::<QuoteEvent>::persist(
             "stablesats_quote_events",
             &mut tx,
             quote.events.new_serialized_events(quote.id),
         )
         .await?;
-        tx.commit().await?;
         Ok(())
     }
 }

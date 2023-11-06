@@ -110,4 +110,9 @@ impl<T: DeserializeOwned + Serialize + 'static> EntityEvents<T> {
         query.execute(&mut **tx).await?;
         Ok(())
     }
+
+    #[cfg(test)]
+    pub fn last(&self, n: usize) -> &[T] {
+        &self.events[self.events.len() - n..]
+    }
 }

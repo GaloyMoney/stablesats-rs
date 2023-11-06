@@ -4,7 +4,9 @@ use serde::{Deserialize, Serialize};
 
 use crate::{currency::*, entity::*};
 
-shared::entity_id! { QuoteId }
+use super::QuoteError;
+
+crate::entity_id!(QuoteId);
 
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
 #[serde(rename_all = "snake_case")]
@@ -50,11 +52,18 @@ impl Quote {
         false
     }
 
-    pub fn accept(&mut self) {
+    pub fn accept(&mut self) -> Result<(), QuoteError> {
+        if self.is_accepted() {
+            return Err(QuoteError::QuoteAlreadyAccepted);
+        }
+        if self.is_expired() {
+            return Err(QuoteError::QuoteExpiredError);
+        }
         self.events.push(QuoteEvent::Accepted {});
+        Ok(())
     }
 
-    pub fn is_expired(&self) -> bool {
+    fn is_expired(&self) -> bool {
         self.expires_at < Utc::now()
     }
 }
@@ -142,5 +151,56 @@ pub mod pg {
                 PgDirection::SellCents => Self::SellCents,
             }
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use chrono::{Duration, Utc};
+    use rust_decimal::Decimal;
+
+    fn init_events(expired: bool) -> EntityEvents<QuoteEvent> {
+        let expiration_interval = Duration::from_std(std::time::Duration::from_secs(120)) // 2 minutes = 120 seconds
+            .unwrap();
+        let expiration_time = if !expired {
+            Utc::now() + Duration::from_std(expiration_interval.to_std().unwrap()).unwrap()
+        } else {
+            Utc::now() - Duration::from_std(expiration_interval.to_std().unwrap()).unwrap()
+        };
+        EntityEvents::init([QuoteEvent::Initialized {
+            id: QuoteId::new(),
+            direction: Direction::BuyCents,
+            immediate_execution: false,
+            sat_amount: Satoshis::from(Decimal::from(100)),
+            cent_amount: UsdCents::from(Decimal::from(10)),
+            expires_at: expiration_time,
+        }])
+    }
+
+    #[test]
+    fn accept_quote() {
+        let events = init_events(false);
+        let mut quote = Quote::try_from(events).unwrap();
+        assert!(quote.accept().is_ok());
+        assert!(matches!(quote.events.last(1)[0], QuoteEvent::Accepted {}));
+    }
+
+    #[test]
+    fn can_only_accept_quote_once() {
+        let mut events = init_events(false);
+        events.push(QuoteEvent::Accepted {});
+        let mut quote = Quote::try_from(events).unwrap();
+        assert!(matches!(
+            quote.accept(),
+            Err(QuoteError::QuoteAlreadyAccepted)
+        ));
+    }
+
+    #[test]
+    fn cannot_accept_expired_quote() {
+        let events = init_events(true);
+        let mut quote = Quote::try_from(events).unwrap();
+        assert!(matches!(quote.accept(), Err(QuoteError::QuoteExpiredError)));
     }
 }

@@ -6,4 +6,8 @@ pub enum QuoteError {
     Sqlx(#[from] sqlx::Error),
     #[error("QuotesError - EntityError: {0}")]
     EntityError(#[from] crate::entity::EntityError),
+    #[error("QuotesError - Quotes is already accepted")]
+    QuoteAlreadyAccepted,
+    #[error("QuotesError - Quote has expired")]
+    QuoteExpiredError,
 }

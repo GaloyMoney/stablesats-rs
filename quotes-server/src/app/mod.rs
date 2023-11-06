@@ -3,6 +3,7 @@ mod config;
 use chrono::{DateTime, Duration, Utc};
 use futures::stream::StreamExt;
 use rust_decimal::Decimal;
+use sqlx::{Postgres, Transaction};
 use tracing::{info_span, Instrument};
 
 use shared::{
@@ -98,9 +99,12 @@ impl QuotesApp {
             .expires_at(expiry_time)
             .build()
             .expect("Could not build quote");
-        let quote = self.quotes.create(new_quote).await?;
+        let mut tx = self.pool.begin().await?;
+        let mut quote = self.quotes.create(&mut tx, new_quote).await?;
         if immediate_execution {
-            self.accept_quote(quote.id).await?;
+            self.accept_quote_in_tx(tx, &mut quote).await?;
+        } else {
+            tx.commit().await?;
         }
 
         Ok(quote)
@@ -125,9 +129,12 @@ impl QuotesApp {
             .expires_at(expiry_time)
             .build()
             .expect("Could not build quote");
-        let quote = self.quotes.create(new_quote).await?;
+        let mut tx = self.pool.begin().await?;
+        let mut quote = self.quotes.create(&mut tx, new_quote).await?;
         if immediate_execution {
-            self.accept_quote(quote.id).await?;
+            self.accept_quote_in_tx(tx, &mut quote).await?;
+        } else {
+            tx.commit().await?;
         }
 
         Ok(quote)
@@ -152,9 +159,12 @@ impl QuotesApp {
             .expires_at(expiry_time)
             .build()
             .expect("Could not build quote");
-        let quote = self.quotes.create(new_quote).await?;
+        let mut tx = self.pool.begin().await?;
+        let mut quote = self.quotes.create(&mut tx, new_quote).await?;
         if immediate_execution {
-            self.accept_quote(quote.id).await?;
+            self.accept_quote_in_tx(tx, &mut quote).await?;
+        } else {
+            tx.commit().await?;
         }
 
         Ok(quote)
@@ -179,27 +189,30 @@ impl QuotesApp {
             .expires_at(expiry_time)
             .build()
             .expect("Could not build quote");
-        let quote = self.quotes.create(new_quote).await?;
+        let mut tx = self.pool.begin().await?;
+        let mut quote = self.quotes.create(&mut tx, new_quote).await?;
         if immediate_execution {
-            self.accept_quote(quote.id).await?;
+            self.accept_quote_in_tx(tx, &mut quote).await?;
+        } else {
+            tx.commit().await?;
         }
-
         Ok(quote)
     }
 
     pub async fn accept_quote(&self, id: QuoteId) -> Result<(), QuotesAppError> {
         let mut quote = self.quotes.find_by_id(id).await?;
-
-        if quote.is_accepted() {
-            return Err(QuotesAppError::QuoteAlreadyAccepted(id.to_string()));
-        }
-
-        if quote.is_expired() {
-            return Err(QuotesAppError::QuoteExpired(id.to_string()));
-        }
-
-        quote.accept();
         let tx = self.pool.begin().await?;
+        self.accept_quote_in_tx(tx, &mut quote).await?;
+        Ok(())
+    }
+
+    async fn accept_quote_in_tx(
+        &self,
+        mut tx: Transaction<'_, Postgres>,
+        quote: &mut Quote,
+    ) -> Result<(), QuotesAppError> {
+        quote.accept()?;
+        self.quotes.update(&quote, &mut tx).await?;
         if quote.direction == Direction::SellCents {
             self.ledger
                 .sell_usd_quote_accepted(
@@ -229,7 +242,6 @@ impl QuotesApp {
                 )
                 .await?;
         }
-        self.quotes.update(quote).await?;
 
         Ok(())
     }

@@ -98,29 +98,14 @@ async fn quotes_app() -> anyhow::Result<()> {
         .quote_cents_from_sats_for_buy(dec!(100_000_000), false)
         .await;
     assert!(quote.is_ok());
-    let id = quote.unwrap().id;
 
-    let accepted = app.accept_quote(id).await;
+    let accepted = app.accept_quote(quote.unwrap().id).await;
     assert!(accepted.is_ok());
-
-    let err = app.accept_quote(id).await;
-    assert!(matches!(err, Err(QuotesAppError::QuoteAlreadyAccepted(_))));
-
     let quote = app
         .quote_cents_from_sats_for_buy(dec!(100_000_000), true)
         .await;
+    println!("{:?}", quote);
     assert!(quote.is_ok());
-
-    let err = app.accept_quote(quote.unwrap().id).await;
-    assert!(matches!(err, Err(QuotesAppError::QuoteAlreadyAccepted(_))));
-
-    let quote = app
-        .quote_cents_from_sats_for_buy(dec!(100_000_000), false)
-        .await;
-    let expiration_duration = std::time::Duration::from_secs(2);
-    tokio::time::sleep(expiration_duration).await;
-    let err = app.accept_quote(quote.unwrap().id).await;
-    assert!(matches!(err, Err(QuotesAppError::QuoteExpired(_))));
-
+    assert!(quote.unwrap().is_accepted());
     Ok(())
 }
