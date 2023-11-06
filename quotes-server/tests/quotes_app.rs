@@ -104,7 +104,6 @@ async fn quotes_app() -> anyhow::Result<()> {
     let quote = app
         .quote_cents_from_sats_for_buy(dec!(100_000_000), true)
         .await;
-    println!("{:?}", quote);
     assert!(quote.is_ok());
     assert!(quote.unwrap().is_accepted());
     Ok(())

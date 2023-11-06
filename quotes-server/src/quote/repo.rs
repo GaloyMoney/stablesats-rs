@@ -28,22 +28,20 @@ impl Quotes {
         )
         .execute(&mut **tx)
         .await?;
-        let res = Quote {
-            id: quote.id,
-            direction: quote.direction.clone(),
-            immediate_execution: quote.immediate_execution,
-            sat_amount: quote.sat_amount.clone(),
-            cent_amount: quote.cent_amount.clone(),
-            expires_at: quote.expires_at,
-            events: quote.clone().initial_events(),
-        };
+
+        let id = quote.id;
+        let mut initial_events = quote.initial_events();
 
         EntityEvents::<QuoteEvent>::persist(
             "stablesats_quote_events",
             &mut tx,
-            quote.initial_events().new_serialized_events(res.id),
+            initial_events.new_serialized_events(id),
         )
         .await?;
+
+        initial_events.mark_persisted();
+        let res = Quote::try_from(initial_events).expect("initial events should be valid");
+
         Ok(res)
     }
 
