@@ -18,7 +18,7 @@ impl Quotes {
     #[instrument(name = "quotes.create", skip(self))]
     pub async fn create(
         &self,
-        mut tx: &mut Transaction<'_, Postgres>,
+        tx: &mut Transaction<'_, Postgres>,
         quote: NewQuote,
     ) -> Result<Quote, QuoteError> {
         sqlx::query!(
@@ -34,7 +34,7 @@ impl Quotes {
 
         EntityEvents::<QuoteEvent>::persist(
             "stablesats_quote_events",
-            &mut tx,
+            tx,
             initial_events.new_serialized_events(id),
         )
         .await?;
@@ -69,15 +69,15 @@ impl Quotes {
 
     pub async fn update(
         &self,
+        tx: &mut Transaction<'_, Postgres>,
         quote: &Quote,
-        mut tx: &mut Transaction<'_, Postgres>,
     ) -> Result<(), QuoteError> {
         if !quote.events.is_dirty() {
             return Ok(());
         }
         EntityEvents::<QuoteEvent>::persist(
             "stablesats_quote_events",
-            &mut tx,
+            tx,
             quote.events.new_serialized_events(quote.id),
         )
         .await?;

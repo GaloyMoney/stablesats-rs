@@ -212,7 +212,7 @@ impl QuotesApp {
         quote: &mut Quote,
     ) -> Result<(), QuotesAppError> {
         quote.accept()?;
-        self.quotes.update(&quote, &mut tx).await?;
+        self.quotes.update(&mut tx, quote).await?;
         if quote.direction == Direction::SellCents {
             self.ledger
                 .sell_usd_quote_accepted(
