@@ -68,7 +68,7 @@ impl<P: MessagePayload> Publisher<P> {
         }
     }
 
-    #[instrument(name = "pubsub.memory.publish", skip_all, fields(correlation_id, payload_type, payload_json, error, error.message), err)]
+    #[instrument(name = "pubsub.memory.publish", level = "trace", skip_all, fields(correlation_id, payload_type, payload_json, error, error.message), err)]
     pub async fn publish(
         &self,
         payload: P,
