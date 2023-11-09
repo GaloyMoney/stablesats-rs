@@ -257,10 +257,7 @@ async fn price_cmd(
     expiry: Option<u64>,
     amount: Decimal,
 ) -> anyhow::Result<()> {
-    let client = PriceClient::new(
-        url.map(|url| PriceClientConfig { url })
-            .unwrap_or_else(PriceClientConfig::default),
-    );
+    let client = PriceClient::new(url.map(|url| PriceClientConfig { url }).unwrap_or_default());
     client.get_price(direction, expiry, amount).await
 }
 
