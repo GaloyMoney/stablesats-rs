@@ -1,3 +1,14 @@
+# [stablesats release v0.9.32](https://github.com/GaloyMoney/stablesats-rs/releases/tag/0.9.32)
+
+
+### Bug Fixes
+
+- Clippy warning
+
+### Miscellaneous Tasks
+
+- Less noisy pubsub tracing
+
 # [stablesats release v0.9.31](https://github.com/GaloyMoney/stablesats-rs/releases/tag/0.9.31)
 
 
