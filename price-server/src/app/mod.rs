@@ -2,7 +2,7 @@ mod config;
 
 use futures::stream::StreamExt;
 use rust_decimal::Decimal;
-use tracing::{info_span, instrument, Instrument};
+use tracing::{info_span, instrument, trace_span, Instrument};
 
 use shared::{
     health::HealthCheckTrigger,
@@ -79,7 +79,7 @@ impl PriceApp {
         tokio::spawn(async move {
             while let Some(msg) = subscriber.next().await {
                 if let PriceStreamPayload::OkexBtcUsdSwapOrderBookPayload(price_msg) = msg.payload {
-                    let span = info_span!(
+                    let span = trace_span!(
                         "price_server.okex_order_book_received",
                         message_type = %msg.payload_type,
                         correlation_id = %msg.meta.correlation_id

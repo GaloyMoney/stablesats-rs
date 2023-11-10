@@ -1,5 +1,5 @@
 use rust_decimal::Decimal;
-use tracing::{instrument, warn};
+use tracing::{instrument, trace};
 
 use std::collections::BTreeMap;
 
@@ -259,7 +259,7 @@ fn unify(unpaired_transactions: Vec<UnpairedTransaction>) -> (Vec<NewUserTrade>,
             let idx = if let Some((idx, _)) = txs.iter().find(|(_, other)| is_pair(&tx, other)) {
                 *idx
             } else {
-                warn!({ transaction = ?tx, tx_idx = idx }, "no pair for galoy transaction");
+                trace!({ transaction = ?tx, tx_idx = idx }, "no pair for galoy transaction");
                 unpaired += 1;
                 continue;
             };
