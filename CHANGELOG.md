@@ -1,3 +1,15 @@
+# [stablesats release v0.9.33](https://github.com/GaloyMoney/stablesats-rs/releases/tag/0.9.33)
+
+
+### Miscellaneous Tasks
+
+- Reduce noisy traces
+- Bump tonic-build from 0.8.4 to 0.10.2 (#439)
+- Bump tokio from 1.32.0 to 1.33.0 (#444)
+- Bump serde from 1.0.188 to 1.0.192 (#460)
+- Bump reqwest from 0.11.20 to 0.11.22 (#442)
+- Bump async-trait from 0.1.73 to 0.1.74 (#447)
+
 # [stablesats release v0.9.32](https://github.com/GaloyMoney/stablesats-rs/releases/tag/0.9.32)
 
 
