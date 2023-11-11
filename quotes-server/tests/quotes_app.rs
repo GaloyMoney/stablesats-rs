@@ -102,9 +102,10 @@ async fn quotes_app() -> anyhow::Result<()> {
     let accepted = app.accept_quote(quote.unwrap().id).await;
     assert!(accepted.is_ok());
     let quote = app
-        .quote_cents_from_sats_for_buy(dec!(100_000_000), true)
+        .quote_cents_from_sats_for_sell(dec!(100_000_000), true)
         .await;
     assert!(quote.is_ok());
     assert!(quote.unwrap().is_accepted());
+
     Ok(())
 }

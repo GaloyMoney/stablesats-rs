@@ -53,6 +53,15 @@ macro_rules! currency {
             }
         }
 
+        impl std::ops::Sub<&$name> for &$name {
+            type Output = $name;
+
+            fn sub(self, rhs: &$name) -> Self::Output {
+                let value = self.0 - rhs.0;
+                $name::from(value)
+            }
+        }
+
         impl std::ops::Div<&Decimal> for $name {
             type Output = Self;
 
