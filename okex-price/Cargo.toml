@@ -1,6 +1,6 @@
 [package]
 name = "okex-price"
-version = "0.9.34"
+version = "0.9.35-dev"
 edition = "2021"
 authors = ["Justin Carter <justin@galoy.io>"]
 license = "MIT"
