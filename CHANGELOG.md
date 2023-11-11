@@ -1,3 +1,12 @@
+# [stablesats release v0.9.34](https://github.com/GaloyMoney/stablesats-rs/releases/tag/0.9.34)
+
+
+### Miscellaneous Tasks
+
+- Bump tokio from 1.33.0 to 1.34.0 (#463)
+- Bump clap from 4.4.6 to 4.4.7 (#462)
+- Bump serde_yaml from 0.9.25 to 0.9.27 (#465)
+
 # [stablesats release v0.9.33](https://github.com/GaloyMoney/stablesats-rs/releases/tag/0.9.33)
 
 

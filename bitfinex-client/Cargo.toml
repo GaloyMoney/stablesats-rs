@@ -1,6 +1,6 @@
 [package]
 name = "bitfinex-client"
-version = "0.9.33"
+version = "0.9.34"
 edition = "2021"
 
 [features]
