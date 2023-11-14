@@ -47,6 +47,8 @@ impl Ledger {
         Self::stablesats_liability_account(&inner).await?;
         Self::exchange_position_omnibus_account(&inner).await?;
         Self::okex_position_account(&inner).await?;
+        Self::quotes_omnibus_account(&inner).await?;
+        Self::quotes_liability_account(&inner).await?;
 
         templates::UserBuysUsd::init(&inner).await?;
         templates::UserSellsUsd::init(&inner).await?;
@@ -54,6 +56,8 @@ impl Ledger {
         templates::RevertUserSellsUsd::init(&inner).await?;
         templates::IncreaseExchangePosition::init(&inner).await?;
         templates::DecreaseExchangePosition::init(&inner).await?;
+        templates::BuyUsdQuoteAccepted::init(&inner).await?;
+        templates::SellUsdQuoteAccepted::init(&inner).await?;
 
         Ok(Self {
             events: inner.events(EventSubscriberOpts::default()).await?,
@@ -220,6 +224,32 @@ impl Ledger {
         Ok(())
     }
 
+    #[instrument(name = "ledger.buy_usd_quote_accepted", skip(self, tx))]
+    pub async fn buy_usd_quote_accepted(
+        &self,
+        tx: Transaction<'_, Postgres>,
+        id: LedgerTxId,
+        params: BuyUsdQuoteAcceptedParams,
+    ) -> Result<(), LedgerError> {
+        self.inner
+            .post_transaction_in_tx(tx, id, BUY_USD_QUOTE_ACCEPTED_CODE, Some(params))
+            .await?;
+        Ok(())
+    }
+
+    #[instrument(name = "ledger.sell_usd_quote_accepted", skip(self, tx))]
+    pub async fn sell_usd_quote_accepted(
+        &self,
+        tx: Transaction<'_, Postgres>,
+        id: LedgerTxId,
+        params: SellUsdQuoteAcceptedParams,
+    ) -> Result<(), LedgerError> {
+        self.inner
+            .post_transaction_in_tx(tx, id, SELL_USD_QUOTE_ACCEPTED_CODE, Some(params))
+            .await?;
+        Ok(())
+    }
+
     pub async fn usd_liability_balance_events(
         &self,
     ) -> Result<broadcast::Receiver<SqlxLedgerEvent>, LedgerError> {
@@ -354,6 +384,38 @@ impl Ledger {
             .description("Account for okex position".to_string())
             .build()
             .expect("Couldn't create okex position account");
+        match ledger.accounts().create(new_account).await {
+            Ok(_) | Err(SqlxLedgerError::DuplicateKey(_)) => Ok(()),
+            Err(e) => Err(e.into()),
+        }
+    }
+
+    #[instrument(name = "ledger.quotes_omnibus_account", skip_all)]
+    async fn quotes_omnibus_account(ledger: &SqlxLedger) -> Result<(), LedgerError> {
+        let new_account = NewAccount::builder()
+            .code(QUOTES_OMNIBUS)
+            .id(QUOTES_OMNIBUS_ID)
+            .name(QUOTES_OMNIBUS)
+            .normal_balance_type(DebitOrCredit::Debit)
+            .description("Account for quotes omnibus".to_string())
+            .build()
+            .expect("Couldn't create quotes omnibus account");
+        match ledger.accounts().create(new_account).await {
+            Ok(_) | Err(SqlxLedgerError::DuplicateKey(_)) => Ok(()),
+            Err(e) => Err(e.into()),
+        }
+    }
+
+    #[instrument(name = "ledger.quotes_liability_account", skip_all)]
+    async fn quotes_liability_account(ledger: &SqlxLedger) -> Result<(), LedgerError> {
+        let new_account = NewAccount::builder()
+            .code(QUOTES_LIABILITY)
+            .id(QUOTES_LIABILITY_ID)
+            .name(QUOTES_LIABILITY)
+            .normal_balance_type(DebitOrCredit::Credit)
+            .description("Account for quotes liability".to_string())
+            .build()
+            .expect("Couldn't create quotes liability account");
         match ledger.accounts().create(new_account).await {
             Ok(_) | Err(SqlxLedgerError::DuplicateKey(_)) => Ok(()),
             Err(e) => Err(e.into()),
