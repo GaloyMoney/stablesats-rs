@@ -132,3 +132,57 @@ async fn adjust_exchange_position() -> anyhow::Result<()> {
     );
     Ok(())
 }
+
+#[tokio::test]
+async fn buy_and_sell_quotes() -> anyhow::Result<()> {
+    let pool = init_pool().await?;
+
+    let ledger = Ledger::init(&pool).await?;
+
+    let before_liability = ledger
+        .balances()
+        .quotes_usd_liability()
+        .await?
+        .map(|b| b.settled())
+        .unwrap_or(Decimal::ZERO);
+    let before_btc = ledger
+        .balances()
+        .quotes_btc_liability()
+        .await?
+        .map(|b| b.settled())
+        .unwrap_or(Decimal::ZERO);
+
+    ledger
+        .buy_usd_quote_accepted(
+            pool.begin().await?,
+            LedgerTxId::new(),
+            BuyUsdQuoteAcceptedParams {
+                satoshi_amount: dec!(1000000),
+                usd_cents_amount: dec!(500),
+                meta: BuyUsdQuoteAcceptedMeta {
+                    timestamp: chrono::Utc::now(),
+                },
+            },
+        )
+        .await?;
+    ledger
+        .sell_usd_quote_accepted(
+            pool.begin().await?,
+            LedgerTxId::new(),
+            SellUsdQuoteAcceptedParams {
+                satoshi_amount: dec!(1000000),
+                usd_cents_amount: dec!(500),
+                meta: SellUsdQuoteAcceptedMeta {
+                    timestamp: chrono::Utc::now(),
+                },
+            },
+        )
+        .await?;
+
+    let end_balance = ledger.balances().quotes_usd_liability().await?.unwrap();
+    let end_btc = ledger.balances().quotes_btc_liability().await?.unwrap();
+    assert_eq!(end_balance.settled(), before_liability);
+    assert_eq!(end_btc.settled(), before_btc);
+
+    Ok(())
+}
