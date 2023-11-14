@@ -17,6 +17,16 @@ impl<'a> Balances<'a> {
             .await
     }
 
+    pub async fn quotes_usd_liability(&self) -> Result<Option<AccountBalance>, LedgerError> {
+        self.get_ledger_account_balance(STABLESATS_JOURNAL_ID, QUOTES_LIABILITY_ID, self.usd)
+            .await
+    }
+
+    pub async fn quotes_btc_liability(&self) -> Result<Option<AccountBalance>, LedgerError> {
+        self.get_ledger_account_balance(STABLESATS_JOURNAL_ID, QUOTES_LIABILITY_ID, self.btc)
+            .await
+    }
+
     #[instrument(
         name = "ledger.balances.target_liability_in_cents",
         skip(self),
