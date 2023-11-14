@@ -1,3 +1,11 @@
+# [stablesats release v0.9.35](https://github.com/GaloyMoney/stablesats-rs/releases/tag/0.9.35)
+
+
+### Features
+
+- Initialise quotes-server (#470)
+- Add quotes in ledger (#469)
+
 # [stablesats release v0.9.34](https://github.com/GaloyMoney/stablesats-rs/releases/tag/0.9.34)
 
 

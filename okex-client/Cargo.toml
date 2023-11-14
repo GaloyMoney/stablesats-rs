@@ -1,6 +1,6 @@
 [package]
 name = "okex-client"
-version = "0.9.35-dev"
+version = "0.9.35"
 edition = "2021"
 
 [features]
