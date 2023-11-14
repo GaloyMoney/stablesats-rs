@@ -4,14 +4,7 @@ use crate::{
     error::QuotesAppError,
     proto::{GetQuoteToBuyUsdResponse, GetQuoteToSellUsdResponse},
     quote::Quote,
-    QuotesServerError,
 };
-
-impl From<QuotesAppError> for tonic::Status {
-    fn from(_err: QuotesAppError) -> Self {
-        tonic::Status::new(tonic::Code::Unknown, "Unknown error")
-    }
-}
 
 impl From<Quote> for GetQuoteToBuyUsdResponse {
     fn from(quote: Quote) -> Self {
@@ -61,10 +54,10 @@ impl From<Quote> for GetQuoteToSellUsdResponse {
     }
 }
 
-impl From<QuotesServerError> for tonic::Status {
-    fn from(err: QuotesServerError) -> Self {
+impl From<QuotesAppError> for tonic::Status {
+    fn from(err: QuotesAppError) -> Self {
         match err {
-            QuotesServerError::CouldNotParseIncomingUuid(_) => {
+            QuotesAppError::CouldNotParseIncomingUuid(_) => {
                 tonic::Status::invalid_argument(err.to_string())
             }
             _ => tonic::Status::internal(err.to_string()),

@@ -5,10 +5,8 @@ use crate::error::QuotesAppError;
 #[allow(clippy::large_enum_variant)]
 #[derive(Error, Debug)]
 pub enum QuotesServerError {
-    #[error("PriceServerError - TonicError: {0}")]
+    #[error("QuotesServerError - TonicError: {0}")]
     TonicError(#[from] tonic::transport::Error),
-    #[error("PriceServerError - AppError: {0}")]
+    #[error("QuotesServerError - AppError: {0}")]
     AppError(#[from] QuotesAppError),
-    #[error("CouldNotParseIncomingUuid: {0}")]
-    CouldNotParseIncomingUuid(uuid::Error),
 }

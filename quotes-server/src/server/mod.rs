@@ -17,7 +17,7 @@ use tonic::{transport::Server, Request, Response, Status};
 use tracing::instrument;
 use tracing_opentelemetry::OpenTelemetrySpanExt;
 
-use crate::app::*;
+use crate::{app::*, error::QuotesAppError};
 
 pub use config::*;
 pub use error::*;
@@ -117,7 +117,7 @@ impl QuoteService for Quotes {
                 .accept_quote(
                     req.quote_id
                         .parse()
-                        .map_err(QuotesServerError::CouldNotParseIncomingUuid)?,
+                        .map_err(QuotesAppError::CouldNotParseIncomingUuid)?,
                 )
                 .await?;
             Ok(Response::new(AcceptQuoteResponse {}))
