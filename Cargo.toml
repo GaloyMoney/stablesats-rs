@@ -4,6 +4,7 @@ members = [
   "shared",
   "ledger",
   "price-server",
+  "quotes-server",
   "cli",
   "hedging",
   "user-trades",
