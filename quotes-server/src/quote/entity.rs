@@ -26,7 +26,9 @@ pub enum QuoteEvent {
         cent_amount: UsdCents,
         expires_at: DateTime<Utc>,
     },
-    Accepted {},
+    Accepted {
+        accepted_at: DateTime<Utc>,
+    },
 }
 
 #[derive(Builder, Debug)]
@@ -45,7 +47,7 @@ pub struct Quote {
 impl Quote {
     pub fn is_accepted(&self) -> bool {
         for event in self.events.iter() {
-            if let QuoteEvent::Accepted {} = event {
+            if let QuoteEvent::Accepted { .. } = event {
                 return true;
             }
         }
@@ -59,7 +61,9 @@ impl Quote {
         if self.is_expired() {
             return Err(QuoteError::QuoteExpiredError);
         }
-        self.events.push(QuoteEvent::Accepted {});
+        self.events.push(QuoteEvent::Accepted {
+            accepted_at: Utc::now(),
+        });
         Ok(())
     }
 
@@ -183,13 +187,18 @@ mod tests {
         let events = init_events(false);
         let mut quote = Quote::try_from(events).unwrap();
         assert!(quote.accept().is_ok());
-        assert!(matches!(quote.events.last(1)[0], QuoteEvent::Accepted {}));
+        assert!(matches!(
+            quote.events.last(1)[0],
+            QuoteEvent::Accepted { .. }
+        ));
     }
 
     #[test]
     fn can_only_accept_quote_once() {
         let mut events = init_events(false);
-        events.push(QuoteEvent::Accepted {});
+        events.push(QuoteEvent::Accepted {
+            accepted_at: Utc::now(),
+        });
         let mut quote = Quote::try_from(events).unwrap();
         assert!(matches!(
             quote.accept(),
