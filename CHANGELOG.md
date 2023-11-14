@@ -1,3 +1,7 @@
+# [stablesats release v0.9.36](https://github.com/GaloyMoney/stablesats-rs/releases/tag/0.9.36)
+
+
+
 # [stablesats release v0.9.35](https://github.com/GaloyMoney/stablesats-rs/releases/tag/0.9.35)
 
 
