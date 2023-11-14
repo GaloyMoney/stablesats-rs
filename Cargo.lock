@@ -450,7 +450,7 @@ dependencies = [
  "thiserror",
  "tokio",
  "tonic 0.10.2",
- "tonic-build",
+ "tonic-build 0.10.2",
  "tracing",
  "tracing-opentelemetry 0.20.0",
  "url",
@@ -2284,6 +2284,16 @@ checksum = "925383efa346730478fb4838dbe9137d2a47675ad789c546d150a6e1dd4ab31c"
 
 [[package]]
 name = "prettyplease"
+version = "0.1.25"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "6c8646e95016a7a6c4adea95bafa8a16baab64b583356217f2c85db4a39d9a86"
+dependencies = [
+ "proc-macro2",
+ "syn 1.0.109",
+]
+
+[[package]]
+name = "prettyplease"
 version = "0.2.12"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "6c64d9ba0963cdcea2e1b2230fbae2bab30eb25a174be395c41e764bfb65dd62"
@@ -2314,7 +2324,7 @@ dependencies = [
  "thiserror",
  "tokio",
  "tonic 0.10.2",
- "tonic-build",
+ "tonic-build 0.10.2",
  "tracing",
  "tracing-opentelemetry 0.20.0",
 ]
@@ -2359,6 +2369,28 @@ dependencies = [
 
 [[package]]
 name = "prost-build"
+version = "0.11.9"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "119533552c9a7ffacc21e099c24a0ac8bb19c2a2a3f363de84cd9b844feab270"
+dependencies = [
+ "bytes",
+ "heck",
+ "itertools",
+ "lazy_static",
+ "log",
+ "multimap",
+ "petgraph",
+ "prettyplease 0.1.25",
+ "prost 0.11.9",
+ "prost-types 0.11.9",
+ "regex",
+ "syn 1.0.109",
+ "tempfile",
+ "which",
+]
+
+[[package]]
+name = "prost-build"
 version = "0.12.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "8bdf592881d821b83d471f8af290226c8d51402259e9bb5be7f9f8bdebbb11ac"
@@ -2370,9 +2402,9 @@ dependencies = [
  "multimap",
  "once_cell",
  "petgraph",
- "prettyplease",
+ "prettyplease 0.2.12",
  "prost 0.12.1",
- "prost-types",
+ "prost-types 0.12.1",
  "regex",
  "syn 2.0.29",
  "tempfile",
@@ -2407,6 +2439,15 @@ dependencies = [
 
 [[package]]
 name = "prost-types"
+version = "0.11.9"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "213622a1460818959ac1181aaeb2dc9c7f63df720db7d788b3e24eacd1983e13"
+dependencies = [
+ "prost 0.11.9",
+]
+
+[[package]]
+name = "prost-types"
 version = "0.12.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "e081b29f63d83a4bc75cfc9f3fe424f9156cf92d8a4f0c9407cce9a1b67327cf"
@@ -2437,8 +2478,8 @@ checksum = "5b31cae9a54ca84fee1504740a82eebf2479532905e106f63ca0c3bc8d780321"
 dependencies = [
  "heck",
  "prost 0.12.1",
- "prost-build",
- "prost-types",
+ "prost-build 0.12.1",
+ "prost-types 0.12.1",
  "quote",
 ]
 
@@ -2450,8 +2491,8 @@ checksum = "435be4a8704091b4c5fb1d79799de7f2dbff53af05edf29385237f8cf7ab37ee"
 dependencies = [
  "chrono",
  "prost 0.12.1",
- "prost-build",
- "prost-types",
+ "prost-build 0.12.1",
+ "prost-types 0.12.1",
  "prost-wkt",
  "prost-wkt-build",
  "protobuf-src",
@@ -2513,6 +2554,35 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "5267fca4496028628a95160fc423a33e8b2e6af8a5302579e322e4b520293cae"
 dependencies = [
  "proc-macro2",
+]
+
+[[package]]
+name = "quotes-server"
+version = "0.9.22-dev"
+dependencies = [
+ "anyhow",
+ "async-trait",
+ "chrono",
+ "derive_builder",
+ "futures",
+ "opentelemetry",
+ "prost 0.12.1",
+ "protobuf-src",
+ "rust_decimal",
+ "rust_decimal_macros",
+ "serde",
+ "serde_json",
+ "serde_with",
+ "sqlx",
+ "stablesats-ledger",
+ "stablesats-shared",
+ "thiserror",
+ "tokio",
+ "tonic 0.10.2",
+ "tonic-build 0.8.4",
+ "tracing",
+ "tracing-opentelemetry 0.20.0",
+ "uuid",
 ]
 
 [[package]]
@@ -3881,13 +3951,26 @@ dependencies = [
 
 [[package]]
 name = "tonic-build"
+version = "0.8.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "5bf5e9b9c0f7e0a7c027dcfaba7b2c60816c7049171f679d99ee2ff65d0de8c4"
+dependencies = [
+ "prettyplease 0.1.25",
+ "proc-macro2",
+ "prost-build 0.11.9",
+ "quote",
+ "syn 1.0.109",
+]
+
+[[package]]
+name = "tonic-build"
 version = "0.10.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "9d021fc044c18582b9a2408cd0dd05b1596e3ecdb5c4df822bb0183545683889"
 dependencies = [
- "prettyplease",
+ "prettyplease 0.2.12",
  "proc-macro2",
- "prost-build",
+ "prost-build 0.12.1",
  "quote",
  "syn 2.0.29",
 ]
