@@ -109,7 +109,7 @@ impl Default for PriceServerWrapper {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct QuotesServerWrapper {
-    #[serde(default = "bool_true")]
+    #[serde(default)]
     pub enabled: bool,
     #[serde(default)]
     pub health: QuotesServerHealthCheckConfig,
@@ -126,7 +126,7 @@ pub struct QuotesServerWrapper {
 impl Default for QuotesServerWrapper {
     fn default() -> Self {
         Self {
-            enabled: true,
+            enabled: false,
             server: QuotesServerConfig::default(),
             health: QuotesServerHealthCheckConfig::default(),
             fees: QuotesFeeCalculatorConfig::default(),
