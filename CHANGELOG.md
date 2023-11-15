@@ -1,3 +1,10 @@
+# [stablesats release v0.9.39](https://github.com/GaloyMoney/stablesats-rs/releases/tag/0.9.39)
+
+
+### Miscellaneous Tasks
+
+- Disable quotes server by default
+
 # [stablesats release v0.9.38](https://github.com/GaloyMoney/stablesats-rs/releases/tag/0.9.38)
 
 
