@@ -28,6 +28,7 @@ pub struct QuotesApp {
 #[allow(clippy::too_many_arguments)]
 impl QuotesApp {
     pub async fn run(
+        pool: sqlx::PgPool,
         mut health_check_trigger: HealthCheckTrigger,
         health_check_cfg: QuotesServerHealthCheckConfig,
         fee_calc_cfg: QuotesFeeCalculatorConfig,
@@ -35,7 +36,6 @@ impl QuotesApp {
         price_cache_config: QuotesExchangePriceCacheConfig,
         exchange_weights: ExchangeWeights,
         config: QuotesConfig,
-        pool: sqlx::PgPool,
     ) -> Result<Self, QuotesAppError> {
         let health_subscriber = subscriber.resubscribe();
         tokio::spawn(async move {

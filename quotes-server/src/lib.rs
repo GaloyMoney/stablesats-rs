@@ -20,6 +20,7 @@ pub use server::*;
 
 #[allow(clippy::too_many_arguments)]
 pub async fn run(
+    pool: sqlx::PgPool,
     health_check_trigger: HealthCheckTrigger,
     health_check_cfg: QuotesServerHealthCheckConfig,
     server_config: QuotesServerConfig,
@@ -27,10 +28,10 @@ pub async fn run(
     subscriber: memory::Subscriber<PriceStreamPayload>,
     price_cache_config: QuotesExchangePriceCacheConfig,
     exchange_weights: ExchangeWeights,
-    pool: sqlx::PgPool,
     quotes_config: QuotesConfig,
 ) -> Result<(), QuotesServerError> {
     let app = QuotesApp::run(
+        pool,
         health_check_trigger,
         health_check_cfg,
         fee_calc_cfg,
@@ -38,7 +39,6 @@ pub async fn run(
         price_cache_config,
         exchange_weights,
         quotes_config,
-        pool,
     )
     .await?;
 
