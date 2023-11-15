@@ -1,3 +1,10 @@
+# [stablesats release v0.9.38](https://github.com/GaloyMoney/stablesats-rs/releases/tag/0.9.38)
+
+
+### Features
+
+- Call quotes run fn from cli (#475)
+
 # [stablesats release v0.9.37](https://github.com/GaloyMoney/stablesats-rs/releases/tag/0.9.37)
 
 
