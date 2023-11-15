@@ -222,7 +222,7 @@ impl QuotesApp {
                         usd_cents_amount: Decimal::from(quote.cent_amount.clone()),
                         satoshi_amount: Decimal::from(quote.sat_amount.clone()),
                         meta: SellUsdQuoteAcceptedMeta {
-                            timestamp: Utc::now(),
+                            timestamp: quote.accepted_at()?,
                         },
                     },
                 )
@@ -236,7 +236,7 @@ impl QuotesApp {
                         usd_cents_amount: Decimal::from(quote.cent_amount.clone()),
                         satoshi_amount: Decimal::from(quote.sat_amount.clone()),
                         meta: BuyUsdQuoteAcceptedMeta {
-                            timestamp: Utc::now(),
+                            timestamp: quote.accepted_at()?,
                         },
                     },
                 )

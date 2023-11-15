@@ -70,6 +70,15 @@ impl Quote {
     fn is_expired(&self) -> bool {
         self.expires_at < Utc::now()
     }
+
+    pub fn accepted_at(&self) -> Result<DateTime<Utc>, QuoteError> {
+        for event in self.events.iter() {
+            if let QuoteEvent::Accepted { accepted_at } = event {
+                return Ok(*accepted_at);
+            }
+        }
+        Err(QuoteError::QuoteNotAccepted)
+    }
 }
 
 #[derive(Builder, Clone, Debug)]
