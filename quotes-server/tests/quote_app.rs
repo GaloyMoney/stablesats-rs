@@ -1,5 +1,6 @@
 use chrono::Duration;
 use rust_decimal_macros::dec;
+use serial_test::file_serial;
 
 use quotes_server::error::QuotesAppError;
 use quotes_server::{
@@ -28,6 +29,7 @@ fn load_fixture() -> OrderBookPayload {
 }
 
 #[tokio::test]
+#[file_serial]
 async fn quotes_app() -> anyhow::Result<()> {
     let (tick_send, tick_recv) =
         memory::channel(chrono::Duration::from_std(std::time::Duration::from_secs(2)).unwrap());

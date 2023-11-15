@@ -1,5 +1,6 @@
 use rust_decimal::Decimal;
 use rust_decimal_macros::dec;
+use serial_test::file_serial;
 
 use stablesats_ledger::*;
 
@@ -134,6 +135,7 @@ async fn adjust_exchange_position() -> anyhow::Result<()> {
 }
 
 #[tokio::test]
+#[file_serial]
 async fn buy_and_sell_quotes() -> anyhow::Result<()> {
     let pool = init_pool().await?;
 
