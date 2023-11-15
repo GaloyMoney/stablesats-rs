@@ -1,3 +1,11 @@
+# [stablesats release v0.9.37](https://github.com/GaloyMoney/stablesats-rs/releases/tag/0.9.37)
+
+
+### Features
+
+- Add quotes app and server  (#474)
+- Add quote entity  (#471)
+
 # [stablesats release v0.9.36](https://github.com/GaloyMoney/stablesats-rs/releases/tag/0.9.36)
 
 
