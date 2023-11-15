@@ -71,13 +71,13 @@ impl Quote {
         self.expires_at < Utc::now()
     }
 
-    pub fn accepted_at(&self) -> Result<DateTime<Utc>, QuoteError> {
+    pub fn accepted_at(&self) -> Option<DateTime<Utc>> {
         for event in self.events.iter() {
             if let QuoteEvent::Accepted { accepted_at } = event {
-                return Ok(*accepted_at);
+                return Some(*accepted_at);
             }
         }
-        Err(QuoteError::QuoteNotAccepted)
+        None
     }
 }
 

@@ -10,6 +10,4 @@ pub enum QuoteError {
     QuoteAlreadyAccepted,
     #[error("QuotesError - Quote has expired")]
     QuoteExpiredError,
-    #[error("QuotesError - Quote not accepted")]
-    QuoteNotAccepted,
 }

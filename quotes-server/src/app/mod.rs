@@ -212,34 +212,29 @@ impl QuotesApp {
         quote: &mut Quote,
     ) -> Result<(), QuotesAppError> {
         quote.accept()?;
-        self.quotes.update(&mut tx, quote).await?;
         if quote.direction == Direction::SellCents {
+            let params = SellUsdQuoteAcceptedParams {
+                usd_cents_amount: *quote.cent_amount.amount(),
+                satoshi_amount: *quote.sat_amount.amount(),
+                meta: SellUsdQuoteAcceptedMeta {
+                    timestamp: quote.accepted_at().expect("Quote was just accepted"),
+                },
+            };
+            self.quotes.update(&mut tx, quote).await?;
             self.ledger
-                .sell_usd_quote_accepted(
-                    tx,
-                    LedgerTxId::new(),
-                    SellUsdQuoteAcceptedParams {
-                        usd_cents_amount: Decimal::from(quote.cent_amount.clone()),
-                        satoshi_amount: Decimal::from(quote.sat_amount.clone()),
-                        meta: SellUsdQuoteAcceptedMeta {
-                            timestamp: quote.accepted_at()?,
-                        },
-                    },
-                )
+                .sell_usd_quote_accepted(tx, LedgerTxId::new(), params)
                 .await?;
         } else {
+            let params = BuyUsdQuoteAcceptedParams {
+                usd_cents_amount: *quote.cent_amount.amount(),
+                satoshi_amount: *quote.sat_amount.amount(),
+                meta: BuyUsdQuoteAcceptedMeta {
+                    timestamp: quote.accepted_at().expect("Quote was just accepted"),
+                },
+            };
+            self.quotes.update(&mut tx, quote).await?;
             self.ledger
-                .buy_usd_quote_accepted(
-                    tx,
-                    LedgerTxId::new(),
-                    BuyUsdQuoteAcceptedParams {
-                        usd_cents_amount: Decimal::from(quote.cent_amount.clone()),
-                        satoshi_amount: Decimal::from(quote.sat_amount.clone()),
-                        meta: BuyUsdQuoteAcceptedMeta {
-                            timestamp: quote.accepted_at()?,
-                        },
-                    },
-                )
+                .buy_usd_quote_accepted(tx, LedgerTxId::new(), params)
                 .await?;
         }
 

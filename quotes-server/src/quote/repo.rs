@@ -70,7 +70,7 @@ impl Quotes {
     pub async fn update(
         &self,
         tx: &mut Transaction<'_, Postgres>,
-        quote: &Quote,
+        quote: &mut Quote,
     ) -> Result<(), QuoteError> {
         if !quote.events.is_dirty() {
             return Ok(());
@@ -81,6 +81,7 @@ impl Quotes {
             quote.events.new_serialized_events(quote.id),
         )
         .await?;
+        quote.events.mark_persisted();
         Ok(())
     }
 }
