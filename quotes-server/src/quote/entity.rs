@@ -24,6 +24,8 @@ pub enum QuoteEvent {
         immediate_execution: bool,
         sat_amount: Satoshis,
         cent_amount: UsdCents,
+        sats_spread: Satoshis,
+        cents_spread: UsdCents,
         expires_at: DateTime<Utc>,
     },
     Accepted {
@@ -38,6 +40,8 @@ pub struct Quote {
     pub direction: Direction,
     pub sat_amount: Satoshis,
     pub cent_amount: UsdCents,
+    pub sats_spread: Satoshis,
+    pub cents_spread: UsdCents,
     pub immediate_execution: bool,
     pub expires_at: DateTime<Utc>,
 
@@ -89,6 +93,8 @@ pub struct NewQuote {
     pub(super) immediate_execution: bool,
     pub(super) sat_amount: Satoshis,
     pub(super) cent_amount: UsdCents,
+    pub(super) sats_spread: Satoshis,
+    pub(super) cents_spread: UsdCents,
     pub(super) expires_at: DateTime<Utc>,
 }
 
@@ -106,6 +112,8 @@ impl NewQuote {
             immediate_execution: self.immediate_execution,
             sat_amount: self.sat_amount,
             cent_amount: self.cent_amount,
+            sats_spread: self.sats_spread,
+            cents_spread: self.cents_spread,
             expires_at: self.expires_at,
         }])
     }
@@ -124,6 +132,8 @@ impl TryFrom<EntityEvents<QuoteEvent>> for Quote {
                 immediate_execution,
                 sat_amount,
                 cent_amount,
+                sats_spread,
+                cents_spread,
                 expires_at,
             } = event
             {
@@ -133,6 +143,8 @@ impl TryFrom<EntityEvents<QuoteEvent>> for Quote {
                     .immediate_execution(*immediate_execution)
                     .sat_amount(sat_amount.clone())
                     .cent_amount(cent_amount.clone())
+                    .sats_spread(sats_spread.clone())
+                    .cents_spread(cents_spread.clone())
                     .expires_at(*expires_at);
             }
         }
@@ -185,8 +197,10 @@ mod tests {
             id: QuoteId::new(),
             direction: Direction::BuyCents,
             immediate_execution: false,
-            sat_amount: Satoshis::from(Decimal::from(100)),
-            cent_amount: UsdCents::from(Decimal::from(10)),
+            sat_amount: Satoshis::from(Decimal::from(1000)),
+            cent_amount: UsdCents::from(Decimal::from(100)),
+            sats_spread: Satoshis::from(Decimal::from(10)),
+            cents_spread: UsdCents::from(Decimal::from(1)),
             expires_at: expiration_time,
         }])
     }
