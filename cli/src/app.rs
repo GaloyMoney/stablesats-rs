@@ -5,7 +5,7 @@ use rust_decimal::Decimal;
 use std::{collections::HashMap, path::PathBuf};
 use url::Url;
 
-use super::{config::*, price_client::*};
+use super::{config::*, price_client::*, quotes_client::*};
 use shared::pubsub::memory;
 
 #[derive(Parser)]
@@ -63,6 +63,26 @@ enum Command {
         expiry: Option<u64>,
         amount: Decimal,
     },
+
+    /// Gets a quote from the quote serve
+    GetQuote {
+        /// quote server URL
+        #[clap(short, long, action, value_parser, env = "QUOTE_SERVER_URL")]
+        url: Option<Url>,
+        #[clap(short, long)]
+        immediate_execution: bool,
+        #[clap(short, long, action, value_enum, value_parser, default_value_t = QuoteType::AmountToBuyInCents)]
+        quote_type: QuoteType,
+        amount: u64,
+    },
+
+    AcceptQuote {
+        /// quote server URL
+        #[clap(short, long, action, value_parser, env = "QUOTE_SERVER_URL")]
+        url: Option<Url>,
+        #[clap(short, long)]
+        id: String,
+    },
 }
 
 pub async fn run() -> anyhow::Result<()> {
@@ -105,6 +125,22 @@ pub async fn run() -> anyhow::Result<()> {
             expiry,
             amount,
         } => price_cmd(url, direction, expiry, amount).await?,
+
+        Command::GetQuote {
+            url,
+            immediate_execution,
+            quote_type,
+            amount,
+        } => {
+            let client = get_quotes_client(url).await;
+            client
+                .get_quote(quote_type, immediate_execution, amount)
+                .await?
+        }
+        Command::AcceptQuote { url, id } => {
+            let client = get_quotes_client(url).await;
+            client.accept_quote(id).await?;
+        }
     }
     Ok(())
 }
@@ -292,6 +328,13 @@ async fn price_cmd(
 ) -> anyhow::Result<()> {
     let client = PriceClient::new(url.map(|url| PriceClientConfig { url }).unwrap_or_default());
     client.get_price(direction, expiry, amount).await
+}
+
+async fn get_quotes_client(url: Option<Url>) -> QuotesClient {
+    QuotesClient::new(
+        url.map(|url| QuotesClientConfig { url })
+            .unwrap_or_default(),
+    )
 }
 
 fn price_stream_throttle_period() -> Duration {
