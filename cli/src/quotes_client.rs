@@ -7,10 +7,10 @@ type ProtoClient = proto::quote_service_client::QuoteServiceClient<Channel>;
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq, ValueEnum)]
 pub enum QuoteType {
-    AmountToBuyInSats,
-    AmountToSellInSats,
-    AmountToBuyInCents,
-    AmountToSellInCents,
+    BuyInSats,
+    SellInSats,
+    BuyInCents,
+    SellInCents,
 }
 
 pub struct QuotesClientConfig {
@@ -56,7 +56,7 @@ impl QuotesClient {
         let mut client = self.connect().await?;
 
         match quote_type {
-            QuoteType::AmountToBuyInSats => {
+            QuoteType::BuyInSats => {
                 let request = tonic::Request::new(proto::GetQuoteToSellUsdRequest {
                     quote_for: Some(
                         proto::get_quote_to_sell_usd_request::QuoteFor::AmountToBuyInSats(amount),
@@ -69,7 +69,7 @@ impl QuotesClient {
                     response.amount_to_sell_in_cents, response.amount_to_buy_in_sats
                 )
             }
-            QuoteType::AmountToSellInSats => {
+            QuoteType::SellInSats => {
                 let request = tonic::Request::new(proto::GetQuoteToBuyUsdRequest {
                     quote_for: Some(
                         proto::get_quote_to_buy_usd_request::QuoteFor::AmountToSellInSats(amount),
@@ -82,7 +82,7 @@ impl QuotesClient {
                     response.amount_to_sell_in_sats, response.amount_to_buy_in_cents
                 );
             }
-            QuoteType::AmountToBuyInCents => {
+            QuoteType::BuyInCents => {
                 let request = tonic::Request::new(proto::GetQuoteToBuyUsdRequest {
                     quote_for: Some(
                         proto::get_quote_to_buy_usd_request::QuoteFor::AmountToBuyInCents(amount),
@@ -95,7 +95,7 @@ impl QuotesClient {
                     response.amount_to_sell_in_sats, response.amount_to_buy_in_cents
                 );
             }
-            QuoteType::AmountToSellInCents => {
+            QuoteType::SellInCents => {
                 let request = tonic::Request::new(proto::GetQuoteToSellUsdRequest {
                     quote_for: Some(
                         proto::get_quote_to_sell_usd_request::QuoteFor::AmountToSellInCents(amount),

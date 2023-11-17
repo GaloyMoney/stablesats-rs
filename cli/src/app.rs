@@ -71,7 +71,7 @@ enum Command {
         url: Option<Url>,
         #[clap(short, long)]
         immediate_execution: bool,
-        #[clap(short, long, action, value_enum, value_parser, default_value_t = QuoteType::AmountToBuyInCents)]
+        #[clap(short, long, action, value_enum, value_parser, default_value_t = QuoteType::BuyInCents)]
         quote_type: QuoteType,
         amount: u64,
     },
