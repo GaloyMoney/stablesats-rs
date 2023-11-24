@@ -1,3 +1,10 @@
+# [stablesats release v0.10.0](https://github.com/GaloyMoney/stablesats-rs/releases/tag/0.10.0)
+
+
+### Bug Fixes
+
+- [**breaking**] Add new account for btc assets  (#479)
+
 # [stablesats release v0.9.39](https://github.com/GaloyMoney/stablesats-rs/releases/tag/0.9.39)
 
 
