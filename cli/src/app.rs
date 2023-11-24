@@ -71,8 +71,10 @@ enum Command {
         url: Option<Url>,
         #[clap(short, long)]
         immediate_execution: bool,
-        #[clap(short, long, action, value_enum, value_parser, default_value_t = QuoteType::BuyInCents)]
-        quote_type: QuoteType,
+        #[clap(short, long, action, value_enum, value_parser, default_value_t = QuoteDirection::Buy)]
+        direction: QuoteDirection,
+        #[clap(short, long, action, value_enum, value_parser, default_value_t = Currency::Cents)]
+        currency: Currency,
         amount: u64,
     },
 
@@ -129,12 +131,13 @@ pub async fn run() -> anyhow::Result<()> {
         Command::GetQuote {
             url,
             immediate_execution,
-            quote_type,
+            direction,
+            currency,
             amount,
         } => {
             let client = get_quotes_client(url).await;
             client
-                .get_quote(quote_type, immediate_execution, amount)
+                .get_quote(direction, currency, immediate_execution, amount)
                 .await?
         }
         Command::AcceptQuote { url, id } => {
