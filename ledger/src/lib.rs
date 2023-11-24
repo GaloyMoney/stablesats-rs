@@ -48,7 +48,8 @@ impl Ledger {
         Self::exchange_position_omnibus_account(&inner).await?;
         Self::okex_position_account(&inner).await?;
         Self::quotes_omnibus_account(&inner).await?;
-        Self::quotes_liability_account(&inner).await?;
+        Self::quotes_liabilities_account(&inner).await?;
+        Self::quotes_assets_account(&inner).await?;
 
         templates::UserBuysUsd::init(&inner).await?;
         templates::UserSellsUsd::init(&inner).await?;
@@ -396,7 +397,6 @@ impl Ledger {
             .code(QUOTES_OMNIBUS)
             .id(QUOTES_OMNIBUS_ID)
             .name(QUOTES_OMNIBUS)
-            .normal_balance_type(DebitOrCredit::Debit)
             .description("Account for quotes omnibus".to_string())
             .build()
             .expect("Couldn't create quotes omnibus account");
@@ -406,16 +406,32 @@ impl Ledger {
         }
     }
 
-    #[instrument(name = "ledger.quotes_liability_account", skip_all)]
-    async fn quotes_liability_account(ledger: &SqlxLedger) -> Result<(), LedgerError> {
+    #[instrument(name = "ledger.quotes_liabilities_account", skip_all)]
+    async fn quotes_liabilities_account(ledger: &SqlxLedger) -> Result<(), LedgerError> {
         let new_account = NewAccount::builder()
-            .code(QUOTES_LIABILITY)
-            .id(QUOTES_LIABILITY_ID)
-            .name(QUOTES_LIABILITY)
+            .code(QUOTES_LIABILITIES)
+            .id(QUOTES_LIABILITIES_ID)
+            .name(QUOTES_LIABILITIES)
             .normal_balance_type(DebitOrCredit::Credit)
-            .description("Account for quotes liability".to_string())
+            .description("Account for quotes liabilities".to_string())
             .build()
-            .expect("Couldn't create quotes liability account");
+            .expect("Couldn't create quotes liabilities account");
+        match ledger.accounts().create(new_account).await {
+            Ok(_) | Err(SqlxLedgerError::DuplicateKey(_)) => Ok(()),
+            Err(e) => Err(e.into()),
+        }
+    }
+
+    #[instrument(name = "ledger.quotes_assets_account", skip_all)]
+    async fn quotes_assets_account(ledger: &SqlxLedger) -> Result<(), LedgerError> {
+        let new_account = NewAccount::builder()
+            .code(QUOTES_ASSETS)
+            .id(QUOTES_ASSETS_ID)
+            .name(QUOTES_ASSETS)
+            .normal_balance_type(DebitOrCredit::Debit)
+            .description("Account for quotes assets".to_string())
+            .build()
+            .expect("Couldn't create quotes assets account");
         match ledger.accounts().create(new_account).await {
             Ok(_) | Err(SqlxLedgerError::DuplicateKey(_)) => Ok(()),
             Err(e) => Err(e.into()),

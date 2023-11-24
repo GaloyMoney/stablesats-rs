@@ -141,13 +141,13 @@ async fn buy_and_sell_quotes() -> anyhow::Result<()> {
 
     let before_liability = ledger
         .balances()
-        .quotes_usd_liability()
+        .quotes_usd_liabilities()
         .await?
         .map(|b| b.settled())
         .unwrap_or(Decimal::ZERO);
     let before_btc = ledger
         .balances()
-        .quotes_btc_liability()
+        .quotes_btc_assets()
         .await?
         .map(|b| b.settled())
         .unwrap_or(Decimal::ZERO);
@@ -179,8 +179,8 @@ async fn buy_and_sell_quotes() -> anyhow::Result<()> {
         )
         .await?;
 
-    let end_balance = ledger.balances().quotes_usd_liability().await?.unwrap();
-    let end_btc = ledger.balances().quotes_btc_liability().await?.unwrap();
+    let end_balance = ledger.balances().quotes_usd_liabilities().await?.unwrap();
+    let end_btc = ledger.balances().quotes_btc_assets().await?.unwrap();
     assert_eq!(end_balance.settled(), before_liability);
     assert_eq!(end_btc.settled(), before_btc);
 
