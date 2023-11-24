@@ -1046,6 +1046,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "fslock"
+version = "0.2.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "04412b8935272e3a9bae6f48c7bfff74c2911f60525404edfdd28e49884c3bfb"
+dependencies = [
+ "libc",
+ "winapi",
+]
+
+[[package]]
 name = "funty"
 version = "2.0.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2573,6 +2583,7 @@ dependencies = [
  "serde",
  "serde_json",
  "serde_with",
+ "serial_test",
  "sqlx",
  "stablesats-ledger",
  "stablesats-shared",
@@ -3074,6 +3085,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "0e56dd856803e253c8f298af3f4d7eb0ae5e23a737252cd90bb4f3b435033b2d"
 dependencies = [
  "dashmap",
+ "fslock",
  "futures",
  "lazy_static",
  "log",
@@ -3555,6 +3567,7 @@ dependencies = [
  "rust_decimal_macros",
  "serde",
  "serde_json",
+ "serial_test",
  "sqlx",
  "sqlx-ledger",
  "stablesats-shared",
