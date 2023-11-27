@@ -86,7 +86,7 @@ impl QuotesApp {
         immediate_execution: bool,
     ) -> Result<Quote, QuotesAppError> {
         let sats = Satoshis::from(sats);
-        let usd_amount = self
+        let res = self
             .price_calculator
             .cents_from_sats_for_buy(sats.clone(), immediate_execution)
             .await?;
@@ -94,8 +94,10 @@ impl QuotesApp {
         let new_quote = NewQuote::builder()
             .direction(Direction::BuyCents)
             .immediate_execution(immediate_execution)
-            .cent_amount(usd_amount)
-            .sat_amount(sats)
+            .cent_amount(res.cents)
+            .sat_amount(res.sats)
+            .cents_spread(res.cents_spread)
+            .sats_spread(res.sats_spread)
             .expires_at(expiry_time)
             .build()
             .expect("Could not build quote");
@@ -116,7 +118,7 @@ impl QuotesApp {
         immediate_execution: bool,
     ) -> Result<Quote, QuotesAppError> {
         let sats = Satoshis::from(sats);
-        let usd_amount = self
+        let res = self
             .price_calculator
             .cents_from_sats_for_sell(sats.clone(), immediate_execution)
             .await?;
@@ -124,8 +126,10 @@ impl QuotesApp {
         let new_quote = NewQuote::builder()
             .direction(Direction::SellCents)
             .immediate_execution(immediate_execution)
-            .cent_amount(usd_amount)
-            .sat_amount(sats)
+            .cent_amount(res.cents)
+            .sat_amount(res.sats)
+            .cents_spread(res.cents_spread)
+            .sats_spread(res.sats_spread)
             .expires_at(expiry_time)
             .build()
             .expect("Could not build quote");
@@ -146,7 +150,7 @@ impl QuotesApp {
         immediate_execution: bool,
     ) -> Result<Quote, QuotesAppError> {
         let cents = UsdCents::from(cents);
-        let sat_amount = self
+        let res = self
             .price_calculator
             .sats_from_cents_for_sell(cents.clone(), immediate_execution)
             .await?;
@@ -154,8 +158,10 @@ impl QuotesApp {
         let new_quote = NewQuote::builder()
             .direction(Direction::SellCents)
             .immediate_execution(immediate_execution)
-            .cent_amount(cents)
-            .sat_amount(sat_amount)
+            .cent_amount(res.cents)
+            .sat_amount(res.sats)
+            .cents_spread(res.cents_spread)
+            .sats_spread(res.sats_spread)
             .expires_at(expiry_time)
             .build()
             .expect("Could not build quote");
@@ -176,7 +182,7 @@ impl QuotesApp {
         immediate_execution: bool,
     ) -> Result<Quote, QuotesAppError> {
         let cents = UsdCents::from(cents);
-        let sat_amount = self
+        let res = self
             .price_calculator
             .sats_from_cents_for_buy(cents.clone(), immediate_execution)
             .await?;
@@ -184,8 +190,10 @@ impl QuotesApp {
         let new_quote = NewQuote::builder()
             .direction(Direction::BuyCents)
             .immediate_execution(immediate_execution)
-            .cent_amount(cents)
-            .sat_amount(sat_amount)
+            .cent_amount(res.cents)
+            .sat_amount(res.sats)
+            .cents_spread(res.cents_spread)
+            .sats_spread(res.sats_spread)
             .expires_at(expiry_time)
             .build()
             .expect("Could not build quote");
