@@ -49,7 +49,7 @@ impl PriceCalculator {
             .fee_calculator
             .decrease_by_fee(immediate_execution, cents.clone())
             .floor();
-        let cents_spread = UsdCents::from(cents_after_fee.amount() - cents.amount());
+        let cents_spread = UsdCents::from((cents_after_fee.amount() - cents.amount()).round());
         let sats_spread = sats_spread(*sats.amount(), *cents.amount(), *cents_after_fee.amount());
         Ok(ConversionResult {
             sats,
@@ -72,7 +72,7 @@ impl PriceCalculator {
             .fee_calculator
             .increase_by_fee(immediate_execution, sats.clone())
             .ceil();
-        let sats_spread = Satoshis::from(sats_after_fee.amount() - sats.amount());
+        let sats_spread = Satoshis::from((sats_after_fee.amount() - sats.amount()).round());
         let cents_spread = cents_spread(*cents.amount(), *sats.amount(), *sats_after_fee.amount());
         Ok(ConversionResult {
             sats: sats_after_fee,
@@ -95,7 +95,7 @@ impl PriceCalculator {
             .fee_calculator
             .increase_by_fee(immediate_execution, cents.clone())
             .ceil();
-        let cents_spread = UsdCents::from(cents_after_fee.amount() - cents.amount());
+        let cents_spread = UsdCents::from((cents_after_fee.amount() - cents.amount()).round());
         let sats_spread = sats_spread(*sats.amount(), *cents.amount(), *cents_after_fee.amount());
         Ok(ConversionResult {
             sats,
@@ -118,7 +118,7 @@ impl PriceCalculator {
             .fee_calculator
             .decrease_by_fee(immediate_execution, sats.clone())
             .floor();
-        let sats_spread = Satoshis::from(sats_after_fee.amount() - sats.amount());
+        let sats_spread = Satoshis::from((sats_after_fee.amount() - sats.amount()).round());
         let cents_spread = cents_spread(*cents.amount(), *sats.amount(), *sats_after_fee.amount());
         Ok(ConversionResult {
             sats: sats_after_fee,
