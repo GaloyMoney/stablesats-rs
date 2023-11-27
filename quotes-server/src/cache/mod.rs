@@ -62,7 +62,7 @@ pub fn mock_price_tick(mock_price: rust_decimal::Decimal) -> BtcSatTick {
         timestamp: TimeStamp::now(),
         correlation_id: CorrelationId::new(),
         span_context: Span::current().context().span().span_context().clone(),
-        ask_price_of_one_sat: cent_price.clone(),
+        ask_price_of_one_sat: cent_price,
         bid_price_of_one_sat: cent_price,
     }
 }

@@ -43,14 +43,14 @@ impl PriceCalculator {
     ) -> Result<ConversionResult, ExchangePriceCacheError> {
         let cents = self
             .price_mixer
-            .apply(|p| p.buy_usd().cents_from_sats(sats.clone()))
+            .apply(|p| p.buy_usd().cents_from_sats(sats))
             .await?;
         let cents_after_fee = self
             .fee_calculator
-            .decrease_by_fee(immediate_execution, cents.clone())
+            .decrease_by_fee(immediate_execution, cents)
             .floor();
-        let cents_spread = UsdCents::from((cents_after_fee.amount() - cents.amount()).round());
-        let sats_spread = sats_spread(*sats.amount(), *cents.amount(), *cents_after_fee.amount());
+        let cents_spread = cents_after_fee - cents;
+        let sats_spread = sats_spread(sats, cents, cents_after_fee);
         Ok(ConversionResult {
             sats,
             cents: cents_after_fee,
@@ -66,14 +66,14 @@ impl PriceCalculator {
     ) -> Result<ConversionResult, ExchangePriceCacheError> {
         let sats = self
             .price_mixer
-            .apply(|p| p.buy_usd().sats_from_cents(cents.clone()))
+            .apply(|p| p.buy_usd().sats_from_cents(cents))
             .await?;
         let sats_after_fee = self
             .fee_calculator
-            .increase_by_fee(immediate_execution, sats.clone())
+            .increase_by_fee(immediate_execution, sats)
             .ceil();
-        let sats_spread = Satoshis::from((sats_after_fee.amount() - sats.amount()).round());
-        let cents_spread = cents_spread(*cents.amount(), *sats.amount(), *sats_after_fee.amount());
+        let sats_spread = sats_after_fee - sats;
+        let cents_spread = cents_spread(cents, sats, sats_after_fee);
         Ok(ConversionResult {
             sats: sats_after_fee,
             cents,
@@ -89,14 +89,14 @@ impl PriceCalculator {
     ) -> Result<ConversionResult, ExchangePriceCacheError> {
         let cents = self
             .price_mixer
-            .apply(|p| p.sell_usd().cents_from_sats(sats.clone()))
+            .apply(|p| p.sell_usd().cents_from_sats(sats))
             .await?;
         let cents_after_fee = self
             .fee_calculator
-            .increase_by_fee(immediate_execution, cents.clone())
+            .increase_by_fee(immediate_execution, cents)
             .ceil();
-        let cents_spread = UsdCents::from((cents_after_fee.amount() - cents.amount()).round());
-        let sats_spread = sats_spread(*sats.amount(), *cents.amount(), *cents_after_fee.amount());
+        let cents_spread = cents_after_fee - cents;
+        let sats_spread = sats_spread(sats, cents, cents_after_fee);
         Ok(ConversionResult {
             sats,
             cents: cents_after_fee,
@@ -112,14 +112,14 @@ impl PriceCalculator {
     ) -> Result<ConversionResult, ExchangePriceCacheError> {
         let sats = self
             .price_mixer
-            .apply(|p| p.sell_usd().sats_from_cents(cents.clone()))
+            .apply(|p| p.sell_usd().sats_from_cents(cents))
             .await?;
         let sats_after_fee = self
             .fee_calculator
-            .decrease_by_fee(immediate_execution, sats.clone())
+            .decrease_by_fee(immediate_execution, sats)
             .floor();
-        let sats_spread = Satoshis::from((sats_after_fee.amount() - sats.amount()).round());
-        let cents_spread = cents_spread(*cents.amount(), *sats.amount(), *sats_after_fee.amount());
+        let sats_spread = sats_after_fee - sats;
+        let cents_spread = cents_spread(cents, sats, sats_after_fee);
         Ok(ConversionResult {
             sats: sats_after_fee,
             cents,
@@ -129,18 +129,24 @@ impl PriceCalculator {
     }
 }
 
-fn sats_spread(sats: Decimal, cents: Decimal, cents_after_fee: Decimal) -> Satoshis {
-    if cents_after_fee == Decimal::ZERO {
+fn sats_spread(sats: Satoshis, cents: UsdCents, cents_after_fee: UsdCents) -> Satoshis {
+    if cents_after_fee == UsdCents::from(Decimal::ZERO) {
         return Satoshis::from(Decimal::ZERO);
     }
-    Satoshis::from((sats * ((cents - cents_after_fee) / cents_after_fee)).round())
+    Satoshis::from(
+        (sats.amount() * ((cents.amount() - cents_after_fee.amount()) / cents_after_fee.amount()))
+            .round(),
+    )
 }
 
-fn cents_spread(cents: Decimal, sats: Decimal, sats_after_fee: Decimal) -> UsdCents {
-    if sats_after_fee == Decimal::ZERO {
+fn cents_spread(cents: UsdCents, sats: Satoshis, sats_after_fee: Satoshis) -> UsdCents {
+    if sats_after_fee == Satoshis::from(Decimal::ZERO) {
         return UsdCents::from(Decimal::ZERO);
     }
-    UsdCents::from((cents * ((sats - sats_after_fee) / sats_after_fee)).round())
+    UsdCents::from(
+        (cents.amount() * ((sats.amount() - sats_after_fee.amount()) / sats_after_fee.amount()))
+            .round(),
+    )
 }
 
 #[cfg(test)]
@@ -254,30 +260,30 @@ mod tests {
 
     #[test]
     fn test_sats_spread() {
-        let sats = dec!(1000);
-        let cents = dec!(50);
-        let cents_after_fee = dec!(45);
+        let sats = Satoshis::from(dec!(1000));
+        let cents = UsdCents::from(dec!(50));
+        let cents_after_fee = UsdCents::from(dec!(45));
         let res = sats_spread(sats, cents, cents_after_fee);
         assert_eq!(res, Satoshis::from(dec!(111)));
 
-        let sats = dec!(10);
-        let cents = dec!(1);
-        let cents_after_fee = dec!(0);
+        let sats = Satoshis::from(dec!(10));
+        let cents = UsdCents::from(Decimal::ONE);
+        let cents_after_fee = UsdCents::from(Decimal::ZERO);
         let res = sats_spread(sats, cents, cents_after_fee);
         assert_eq!(res, Satoshis::from(dec!(0)));
     }
 
     #[test]
     fn test_cents_spread() {
-        let cents = dec!(50);
-        let sats = dec!(1000);
-        let sats_after_fee = dec!(1111);
+        let cents = UsdCents::from(dec!(50));
+        let sats = Satoshis::from(dec!(1000));
+        let sats_after_fee = Satoshis::from(dec!(1111));
         let res = cents_spread(cents, sats, sats_after_fee);
         assert_eq!(res, UsdCents::from(dec!(-5)));
 
-        let cents = dec!(1);
-        let sats = dec!(1);
-        let sats_after_fee = dec!(0);
+        let cents = UsdCents::from(Decimal::ONE);
+        let sats = Satoshis::from(Decimal::ONE);
+        let sats_after_fee = Satoshis::from(Decimal::ZERO);
         let res = cents_spread(cents, sats, sats_after_fee);
         assert_eq!(res, UsdCents::from(dec!(0)));
     }

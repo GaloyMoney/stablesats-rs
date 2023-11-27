@@ -141,10 +141,10 @@ impl TryFrom<EntityEvents<QuoteEvent>> for Quote {
                     .id(*id)
                     .direction(direction.clone())
                     .immediate_execution(*immediate_execution)
-                    .sat_amount(sat_amount.clone())
-                    .cent_amount(cent_amount.clone())
-                    .sats_spread(sats_spread.clone())
-                    .cents_spread(cents_spread.clone())
+                    .sat_amount(*sat_amount)
+                    .cent_amount(*cent_amount)
+                    .sats_spread(*sats_spread)
+                    .cents_spread(*cents_spread)
                     .expires_at(*expires_at);
             }
         }

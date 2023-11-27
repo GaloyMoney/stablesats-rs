@@ -88,7 +88,7 @@ impl QuotesApp {
         let sats = Satoshis::from(sats);
         let res = self
             .price_calculator
-            .cents_from_sats_for_buy(sats.clone(), immediate_execution)
+            .cents_from_sats_for_buy(sats, immediate_execution)
             .await?;
         let expiry_time = expiration_time_from_duration(self.config.expiration_interval);
         let new_quote = NewQuote::builder()
@@ -120,7 +120,7 @@ impl QuotesApp {
         let sats = Satoshis::from(sats);
         let res = self
             .price_calculator
-            .cents_from_sats_for_sell(sats.clone(), immediate_execution)
+            .cents_from_sats_for_sell(sats, immediate_execution)
             .await?;
         let expiry_time = expiration_time_from_duration(self.config.expiration_interval);
         let new_quote = NewQuote::builder()
@@ -152,7 +152,7 @@ impl QuotesApp {
         let cents = UsdCents::from(cents);
         let res = self
             .price_calculator
-            .sats_from_cents_for_sell(cents.clone(), immediate_execution)
+            .sats_from_cents_for_sell(cents, immediate_execution)
             .await?;
         let expiry_time = expiration_time_from_duration(self.config.expiration_interval);
         let new_quote = NewQuote::builder()
@@ -184,7 +184,7 @@ impl QuotesApp {
         let cents = UsdCents::from(cents);
         let res = self
             .price_calculator
-            .sats_from_cents_for_buy(cents.clone(), immediate_execution)
+            .sats_from_cents_for_buy(cents, immediate_execution)
             .await?;
         let expiry_time = expiration_time_from_duration(self.config.expiration_interval);
         let new_quote = NewQuote::builder()

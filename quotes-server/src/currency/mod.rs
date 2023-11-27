@@ -14,7 +14,7 @@ pub enum CurrencyError {
 
 macro_rules! currency {
     ($name:ident, $code:ident) => {
-        #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+        #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize, Copy)]
         #[serde(transparent)]
         pub struct $name(Decimal);
 
@@ -53,12 +53,11 @@ macro_rules! currency {
             }
         }
 
-        impl std::ops::Sub<&$name> for &$name {
-            type Output = $name;
+        impl std::ops::Sub for $name {
+            type Output = Self;
 
-            fn sub(self, rhs: &$name) -> Self::Output {
-                let value = self.0 - rhs.0;
-                $name::from(value)
+            fn sub(self, rhs: Self) -> Self::Output {
+                Self { 0: self.0 - rhs.0 }
             }
         }
 
