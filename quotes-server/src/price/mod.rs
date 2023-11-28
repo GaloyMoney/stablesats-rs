@@ -49,7 +49,7 @@ impl PriceCalculator {
             .fee_calculator
             .decrease_by_fee(immediate_execution, cents)
             .floor();
-        let cents_spread = cents_after_fee - cents;
+        let cents_spread = (cents_after_fee - cents).floor();
         let sats_spread = sats_spread(sats, cents, cents_after_fee);
         Ok(ConversionResult {
             sats,
@@ -72,7 +72,7 @@ impl PriceCalculator {
             .fee_calculator
             .increase_by_fee(immediate_execution, sats)
             .ceil();
-        let sats_spread = sats_after_fee - sats;
+        let sats_spread = (sats_after_fee - sats).floor();
         let cents_spread = cents_spread(cents, sats, sats_after_fee);
         Ok(ConversionResult {
             sats: sats_after_fee,
@@ -95,7 +95,7 @@ impl PriceCalculator {
             .fee_calculator
             .increase_by_fee(immediate_execution, cents)
             .ceil();
-        let cents_spread = cents_after_fee - cents;
+        let cents_spread = (cents_after_fee - cents).floor();
         let sats_spread = sats_spread(sats, cents, cents_after_fee);
         Ok(ConversionResult {
             sats,
@@ -118,7 +118,7 @@ impl PriceCalculator {
             .fee_calculator
             .decrease_by_fee(immediate_execution, sats)
             .floor();
-        let sats_spread = sats_after_fee - sats;
+        let sats_spread = (sats_after_fee - sats).floor();
         let cents_spread = cents_spread(cents, sats, sats_after_fee);
         Ok(ConversionResult {
             sats: sats_after_fee,
@@ -135,7 +135,7 @@ fn sats_spread(sats: Satoshis, cents: UsdCents, cents_after_fee: UsdCents) -> Sa
     }
     Satoshis::from(
         (sats.amount() * ((cents.amount() - cents_after_fee.amount()) / cents_after_fee.amount()))
-            .round(),
+            .floor(),
     )
 }
 
@@ -145,7 +145,7 @@ fn cents_spread(cents: UsdCents, sats: Satoshis, sats_after_fee: Satoshis) -> Us
     }
     UsdCents::from(
         (cents.amount() * ((sats.amount() - sats_after_fee.amount()) / sats_after_fee.amount()))
-            .round(),
+            .floor(),
     )
 }
 
