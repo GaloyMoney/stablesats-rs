@@ -452,7 +452,7 @@ dependencies = [
  "tonic 0.10.2",
  "tonic-build 0.10.2",
  "tracing",
- "tracing-opentelemetry 0.20.0",
+ "tracing-opentelemetry",
  "url",
 ]
 
@@ -1185,7 +1185,7 @@ dependencies = [
  "thiserror",
  "tokio",
  "tracing",
- "tracing-opentelemetry 0.20.0",
+ "tracing-opentelemetry",
 ]
 
 [[package]]
@@ -1384,7 +1384,7 @@ dependencies = [
  "thiserror",
  "tokio",
  "tracing",
- "tracing-opentelemetry 0.20.0",
+ "tracing-opentelemetry",
  "uuid",
 ]
 
@@ -2336,7 +2336,7 @@ dependencies = [
  "tonic 0.10.2",
  "tonic-build 0.10.2",
  "tracing",
- "tracing-opentelemetry 0.20.0",
+ "tracing-opentelemetry",
 ]
 
 [[package]]
@@ -2592,7 +2592,7 @@ dependencies = [
  "tonic 0.10.2",
  "tonic-build 0.8.4",
  "tracing",
- "tracing-opentelemetry 0.20.0",
+ "tracing-opentelemetry",
  "uuid",
 ]
 
@@ -3315,7 +3315,7 @@ dependencies = [
  "thiserror",
  "tokio",
  "tracing",
- "tracing-opentelemetry 0.21.0",
+ "tracing-opentelemetry",
  "uuid",
 ]
 
@@ -3552,7 +3552,7 @@ dependencies = [
  "tokio",
  "tonic 0.10.2",
  "tracing",
- "tracing-opentelemetry 0.20.0",
+ "tracing-opentelemetry",
  "tracing-subscriber",
  "url",
  "user-trades",
@@ -3600,7 +3600,7 @@ dependencies = [
  "thiserror",
  "tokio",
  "tracing",
- "tracing-opentelemetry 0.20.0",
+ "tracing-opentelemetry",
  "uuid",
 ]
 
@@ -4065,20 +4065,6 @@ dependencies = [
  "lazy_static",
  "log",
  "tracing-core",
-]
-
-[[package]]
-name = "tracing-opentelemetry"
-version = "0.20.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "fc09e402904a5261e42cf27aea09ccb7d5318c6717a9eec3d8e2e65c56b18f19"
-dependencies = [
- "once_cell",
- "opentelemetry",
- "tracing",
- "tracing-core",
- "tracing-log",
- "tracing-subscriber",
 ]
 
 [[package]]
