@@ -3533,6 +3533,7 @@ dependencies = [
  "quotes-server",
  "rust_decimal",
  "serde",
+ "serde_json",
  "serde_yaml",
  "sqlx",
  "stablesats-shared",

@@ -68,11 +68,8 @@ impl QuotesClient {
                     ),
                     immediate_execution,
                 });
-                let response = client.get_quote_to_sell_usd(request).await?.into_inner();
-                println!(
-                    "You need to sell {} cents to get {} sats",
-                    response.amount_to_sell_in_cents, response.amount_to_buy_in_sats
-                )
+                let response = client.get_quote_to_sell_usd(request).await?;
+                output_json(response)?;
             }
             (QuoteDirection::Sell, Currency::Sats) => {
                 let request = tonic::Request::new(proto::GetQuoteToBuyUsdRequest {
@@ -81,11 +78,8 @@ impl QuotesClient {
                     ),
                     immediate_execution,
                 });
-                let response = client.get_quote_to_buy_usd(request).await?.into_inner();
-                println!(
-                    "You need to sell {} sats to get {} cents",
-                    response.amount_to_sell_in_sats, response.amount_to_buy_in_cents
-                );
+                let response = client.get_quote_to_buy_usd(request).await?;
+                output_json(response)?;
             }
             (QuoteDirection::Buy, Currency::Cents) => {
                 let request = tonic::Request::new(proto::GetQuoteToBuyUsdRequest {
@@ -94,11 +88,8 @@ impl QuotesClient {
                     ),
                     immediate_execution,
                 });
-                let response = client.get_quote_to_buy_usd(request).await?.into_inner();
-                println!(
-                    "You need to sell {} sats to get {} cents",
-                    response.amount_to_sell_in_sats, response.amount_to_buy_in_cents
-                );
+                let response = client.get_quote_to_buy_usd(request).await?;
+                output_json(response)?;
             }
             (QuoteDirection::Sell, Currency::Cents) => {
                 let request = tonic::Request::new(proto::GetQuoteToSellUsdRequest {
@@ -107,11 +98,8 @@ impl QuotesClient {
                     ),
                     immediate_execution,
                 });
-                let response = client.get_quote_to_sell_usd(request).await?.into_inner();
-                println!(
-                    "You need to sell {} cents to get {} sats",
-                    response.amount_to_sell_in_cents, response.amount_to_buy_in_sats
-                )
+                let response = client.get_quote_to_sell_usd(request).await?;
+                output_json(response)?;
             }
         };
 
@@ -127,4 +115,9 @@ impl QuotesClient {
 
         Ok(())
     }
+}
+
+fn output_json<T: serde::Serialize>(response: tonic::Response<T>) -> anyhow::Result<()> {
+    println!("{}", serde_json::to_string_pretty(&response.into_inner())?);
+    Ok(())
 }
