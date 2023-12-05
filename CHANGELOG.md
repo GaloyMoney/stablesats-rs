@@ -1,3 +1,26 @@
+# [stablesats release v0.10.1](https://github.com/GaloyMoney/stablesats-rs/releases/tag/0.10.1)
+
+
+### Bug Fixes
+
+- Correct rounding for sats/cents spread
+
+### Features
+
+- Quotes client (#478)
+- Add sats/cents spread to qutoe entity (#477)
+
+### Miscellaneous Tasks
+
+- Ignore audit warning
+- Improve upon the existing rounding logic
+- Use floor to round off spread for predictability
+- Impl Copy on currency macro
+
+### Testing
+
+- Add quotes_app test (#476)
+
 # [stablesats release v0.10.0](https://github.com/GaloyMoney/stablesats-rs/releases/tag/0.10.0)
 
 
