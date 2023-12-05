@@ -8,3 +8,4 @@ mod tracing;
 
 mod db;
 mod price_client;
+mod quotes_client;
