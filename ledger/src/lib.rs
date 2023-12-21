@@ -176,52 +176,39 @@ impl Ledger {
         Ok(())
     }
 
-    #[instrument(name = "ledger.adjust_okex_allocation", skip(self,))]
-    pub async fn adjust_okex_allocation(
-        &self,
-        tx: Transaction<'_, Postgres>,
-        usd_cents_amount: Decimal,
-        exchange_id: String,
-    ) -> Result<(), LedgerError> {
-        self.adjust_exchange_allocation(tx, usd_cents_amount, OKEX_ALLOCATION_ID, exchange_id)
-            .await?;
-        Ok(())
-    }
-
+    // target allocation passes in from the global_listener
+    // can also pass in the weights as well
     #[instrument(name = "ledger.adjust_exchange_allocation", skip(self, tx))]
-    async fn adjust_exchange_allocation(
+    pub async fn adjust_exchange_allocation(
         &self,
         tx: Transaction<'_, Postgres>,
-        target_liability: Decimal,
-        exchange_allocation_id: uuid::Uuid,
-        exchange_id: String,
+        target_allocation: Decimal,
     ) -> Result<(), LedgerError> {
         let current_allocation = self
             .balances()
-            .okex_allocation_account_balance()
+            .exchange_allocation_account_balance()
             .await?
             .map(|b| b.settled())
             .unwrap_or(Decimal::ZERO);
         let current_allocation_in_cents = current_allocation * CENTS_PER_USD;
-        let diff = current_allocation_in_cents + target_liability;
+        let target_allocation_in_cents = target_allocation * CENTS_PER_USD;
+        let diff = target_allocation_in_cents - current_allocation_in_cents;
         if diff < Decimal::ZERO {
             let decrease_exchange_allocation_params = DecreaseExchangeAllocationParams {
-                usd_cents_amount: diff.abs(),
-                exchange_allocation_id,
+                okex_allocation_usd_cents_amount: diff.abs(),
+                okex_allocation_id: OKEX_ALLOCATION_ID,
                 meta: DecreaseExchangeAllocationMeta {
                     timestamp: chrono::Utc::now(),
-                    exchange_id,
                 },
             };
             self.decrease_exchange_allocation(tx, decrease_exchange_allocation_params)
                 .await?
         } else {
             let increase_exchange_allocation_params = IncreaseExchangeAllocationParams {
-                usd_cents_amount: diff,
-                exchange_allocation_id,
+                okex_allocation_usd_cents_amount: diff,
+                okex_allocation_id: OKEX_ALLOCATION_ID,
                 meta: IncreaseExchangeAllocationMeta {
                     timestamp: chrono::Utc::now(),
-                    exchange_id,
                 },
             };
             self.increase_exchange_allocation(tx, increase_exchange_allocation_params)
@@ -497,7 +484,7 @@ impl Ledger {
             .code(OKEX_ALLOCATION_CODE)
             .id(OKEX_ALLOCATION_ID)
             .name(OKEX_ALLOCATION_CODE)
-            .normal_balance_type(DebitOrCredit::Debit)
+            .normal_balance_type(DebitOrCredit::Credit)
             .description("Account for okex allocation".to_string())
             .build()
             .expect("Couldn't create okex allocation account");

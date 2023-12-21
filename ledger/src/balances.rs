@@ -60,18 +60,12 @@ impl<'a> Balances<'a> {
         .await
     }
 
-    async fn exchange_allocation_account_balance(
-        &self,
-        exchange_allocation_id: impl Into<LedgerAccountId> + std::fmt::Debug,
-    ) -> Result<Option<AccountBalance>, LedgerError> {
-        self.get_ledger_account_balance(STABLESATS_JOURNAL_ID, exchange_allocation_id, self.usd)
-            .await
-    }
-
-    pub async fn okex_allocation_account_balance(
+    // for now we only have the stablesats_allocation_id
+    // in future this should represent okex_allocation + bitfinex_allocation
+    pub async fn exchange_allocation_account_balance(
         &self,
     ) -> Result<Option<AccountBalance>, LedgerError> {
-        self.exchange_allocation_account_balance(OKEX_ALLOCATION_ID)
+        self.get_ledger_account_balance(STABLESATS_JOURNAL_ID, OKEX_ALLOCATION_ID, self.usd)
             .await
     }
 
@@ -79,6 +73,13 @@ impl<'a> Balances<'a> {
         &self,
     ) -> Result<Option<AccountBalance>, LedgerError> {
         self.exchange_position_account_balance(OKEX_POSITION_ID)
+            .await
+    }
+
+    pub async fn stablesats_omnibus_account_balance(
+        &self,
+    ) -> Result<Option<AccountBalance>, LedgerError> {
+        self.exchange_position_account_balance(STABLESATS_OMNIBUS_ID)
             .await
     }
 

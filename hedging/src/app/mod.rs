@@ -89,7 +89,43 @@ impl HedgingApp {
         }
     }
 
-    // async fn spawn_global_liability_listener(ledger: ledger::Ledger) -> Result<(), ledger::LedgerError>{
-    //     let mut events = ledger.usd_omnibus_balance_events.await?;
+    // async fn spawn_global_liability_listener(
+    //     pool: sqlx::PgPool,
+    //     ledger: ledger::Ledger,
+    // ) -> Result<(), HedgingError> {
+    //     let mut events = ledger.usd_omnibus_balance_events().await?;
+    //     tokio::spawn(async move {
+    //         loop {
+    //             match events.recv().await {
+    //                 Ok(received) => {
+    //                     if let ledger::LedgerEventData::BalanceUpdated(data) = received.data {
+    //                         async {
+    //                             let target_allocation = ledger
+    //                                 .balances()
+    //                                 .stablesats_omnibus_account_balance()
+    //                                 .await?
+    //                                 .map(|balance| balance.settled())
+    //                                 .unwrap_or(rust_decimal::Decimal::ZERO);
+    //                             ledger
+    //                                 .adjust_exchange_allocation(
+    //                                     pool.begin().await?,
+    //                                     target_allocation,
+    //                                 )
+    //                                 .await?;
+    //                             Ok::<(), ledger::LedgerError>(())
+    //                                 .expect("liability could not be accounted for")
+    //                         }
+    //                         .await?;
+    //                     }
+    //                 }
+
+    //                 Err(tokio::sync::broadcast::error::RecvError::Lagged(_)) => (),
+    //                 _ => {
+    //                     break;
+    //                 }
+    //             }
+    //         }
+    //     });
+    //     Ok(())
     // }
 }

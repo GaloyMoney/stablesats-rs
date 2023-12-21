@@ -79,7 +79,8 @@ async fn user_buys_and_sells_usd() -> anyhow::Result<()> {
     let end_btc = ledger.balances().stablesats_btc_wallet().await?.unwrap();
     assert_eq!(end_balance.settled(), before_liability);
     assert_eq!(end_btc.settled(), before_btc);
-
+    let omnibus_account_balance = ledger.balances().stablesats_omnibus_account_balance().await;
+    println!("{:?}", omnibus_account_balance);
     Ok(())
 }
 
@@ -195,38 +196,32 @@ async fn adjust_exchange_allocation() -> anyhow::Result<()> {
     let pool = init_pool().await?;
     let ledger = Ledger::init(&pool).await?;
 
-    let initial_okex_balance = ledger
+    let initial_balance = ledger
         .balances()
-        .okex_allocation_account_balance()
+        .exchange_allocation_account_balance()
         .await?
         .map(|b| b.settled())
         .unwrap_or(Decimal::ZERO);
 
     ledger
-        .adjust_okex_allocation(pool.begin().await?, dec!(-10000), "okex".to_string())
+        .adjust_exchange_allocation(pool.begin().await?, dec!(100))
         .await?;
     let balance_after_first_adjustment = ledger
         .balances()
-        .okex_allocation_account_balance()
+        .exchange_allocation_account_balance()
         .await?
         .unwrap()
         .settled();
-    assert_eq!(
-        balance_after_first_adjustment - initial_okex_balance,
-        dec!(100)
-    );
+    assert_eq!(balance_after_first_adjustment - initial_balance, dec!(100));
     ledger
-        .adjust_okex_allocation(pool.begin().await?, dec!(-9000), "okex".to_string())
+        .adjust_exchange_allocation(pool.begin().await?, dec!(90))
         .await?;
-    let balance_after_second_adjustment = ledger
+    let final_balance = ledger
         .balances()
-        .okex_allocation_account_balance()
+        .exchange_allocation_account_balance()
         .await?
         .unwrap()
         .settled();
-    assert_eq!(
-        balance_after_second_adjustment - initial_okex_balance,
-        dec!(90)
-    );
+    assert_eq!(final_balance - initial_balance, dec!(90));
     Ok(())
 }

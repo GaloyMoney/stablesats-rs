@@ -10,13 +10,12 @@ use crate::{constants::*, error::*};
 pub struct DecreaseExchangeAllocationMeta {
     #[serde(with = "chrono::serde::ts_seconds")]
     pub timestamp: DateTime<Utc>,
-    pub exchange_id: String,
 }
 
 #[derive(Debug, Clone)]
 pub struct DecreaseExchangeAllocationParams {
-    pub usd_cents_amount: Decimal,
-    pub exchange_allocation_id: uuid::Uuid,
+    pub okex_allocation_usd_cents_amount: Decimal,
+    pub okex_allocation_id: uuid::Uuid,
     pub meta: DecreaseExchangeAllocationMeta,
 }
 
@@ -29,7 +28,7 @@ impl DecreaseExchangeAllocationParams {
                 .build()
                 .unwrap(),
             ParamDefinition::builder()
-                .name("exchange_allocation_id")
+                .name("okex_allocation_id")
                 .r#type(ParamDataType::UUID)
                 .build()
                 .unwrap(),
@@ -50,16 +49,19 @@ impl DecreaseExchangeAllocationParams {
 impl From<DecreaseExchangeAllocationParams> for TxParams {
     fn from(
         DecreaseExchangeAllocationParams {
-            usd_cents_amount,
-            exchange_allocation_id,
+            okex_allocation_usd_cents_amount,
+            okex_allocation_id,
             meta,
         }: DecreaseExchangeAllocationParams,
     ) -> Self {
         let effective = meta.timestamp.naive_utc().date();
         let meta = serde_json::to_value(meta).expect("Couldn't serialize meta");
         let mut params = Self::default();
-        params.insert("usd_amount", usd_cents_amount / CENTS_PER_USD);
-        params.insert("exchange_allocation_id", exchange_allocation_id);
+        params.insert(
+            "usd_amount",
+            okex_allocation_usd_cents_amount / CENTS_PER_USD,
+        );
+        params.insert("okex_allocation_id", okex_allocation_id);
         params.insert("meta", meta);
         params.insert("effective", effective);
         params
@@ -73,14 +75,14 @@ impl DecreaseExchangeAllocation {
             .journal_id(format!("uuid('{STABLESATS_JOURNAL_ID}')"))
             .effective("params.effective")
             .metadata("params.meta")
-            .description("'Decrease exchange allocation'")
+            .description("'Decrease okex allocation'")
             .build()
             .expect("Couldn't build TxInput");
         let entries = vec![
             EntryInput::builder()
                 .entry_type("'DECREASE_EXCHANGE_ALLOCATION_USD_DR'")
                 .currency("'USD'")
-                .account_id("params.exchange_allocation_id")
+                .account_id("params.okex_allocation_id")
                 .direction("DEBIT")
                 .layer("SETTLED")
                 .units("params.usd_amount")
