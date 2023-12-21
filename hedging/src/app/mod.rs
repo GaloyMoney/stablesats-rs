@@ -88,4 +88,8 @@ impl HedgingApp {
             }
         }
     }
+
+    // async fn spawn_global_liability_listener(ledger: ledger::Ledger) -> Result<(), ledger::LedgerError>{
+    //     let mut events = ledger.usd_omnibus_balance_events.await?;
+    // }
 }

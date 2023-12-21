@@ -50,6 +50,7 @@ impl Ledger {
         Self::quotes_omnibus_account(&inner).await?;
         Self::quotes_liabilities_account(&inner).await?;
         Self::quotes_assets_account(&inner).await?;
+        Self::okex_allocation_account(&inner).await?;
 
         templates::UserBuysUsd::init(&inner).await?;
         templates::UserSellsUsd::init(&inner).await?;
@@ -59,6 +60,8 @@ impl Ledger {
         templates::DecreaseExchangePosition::init(&inner).await?;
         templates::BuyUsdQuoteAccepted::init(&inner).await?;
         templates::SellUsdQuoteAccepted::init(&inner).await?;
+        templates::IncreaseExchangeAllocation::init(&inner).await?;
+        templates::DecreaseExchangeAllocation::init(&inner).await?;
 
         Ok(Self {
             events: inner.events(EventSubscriberOpts::default()).await?,
@@ -173,6 +176,94 @@ impl Ledger {
         Ok(())
     }
 
+    #[instrument(name = "ledger.adjust_okex_allocation", skip(self,))]
+    pub async fn adjust_okex_allocation(
+        &self,
+        tx: Transaction<'_, Postgres>,
+        usd_cents_amount: Decimal,
+        exchange_id: String,
+    ) -> Result<(), LedgerError> {
+        self.adjust_exchange_allocation(tx, usd_cents_amount, OKEX_ALLOCATION_ID, exchange_id)
+            .await?;
+        Ok(())
+    }
+
+    #[instrument(name = "ledger.adjust_exchange_allocation", skip(self, tx))]
+    async fn adjust_exchange_allocation(
+        &self,
+        tx: Transaction<'_, Postgres>,
+        target_liability: Decimal,
+        exchange_allocation_id: uuid::Uuid,
+        exchange_id: String,
+    ) -> Result<(), LedgerError> {
+        let current_allocation = self
+            .balances()
+            .okex_allocation_account_balance()
+            .await?
+            .map(|b| b.settled())
+            .unwrap_or(Decimal::ZERO);
+        let current_allocation_in_cents = current_allocation * CENTS_PER_USD;
+        let diff = current_allocation_in_cents + target_liability;
+        if diff < Decimal::ZERO {
+            let decrease_exchange_allocation_params = DecreaseExchangeAllocationParams {
+                usd_cents_amount: diff.abs(),
+                exchange_allocation_id,
+                meta: DecreaseExchangeAllocationMeta {
+                    timestamp: chrono::Utc::now(),
+                    exchange_id,
+                },
+            };
+            self.decrease_exchange_allocation(tx, decrease_exchange_allocation_params)
+                .await?
+        } else {
+            let increase_exchange_allocation_params = IncreaseExchangeAllocationParams {
+                usd_cents_amount: diff,
+                exchange_allocation_id,
+                meta: IncreaseExchangeAllocationMeta {
+                    timestamp: chrono::Utc::now(),
+                    exchange_id,
+                },
+            };
+            self.increase_exchange_allocation(tx, increase_exchange_allocation_params)
+                .await?
+        }
+        Ok(())
+    }
+
+    #[instrument(name = "ledger.decrease_exchange_allocation", skip(self, tx))]
+    async fn decrease_exchange_allocation(
+        &self,
+        tx: Transaction<'_, Postgres>,
+        params: DecreaseExchangeAllocationParams,
+    ) -> Result<(), LedgerError> {
+        self.inner
+            .post_transaction_in_tx(
+                tx,
+                LedgerTxId::new(),
+                DECREASE_EXCHANGE_ALLOCATION_CODE,
+                Some(params),
+            )
+            .await?;
+        Ok(())
+    }
+
+    #[instrument(name = "ledger.increase_exchange_allocation", skip(self, tx))]
+    async fn increase_exchange_allocation(
+        &self,
+        tx: Transaction<'_, Postgres>,
+        params: IncreaseExchangeAllocationParams,
+    ) -> Result<(), LedgerError> {
+        self.inner
+            .post_transaction_in_tx(
+                tx,
+                LedgerTxId::new(),
+                INCREASE_EXCHANGE_ALLOCATION_CODE,
+                Some(params),
+            )
+            .await?;
+        Ok(())
+    }
+
     #[instrument(name = "ledger.user_buys_usd", skip(self, tx))]
     pub async fn user_buys_usd(
         &self,
@@ -257,6 +348,15 @@ impl Ledger {
         Ok(self
             .events
             .account_balance(STABLESATS_JOURNAL_ID.into(), STABLESATS_LIABILITY_ID.into())
+            .await?)
+    }
+
+    pub async fn usd_omnibus_balance_events(
+        &self,
+    ) -> Result<broadcast::Receiver<SqlxLedgerEvent>, LedgerError> {
+        Ok(self
+            .events
+            .account_balance(STABLESATS_JOURNAL_ID.into(), STABLESATS_OMNIBUS_ID.into())
             .await?)
     }
 
@@ -385,6 +485,22 @@ impl Ledger {
             .description("Account for okex position".to_string())
             .build()
             .expect("Couldn't create okex position account");
+        match ledger.accounts().create(new_account).await {
+            Ok(_) | Err(SqlxLedgerError::DuplicateKey(_)) => Ok(()),
+            Err(e) => Err(e.into()),
+        }
+    }
+
+    #[instrument(name = "ledger.okex_allocation_account", skip_all)]
+    async fn okex_allocation_account(ledger: &SqlxLedger) -> Result<(), LedgerError> {
+        let new_account = NewAccount::builder()
+            .code(OKEX_ALLOCATION_CODE)
+            .id(OKEX_ALLOCATION_ID)
+            .name(OKEX_ALLOCATION_CODE)
+            .normal_balance_type(DebitOrCredit::Debit)
+            .description("Account for okex allocation".to_string())
+            .build()
+            .expect("Couldn't create okex allocation account");
         match ledger.accounts().create(new_account).await {
             Ok(_) | Err(SqlxLedgerError::DuplicateKey(_)) => Ok(()),
             Err(e) => Err(e.into()),

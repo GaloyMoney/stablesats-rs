@@ -60,6 +60,21 @@ impl<'a> Balances<'a> {
         .await
     }
 
+    async fn exchange_allocation_account_balance(
+        &self,
+        exchange_allocation_id: impl Into<LedgerAccountId> + std::fmt::Debug,
+    ) -> Result<Option<AccountBalance>, LedgerError> {
+        self.get_ledger_account_balance(STABLESATS_JOURNAL_ID, exchange_allocation_id, self.usd)
+            .await
+    }
+
+    pub async fn okex_allocation_account_balance(
+        &self,
+    ) -> Result<Option<AccountBalance>, LedgerError> {
+        self.exchange_allocation_account_balance(OKEX_ALLOCATION_ID)
+            .await
+    }
+
     pub async fn okex_position_account_balance(
         &self,
     ) -> Result<Option<AccountBalance>, LedgerError> {
