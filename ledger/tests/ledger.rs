@@ -1,6 +1,6 @@
 use rust_decimal::Decimal;
 use rust_decimal_macros::dec;
-use serial_test::file_serial;
+use serial_test::{file_serial, serial};
 
 use stablesats_ledger::*;
 
@@ -12,6 +12,7 @@ pub async fn init_pool() -> anyhow::Result<sqlx::PgPool> {
 }
 
 #[tokio::test]
+#[serial]
 async fn user_buys_and_sells_usd() -> anyhow::Result<()> {
     let pool = init_pool().await?;
 
@@ -191,7 +192,7 @@ async fn buy_and_sell_quotes() -> anyhow::Result<()> {
 }
 
 #[tokio::test]
-#[file_serial]
+#[serial]
 async fn adjust_exchange_allocation() -> anyhow::Result<()> {
     let pool = init_pool().await?;
     let ledger = Ledger::init(&pool).await?;
