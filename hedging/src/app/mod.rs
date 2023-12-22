@@ -49,7 +49,7 @@ impl HedgingApp {
         let okex_engine = OkexEngine::run(
             pool.clone(),
             okex_config,
-            ledger,
+            ledger.clone(),
             price_receiver.resubscribe(),
         )
         .await?;
@@ -63,6 +63,7 @@ impl HedgingApp {
             .await?;
 
         Self::spawn_health_checker(health_check_trigger, health_cfg, price_receiver).await;
+        Self::spawn_global_liability_listener(pool.clone(), ledger).await;
         let app = HedgingApp {
             _job_runner_handle: job_runner_handle,
         };
@@ -89,43 +90,32 @@ impl HedgingApp {
         }
     }
 
-    // async fn spawn_global_liability_listener(
-    //     pool: sqlx::PgPool,
-    //     ledger: ledger::Ledger,
-    // ) -> Result<(), HedgingError> {
-    //     let mut events = ledger.usd_omnibus_balance_events().await?;
-    //     tokio::spawn(async move {
-    //         loop {
-    //             match events.recv().await {
-    //                 Ok(received) => {
-    //                     if let ledger::LedgerEventData::BalanceUpdated(data) = received.data {
-    //                         async {
-    //                             let target_allocation = ledger
-    //                                 .balances()
-    //                                 .stablesats_omnibus_account_balance()
-    //                                 .await?
-    //                                 .map(|balance| balance.settled())
-    //                                 .unwrap_or(rust_decimal::Decimal::ZERO);
-    //                             ledger
-    //                                 .adjust_exchange_allocation(
-    //                                     pool.begin().await?,
-    //                                     target_allocation,
-    //                                 )
-    //                                 .await?;
-    //                             Ok::<(), ledger::LedgerError>(())
-    //                                 .expect("liability could not be accounted for")
-    //                         }
-    //                         .await?;
-    //                     }
-    //                 }
-
-    //                 Err(tokio::sync::broadcast::error::RecvError::Lagged(_)) => (),
-    //                 _ => {
-    //                     break;
-    //                 }
-    //             }
-    //         }
-    //     });
-    //     Ok(())
-    // }
+    async fn spawn_global_liability_listener(
+        pool: sqlx::PgPool,
+        ledger: ledger::Ledger,
+    ) -> Result<(), HedgingError> {
+        // can pass in the pool to the sqlx fn to avoid ? error.
+        let mut events = ledger.usd_omnibus_balance_events().await?;
+        tokio::spawn(async move {
+            loop {
+                match events.recv().await {
+                    Ok(received) => {
+                        if let ledger::LedgerEventData::BalanceUpdated(data) = received.data {
+                            async {
+                                ledger.adjust_exchange_allocation(&pool).await;
+                                Ok::<(), ledger::LedgerError>(())
+                                    .expect("liability could not be accounted for")
+                            }
+                            .await
+                        }
+                    }
+                    Err(tokio::sync::broadcast::error::RecvError::Lagged(_)) => (),
+                    _ => {
+                        break;
+                    }
+                }
+            }
+        });
+        Ok(())
+    }
 }
