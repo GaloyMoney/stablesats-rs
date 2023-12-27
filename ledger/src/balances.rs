@@ -12,8 +12,9 @@ pub struct Balances<'a> {
 }
 
 impl<'a> Balances<'a> {
+    // can name this better based on the usecase now
     pub async fn stablesats_liability(&self) -> Result<Option<AccountBalance>, LedgerError> {
-        self.get_ledger_account_balance(STABLESATS_JOURNAL_ID, STABLESATS_LIABILITY_ID, self.usd)
+        self.get_ledger_account_balance(STABLESATS_JOURNAL_ID, OKEX_ALLOCATION_ID, self.usd)
             .await
     }
 
@@ -60,15 +61,6 @@ impl<'a> Balances<'a> {
         .await
     }
 
-    // for now we only have the stablesats_allocation_id
-    // in future this should represent okex_allocation + bitfinex_allocation
-    pub async fn exchange_allocation_account_balance(
-        &self,
-    ) -> Result<Option<AccountBalance>, LedgerError> {
-        self.get_ledger_account_balance(STABLESATS_JOURNAL_ID, OKEX_ALLOCATION_ID, self.usd)
-            .await
-    }
-
     pub async fn okex_position_account_balance(
         &self,
     ) -> Result<Option<AccountBalance>, LedgerError> {
@@ -79,7 +71,7 @@ impl<'a> Balances<'a> {
     pub async fn stablesats_omnibus_account_balance(
         &self,
     ) -> Result<Option<AccountBalance>, LedgerError> {
-        self.exchange_position_account_balance(STABLESATS_OMNIBUS_ID)
+        self.get_ledger_account_balance(STABLESATS_JOURNAL_ID, STABLESATS_OMNIBUS_ID, self.usd)
             .await
     }
 

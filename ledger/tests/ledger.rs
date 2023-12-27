@@ -190,39 +190,3 @@ async fn buy_and_sell_quotes() -> anyhow::Result<()> {
 
     Ok(())
 }
-
-#[tokio::test]
-#[serial]
-async fn adjust_exchange_allocation() -> anyhow::Result<()> {
-    let pool = init_pool().await?;
-    let ledger = Ledger::init(&pool).await?;
-
-    let initial_balance = ledger
-        .balances()
-        .exchange_allocation_account_balance()
-        .await?
-        .map(|b| b.settled())
-        .unwrap_or(Decimal::ZERO);
-
-    ledger
-        .adjust_exchange_allocation(pool.begin().await?, dec!(100))
-        .await?;
-    let balance_after_first_adjustment = ledger
-        .balances()
-        .exchange_allocation_account_balance()
-        .await?
-        .unwrap()
-        .settled();
-    assert_eq!(balance_after_first_adjustment - initial_balance, dec!(100));
-    ledger
-        .adjust_exchange_allocation(pool.begin().await?, dec!(90))
-        .await?;
-    let final_balance = ledger
-        .balances()
-        .exchange_allocation_account_balance()
-        .await?
-        .unwrap()
-        .settled();
-    assert_eq!(final_balance - initial_balance, dec!(90));
-    Ok(())
-}

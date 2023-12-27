@@ -176,51 +176,8 @@ impl Ledger {
         Ok(())
     }
 
-    #[instrument(name = "ledger.adjust_exchange_allocation", skip(self, pool))]
-    pub async fn adjust_exchange_allocation(&self, pool: &PgPool) -> Result<(), LedgerError> {
-        let current_allocation = self
-            .balances()
-            .exchange_allocation_account_balance()
-            .await?
-            .map(|b| b.settled())
-            .unwrap_or(Decimal::ZERO);
-        let target_allocation = self
-            .balances()
-            .stablesats_omnibus_account_balance()
-            .await?
-            .map(|b| b.settled())
-            .unwrap_or(Decimal::ZERO);
-        let current_allocation_in_cents = current_allocation * CENTS_PER_USD;
-        let target_allocation_in_cents = target_allocation * CENTS_PER_USD;
-        let diff = target_allocation_in_cents - current_allocation_in_cents;
-        let tx = pool.begin().await?;
-
-        if diff < Decimal::ZERO {
-            let decrease_exchange_allocation_params = DecreaseExchangeAllocationParams {
-                okex_allocation_usd_cents_amount: diff.abs(),
-                okex_allocation_id: OKEX_ALLOCATION_ID,
-                meta: DecreaseExchangeAllocationMeta {
-                    timestamp: chrono::Utc::now(),
-                },
-            };
-            self.decrease_exchange_allocation(tx, decrease_exchange_allocation_params)
-                .await?
-        } else {
-            let increase_exchange_allocation_params = IncreaseExchangeAllocationParams {
-                okex_allocation_usd_cents_amount: diff,
-                okex_allocation_id: OKEX_ALLOCATION_ID,
-                meta: IncreaseExchangeAllocationMeta {
-                    timestamp: chrono::Utc::now(),
-                },
-            };
-            self.increase_exchange_allocation(tx, increase_exchange_allocation_params)
-                .await?
-        }
-        Ok(())
-    }
-
     #[instrument(name = "ledger.decrease_exchange_allocation", skip(self, tx))]
-    async fn decrease_exchange_allocation(
+    pub async fn decrease_exchange_allocation(
         &self,
         tx: Transaction<'_, Postgres>,
         params: DecreaseExchangeAllocationParams,
@@ -237,7 +194,7 @@ impl Ledger {
     }
 
     #[instrument(name = "ledger.increase_exchange_allocation", skip(self, tx))]
-    async fn increase_exchange_allocation(
+    pub async fn increase_exchange_allocation(
         &self,
         tx: Transaction<'_, Postgres>,
         params: IncreaseExchangeAllocationParams,
@@ -331,7 +288,7 @@ impl Ledger {
         Ok(())
     }
 
-    pub async fn usd_liability_balance_events(
+    pub async fn okex_usd_liability_balance_events(
         &self,
     ) -> Result<broadcast::Receiver<SqlxLedgerEvent>, LedgerError> {
         Ok(self

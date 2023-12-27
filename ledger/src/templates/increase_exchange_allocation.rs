@@ -15,7 +15,6 @@ pub struct IncreaseExchangeAllocationMeta {
 #[derive(Debug, Clone)]
 pub struct IncreaseExchangeAllocationParams {
     pub okex_allocation_usd_cents_amount: Decimal,
-    pub okex_allocation_id: uuid::Uuid,
     pub meta: IncreaseExchangeAllocationMeta,
 }
 
@@ -25,11 +24,6 @@ impl IncreaseExchangeAllocationParams {
             ParamDefinition::builder()
                 .name("usd_amount")
                 .r#type(ParamDataType::DECIMAL)
-                .build()
-                .unwrap(),
-            ParamDefinition::builder()
-                .name("okex_allocation_id")
-                .r#type(ParamDataType::UUID)
                 .build()
                 .unwrap(),
             ParamDefinition::builder()
@@ -50,7 +44,6 @@ impl From<IncreaseExchangeAllocationParams> for TxParams {
     fn from(
         IncreaseExchangeAllocationParams {
             okex_allocation_usd_cents_amount,
-            okex_allocation_id,
             meta,
         }: IncreaseExchangeAllocationParams,
     ) -> Self {
@@ -61,7 +54,6 @@ impl From<IncreaseExchangeAllocationParams> for TxParams {
             "usd_amount",
             okex_allocation_usd_cents_amount / CENTS_PER_USD,
         );
-        params.insert("okex_allocation_id", okex_allocation_id);
         params.insert("meta", meta);
         params.insert("effective", effective);
         params
@@ -85,7 +77,7 @@ impl IncreaseExchangeAllocation {
             EntryInput::builder()
                 .entry_type("'INCREASE_EXCHANGE_ALLOCATION_USD_CR'")
                 .currency("'USD'")
-                .account_id("params.okex_allocation_id")
+                .account_id(format!("uuid('{OKEX_ALLOCATION_ID}')"))
                 .direction("CREDIT")
                 .layer("SETTLED")
                 .units("params.usd_amount")

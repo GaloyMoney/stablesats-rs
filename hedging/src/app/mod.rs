@@ -1,5 +1,7 @@
 use bria_client::{BriaClient, BriaClientConfig};
 use futures::stream::StreamExt;
+use rust_decimal::Decimal;
+use rust_decimal_macros::dec;
 use sqlxmq::JobRunnerHandle;
 use tracing::instrument;
 
@@ -11,6 +13,8 @@ use crate::{config::*, error::*, okex::*};
 pub struct HedgingApp {
     _job_runner_handle: JobRunnerHandle,
 }
+
+const CENTS_PER_USD: Decimal = dec!(100);
 
 impl HedgingApp {
     #[allow(clippy::too_many_arguments)]
@@ -28,7 +32,6 @@ impl HedgingApp {
     ) -> Result<Self, HedgingError> {
         let (mut jobs, mut channels) = (Vec::new(), Vec::new());
         OkexEngine::register_jobs(&mut jobs, &mut channels);
-
         let mut job_registry = sqlxmq::JobRegistry::new(&jobs);
 
         let ledger = ledger::Ledger::init(&pool).await?;
@@ -62,8 +65,8 @@ impl HedgingApp {
             .run()
             .await?;
 
+        let _ = Self::spawn_global_liability_listener(pool.clone(), ledger).await;
         Self::spawn_health_checker(health_check_trigger, health_cfg, price_receiver).await;
-        Self::spawn_global_liability_listener(pool.clone(), ledger).await;
         let app = HedgingApp {
             _job_runner_handle: job_runner_handle,
         };
@@ -94,19 +97,62 @@ impl HedgingApp {
         pool: sqlx::PgPool,
         ledger: ledger::Ledger,
     ) -> Result<(), HedgingError> {
-        // can pass in the pool to the sqlx fn to avoid ? error.
         let mut events = ledger.usd_omnibus_balance_events().await?;
         tokio::spawn(async move {
             loop {
                 match events.recv().await {
                     Ok(received) => {
-                        if let ledger::LedgerEventData::BalanceUpdated(data) = received.data {
-                            async {
-                                ledger.adjust_exchange_allocation(&pool).await;
+                        if let ledger::LedgerEventData::BalanceUpdated(_data) = received.data {
+                            let _ = async {
+                                let current_allocation = ledger
+                                    .balances()
+                                    .stablesats_liability()
+                                    .await?
+                                    .map(|l| l.settled())
+                                    .unwrap_or(Decimal::ZERO);
+                                let target_allocation = ledger
+                                    .balances()
+                                    .stablesats_omnibus_account_balance()
+                                    .await?
+                                    .map(|b| b.settled())
+                                    .unwrap_or(Decimal::ZERO);
+                                let current_allocation_in_cents =
+                                    current_allocation * CENTS_PER_USD;
+                                let target_allocation_in_cents = target_allocation * CENTS_PER_USD;
+                                let diff = target_allocation_in_cents - current_allocation_in_cents;
+                                let tx = pool.begin().await?;
+                                if diff < Decimal::ZERO {
+                                    let decrease_exchange_allocation_params =
+                                        ledger::DecreaseExchangeAllocationParams {
+                                            okex_allocation_usd_cents_amount: diff.abs(),
+                                            meta: ledger::DecreaseExchangeAllocationMeta {
+                                                timestamp: chrono::Utc::now(),
+                                            },
+                                        };
+                                    ledger
+                                        .decrease_exchange_allocation(
+                                            tx,
+                                            decrease_exchange_allocation_params,
+                                        )
+                                        .await?
+                                } else {
+                                    let increase_exchange_allocation_params =
+                                        ledger::IncreaseExchangeAllocationParams {
+                                            okex_allocation_usd_cents_amount: diff,
+                                            meta: ledger::IncreaseExchangeAllocationMeta {
+                                                timestamp: chrono::Utc::now(),
+                                            },
+                                        };
+                                    ledger
+                                        .increase_exchange_allocation(
+                                            tx,
+                                            increase_exchange_allocation_params,
+                                        )
+                                        .await?
+                                }
                                 Ok::<(), ledger::LedgerError>(())
-                                    .expect("liability could not be accounted for")
                             }
-                            .await
+                            .await;
                         }
                     }
                     Err(tokio::sync::broadcast::error::RecvError::Lagged(_)) => (),
