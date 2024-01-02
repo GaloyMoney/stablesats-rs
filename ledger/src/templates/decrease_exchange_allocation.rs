@@ -15,6 +15,7 @@ pub struct DecreaseExchangeAllocationMeta {
 #[derive(Debug, Clone)]
 pub struct DecreaseExchangeAllocationParams {
     pub okex_allocation_usd_cents_amount: Decimal,
+    pub bitfinex_allocation_usd_cents_amount: Decimal,
     pub meta: DecreaseExchangeAllocationMeta,
 }
 
@@ -22,7 +23,12 @@ impl DecreaseExchangeAllocationParams {
     pub fn defs() -> Vec<ParamDefinition> {
         vec![
             ParamDefinition::builder()
-                .name("usd_amount")
+                .name("okex_allocation_usd_amount")
+                .r#type(ParamDataType::DECIMAL)
+                .build()
+                .unwrap(),
+            ParamDefinition::builder()
+                .name("bitfinex_allocation_usd_amount")
                 .r#type(ParamDataType::DECIMAL)
                 .build()
                 .unwrap(),
@@ -44,6 +50,7 @@ impl From<DecreaseExchangeAllocationParams> for TxParams {
     fn from(
         DecreaseExchangeAllocationParams {
             okex_allocation_usd_cents_amount,
+            bitfinex_allocation_usd_cents_amount,
             meta,
         }: DecreaseExchangeAllocationParams,
     ) -> Self {
@@ -51,8 +58,12 @@ impl From<DecreaseExchangeAllocationParams> for TxParams {
         let meta = serde_json::to_value(meta).expect("Couldn't serialize meta");
         let mut params = Self::default();
         params.insert(
-            "usd_amount",
+            "okex_allocation_usd_amount",
             okex_allocation_usd_cents_amount / CENTS_PER_USD,
+        );
+        params.insert(
+            "bitfinex_allocation_usd_amount",
+            bitfinex_allocation_usd_cents_amount / CENTS_PER_USD,
         );
         params.insert("meta", meta);
         params.insert("effective", effective);
@@ -77,7 +88,16 @@ impl DecreaseExchangeAllocation {
                 .account_id(format!("uuid('{OKEX_ALLOCATION_ID}')"))
                 .direction("DEBIT")
                 .layer("SETTLED")
-                .units("params.usd_amount")
+                .units("params.okex_allocation_usd_amount")
+                .build()
+                .expect("Couldn't build DECREASE_EXCHANGE_ALLOCATION_USD_DR entry"),
+            EntryInput::builder()
+                .entry_type("'DECREASE_EXCHANGE_ALLOCATION_USD_DR'")
+                .currency("'USD'")
+                .account_id(format!("uuid('{BITFINEX_ALLOCATION_ID}')"))
+                .direction("DEBIT")
+                .layer("SETTLED")
+                .units("params.bitfinex_allocation_usd_amount")
                 .build()
                 .expect("Couldn't build DECREASE_EXCHANGE_ALLOCATION_USD_DR entry"),
             EntryInput::builder()
@@ -86,7 +106,7 @@ impl DecreaseExchangeAllocation {
                 .account_id(format!("uuid('{STABLESATS_LIABILITY_ID}')"))
                 .direction("CREDIT")
                 .layer("SETTLED")
-                .units("params.usd_amount")
+                .units("params.bitfinex_allocation_usd_amount + params.okex_allocation_usd_amount")
                 .build()
                 .expect("Couldn't build DECREASE_EXCHANGE_ALLOCATION_USD_CR entry"),
         ];

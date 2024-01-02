@@ -18,12 +18,7 @@ async fn user_buys_and_sells_usd() -> anyhow::Result<()> {
 
     let ledger = Ledger::init(&pool).await?;
 
-    let before_liability = ledger
-        .balances()
-        .stablesats_liability()
-        .await?
-        .map(|b| b.settled())
-        .unwrap_or(Decimal::ZERO);
+    let before_liability = ledger.balances().stablesats_liability().await?;
     let before_btc = ledger
         .balances()
         .stablesats_btc_wallet()
@@ -46,12 +41,7 @@ async fn user_buys_and_sells_usd() -> anyhow::Result<()> {
         )
         .await?;
 
-    let after_liability = ledger
-        .balances()
-        .stablesats_liability()
-        .await?
-        .unwrap()
-        .settled();
+    let after_liability = ledger.balances().stablesats_liability().await?;
     let after_btc = ledger
         .balances()
         .stablesats_btc_wallet()
@@ -76,9 +66,9 @@ async fn user_buys_and_sells_usd() -> anyhow::Result<()> {
             },
         )
         .await?;
-    let end_balance = ledger.balances().stablesats_liability().await?.unwrap();
+    let end_balance = ledger.balances().stablesats_liability().await?;
     let end_btc = ledger.balances().stablesats_btc_wallet().await?.unwrap();
-    assert_eq!(end_balance.settled(), before_liability);
+    assert_eq!(end_balance, before_liability);
     assert_eq!(end_btc.settled(), before_btc);
     let omnibus_account_balance = ledger.balances().stablesats_omnibus_account_balance().await;
     println!("{:?}", omnibus_account_balance);
@@ -195,17 +185,13 @@ async fn buy_and_sell_quotes() -> anyhow::Result<()> {
 async fn exchange_allocation() -> anyhow::Result<()> {
     let pool = init_pool().await?;
     let ledger = Ledger::init(&pool).await?;
-    let initial_liability = ledger
-        .balances()
-        .stablesats_liability()
-        .await?
-        .map(|b| b.settled())
-        .unwrap_or(Decimal::ZERO);
+    let initial_liability = ledger.balances().stablesats_liability().await?;
     ledger
         .increase_exchange_allocation(
             pool.begin().await?,
             IncreaseExchangeAllocationParams {
                 okex_allocation_usd_cents_amount: dec!(10000),
+                bitfinex_allocation_usd_cents_amount: dec!(0),
                 meta: IncreaseExchangeAllocationMeta {
                     timestamp: chrono::Utc::now(),
                 },
@@ -217,18 +203,14 @@ async fn exchange_allocation() -> anyhow::Result<()> {
             pool.begin().await?,
             DecreaseExchangeAllocationParams {
                 okex_allocation_usd_cents_amount: dec!(10000),
+                bitfinex_allocation_usd_cents_amount: dec!(0),
                 meta: DecreaseExchangeAllocationMeta {
                     timestamp: chrono::Utc::now(),
                 },
             },
         )
         .await?;
-    let final_liability = ledger
-        .balances()
-        .stablesats_liability()
-        .await?
-        .map(|b| b.settled())
-        .unwrap_or(Decimal::ZERO);
+    let final_liability = ledger.balances().stablesats_liability().await?;
     assert_eq!(initial_liability, final_liability);
 
     Ok(())

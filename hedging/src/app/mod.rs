@@ -10,11 +10,11 @@ use shared::{health::HealthCheckTrigger, payload::PriceStreamPayload, pubsub::me
 
 use crate::{config::*, error::*, okex::*};
 
+const CENTS_PER_USD: Decimal = dec!(100);
+
 pub struct HedgingApp {
     _job_runner_handle: JobRunnerHandle,
 }
-
-const CENTS_PER_USD: Decimal = dec!(100);
 
 impl HedgingApp {
     #[allow(clippy::too_many_arguments)]
@@ -104,12 +104,8 @@ impl HedgingApp {
                     Ok(received) => {
                         if let ledger::LedgerEventData::BalanceUpdated(_data) = received.data {
                             let _ = async {
-                                let current_allocation = ledger
-                                    .balances()
-                                    .stablesats_liability()
-                                    .await?
-                                    .map(|l| l.settled())
-                                    .unwrap_or(Decimal::ZERO);
+                                let current_allocation =
+                                    ledger.balances().stablesats_liability().await?;
                                 let target_allocation = ledger
                                     .balances()
                                     .stablesats_omnibus_account_balance()
@@ -125,6 +121,7 @@ impl HedgingApp {
                                     let decrease_exchange_allocation_params =
                                         ledger::DecreaseExchangeAllocationParams {
                                             okex_allocation_usd_cents_amount: diff.abs(),
+                                            bitfinex_allocation_usd_cents_amount: Decimal::ZERO,
                                             meta: ledger::DecreaseExchangeAllocationMeta {
                                                 timestamp: chrono::Utc::now(),
                                             },
@@ -139,6 +136,7 @@ impl HedgingApp {
                                     let increase_exchange_allocation_params =
                                         ledger::IncreaseExchangeAllocationParams {
                                             okex_allocation_usd_cents_amount: diff,
+                                            bitfinex_allocation_usd_cents_amount: Decimal::ZERO,
                                             meta: ledger::IncreaseExchangeAllocationMeta {
                                                 timestamp: chrono::Utc::now(),
                                             },

@@ -13,8 +13,26 @@ pub struct Balances<'a> {
 
 impl<'a> Balances<'a> {
     // can name this better based on the usecase now
-    pub async fn stablesats_liability(&self) -> Result<Option<AccountBalance>, LedgerError> {
+    pub async fn stablesats_liability(&self) -> Result<Decimal, LedgerError> {
+        Ok(self
+            .okex_allocation_balance()
+            .await?
+            .map(|l| l.settled())
+            .unwrap_or(Decimal::ZERO)
+            + self
+                .bitfinex_allocation_balance()
+                .await?
+                .map(|l| l.settled())
+                .unwrap_or(Decimal::ZERO))
+    }
+
+    async fn okex_allocation_balance(&self) -> Result<Option<AccountBalance>, LedgerError> {
         self.get_ledger_account_balance(STABLESATS_JOURNAL_ID, OKEX_ALLOCATION_ID, self.usd)
+            .await
+    }
+
+    async fn bitfinex_allocation_balance(&self) -> Result<Option<AccountBalance>, LedgerError> {
+        self.get_ledger_account_balance(STABLESATS_JOURNAL_ID, BITFINEX_ALLOCATION_ID, self.usd)
             .await
     }
 
@@ -36,10 +54,8 @@ impl<'a> Balances<'a> {
     )]
     pub async fn target_liability_in_cents(&self) -> Result<SyntheticCentLiability, LedgerError> {
         let liability = self.stablesats_liability().await?;
-        let res = SyntheticCentLiability::try_from(
-            liability.map(|l| l.settled()).unwrap_or(Decimal::ZERO) * CENTS_PER_USD,
-        )
-        .expect("usd liability has wrong sign");
+        let res = SyntheticCentLiability::try_from(liability * CENTS_PER_USD)
+            .expect("usd liability has wrong sign");
         tracing::Span::current().record("liability", &tracing::field::display(res));
         Ok(res)
     }

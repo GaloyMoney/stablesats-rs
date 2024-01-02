@@ -66,5 +66,8 @@ pub(super) const OKEX_POSITION_ID: Uuid = uuid!("10000000-1000-0000-0000-0000000
 pub(super) const OKEX_ALLOCATION_CODE: &str = "OKEX_ALLOCATION";
 pub(super) const OKEX_ALLOCATION_ID: Uuid = uuid!("10000000-1000-0000-0000-000000000003");
 
+pub(super) const BITFINEX_ALLOCATION_CODE: &str = "BITFINEX_ALLOCATION";
+pub(super) const BITFINEX_ALLOCATION_ID: uuid::Uuid = uuid!("10000000-1000-0000-0000-000000000004");
+
 pub const SATS_PER_BTC: Decimal = dec!(100_000_000);
 pub const CENTS_PER_USD: Decimal = dec!(100);

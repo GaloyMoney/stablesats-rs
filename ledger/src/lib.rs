@@ -51,6 +51,7 @@ impl Ledger {
         Self::quotes_liabilities_account(&inner).await?;
         Self::quotes_assets_account(&inner).await?;
         Self::okex_allocation_account(&inner).await?;
+        Self::bitfinex_allocation_account(&inner).await?;
 
         templates::UserBuysUsd::init(&inner).await?;
         templates::UserSellsUsd::init(&inner).await?;
@@ -447,6 +448,22 @@ impl Ledger {
             .description("Account for okex allocation".to_string())
             .build()
             .expect("Couldn't create okex allocation account");
+        match ledger.accounts().create(new_account).await {
+            Ok(_) | Err(SqlxLedgerError::DuplicateKey(_)) => Ok(()),
+            Err(e) => Err(e.into()),
+        }
+    }
+
+    #[instrument(name = "ledger.bitfinex_allocation_account", skip_all)]
+    async fn bitfinex_allocation_account(ledger: &SqlxLedger) -> Result<(), LedgerError> {
+        let new_account = NewAccount::builder()
+            .code(BITFINEX_ALLOCATION_CODE)
+            .id(BITFINEX_ALLOCATION_ID)
+            .name(BITFINEX_ALLOCATION_CODE)
+            .normal_balance_type(DebitOrCredit::Credit)
+            .description("Account for bitfinex allocation".to_string())
+            .build()
+            .expect("Couldn't create bitfinex allocation account");
         match ledger.accounts().create(new_account).await {
             Ok(_) | Err(SqlxLedgerError::DuplicateKey(_)) => Ok(()),
             Err(e) => Err(e.into()),
