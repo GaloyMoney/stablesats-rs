@@ -1,7 +1,6 @@
 use bria_client::{BriaClient, BriaClientConfig};
 use futures::stream::StreamExt;
 use rust_decimal::Decimal;
-use rust_decimal_macros::dec;
 use sqlxmq::JobRunnerHandle;
 use tracing::instrument;
 
@@ -9,8 +8,6 @@ use galoy_client::*;
 use shared::{health::HealthCheckTrigger, payload::PriceStreamPayload, pubsub::memory};
 
 use crate::{config::*, error::*, okex::*};
-
-const CENTS_PER_USD: Decimal = dec!(100);
 
 pub struct HedgingApp {
     _job_runner_handle: JobRunnerHandle,
@@ -104,49 +101,26 @@ impl HedgingApp {
                     Ok(received) => {
                         if let ledger::LedgerEventData::BalanceUpdated(_data) = received.data {
                             let _ = async {
-                                let current_allocation =
-                                    ledger.balances().stablesats_liability().await?;
-                                let target_allocation = ledger
-                                    .balances()
-                                    .stablesats_omnibus_account_balance()
-                                    .await?
-                                    .map(|b| b.settled())
-                                    .unwrap_or(Decimal::ZERO);
-                                let current_allocation_in_cents =
-                                    current_allocation * CENTS_PER_USD;
-                                let target_allocation_in_cents = target_allocation * CENTS_PER_USD;
-                                let diff = target_allocation_in_cents - current_allocation_in_cents;
+                                let liability_balances =
+                                    ledger.balances().usd_liability_balances().await?;
                                 let tx = pool.begin().await?;
-                                if diff < Decimal::ZERO {
-                                    let decrease_exchange_allocation_params =
-                                        ledger::DecreaseExchangeAllocationParams {
-                                            okex_allocation_usd_cents_amount: diff.abs(),
-                                            bitfinex_allocation_usd_cents_amount: Decimal::ZERO,
-                                            meta: ledger::DecreaseExchangeAllocationMeta {
-                                                timestamp: chrono::Utc::now(),
-                                            },
-                                        };
-                                    ledger
-                                        .decrease_exchange_allocation(
-                                            tx,
-                                            decrease_exchange_allocation_params,
-                                        )
-                                        .await?
+                                let unallocated_usd = liability_balances.unallocated_usd;
+                                if unallocated_usd == Decimal::ZERO {
+                                    // no need to do anything
                                 } else {
-                                    let increase_exchange_allocation_params =
-                                        ledger::IncreaseExchangeAllocationParams {
-                                            okex_allocation_usd_cents_amount: diff,
-                                            bitfinex_allocation_usd_cents_amount: Decimal::ZERO,
-                                            meta: ledger::IncreaseExchangeAllocationMeta {
+                                    let adjustment_params =
+                                        ledger::AdjustExchangeAllocationParams {
+                                            okex_allocation_adjustment_usd_cents_amount:
+                                                unallocated_usd,
+                                            bitfinex_allocation_adjustment_usd_cents_amount:
+                                                Decimal::ZERO,
+                                            meta: ledger::AdjustExchangeAllocationMeta {
                                                 timestamp: chrono::Utc::now(),
                                             },
                                         };
                                     ledger
-                                        .increase_exchange_allocation(
-                                            tx,
-                                            increase_exchange_allocation_params,
-                                        )
-                                        .await?
+                                        .adjust_exchange_allocation(tx, adjustment_params)
+                                        .await?;
                                 }
                                 Ok::<(), ledger::LedgerError>(())
                             }

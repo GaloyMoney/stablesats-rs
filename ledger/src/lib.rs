@@ -61,8 +61,7 @@ impl Ledger {
         templates::DecreaseExchangePosition::init(&inner).await?;
         templates::BuyUsdQuoteAccepted::init(&inner).await?;
         templates::SellUsdQuoteAccepted::init(&inner).await?;
-        templates::IncreaseExchangeAllocation::init(&inner).await?;
-        templates::DecreaseExchangeAllocation::init(&inner).await?;
+        templates::AdjustExchangeAllocation::init(&inner).await?;
 
         Ok(Self {
             events: inner.events(EventSubscriberOpts::default()).await?,
@@ -177,34 +176,17 @@ impl Ledger {
         Ok(())
     }
 
-    #[instrument(name = "ledger.decrease_exchange_allocation", skip(self, tx))]
-    pub async fn decrease_exchange_allocation(
+    #[instrument(name = "ledger.adjust_exchange_allocation", skip(self, tx))]
+    pub async fn adjust_exchange_allocation(
         &self,
         tx: Transaction<'_, Postgres>,
-        params: DecreaseExchangeAllocationParams,
+        params: AdjustExchangeAllocationParams,
     ) -> Result<(), LedgerError> {
         self.inner
             .post_transaction_in_tx(
                 tx,
                 LedgerTxId::new(),
-                DECREASE_EXCHANGE_ALLOCATION_CODE,
-                Some(params),
-            )
-            .await?;
-        Ok(())
-    }
-
-    #[instrument(name = "ledger.increase_exchange_allocation", skip(self, tx))]
-    pub async fn increase_exchange_allocation(
-        &self,
-        tx: Transaction<'_, Postgres>,
-        params: IncreaseExchangeAllocationParams,
-    ) -> Result<(), LedgerError> {
-        self.inner
-            .post_transaction_in_tx(
-                tx,
-                LedgerTxId::new(),
-                INCREASE_EXCHANGE_ALLOCATION_CODE,
+                ADJUST_EXCHANGE_ALLOCATION_CODE,
                 Some(params),
             )
             .await?;

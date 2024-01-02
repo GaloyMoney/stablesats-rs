@@ -11,29 +11,81 @@ pub struct Balances<'a> {
     pub(super) btc: Currency,
 }
 
+#[derive(Debug, PartialEq, Eq)]
+pub struct LiabilityAllocations {
+    pub unallocated_usd: Decimal,
+    pub okex_allocation: SyntheticCentLiability,
+    pub bitfinex_allocation: SyntheticCentLiability,
+    pub total_liability: SyntheticCentLiability,
+}
+
 impl<'a> Balances<'a> {
-    // can name this better based on the usecase now
-    pub async fn stablesats_liability(&self) -> Result<Decimal, LedgerError> {
-        Ok(self
-            .okex_allocation_balance()
-            .await?
-            .map(|l| l.settled())
-            .unwrap_or(Decimal::ZERO)
-            + self
-                .bitfinex_allocation_balance()
-                .await?
-                .map(|l| l.settled())
-                .unwrap_or(Decimal::ZERO))
-    }
+    #[instrument(
+        name = "ledger.balances.usd_liability_balances",
+        skip(self),
+        fields(unallocated, okex, bitfinex, omnibus),
+        err,
+        ret
+    )]
+    pub async fn usd_liability_balances(&self) -> Result<LiabilityAllocations, LedgerError> {
+        let unallocated_id = sqlx_ledger::AccountId::from(STABLESATS_LIABILITY_ID);
+        let okex_id = sqlx_ledger::AccountId::from(OKEX_ALLOCATION_ID);
+        let bitfinex_id = sqlx_ledger::AccountId::from(BITFINEX_ALLOCATION_ID);
+        let omnibus = sqlx_ledger::AccountId::from(STABLESATS_OMNIBUS_ID);
 
-    async fn okex_allocation_balance(&self) -> Result<Option<AccountBalance>, LedgerError> {
-        self.get_ledger_account_balance(STABLESATS_JOURNAL_ID, OKEX_ALLOCATION_ID, self.usd)
-            .await
-    }
-
-    async fn bitfinex_allocation_balance(&self) -> Result<Option<AccountBalance>, LedgerError> {
-        self.get_ledger_account_balance(STABLESATS_JOURNAL_ID, BITFINEX_ALLOCATION_ID, self.usd)
-            .await
+        let mut balances = self
+            .inner
+            .balances()
+            .find_all(
+                STABLESATS_JOURNAL_ID.into(),
+                [unallocated_id, okex_id, bitfinex_id, omnibus],
+            )
+            .await?;
+        let ret = LiabilityAllocations {
+            unallocated_usd: balances
+                .remove(&unallocated_id)
+                .and_then(|mut b| b.remove(&self.usd))
+                .map(|b| b.settled())
+                .unwrap_or(Decimal::ZERO),
+            okex_allocation: SyntheticCentLiability::try_from(
+                balances
+                    .remove(&okex_id)
+                    .and_then(|mut b| b.remove(&self.usd))
+                    .map(|b| b.settled())
+                    .unwrap_or(Decimal::ZERO)
+                    * CENTS_PER_USD,
+            )
+            .expect("usd liability has wrong sign"),
+            bitfinex_allocation: SyntheticCentLiability::try_from(
+                balances
+                    .remove(&bitfinex_id)
+                    .and_then(|mut b| b.remove(&self.usd))
+                    .map(|b| b.settled())
+                    .unwrap_or(Decimal::ZERO)
+                    * CENTS_PER_USD,
+            )
+            .expect("usd liability has wrong sign"),
+            total_liability: SyntheticCentLiability::try_from(
+                balances
+                    .remove(&omnibus)
+                    .and_then(|mut b| b.remove(&self.usd))
+                    .map(|b| b.settled())
+                    .unwrap_or(Decimal::ZERO)
+                    * CENTS_PER_USD,
+            )
+            .expect("usd liability has wrong sign"),
+        };
+        tracing::Span::current().record(
+            "unallocated_usd",
+            &tracing::field::display(ret.unallocated_usd),
+        );
+        tracing::Span::current().record("okex", &tracing::field::display(ret.okex_allocation));
+        tracing::Span::current().record(
+            "bitfinex",
+            &tracing::field::display(ret.bitfinex_allocation),
+        );
+        tracing::Span::current().record("omnibus", &tracing::field::display(ret.total_liability));
+        Ok(ret)
     }
 
     pub async fn quotes_usd_liabilities(&self) -> Result<Option<AccountBalance>, LedgerError> {
@@ -46,23 +98,10 @@ impl<'a> Balances<'a> {
             .await
     }
 
-    #[instrument(
-        name = "ledger.balances.target_liability_in_cents",
-        skip(self),
-        fields(liability),
-        err
-    )]
-    pub async fn target_liability_in_cents(&self) -> Result<SyntheticCentLiability, LedgerError> {
-        let liability = self.stablesats_liability().await?;
-        let res = SyntheticCentLiability::try_from(liability * CENTS_PER_USD)
-            .expect("usd liability has wrong sign");
-        tracing::Span::current().record("liability", &tracing::field::display(res));
-        Ok(res)
-    }
-
-    pub async fn stablesats_btc_wallet(&self) -> Result<Option<AccountBalance>, LedgerError> {
+    pub async fn stablesats_btc_assets(&self) -> Result<Decimal, LedgerError> {
         self.get_ledger_account_balance(STABLESATS_JOURNAL_ID, STABLESATS_BTC_WALLET_ID, self.btc)
             .await
+            .map(|b| b.map(|b| b.settled()).unwrap_or(Decimal::ZERO))
     }
 
     async fn exchange_position_account_balance(
@@ -81,13 +120,6 @@ impl<'a> Balances<'a> {
         &self,
     ) -> Result<Option<AccountBalance>, LedgerError> {
         self.exchange_position_account_balance(OKEX_POSITION_ID)
-            .await
-    }
-
-    pub async fn stablesats_omnibus_account_balance(
-        &self,
-    ) -> Result<Option<AccountBalance>, LedgerError> {
-        self.get_ledger_account_balance(STABLESATS_JOURNAL_ID, STABLESATS_OMNIBUS_ID, self.usd)
             .await
     }
 
