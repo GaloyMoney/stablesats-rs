@@ -190,3 +190,46 @@ async fn buy_and_sell_quotes() -> anyhow::Result<()> {
 
     Ok(())
 }
+
+#[tokio::test]
+async fn exchange_allocation() -> anyhow::Result<()> {
+    let pool = init_pool().await?;
+    let ledger = Ledger::init(&pool).await?;
+    let initial_liability = ledger
+        .balances()
+        .stablesats_liability()
+        .await?
+        .map(|b| b.settled())
+        .unwrap_or(Decimal::ZERO);
+    ledger
+        .increase_exchange_allocation(
+            pool.begin().await?,
+            IncreaseExchangeAllocationParams {
+                okex_allocation_usd_cents_amount: dec!(10000),
+                meta: IncreaseExchangeAllocationMeta {
+                    timestamp: chrono::Utc::now(),
+                },
+            },
+        )
+        .await?;
+    ledger
+        .decrease_exchange_allocation(
+            pool.begin().await?,
+            DecreaseExchangeAllocationParams {
+                okex_allocation_usd_cents_amount: dec!(10000),
+                meta: DecreaseExchangeAllocationMeta {
+                    timestamp: chrono::Utc::now(),
+                },
+            },
+        )
+        .await?;
+    let final_liability = ledger
+        .balances()
+        .stablesats_liability()
+        .await?
+        .map(|b| b.settled())
+        .unwrap_or(Decimal::ZERO);
+    assert_eq!(initial_liability, final_liability);
+
+    Ok(())
+}
