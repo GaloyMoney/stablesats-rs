@@ -11,7 +11,6 @@ use shared::{payload::*, pubsub::*};
 use tokio::join;
 
 pub use config::*;
-pub use error::*;
 pub use price_feed::*;
 
 pub async fn run(

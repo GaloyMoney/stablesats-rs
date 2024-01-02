@@ -11,7 +11,6 @@ use futures::StreamExt;
 use shared::{payload::*, pubsub::*};
 use tokio::{join, time::timeout};
 
-pub use error::*;
 pub use okex_shared::*;
 pub use order_book::*;
 pub use price_feed::*;

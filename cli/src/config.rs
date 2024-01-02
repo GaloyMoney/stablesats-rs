@@ -107,7 +107,7 @@ impl Default for PriceServerWrapper {
     }
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Default, Debug, Clone, Serialize, Deserialize)]
 pub struct QuotesServerWrapper {
     #[serde(default)]
     pub enabled: bool,
@@ -121,19 +121,6 @@ pub struct QuotesServerWrapper {
     pub price_cache: QuotesExchangePriceCacheConfig,
     #[serde(default)]
     pub config: QuotesConfig,
-}
-
-impl Default for QuotesServerWrapper {
-    fn default() -> Self {
-        Self {
-            enabled: false,
-            server: QuotesServerConfig::default(),
-            health: QuotesServerHealthCheckConfig::default(),
-            fees: QuotesFeeCalculatorConfig::default(),
-            price_cache: QuotesExchangePriceCacheConfig::default(),
-            config: QuotesConfig::default(),
-        }
-    }
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
