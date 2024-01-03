@@ -32,6 +32,7 @@ lazy_static::lazy_static! {
 const REST_API_V2_URL: &str = "https://api.bitfinex.com/v2";
 const REST_API_R_SIGNATURE_PATH: &str = "/api/v2/auth/r";
 const REST_API_W_SIGNATURE_PATH: &str = "/api/v2/auth/w";
+const REST_API_CALC_SIGNATURE_PATH: &str = "/api/v2/auth/calc";
 
 #[derive(Serialize, Deserialize, Debug, Clone, Default)]
 pub struct BitfinexConfig {
@@ -349,6 +350,66 @@ impl BitfinexClient {
         Ok(transfer)
     }
 
+    #[instrument(name = "bitfinex_client.funding_account_balance", skip(self), err)]
+    pub async fn funding_account_balance(
+        &self,
+    ) -> Result<FundingAccountBalance, BitfinexClientError> {
+        let mut body: HashMap<String, String> = HashMap::new();
+        body.insert("type".to_string(), Wallet::MARGIN.to_string());
+        if self.config.simulated {
+            body.insert("symbol".to_string(), "fUSD".to_string());
+        } else {
+            body.insert("symbol".to_string(), Currency::USD.to_string());
+        }
+        let request_body = serde_json::to_string(&body)?;
+
+        let endpoint = "/order/avail";
+        let params = "";
+        let headers = self.post_calc_request_headers(endpoint, params, &request_body)?;
+
+        let response = self
+            .rate_limit_client(endpoint)
+            .await
+            .post(Self::url_for_auth_calc_path(endpoint, params))
+            .headers(headers)
+            .body(request_body)
+            .send()
+            .await?;
+        let funding_balance =
+            Self::extract_response_data::<FundingAccountBalance>(response).await?;
+        Ok(funding_balance)
+    }
+
+    #[instrument(name = "bitfinex_client.trading_account_balance", skip(self), err)]
+    pub async fn trading_account_balance(
+        &self,
+    ) -> Result<TradingAccountBalance, BitfinexClientError> {
+        let mut body: HashMap<String, String> = HashMap::new();
+        body.insert("type".to_string(), Wallet::EXCHANGE.to_string());
+        if self.config.simulated {
+            body.insert("symbol".to_string(), "fUSD".to_string());
+        } else {
+            body.insert("symbol".to_string(), Currency::USD.to_string());
+        }
+        let request_body = serde_json::to_string(&body)?;
+
+        let endpoint = "/order/avail";
+        let params = "";
+        let headers = self.post_calc_request_headers(endpoint, params, &request_body)?;
+
+        let response = self
+            .rate_limit_client(endpoint)
+            .await
+            .post(Self::url_for_auth_calc_path(endpoint, params))
+            .headers(headers)
+            .body(request_body)
+            .send()
+            .await?;
+        let funding_balance =
+            Self::extract_response_data::<TradingAccountBalance>(response).await?;
+        Ok(funding_balance)
+    }
+
     #[instrument(name = "bitfinex_client.withdraw_btc_onchain", skip(self), err)]
     pub async fn withdraw_btc_onchain(
         &self,
@@ -566,6 +627,10 @@ impl BitfinexClient {
         format!("{REST_API_V2_URL}/auth/w{endpoint}{params}")
     }
 
+    fn url_for_auth_calc_path(endpoint: &str, params: &str) -> String {
+        format!("{REST_API_V2_URL}/auth/calc{endpoint}{params}")
+    }
+
     fn sign_request(&self, pre_hash: String) -> String {
         let key = hmac::Key::new(hmac::HMAC_SHA384, self.config.secret_key.as_bytes());
         let signature = hmac::sign(&key, pre_hash.as_bytes());
@@ -613,5 +678,14 @@ impl BitfinexClient {
         body: &str,
     ) -> Result<HeaderMap, BitfinexClientError> {
         self.post_request_headers(REST_API_W_SIGNATURE_PATH, request, params, body)
+    }
+
+    fn post_calc_request_headers(
+        &self,
+        request: &str,
+        params: &str,
+        body: &str,
+    ) -> Result<HeaderMap, BitfinexClientError> {
+        self.post_request_headers(REST_API_CALC_SIGNATURE_PATH, request, params, body)
     }
 }

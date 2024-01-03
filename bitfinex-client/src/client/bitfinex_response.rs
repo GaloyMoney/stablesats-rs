@@ -43,6 +43,16 @@ pub struct FundingData {
 }
 
 #[derive(Deserialize, Debug, Clone)]
+pub struct FundingAccountBalance {
+    pub amount_avail: Decimal,
+}
+
+#[derive(Deserialize, Debug, Clone)]
+pub struct TradingAccountBalance {
+    pub amount_avail: Decimal,
+}
+
+#[derive(Deserialize, Debug, Clone)]
 pub struct OrderDetails {
     pub id: u64,
     pub group_id: Option<u64>,
