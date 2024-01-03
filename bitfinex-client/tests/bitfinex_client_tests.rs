@@ -141,7 +141,7 @@ async fn funding_account_balance() -> anyhow::Result<()> {
 #[serial]
 async fn trading_account_balance() -> anyhow::Result<()> {
     if let Ok(client) = configured_bitfinex_client().await {
-        let _trading_balance = client.funding_account_balance().await?;
+        let _trading_balance = client.trading_account_balance().await?;
     }
 
     Ok(())
