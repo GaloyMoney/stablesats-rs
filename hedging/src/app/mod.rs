@@ -105,13 +105,11 @@ impl HedgingApp {
                                     ledger.balances().usd_liability_balances().await?;
                                 let tx = pool.begin().await?;
                                 let unallocated_usd = liability_balances.unallocated_usd;
-                                if unallocated_usd == Decimal::ZERO {
-                                    // no need to do anything
-                                } else {
+                                if unallocated_usd != Decimal::ZERO {
                                     let adjustment_params =
                                         ledger::AdjustExchangeAllocationParams {
                                             okex_allocation_adjustment_usd_cents_amount:
-                                                unallocated_usd,
+                                                unallocated_usd * ledger::constants::CENTS_PER_USD,
                                             bitfinex_allocation_adjustment_usd_cents_amount:
                                                 Decimal::ZERO,
                                             meta: ledger::AdjustExchangeAllocationMeta {

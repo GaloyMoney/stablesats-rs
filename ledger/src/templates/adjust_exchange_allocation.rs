@@ -85,7 +85,7 @@ impl From<AdjustExchangeAllocationParams> for TxParams {
         );
         params.insert(
             "unallocated_direction",
-            if unallocated_cents > Decimal::ZERO {
+            if unallocated_cents >= Decimal::ZERO {
                 "CREDIT"
             } else {
                 "DEBIT"
@@ -97,7 +97,7 @@ impl From<AdjustExchangeAllocationParams> for TxParams {
         );
         params.insert(
             "okex_direction",
-            if okex_cents > Decimal::ZERO {
+            if okex_cents >= Decimal::ZERO {
                 "CREDIT"
             } else {
                 "DEBIT"
@@ -109,7 +109,7 @@ impl From<AdjustExchangeAllocationParams> for TxParams {
         );
         params.insert(
             "bitfinex_direction",
-            if bitfinex_cents > Decimal::ZERO {
+            if bitfinex_cents >= Decimal::ZERO {
                 "CREDIT"
             } else {
                 "DEBIT"

@@ -7,7 +7,7 @@ use tokio::sync::broadcast;
 use tracing::instrument;
 
 mod balances;
-mod constants;
+pub mod constants;
 mod error;
 mod templates;
 
