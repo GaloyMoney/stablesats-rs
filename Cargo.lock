@@ -3548,6 +3548,7 @@ dependencies = [
  "serde_json",
  "serde_yaml",
  "sqlx",
+ "stablesats-ledger",
  "stablesats-shared",
  "tokio",
  "tonic 0.10.2",

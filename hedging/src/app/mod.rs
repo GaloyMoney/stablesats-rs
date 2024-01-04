@@ -26,12 +26,12 @@ impl HedgingApp {
         galoy_client_cfg: GaloyClientConfig,
         bria_client_cfg: BriaClientConfig,
         price_receiver: memory::Subscriber<PriceStreamPayload>,
+        ledger: ledger::Ledger,
     ) -> Result<Self, HedgingError> {
         let (mut jobs, mut channels) = (Vec::new(), Vec::new());
         OkexEngine::register_jobs(&mut jobs, &mut channels);
         let mut job_registry = sqlxmq::JobRegistry::new(&jobs);
 
-        let ledger = ledger::Ledger::init(&pool).await?;
         job_registry.set_context(ledger.clone());
         job_registry.set_context(
             shared::tracing::record_error(tracing::Level::ERROR, || async move {

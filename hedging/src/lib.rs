@@ -25,6 +25,7 @@ pub async fn run(
     galoy_config: GaloyClientConfig,
     bria_config: BriaClientConfig,
     tick_receiver: memory::Subscriber<PriceStreamPayload>,
+    ledger: ledger::Ledger,
 ) -> Result<(), HedgingError> {
     HedgingApp::run(
         pool,
@@ -34,6 +35,7 @@ pub async fn run(
         galoy_config,
         bria_config,
         tick_receiver,
+        ledger,
     )
     .await?;
     Ok(())

@@ -16,7 +16,8 @@ pub async fn run(
     pool: sqlx::PgPool,
     config: UserTradesConfig,
     galoy_client_cfg: GaloyClientConfig,
+    ledger: ledger::Ledger,
 ) -> Result<(), UserTradesError> {
-    UserTradesApp::run(pool, config, galoy_client_cfg).await?;
+    UserTradesApp::run(pool, config, galoy_client_cfg, ledger).await?;
     Ok(())
 }

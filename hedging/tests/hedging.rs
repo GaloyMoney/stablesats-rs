@@ -69,6 +69,7 @@ async fn hedging() -> anyhow::Result<()> {
         std::time::Duration::from_secs(1),
     )?);
 
+    let ledger_clone = ledger.clone();
     tokio::spawn(async move {
         let (_, recv) = futures::channel::mpsc::unbounded();
         let _ = send.try_send(
@@ -82,6 +83,7 @@ async fn hedging() -> anyhow::Result<()> {
                 galoy_client_config(),
                 bria_client_config(),
                 tick_recv.resubscribe(),
+                ledger_clone,
             )
             .await
             .expect("HedgingApp failed"),

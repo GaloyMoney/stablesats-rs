@@ -27,16 +27,15 @@ async fn publishes_liability() -> anyhow::Result<()> {
     let pg_host = std::env::var("PG_HOST").unwrap_or("localhost".to_string());
     let pg_con = format!("postgres://user:password@{pg_host}:5432/pg",);
     let pool = sqlx::PgPool::connect(&pg_con).await?;
-    let mut events = ledger::Ledger::init(&pool)
-        .await?
-        .okex_usd_liability_balance_events()
-        .await?;
+    let ledger = ledger::Ledger::init(&pool).await?;
+    let mut events = ledger.okex_usd_liability_balance_events().await?;
     let _ = tokio::spawn(UserTradesApp::run(
         pool,
         UserTradesConfig {
             galoy_poll_frequency: std::time::Duration::from_secs(1),
         },
         galoy_client_configuration(),
+        ledger,
     ));
 
     let received = events.recv().await.unwrap();

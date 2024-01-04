@@ -18,6 +18,7 @@ hedging = { path = "../hedging" }
 okex-price = { path = "../okex-price" }
 bitfinex-price = { path = "../bitfinex-price" }
 bria-client = { path = "../bria-client" }
+ledger = { path = "../ledger", package = "stablesats-ledger" }
 
 anyhow = { workspace = true }
 clap = { workspace = true }
