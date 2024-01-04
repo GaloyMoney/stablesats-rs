@@ -100,29 +100,7 @@ impl HedgingApp {
                 match events.recv().await {
                     Ok(received) => {
                         if let ledger::LedgerEventData::BalanceUpdated(_data) = received.data {
-                            let _ = async {
-                                let liability_balances =
-                                    ledger.balances().usd_liability_balances().await?;
-                                let tx = pool.begin().await?;
-                                let unallocated_usd = liability_balances.unallocated_usd;
-                                if unallocated_usd != Decimal::ZERO {
-                                    let adjustment_params =
-                                        ledger::AdjustExchangeAllocationParams {
-                                            okex_allocation_adjustment_usd_cents_amount:
-                                                unallocated_usd * ledger::constants::CENTS_PER_USD,
-                                            bitfinex_allocation_adjustment_usd_cents_amount:
-                                                Decimal::ZERO,
-                                            meta: ledger::AdjustExchangeAllocationMeta {
-                                                timestamp: chrono::Utc::now(),
-                                            },
-                                        };
-                                    ledger
-                                        .adjust_exchange_allocation(tx, adjustment_params)
-                                        .await?;
-                                }
-                                Ok::<(), ledger::LedgerError>(())
-                            }
-                            .await;
+                            let _ = adjust_exchange_allocation(&pool, &ledger);
                         }
                     }
                     Err(tokio::sync::broadcast::error::RecvError::Lagged(_)) => (),
@@ -134,4 +112,52 @@ impl HedgingApp {
         });
         Ok(())
     }
+}
+
+#[instrument(
+    name = "hedging.adjust_exchange_allocation",
+    skip_all,
+    fields(execute_adjustment, unallocated, okex, bitfinex, omnibus),
+    err
+)]
+async fn adjust_exchange_allocation(
+    pool: &sqlx::PgPool,
+    ledger: &ledger::Ledger,
+) -> Result<(), ledger::LedgerError> {
+    let liability_balances = ledger.balances().usd_liability_balances().await?;
+    let span = tracing::Span::current();
+    span.record(
+        "unallocated_usd",
+        &tracing::field::display(liability_balances.unallocated_usd),
+    );
+    span.record(
+        "okex",
+        &tracing::field::display(liability_balances.okex_allocation),
+    );
+    span.record(
+        "bitfinex",
+        &tracing::field::display(liability_balances.bitfinex_allocation),
+    );
+    span.record(
+        "omnibus",
+        &tracing::field::display(liability_balances.total_liability),
+    );
+    span.record("execute_adjustment", false);
+    let tx = pool.begin().await?;
+    let unallocated_usd = liability_balances.unallocated_usd;
+    if unallocated_usd != Decimal::ZERO {
+        span.record("execute_adjustment", true);
+        let adjustment_params = ledger::AdjustExchangeAllocationParams {
+            okex_allocation_adjustment_usd_cents_amount: unallocated_usd
+                * ledger::constants::CENTS_PER_USD,
+            bitfinex_allocation_adjustment_usd_cents_amount: Decimal::ZERO,
+            meta: ledger::AdjustExchangeAllocationMeta {
+                timestamp: chrono::Utc::now(),
+            },
+        };
+        ledger
+            .adjust_exchange_allocation(tx, adjustment_params)
+            .await?;
+    }
+    Ok(())
 }
