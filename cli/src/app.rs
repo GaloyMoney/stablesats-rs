@@ -252,7 +252,7 @@ async fn run_cmd(
 
         if let Some(okex_cfg) = exchanges.okex.as_ref() {
             pool = Some(crate::db::init_pool(&db).await?);
-            ledger = Some(ledger::Ledger::init(&pool.as_ref().unwrap()).await?);
+            ledger = Some(ledger::Ledger::init(pool.as_ref().unwrap()).await?);
 
             let okex_config = okex_cfg.config.clone();
             let pool = pool.clone();
@@ -281,7 +281,7 @@ async fn run_cmd(
 
         if pool.is_none() {
             pool = Some(crate::db::init_pool(&db).await?);
-            ledger = Some(ledger::Ledger::init(&pool.as_ref().unwrap()).await?);
+            ledger = Some(ledger::Ledger::init(pool.as_ref().unwrap()).await?);
         }
         let quotes_send = send.clone();
         let (snd, recv) = futures::channel::mpsc::unbounded();
@@ -314,7 +314,7 @@ async fn run_cmd(
         println!("Starting user trades process");
         if pool.is_none() {
             pool = Some(crate::db::init_pool(&db).await?);
-            ledger = Some(ledger::Ledger::init(&pool.as_ref().unwrap()).await?);
+            ledger = Some(ledger::Ledger::init(pool.as_ref().unwrap()).await?);
         }
 
         let user_trades_send = send.clone();
