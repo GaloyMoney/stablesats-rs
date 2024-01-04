@@ -238,31 +238,7 @@ async fn run_cmd(
     }
 
     let pool = crate::db::init_pool(&db).await?;
-    let ledger = ledger::Ledger::init(&pool).await?;
-
-    if ledger
-        .balances()
-        .usd_liability_balances()
-        .await?
-        .okex_allocation
-        == Decimal::ZERO
-    {
-        let liability_balances = ledger.balances().usd_liability_balances().await?;
-        let tx = pool.begin().await?;
-        let unallocated_usd = liability_balances.unallocated_usd;
-        if unallocated_usd != Decimal::ZERO {}
-        let adjustment_params = ledger::AdjustExchangeAllocationParams {
-            okex_allocation_adjustment_usd_cents_amount: unallocated_usd
-                * ledger::constants::CENTS_PER_USD,
-            bitfinex_allocation_adjustment_usd_cents_amount: Decimal::ZERO,
-            meta: ledger::AdjustExchangeAllocationMeta {
-                timestamp: chrono::Utc::now(),
-            },
-        };
-        ledger
-            .adjust_exchange_allocation(tx, adjustment_params)
-            .await?;
-    }
+    let ledger = hack_init_ledger(&pool).await?;
 
     if hedging.enabled {
         println!("Starting hedging process");
@@ -386,4 +362,30 @@ fn extract_weights_for_quotes_server(
 
         bitfinex: None,
     }
+}
+
+/// Needs to execute one time on upgrade to allocation based accounting
+async fn hack_init_ledger(pool: &sqlx::PgPool) -> anyhow::Result<ledger::Ledger> {
+    let ledger = ledger::Ledger::init(&pool).await?;
+    let liability_balances = ledger.balances().usd_liability_balances().await?;
+
+    if liability_balances.unallocated_usd != Decimal::ZERO
+        && liability_balances.okex_allocation == Decimal::ZERO
+    {
+        let tx = pool.begin().await?;
+        let unallocated_usd = liability_balances.unallocated_usd;
+        if unallocated_usd != Decimal::ZERO {}
+        let adjustment_params = ledger::AdjustExchangeAllocationParams {
+            okex_allocation_adjustment_usd_cents_amount: unallocated_usd
+                * ledger::constants::CENTS_PER_USD,
+            bitfinex_allocation_adjustment_usd_cents_amount: Decimal::ZERO,
+            meta: ledger::AdjustExchangeAllocationMeta {
+                timestamp: chrono::Utc::now(),
+            },
+        };
+        ledger
+            .adjust_exchange_allocation(tx, adjustment_params)
+            .await?;
+    }
+    Ok(ledger)
 }
