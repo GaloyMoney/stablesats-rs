@@ -1,3 +1,10 @@
+# [stablesats release v0.11.1](https://github.com/GaloyMoney/stablesats-rs/releases/tag/0.11.1)
+
+
+### Bug Fixes
+
+- Optionally init pool / ledger in cli
+
 # [stablesats release v0.11.0](https://github.com/GaloyMoney/stablesats-rs/releases/tag/0.11.0)
 
 

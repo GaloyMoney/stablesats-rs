@@ -1,6 +1,6 @@
 [package]
 name = "quotes-server"
-version = "0.11.1-dev"
+version = "0.11.1"
 edition = "2021"
 authors = ["Justin Carter <justin@galoy.io>"]
 license = "MIT"
