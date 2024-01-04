@@ -100,7 +100,7 @@ impl HedgingApp {
                 match events.recv().await {
                     Ok(received) => {
                         if let ledger::LedgerEventData::BalanceUpdated(_data) = received.data {
-                            let _ = adjust_exchange_allocation(&pool, &ledger);
+                            let _ = adjust_exchange_allocation(&pool, &ledger).await;
                         }
                     }
                     Err(tokio::sync::broadcast::error::RecvError::Lagged(_)) => (),
