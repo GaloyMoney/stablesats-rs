@@ -1,3 +1,10 @@
+# [stablesats release v0.11.2](https://github.com/GaloyMoney/stablesats-rs/releases/tag/0.11.2)
+
+
+### Bug Fixes
+
+- Trace unallocated_usd
+
 # [stablesats release v0.11.1](https://github.com/GaloyMoney/stablesats-rs/releases/tag/0.11.1)
 
 
