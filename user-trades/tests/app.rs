@@ -12,13 +12,11 @@ fn galoy_client_configuration() -> GaloyClientConfig {
     let phone_number = env::var("GALOY_PHONE_NUMBER").expect("GALOY_PHONE_NUMBER not set");
     let code = env::var("GALOY_PHONE_CODE").expect("GALOY_PHONE_CODE not set");
 
-    let config = GaloyClientConfig {
+    GaloyClientConfig {
         api,
         phone_number,
         auth_code: code,
-    };
-
-    config
+    }
 }
 
 #[tokio::test]
@@ -42,7 +40,7 @@ async fn publishes_liability() -> anyhow::Result<()> {
     if let ledger::LedgerEventData::BalanceUpdated(data) = received.data {
         assert!(data.settled_dr_balance >= dec!(0));
     } else {
-        assert!(false)
+        panic!()
     }
 
     Ok(())

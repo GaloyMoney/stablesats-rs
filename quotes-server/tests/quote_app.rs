@@ -77,9 +77,8 @@ async fn quotes_app() -> anyhow::Result<()> {
         OrderBookCacheError::NoSnapshotAvailable,
     ))) = err
     {
-        assert!(true)
     } else {
-        assert!(false)
+        panic!()
     }
 
     let mut payload = load_fixture();

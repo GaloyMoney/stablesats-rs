@@ -60,9 +60,8 @@ async fn price_app() -> anyhow::Result<()> {
         OrderBookCacheError::NoSnapshotAvailable,
     ))) = err
     {
-        assert!(true)
     } else {
-        assert!(false)
+        panic!()
     }
 
     let mut payload = load_fixture();
@@ -81,9 +80,8 @@ async fn price_app() -> anyhow::Result<()> {
         OrderBookCacheError::OutdatedSnapshot(_),
     ))) = err
     {
-        assert!(true)
     } else {
-        assert!(false)
+        panic!()
     }
 
     payload.timestamp = TimeStamp::now();
