@@ -117,7 +117,7 @@ impl HedgingApp {
 #[instrument(
     name = "hedging.adjust_exchange_allocation",
     skip_all,
-    fields(execute_adjustment, unallocated, okex, bitfinex, omnibus),
+    fields(execute_adjustment, unallocated_usd, okex, bitfinex, omnibus),
     err
 )]
 async fn adjust_exchange_allocation(

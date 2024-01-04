@@ -23,7 +23,7 @@ impl<'a> Balances<'a> {
     #[instrument(
         name = "ledger.balances.usd_liability_balances",
         skip(self),
-        fields(unallocated, okex, bitfinex, omnibus),
+        fields(unallocated_usd, okex, bitfinex, omnibus),
         err,
         ret
     )]
