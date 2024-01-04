@@ -1,3 +1,10 @@
+# [stablesats release v0.12.0](https://github.com/GaloyMoney/stablesats-rs/releases/tag/0.12.0)
+
+
+### Miscellaneous Tasks
+
+- [**breaking**] Remove initial allocation adjustment
+
 # [stablesats release v0.11.2](https://github.com/GaloyMoney/stablesats-rs/releases/tag/0.11.2)
 
 
