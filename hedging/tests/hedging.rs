@@ -2,7 +2,7 @@
 
 use galoy_client::GaloyClientConfig;
 use rust_decimal_macros::dec;
-use serial_test::serial;
+use serial_test::{file_serial, serial};
 
 use std::env;
 
@@ -58,6 +58,7 @@ fn bria_client_config() -> BriaClientConfig {
 
 #[tokio::test]
 #[serial]
+#[file_serial]
 async fn hedging() -> anyhow::Result<()> {
     let pg_host = std::env::var("PG_HOST").unwrap_or_else(|_| "localhost".into());
     let pg_con = format!("postgres://user:password@{}:5432/pg", pg_host);
