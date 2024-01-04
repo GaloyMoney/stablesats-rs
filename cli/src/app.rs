@@ -252,7 +252,7 @@ async fn run_cmd(
 
         if let Some(okex_cfg) = exchanges.okex.as_ref() {
             pool = Some(crate::db::init_pool(&db).await?);
-            ledger = Some(hack_init_ledger(&pool.as_ref().unwrap()).await?);
+            ledger = Some(ledger::Ledger::init(&pool.as_ref().unwrap()).await?);
 
             let okex_config = okex_cfg.config.clone();
             let pool = pool.clone();
@@ -281,7 +281,7 @@ async fn run_cmd(
 
         if pool.is_none() {
             pool = Some(crate::db::init_pool(&db).await?);
-            ledger = Some(hack_init_ledger(&pool.as_ref().unwrap()).await?);
+            ledger = Some(ledger::Ledger::init(&pool.as_ref().unwrap()).await?);
         }
         let quotes_send = send.clone();
         let (snd, recv) = futures::channel::mpsc::unbounded();
@@ -314,7 +314,7 @@ async fn run_cmd(
         println!("Starting user trades process");
         if pool.is_none() {
             pool = Some(crate::db::init_pool(&db).await?);
-            ledger = Some(hack_init_ledger(&pool.as_ref().unwrap()).await?);
+            ledger = Some(ledger::Ledger::init(&pool.as_ref().unwrap()).await?);
         }
 
         let user_trades_send = send.clone();
@@ -373,29 +373,4 @@ fn extract_weights_for_quotes_server(
 
         bitfinex: None,
     }
-}
-
-/// Needs to execute one time on upgrade to allocation based accounting
-async fn hack_init_ledger(pool: &sqlx::PgPool) -> anyhow::Result<ledger::Ledger> {
-    let ledger = ledger::Ledger::init(&pool).await?;
-    let liability_balances = ledger.balances().usd_liability_balances().await?;
-
-    if liability_balances.unallocated_usd > Decimal::ZERO
-        && liability_balances.okex_allocation == Decimal::ZERO
-    {
-        let tx = pool.begin().await?;
-        let unallocated_usd = liability_balances.unallocated_usd;
-        let adjustment_params = ledger::AdjustExchangeAllocationParams {
-            okex_allocation_adjustment_usd_cents_amount: unallocated_usd
-                * ledger::constants::CENTS_PER_USD,
-            bitfinex_allocation_adjustment_usd_cents_amount: Decimal::ZERO,
-            meta: ledger::AdjustExchangeAllocationMeta {
-                timestamp: chrono::Utc::now(),
-            },
-        };
-        ledger
-            .adjust_exchange_allocation(tx, adjustment_params)
-            .await?;
-    }
-    Ok(ledger)
 }
