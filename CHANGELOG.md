@@ -1,3 +1,16 @@
+# [stablesats release v0.11.0](https://github.com/GaloyMoney/stablesats-rs/releases/tag/0.11.0)
+
+
+### Features
+
+- [**breaking**] Introduce usd liability allocation (#487)
+
+### Miscellaneous Tasks
+
+- Bump tonic-build from 0.8.4 to 0.10.2 (#484)
+- Bump serde_with from 3.3.0 to 3.4.0 (#461)
+- Bump uuid from 1.4.1 to 1.6.1 (#481)
+
 # [stablesats release v0.10.1](https://github.com/GaloyMoney/stablesats-rs/releases/tag/0.10.1)
 
 
