@@ -237,8 +237,8 @@ async fn run_cmd(
         }));
     }
 
-    let pool = crate::db::init_pool(&db).await?;
-    let ledger = hack_init_ledger(&pool).await?;
+    let mut pool = None;
+    let mut ledger = None;
 
     if hedging.enabled {
         println!("Starting hedging process");
@@ -251,20 +251,23 @@ async fn run_cmd(
         checkers.insert("hedging", snd);
 
         if let Some(okex_cfg) = exchanges.okex.as_ref() {
+            pool = Some(crate::db::init_pool(&db).await?);
+            ledger = Some(hack_init_ledger(&pool.as_ref().unwrap()).await?);
+
             let okex_config = okex_cfg.config.clone();
             let pool = pool.clone();
             let ledger = ledger.clone();
             handles.push(tokio::spawn(async move {
                 let _ = hedging_send.try_send(
                     hedging::run(
-                        pool,
+                        pool.as_ref().unwrap().clone(),
                         recv,
                         hedging.config,
                         okex_config,
                         galoy,
                         bria,
                         price,
-                        ledger,
+                        ledger.as_ref().unwrap().clone(),
                     )
                     .await
                     .context("Hedging error"),
@@ -276,6 +279,10 @@ async fn run_cmd(
     if quotes_server.enabled {
         println!("Starting quotes_server");
 
+        if pool.is_none() {
+            pool = Some(crate::db::init_pool(&db).await?);
+            ledger = Some(hack_init_ledger(&pool.as_ref().unwrap()).await?);
+        }
         let quotes_send = send.clone();
         let (snd, recv) = futures::channel::mpsc::unbounded();
         checkers.insert("quotes", snd);
@@ -286,7 +293,7 @@ async fn run_cmd(
         handles.push(tokio::spawn(async move {
             let _ = quotes_send.try_send(
                 quotes_server::run(
-                    pool,
+                    pool.as_ref().unwrap().clone(),
                     recv,
                     quotes_server.health,
                     quotes_server.server,
@@ -295,7 +302,7 @@ async fn run_cmd(
                     quotes_server.price_cache,
                     weights,
                     quotes_server.config,
-                    ledger,
+                    ledger.as_ref().unwrap().clone(),
                 )
                 .await
                 .context("Quote Server error"),
@@ -305,11 +312,15 @@ async fn run_cmd(
 
     if user_trades.enabled {
         println!("Starting user trades process");
+        if pool.is_none() {
+            pool = Some(crate::db::init_pool(&db).await?);
+            ledger = Some(hack_init_ledger(&pool.as_ref().unwrap()).await?);
+        }
 
         let user_trades_send = send.clone();
         handles.push(tokio::spawn(async move {
             let _ = user_trades_send.try_send(
-                user_trades::run(pool, user_trades.config, galoy, ledger)
+                user_trades::run(pool.unwrap(), user_trades.config, galoy, ledger.unwrap())
                     .await
                     .context("User Trades error"),
             );
