@@ -1,6 +1,7 @@
+use anyhow::Context;
 use rust_decimal::Decimal;
 use rust_decimal_macros::dec;
-use serial_test::file_serial;
+use serial_test::{file_serial, serial};
 
 use stablesats_ledger::*;
 
@@ -12,23 +13,15 @@ pub async fn init_pool() -> anyhow::Result<sqlx::PgPool> {
 }
 
 #[tokio::test]
+#[serial]
+#[file_serial]
 async fn user_buys_and_sells_usd() -> anyhow::Result<()> {
     let pool = init_pool().await?;
 
     let ledger = Ledger::init(&pool).await?;
 
-    let before_liability = ledger
-        .balances()
-        .stablesats_liability()
-        .await?
-        .map(|b| b.settled())
-        .unwrap_or(Decimal::ZERO);
-    let before_btc = ledger
-        .balances()
-        .stablesats_btc_wallet()
-        .await?
-        .map(|b| b.settled())
-        .unwrap_or(Decimal::ZERO);
+    let before_liabilities = ledger.balances().usd_liability_balances().await?;
+    let before_btc = ledger.balances().stablesats_btc_assets().await?;
     ledger
         .user_buys_usd(
             pool.begin().await?,
@@ -45,19 +38,12 @@ async fn user_buys_and_sells_usd() -> anyhow::Result<()> {
         )
         .await?;
 
-    let after_liability = ledger
-        .balances()
-        .stablesats_liability()
-        .await?
-        .unwrap()
-        .settled();
-    let after_btc = ledger
-        .balances()
-        .stablesats_btc_wallet()
-        .await?
-        .unwrap()
-        .settled();
-    assert_eq!(after_liability - before_liability, dec!(5));
+    let after_liabilities = ledger.balances().usd_liability_balances().await?;
+    let after_btc = ledger.balances().stablesats_btc_assets().await?;
+    assert_eq!(
+        after_liabilities.unallocated_usd - before_liabilities.unallocated_usd,
+        dec!(5)
+    );
     assert_eq!(after_btc - before_btc, dec!(0.01));
 
     ledger
@@ -75,15 +61,31 @@ async fn user_buys_and_sells_usd() -> anyhow::Result<()> {
             },
         )
         .await?;
-    let end_balance = ledger.balances().stablesats_liability().await?.unwrap();
-    let end_btc = ledger.balances().stablesats_btc_wallet().await?.unwrap();
-    assert_eq!(end_balance.settled(), before_liability);
-    assert_eq!(end_btc.settled(), before_btc);
-
+    let end_balance = ledger.balances().usd_liability_balances().await?;
+    let end_btc = ledger.balances().stablesats_btc_assets().await?;
+    assert_eq!(
+        end_balance.unallocated_usd,
+        before_liabilities.unallocated_usd
+    );
+    assert_eq!(
+        end_balance.total_liability,
+        before_liabilities.total_liability
+    );
+    assert_eq!(
+        end_balance.okex_allocation,
+        before_liabilities.okex_allocation
+    );
+    assert_eq!(
+        end_balance.okex_allocation,
+        after_liabilities.okex_allocation
+    );
+    assert_eq!(end_btc, before_btc);
     Ok(())
 }
 
 #[tokio::test]
+#[serial]
+#[file_serial]
 async fn adjust_exchange_position() -> anyhow::Result<()> {
     let pool = init_pool().await?;
     let ledger = Ledger::init(&pool).await?;
@@ -135,6 +137,7 @@ async fn adjust_exchange_position() -> anyhow::Result<()> {
 }
 
 #[tokio::test]
+#[serial]
 #[file_serial]
 async fn buy_and_sell_quotes() -> anyhow::Result<()> {
     let pool = init_pool().await?;
@@ -185,6 +188,45 @@ async fn buy_and_sell_quotes() -> anyhow::Result<()> {
     let end_btc = ledger.balances().quotes_btc_assets().await?.unwrap();
     assert_eq!(end_balance.settled(), before_liability);
     assert_eq!(end_btc.settled(), before_btc);
+
+    Ok(())
+}
+
+#[tokio::test]
+#[serial]
+#[file_serial]
+async fn exchange_allocation() -> anyhow::Result<()> {
+    let pool = init_pool().await?;
+    let ledger = Ledger::init(&pool).await?;
+    let initial_liabilities = ledger.balances().usd_liability_balances().await?;
+    ledger
+        .adjust_exchange_allocation(
+            pool.begin().await?,
+            AdjustExchangeAllocationParams {
+                okex_allocation_adjustment_usd_cents_amount: dec!(10000),
+                bitfinex_allocation_adjustment_usd_cents_amount: dec!(0),
+                meta: AdjustExchangeAllocationMeta {
+                    timestamp: chrono::Utc::now(),
+                },
+            },
+        )
+        .await
+        .context("Could not increase allocation")?;
+    ledger
+        .adjust_exchange_allocation(
+            pool.begin().await?,
+            AdjustExchangeAllocationParams {
+                okex_allocation_adjustment_usd_cents_amount: dec!(-10000),
+                bitfinex_allocation_adjustment_usd_cents_amount: dec!(0),
+                meta: AdjustExchangeAllocationMeta {
+                    timestamp: chrono::Utc::now(),
+                },
+            },
+        )
+        .await
+        .context("Could not decrease allocation")?;
+    let final_liability = ledger.balances().usd_liability_balances().await?;
+    assert_eq!(initial_liabilities, final_liability);
 
     Ok(())
 }

@@ -237,7 +237,8 @@ async fn run_cmd(
         }));
     }
 
-    let mut pool = None;
+    let pool = crate::db::init_pool(&db).await?;
+    let ledger = hack_init_ledger(&pool).await?;
 
     if hedging.enabled {
         println!("Starting hedging process");
@@ -251,13 +252,22 @@ async fn run_cmd(
 
         if let Some(okex_cfg) = exchanges.okex.as_ref() {
             let okex_config = okex_cfg.config.clone();
-            pool = Some(crate::db::init_pool(&db).await?);
-            let pool = pool.as_ref().unwrap().clone();
+            let pool = pool.clone();
+            let ledger = ledger.clone();
             handles.push(tokio::spawn(async move {
                 let _ = hedging_send.try_send(
-                    hedging::run(pool, recv, hedging.config, okex_config, galoy, bria, price)
-                        .await
-                        .context("Hedging error"),
+                    hedging::run(
+                        pool,
+                        recv,
+                        hedging.config,
+                        okex_config,
+                        galoy,
+                        bria,
+                        price,
+                        ledger,
+                    )
+                    .await
+                    .context("Hedging error"),
                 );
             }));
         }
@@ -267,15 +277,12 @@ async fn run_cmd(
         println!("Starting quotes_server");
 
         let quotes_send = send.clone();
-        let pool = if let Some(pool) = pool.as_ref() {
-            pool.clone()
-        } else {
-            crate::db::init_pool(&db).await?
-        };
         let (snd, recv) = futures::channel::mpsc::unbounded();
         checkers.insert("quotes", snd);
         let price = price_recv.resubscribe();
         let weights = extract_weights_for_quotes_server(&exchanges);
+        let ledger = ledger.clone();
+        let pool = pool.clone();
         handles.push(tokio::spawn(async move {
             let _ = quotes_send.try_send(
                 quotes_server::run(
@@ -288,6 +295,7 @@ async fn run_cmd(
                     quotes_server.price_cache,
                     weights,
                     quotes_server.config,
+                    ledger,
                 )
                 .await
                 .context("Quote Server error"),
@@ -299,14 +307,9 @@ async fn run_cmd(
         println!("Starting user trades process");
 
         let user_trades_send = send.clone();
-        let pool = if let Some(pool) = pool {
-            pool
-        } else {
-            crate::db::init_pool(&db).await?
-        };
         handles.push(tokio::spawn(async move {
             let _ = user_trades_send.try_send(
-                user_trades::run(pool, user_trades.config, galoy)
+                user_trades::run(pool, user_trades.config, galoy, ledger)
                     .await
                     .context("User Trades error"),
             );
@@ -359,4 +362,29 @@ fn extract_weights_for_quotes_server(
 
         bitfinex: None,
     }
+}
+
+/// Needs to execute one time on upgrade to allocation based accounting
+async fn hack_init_ledger(pool: &sqlx::PgPool) -> anyhow::Result<ledger::Ledger> {
+    let ledger = ledger::Ledger::init(&pool).await?;
+    let liability_balances = ledger.balances().usd_liability_balances().await?;
+
+    if liability_balances.unallocated_usd > Decimal::ZERO
+        && liability_balances.okex_allocation == Decimal::ZERO
+    {
+        let tx = pool.begin().await?;
+        let unallocated_usd = liability_balances.unallocated_usd;
+        let adjustment_params = ledger::AdjustExchangeAllocationParams {
+            okex_allocation_adjustment_usd_cents_amount: unallocated_usd
+                * ledger::constants::CENTS_PER_USD,
+            bitfinex_allocation_adjustment_usd_cents_amount: Decimal::ZERO,
+            meta: ledger::AdjustExchangeAllocationMeta {
+                timestamp: chrono::Utc::now(),
+            },
+        };
+        ledger
+            .adjust_exchange_allocation(tx, adjustment_params)
+            .await?;
+    }
+    Ok(ledger)
 }

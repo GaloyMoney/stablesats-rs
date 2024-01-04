@@ -1,5 +1,6 @@
 use bria_client::{BriaClient, BriaClientConfig};
 use futures::stream::StreamExt;
+use rust_decimal::Decimal;
 use sqlxmq::JobRunnerHandle;
 use tracing::instrument;
 
@@ -25,13 +26,12 @@ impl HedgingApp {
         galoy_client_cfg: GaloyClientConfig,
         bria_client_cfg: BriaClientConfig,
         price_receiver: memory::Subscriber<PriceStreamPayload>,
+        ledger: ledger::Ledger,
     ) -> Result<Self, HedgingError> {
         let (mut jobs, mut channels) = (Vec::new(), Vec::new());
         OkexEngine::register_jobs(&mut jobs, &mut channels);
-
         let mut job_registry = sqlxmq::JobRegistry::new(&jobs);
 
-        let ledger = ledger::Ledger::init(&pool).await?;
         job_registry.set_context(ledger.clone());
         job_registry.set_context(
             shared::tracing::record_error(tracing::Level::ERROR, || async move {
@@ -49,7 +49,7 @@ impl HedgingApp {
         let okex_engine = OkexEngine::run(
             pool.clone(),
             okex_config,
-            ledger,
+            ledger.clone(),
             price_receiver.resubscribe(),
         )
         .await?;
@@ -62,6 +62,7 @@ impl HedgingApp {
             .run()
             .await?;
 
+        let _ = Self::spawn_global_liability_listener(pool.clone(), ledger).await;
         Self::spawn_health_checker(health_check_trigger, health_cfg, price_receiver).await;
         let app = HedgingApp {
             _job_runner_handle: job_runner_handle,
@@ -88,4 +89,75 @@ impl HedgingApp {
             }
         }
     }
+
+    async fn spawn_global_liability_listener(
+        pool: sqlx::PgPool,
+        ledger: ledger::Ledger,
+    ) -> Result<(), HedgingError> {
+        let mut events = ledger.usd_omnibus_balance_events().await?;
+        tokio::spawn(async move {
+            loop {
+                match events.recv().await {
+                    Ok(received) => {
+                        if let ledger::LedgerEventData::BalanceUpdated(_data) = received.data {
+                            let _ = adjust_exchange_allocation(&pool, &ledger).await;
+                        }
+                    }
+                    Err(tokio::sync::broadcast::error::RecvError::Lagged(_)) => (),
+                    _ => {
+                        break;
+                    }
+                }
+            }
+        });
+        Ok(())
+    }
+}
+
+#[instrument(
+    name = "hedging.adjust_exchange_allocation",
+    skip_all,
+    fields(execute_adjustment, unallocated, okex, bitfinex, omnibus),
+    err
+)]
+async fn adjust_exchange_allocation(
+    pool: &sqlx::PgPool,
+    ledger: &ledger::Ledger,
+) -> Result<(), ledger::LedgerError> {
+    let liability_balances = ledger.balances().usd_liability_balances().await?;
+    let span = tracing::Span::current();
+    span.record(
+        "unallocated_usd",
+        &tracing::field::display(liability_balances.unallocated_usd),
+    );
+    span.record(
+        "okex",
+        &tracing::field::display(liability_balances.okex_allocation),
+    );
+    span.record(
+        "bitfinex",
+        &tracing::field::display(liability_balances.bitfinex_allocation),
+    );
+    span.record(
+        "omnibus",
+        &tracing::field::display(liability_balances.total_liability),
+    );
+    span.record("execute_adjustment", false);
+    let tx = pool.begin().await?;
+    let unallocated_usd = liability_balances.unallocated_usd;
+    if unallocated_usd != Decimal::ZERO {
+        span.record("execute_adjustment", true);
+        let adjustment_params = ledger::AdjustExchangeAllocationParams {
+            okex_allocation_adjustment_usd_cents_amount: unallocated_usd
+                * ledger::constants::CENTS_PER_USD,
+            bitfinex_allocation_adjustment_usd_cents_amount: Decimal::ZERO,
+            meta: ledger::AdjustExchangeAllocationMeta {
+                timestamp: chrono::Utc::now(),
+            },
+        };
+        ledger
+            .adjust_exchange_allocation(tx, adjustment_params)
+            .await?;
+    }
+    Ok(())
 }

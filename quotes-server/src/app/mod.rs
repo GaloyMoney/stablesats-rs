@@ -36,6 +36,7 @@ impl QuotesApp {
         price_cache_config: QuotesExchangePriceCacheConfig,
         exchange_weights: ExchangeWeights,
         config: QuotesConfig,
+        ledger: ledger::Ledger,
     ) -> Result<Self, QuotesAppError> {
         let health_subscriber = subscriber.resubscribe();
         tokio::spawn(async move {
@@ -69,7 +70,6 @@ impl QuotesApp {
         }
 
         let quotes = Quotes::new(&pool);
-        let ledger = Ledger::init(&pool).await?;
 
         Ok(Self {
             price_calculator: PriceCalculator::new(fee_calc_cfg, price_mixer),

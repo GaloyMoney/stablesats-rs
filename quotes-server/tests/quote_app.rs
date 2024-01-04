@@ -50,6 +50,7 @@ async fn quotes_app() -> anyhow::Result<()> {
     let pg_con = format!("postgres://user:password@{}:5432/pg", pg_host);
     let pool = sqlx::PgPool::connect(&pg_con).await?;
 
+    let ledger = ledger::Ledger::init(&pool).await?;
     let app = QuotesApp::run(
         pool,
         recv,
@@ -65,6 +66,7 @@ async fn quotes_app() -> anyhow::Result<()> {
         QuotesConfig {
             expiration_interval: Duration::seconds(2),
         },
+        ledger,
     )
     .await?;
 

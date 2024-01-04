@@ -67,20 +67,15 @@ impl PriceMixer {
 
 #[cfg(test)]
 mod tests {
-    pub use std::collections::HashMap;
-
-    pub use chrono::Duration;
     pub use rust_decimal::Decimal;
     use shared::payload::PriceMessagePayload;
     use shared::pubsub::CorrelationId;
     use shared::time::TimeStamp;
 
     pub use super::PriceMixer;
-    pub use super::PriceProvider;
     pub use crate::currency::UsdCents;
     pub use crate::{
-        cache_config::ExchangePriceCacheConfig,
-        currency::{Sats, VolumePicker},
+        cache_config::ExchangePriceCacheConfig, currency::VolumePicker,
         exchange_tick_cache::ExchangeTickCache,
     };
     pub use serde_json::*;

@@ -7,7 +7,7 @@ use tokio::sync::broadcast;
 use tracing::instrument;
 
 mod balances;
-mod constants;
+pub mod constants;
 mod error;
 mod templates;
 
@@ -50,6 +50,8 @@ impl Ledger {
         Self::quotes_omnibus_account(&inner).await?;
         Self::quotes_liabilities_account(&inner).await?;
         Self::quotes_assets_account(&inner).await?;
+        Self::okex_allocation_account(&inner).await?;
+        Self::bitfinex_allocation_account(&inner).await?;
 
         templates::UserBuysUsd::init(&inner).await?;
         templates::UserSellsUsd::init(&inner).await?;
@@ -59,6 +61,7 @@ impl Ledger {
         templates::DecreaseExchangePosition::init(&inner).await?;
         templates::BuyUsdQuoteAccepted::init(&inner).await?;
         templates::SellUsdQuoteAccepted::init(&inner).await?;
+        templates::AdjustExchangeAllocation::init(&inner).await?;
 
         Ok(Self {
             events: inner.events(EventSubscriberOpts::default()).await?,
@@ -173,6 +176,23 @@ impl Ledger {
         Ok(())
     }
 
+    #[instrument(name = "ledger.adjust_exchange_allocation", skip(self, tx))]
+    pub async fn adjust_exchange_allocation(
+        &self,
+        tx: Transaction<'_, Postgres>,
+        params: AdjustExchangeAllocationParams,
+    ) -> Result<(), LedgerError> {
+        self.inner
+            .post_transaction_in_tx(
+                tx,
+                LedgerTxId::new(),
+                ADJUST_EXCHANGE_ALLOCATION_CODE,
+                Some(params),
+            )
+            .await?;
+        Ok(())
+    }
+
     #[instrument(name = "ledger.user_buys_usd", skip(self, tx))]
     pub async fn user_buys_usd(
         &self,
@@ -251,12 +271,21 @@ impl Ledger {
         Ok(())
     }
 
-    pub async fn usd_liability_balance_events(
+    pub async fn okex_usd_liability_balance_events(
         &self,
     ) -> Result<broadcast::Receiver<SqlxLedgerEvent>, LedgerError> {
         Ok(self
             .events
-            .account_balance(STABLESATS_JOURNAL_ID.into(), STABLESATS_LIABILITY_ID.into())
+            .account_balance(STABLESATS_JOURNAL_ID.into(), OKEX_ALLOCATION_ID.into())
+            .await?)
+    }
+
+    pub async fn usd_omnibus_balance_events(
+        &self,
+    ) -> Result<broadcast::Receiver<SqlxLedgerEvent>, LedgerError> {
+        Ok(self
+            .events
+            .account_balance(STABLESATS_JOURNAL_ID.into(), STABLESATS_OMNIBUS_ID.into())
             .await?)
     }
 
@@ -385,6 +414,38 @@ impl Ledger {
             .description("Account for okex position".to_string())
             .build()
             .expect("Couldn't create okex position account");
+        match ledger.accounts().create(new_account).await {
+            Ok(_) | Err(SqlxLedgerError::DuplicateKey(_)) => Ok(()),
+            Err(e) => Err(e.into()),
+        }
+    }
+
+    #[instrument(name = "ledger.okex_allocation_account", skip_all)]
+    async fn okex_allocation_account(ledger: &SqlxLedger) -> Result<(), LedgerError> {
+        let new_account = NewAccount::builder()
+            .code(OKEX_ALLOCATION_CODE)
+            .id(OKEX_ALLOCATION_ID)
+            .name(OKEX_ALLOCATION_CODE)
+            .normal_balance_type(DebitOrCredit::Credit)
+            .description("Account for okex allocation".to_string())
+            .build()
+            .expect("Couldn't create okex allocation account");
+        match ledger.accounts().create(new_account).await {
+            Ok(_) | Err(SqlxLedgerError::DuplicateKey(_)) => Ok(()),
+            Err(e) => Err(e.into()),
+        }
+    }
+
+    #[instrument(name = "ledger.bitfinex_allocation_account", skip_all)]
+    async fn bitfinex_allocation_account(ledger: &SqlxLedger) -> Result<(), LedgerError> {
+        let new_account = NewAccount::builder()
+            .code(BITFINEX_ALLOCATION_CODE)
+            .id(BITFINEX_ALLOCATION_ID)
+            .name(BITFINEX_ALLOCATION_CODE)
+            .normal_balance_type(DebitOrCredit::Credit)
+            .description("Account for bitfinex allocation".to_string())
+            .build()
+            .expect("Couldn't create bitfinex allocation account");
         match ledger.accounts().create(new_account).await {
             Ok(_) | Err(SqlxLedgerError::DuplicateKey(_)) => Ok(()),
             Err(e) => Err(e.into()),

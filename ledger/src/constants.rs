@@ -21,6 +21,9 @@ pub(super) const BUY_USD_QUOTE_ACCEPTED_CODE: &str = "BUY_USD_QUOTE_ACCEPTED";
 pub(super) const BUY_USD_QUOTE_ACCEPTED_ID: Uuid = uuid!("00000000-0000-0000-0000-000000000005");
 pub(super) const SELL_USD_QUOTE_ACCEPTED_CODE: &str = "SELL_USD_QUOTE_ACCEPTED";
 pub(super) const SELL_USD_QUOTE_ACCEPTED_ID: Uuid = uuid!("00000000-0000-0000-0000-000000000006");
+pub(super) const ADJUST_EXCHANGE_ALLOCATION_CODE: &str = "ADJUST_EXCHANGE_ALLOCATION";
+pub(super) const ADJUST_EXCHANGE_ALLOCATION_ID: Uuid =
+    uuid!("00000000-0000-0000-0000-000000000007");
 
 // Journal
 pub(super) const STABLESATS_JOURNAL_NAME: &str = "Stablesats";
@@ -56,6 +59,12 @@ pub(super) const EXCHANGE_POSITION_OMNIBUS_ID: Uuid = uuid!("10000000-1000-0000-
 
 pub(super) const OKEX_POSITION_CODE: &str = "OKEX_POSITION";
 pub(super) const OKEX_POSITION_ID: Uuid = uuid!("10000000-1000-0000-0000-000000000002");
+
+pub(super) const OKEX_ALLOCATION_CODE: &str = "OKEX_ALLOCATION";
+pub(super) const OKEX_ALLOCATION_ID: Uuid = uuid!("10000000-1000-0000-0000-000000000003");
+
+pub(super) const BITFINEX_ALLOCATION_CODE: &str = "BITFINEX_ALLOCATION";
+pub(super) const BITFINEX_ALLOCATION_ID: uuid::Uuid = uuid!("10000000-1000-0000-0000-000000000004");
 
 pub const SATS_PER_BTC: Decimal = dec!(100_000_000);
 pub const CENTS_PER_USD: Decimal = dec!(100);

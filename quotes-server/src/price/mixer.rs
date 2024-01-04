@@ -59,8 +59,6 @@ impl Default for PriceMixer {
 
 #[cfg(test)]
 mod tests {
-    pub use std::collections::HashMap;
-
     use rust_decimal::Decimal;
     use rust_decimal_macros::dec;
 

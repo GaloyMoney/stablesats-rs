@@ -29,6 +29,7 @@ pub async fn run(
     price_cache_config: QuotesExchangePriceCacheConfig,
     exchange_weights: ExchangeWeights,
     quotes_config: QuotesConfig,
+    ledger: ledger::Ledger,
 ) -> Result<(), QuotesServerError> {
     let app = QuotesApp::run(
         pool,
@@ -39,6 +40,7 @@ pub async fn run(
         price_cache_config,
         exchange_weights,
         quotes_config,
+        ledger,
     )
     .await?;
 

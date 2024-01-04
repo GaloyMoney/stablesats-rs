@@ -20,8 +20,8 @@ impl UserTradesApp {
             galoy_poll_frequency,
         }: UserTradesConfig,
         galoy_client_cfg: GaloyClientConfig,
+        ledger: ledger::Ledger,
     ) -> Result<Self, UserTradesError> {
-        let ledger = ledger::Ledger::init(&pool).await?;
         let user_trades = UserTrades::new(pool.clone());
         let job_runner = job::start_job_runner(
             pool.clone(),
