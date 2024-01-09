@@ -2,7 +2,6 @@ use std::env;
 
 use bitfinex_client::*;
 
-use rust_decimal_macros::dec;
 use serial_test::serial;
 
 async fn configured_client() -> anyhow::Result<BitfinexClient> {
@@ -56,17 +55,7 @@ async fn get_orders() -> anyhow::Result<()> {
 
 #[tokio::test]
 #[serial]
-async fn get_wallets() -> anyhow::Result<()> {
-    if let Ok(client) = configured_client().await {
-        let _wallets = client.get_wallets().await?;
-    }
-
-    Ok(())
-}
-
-#[tokio::test]
-#[serial]
-async fn get_positions() -> anyhow::Result<()> {
+async fn positions() -> anyhow::Result<()> {
     if let Ok(client) = configured_client().await {
         let _positions = client.get_positions().await?;
     }
@@ -76,9 +65,9 @@ async fn get_positions() -> anyhow::Result<()> {
 
 #[tokio::test]
 #[serial]
-async fn get_btc_on_chain_deposit_address() -> anyhow::Result<()> {
+async fn close_position() -> anyhow::Result<()> {
     if let Ok(client) = configured_client().await {
-        let _address = client.get_btc_on_chain_deposit_address().await?;
+        let _close_position = client.close_position().await?;
     }
 
     Ok(())
@@ -86,9 +75,9 @@ async fn get_btc_on_chain_deposit_address() -> anyhow::Result<()> {
 
 #[tokio::test]
 #[serial]
-async fn get_ln_deposit_address() -> anyhow::Result<()> {
+async fn funding_account_balance() -> anyhow::Result<()> {
     if let Ok(client) = configured_client().await {
-        let _address = client.get_ln_deposit_address().await?;
+        let _funding_account_balance = client.funding_account_balance().await?;
     }
 
     Ok(())
@@ -96,11 +85,9 @@ async fn get_ln_deposit_address() -> anyhow::Result<()> {
 
 #[tokio::test]
 #[serial]
-async fn get_ln_invoice() -> anyhow::Result<()> {
+async fn trading_account_balance() -> anyhow::Result<()> {
     if let Ok(client) = configured_client().await {
-        let client_id = ClientId::new();
-        let amount = dec!(0.001);
-        let _invoice = client.get_ln_invoice(client_id, amount).await?;
+        let _trading_account_balance = client.trading_account_balance().await?;
     }
 
     Ok(())
@@ -108,10 +95,9 @@ async fn get_ln_invoice() -> anyhow::Result<()> {
 
 #[tokio::test]
 #[serial]
-async fn get_ln_transactions() -> anyhow::Result<()> {
+async fn get_funding_deposit_address() -> anyhow::Result<()> {
     if let Ok(client) = configured_client().await {
-        let client_id = ClientId::new();
-        let _invoice = client.get_ln_transactions(client_id).await?;
+        let _address = client.get_funding_deposit_address().await?;
     }
 
     Ok(())
@@ -121,8 +107,7 @@ async fn get_ln_transactions() -> anyhow::Result<()> {
 #[serial]
 async fn get_btc_on_chain_transactions() -> anyhow::Result<()> {
     if let Ok(client) = configured_client().await {
-        let client_id = ClientId::new();
-        let _invoice = client.get_btc_on_chain_transactions(client_id).await?;
+        let _transactions = client.get_btc_on_chain_transactions().await?;
     }
 
     Ok(())

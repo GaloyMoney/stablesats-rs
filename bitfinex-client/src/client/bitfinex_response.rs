@@ -110,7 +110,14 @@ pub struct WalletDetails {
     pub unsettled_interest: Decimal,
     pub balance_available: Decimal,
     pub last_change: Option<String>,
-    pub trade_details: Option<String>,
+    pub trade_details: Option<HashMap<String, Value>>,
+}
+
+#[derive(Debug)]
+pub struct AvailableBalance {
+    pub free_amt_in_usdt: Decimal,
+    pub total_amt_in_usdt: Decimal,
+    pub used_amt_in_usdt: Decimal,
 }
 
 #[derive(Deserialize, Debug, Clone)]
@@ -263,11 +270,6 @@ pub struct InvoiceDetails {
 }
 
 #[derive(Deserialize, Debug, Clone)]
-pub struct TransactionDetails {
-    pub transactions: Vec<Transaction>,
-}
-
-#[derive(Deserialize, Debug, Clone)]
 pub struct Transaction {
     pub id: u64,
     pub currency: String,
@@ -317,7 +319,7 @@ pub struct Transaction {
     _placeholder_a: Option<String>,
 
     pub transaction_id: String,
-    pub withdraw_transaction_note: String,
+    pub withdraw_transaction_note: Option<String>,
 }
 
 #[derive(Deserialize, Debug, Clone)]
@@ -399,7 +401,8 @@ mod tests {
     #[test]
     fn wallet_details() {
         // let response_text = "[[\"exchange\",\"TESTBTC\",0.01,0,0.01,null,null],[\"exchange\",\"TESTUSD\",100,0,100,null,null],[\"exchange\",\"TESTUSDT\",200,0,200,null,null]]";
-        let response_text = "[[\"exchange\",\"TESTBTC\",0.005,0,0.005,null,null],[\"exchange\",\"TESTUSD\",100,0,100,null,null],[\"exchange\",\"TESTUSDT\",200,0,200,null,null],[\"margin\",\"TESTBTC\",0.005,0,0.005,null,null]]";
+        let response_text = "[[\"exchange\",\"TESTBTC\",1e-8,0,1e-8,null,null],[\"margin\",\"TESTUSD\",10921.63184294,0,0,\"Position #169742974 funding cost\",{\"reason\":\"POS_FUNDING_SETTLE\",\"pos_id\":169742974,\"pos_pair\":\"TESTBTC:TESTUSD\"}],[\"exchange\",\"TESTUSDT\",11000,0,11000,null,null],[\"exchange\",\"TESTUSD\",49999,0,49999,null,null]]";
+
         let _details = serde_json::from_str::<Vec<WalletDetails>>(response_text).unwrap();
     }
 
