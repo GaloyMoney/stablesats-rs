@@ -2,18 +2,15 @@ mod config;
 
 use futures::stream::StreamExt;
 use rust_decimal::Decimal;
-use tracing::{info_span, instrument, trace_span, Instrument};
+use tracing::{instrument, trace_span, Instrument};
 
 use shared::{
     health::HealthCheckTrigger,
-    payload::{PriceStreamPayload, BITFINEX_EXCHANGE_ID, OKEX_EXCHANGE_ID},
+    payload::{PriceStreamPayload, OKEX_EXCHANGE_ID},
     pubsub::*,
 };
 
-use crate::{
-    cache_config::ExchangePriceCacheConfig, exchange_tick_cache::ExchangeTickCache,
-    price_mixer::PriceMixer, OrderBookCache,
-};
+use crate::{cache_config::ExchangePriceCacheConfig, price_mixer::PriceMixer, OrderBookCache};
 
 pub use crate::{currency::*, error::*, fee_calculator::*};
 pub use config::*;
@@ -54,15 +51,6 @@ impl PriceApp {
             }
         }
 
-        if let Some(weight) = exchange_weights.bitfinex {
-            if weight > Decimal::ZERO {
-                let bitfinex_price_cache = ExchangeTickCache::new(price_cache_config.clone());
-                Self::subscribe_bitfinex(subscriber.resubscribe(), bitfinex_price_cache.clone())
-                    .await?;
-                price_mixer.add_provider(BITFINEX_EXCHANGE_ID, bitfinex_price_cache, weight);
-            }
-        }
-
         let fee_calculator = FeeCalculator::new(fee_calc_cfg);
         let app = Self {
             price_mixer,
@@ -87,33 +75,6 @@ impl PriceApp {
                     shared::tracing::inject_tracing_data(&span, &msg.meta.tracing_data);
                     async {
                         order_book_cache.apply_update(price_msg).await;
-                    }
-                    .instrument(span)
-                    .await;
-                }
-            }
-        });
-
-        Ok(())
-    }
-
-    async fn subscribe_bitfinex(
-        mut subscriber: memory::Subscriber<PriceStreamPayload>,
-        price_cache: ExchangeTickCache,
-    ) -> Result<(), PriceAppError> {
-        tokio::spawn(async move {
-            while let Some(msg) = subscriber.next().await {
-                if let PriceStreamPayload::BitfinexBtcUsdSwapPricePayload(price_msg) = msg.payload {
-                    let span = info_span!(
-                        "price_server.bitfinex_price_tick_received",
-                        message_type = %msg.payload_type,
-                        correlation_id = %msg.meta.correlation_id
-                    );
-                    shared::tracing::inject_tracing_data(&span, &msg.meta.tracing_data);
-                    async {
-                        price_cache
-                            .apply_update(price_msg, msg.meta.correlation_id)
-                            .await;
                     }
                     .instrument(span)
                     .await;

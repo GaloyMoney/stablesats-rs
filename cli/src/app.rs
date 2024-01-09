@@ -44,9 +44,6 @@ enum Command {
         /// Okex passphrase
         #[clap(env = "OKEX_PASSPHRASE", default_value = "")]
         okex_passphrase: String,
-        /// Bitfinex secret key
-        #[clap(env = "BITFINEX_SECRET_KEY", default_value = "")]
-        bitfinex_secret_key: String,
         /// Bria profile api key
         #[clap(env = "BRIA_PROFILE_API_KEY", default_value = "")]
         bria_profile_api_key: String,
@@ -96,7 +93,6 @@ pub async fn run() -> anyhow::Result<()> {
             galoy_phone_code,
             okex_passphrase,
             okex_secret_key,
-            bitfinex_secret_key,
             pg_con,
             bria_profile_api_key,
         } => {
@@ -107,7 +103,6 @@ pub async fn run() -> anyhow::Result<()> {
                     okex_passphrase,
                     okex_secret_key,
                     pg_con,
-                    bitfinex_secret_key,
                     bria_profile_api_key,
                 },
             )?;
@@ -152,7 +147,6 @@ async fn run_cmd(
     Config {
         db,
         price_server,
-        bitfinex_price_feed,
         user_trades,
         tracing,
         galoy,
@@ -191,20 +185,6 @@ async fn run_cmd(
                 okex_price::run(price_send, unhealthy_msg_interval / 2)
                     .await
                     .context("Okex Price Feed error"),
-            );
-        }));
-    }
-
-    if bitfinex_price_feed.enabled {
-        println!("Starting Bitfinex price feed");
-
-        let bitfinex_send = send.clone();
-        let price_send = price_send.clone();
-        handles.push(tokio::spawn(async move {
-            let _ = bitfinex_send.try_send(
-                bitfinex_price::run(bitfinex_price_feed.config, price_send)
-                    .await
-                    .context("Bitfinex Price Feed error"),
             );
         }));
     }
@@ -361,7 +341,6 @@ fn price_stream_throttle_period() -> Duration {
 fn extract_weights(config: &hedging::ExchangesConfig) -> price_server::ExchangeWeights {
     price_server::ExchangeWeights {
         okex: config.okex.as_ref().map(|c| c.weight),
-        bitfinex: None,
     }
 }
 
@@ -370,7 +349,5 @@ fn extract_weights_for_quotes_server(
 ) -> quotes_server::ExchangeWeights {
     quotes_server::ExchangeWeights {
         okex: config.okex.as_ref().map(|c| c.weight),
-
-        bitfinex: None,
     }
 }

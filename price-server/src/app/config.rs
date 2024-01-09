@@ -4,7 +4,6 @@ use serde::{Deserialize, Serialize};
 
 pub struct ExchangeWeights {
     pub okex: Option<Decimal>,
-    pub bitfinex: Option<Decimal>,
 }
 
 #[serde_with::serde_as]

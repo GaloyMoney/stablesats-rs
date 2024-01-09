@@ -14,6 +14,7 @@ pub struct ExchangeTickCache {
     config: ExchangePriceCacheConfig,
 }
 
+#[allow(dead_code)]
 impl ExchangeTickCache {
     pub fn new(config: ExchangePriceCacheConfig) -> Self {
         Self {
@@ -88,6 +89,7 @@ struct ExchangePriceCacheInner {
     tick: Option<BtcSatTick>,
 }
 
+#[allow(dead_code)]
 impl ExchangePriceCacheInner {
     fn new(stale_after: Duration) -> Self {
         Self {

@@ -25,8 +25,6 @@ pub struct Config {
     #[serde(default)]
     pub price_server: PriceServerWrapper,
     #[serde(default)]
-    pub bitfinex_price_feed: BitfinexPriceFeedConfigWrapper,
-    #[serde(default)]
     pub user_trades: UserTradesConfigWrapper,
     #[serde(default)]
     pub galoy: GaloyClientConfig,
@@ -45,7 +43,6 @@ pub struct EnvOverride {
     pub okex_secret_key: String,
     pub okex_passphrase: String,
     pub galoy_phone_code: String,
-    pub bitfinex_secret_key: String,
     pub bria_profile_api_key: String,
 }
 
@@ -57,7 +54,6 @@ impl Config {
             okex_passphrase,
             okex_secret_key,
             pg_con: stablesats_pg_con,
-            bitfinex_secret_key: _,
             bria_profile_api_key,
         }: EnvOverride,
     ) -> anyhow::Result<Self> {
@@ -121,14 +117,6 @@ pub struct QuotesServerWrapper {
     pub price_cache: QuotesExchangePriceCacheConfig,
     #[serde(default)]
     pub config: QuotesConfig,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize, Default)]
-pub struct BitfinexPriceFeedConfigWrapper {
-    #[serde(default)]
-    pub enabled: bool,
-    #[serde(default)]
-    pub config: bitfinex_price::PriceFeedConfig,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
