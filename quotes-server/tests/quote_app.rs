@@ -39,7 +39,6 @@ async fn quotes_app() -> anyhow::Result<()> {
     let (_, recv) = futures::channel::mpsc::unbounded();
     let ex_cfgs = ExchangeWeights {
         okex: Some(dec!(1.0)),
-        bitfinex: None,
     };
 
     let base_fee_rate = dec!(0.001);
