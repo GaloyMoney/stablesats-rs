@@ -3,7 +3,12 @@ mod proto {
     tonic::include_proto!("services.bria.v1");
 }
 
+use std::collections::HashMap;
+
+use opentelemetry::propagation::TextMapPropagator;
+use opentelemetry::sdk::propagation::TraceContextPropagator;
 use tracing::instrument;
+use tracing_opentelemetry::OpenTelemetrySpanExt;
 
 use super::{config::BriaClientConfig, error::BriaClientError};
 
@@ -32,7 +37,7 @@ impl BriaClient {
         })
     }
 
-    pub fn inject_auth_token<T>(
+    pub fn inject_headers<T>(
         &self,
         mut request: tonic::Request<T>,
     ) -> Result<tonic::Request<T>, BriaClientError> {
@@ -41,6 +46,18 @@ impl BriaClient {
             PROFILE_API_KEY_HEADER,
             tonic::metadata::MetadataValue::try_from(profile_api_key)?,
         );
+
+        let context = tracing::Span::current().context();
+        let propagator = TraceContextPropagator::new();
+        let mut headers = HashMap::new();
+        propagator.inject_context(&context, &mut headers);
+        for (key, value) in headers {
+            request.metadata_mut().insert(
+                tonic::metadata::MetadataKey::from_bytes(key.as_bytes())?,
+                tonic::metadata::MetadataValue::try_from(value.as_str())?,
+            );
+        }
+
         Ok(request)
     }
 
@@ -54,7 +71,7 @@ impl BriaClient {
 
         match self
             .proto_client
-            .get_address(self.inject_auth_token(request)?)
+            .get_address(self.inject_headers(request)?)
             .await
         {
             Ok(response) => {
@@ -75,7 +92,7 @@ impl BriaClient {
 
                 let response = self
                     .proto_client
-                    .new_address(self.inject_auth_token(request)?)
+                    .new_address(self.inject_headers(request)?)
                     .await?;
                 Ok(OnchainAddress {
                     address: response.into_inner().address,
@@ -116,7 +133,7 @@ impl BriaClient {
 
         let response = self
             .proto_client
-            .submit_payout(self.inject_auth_token(request)?)
+            .submit_payout(self.inject_headers(request)?)
             .await?;
         Ok(response.into_inner().id)
     }
