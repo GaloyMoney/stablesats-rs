@@ -1,3 +1,13 @@
+# [stablesats release v0.12.1](https://github.com/GaloyMoney/stablesats-rs/releases/tag/0.12.1)
+
+
+### Miscellaneous Tasks
+
+- Update dep to remove sec advisory
+- Add tracing headers for bria (#494)
+- Remove bitfinex-client and bitfinex-price (#493)
+- Bump serde from 1.0.192 to 1.0.194 (#489)
+
 # [stablesats release v0.12.0](https://github.com/GaloyMoney/stablesats-rs/releases/tag/0.12.0)
 
 
