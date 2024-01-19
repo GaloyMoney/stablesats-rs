@@ -1,5 +1,8 @@
 use thiserror::Error;
-use tonic::{metadata::errors::InvalidMetadataValue, transport};
+use tonic::{
+    metadata::errors::{InvalidMetadataKey, InvalidMetadataValue},
+    transport,
+};
 
 #[derive(Error, Debug)]
 pub enum BriaClientError {
@@ -13,4 +16,6 @@ pub enum BriaClientError {
     CouldNotConvertSatoshisToU64,
     #[error("Tonic Error: {0}")]
     TonicError(#[from] tonic::Status),
+    #[error("Invalid Metadata Key: {0}")]
+    InvalidMetadataKey(#[from] InvalidMetadataKey),
 }
