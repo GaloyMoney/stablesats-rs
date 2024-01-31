@@ -1,5 +1,6 @@
-use opentelemetry::{propagation::TextMapPropagator, sdk::propagation::TraceContextPropagator};
+use opentelemetry::propagation::TextMapPropagator;
 use opentelemetry_http::HeaderInjector;
+use opentelemetry_sdk::propagation::TraceContextPropagator;
 use reqwest::header::HeaderMap;
 use tracing::Span;
 use tracing_opentelemetry::OpenTelemetrySpanExt;

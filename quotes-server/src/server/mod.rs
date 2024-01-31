@@ -7,10 +7,8 @@ pub mod proto {
     tonic::include_proto!("services.quotes.v1");
 }
 
-use opentelemetry::{
-    propagation::{Extractor, TextMapPropagator},
-    sdk::propagation::TraceContextPropagator,
-};
+use opentelemetry::propagation::{Extractor, TextMapPropagator};
+use opentelemetry_sdk::propagation::TraceContextPropagator;
 use proto::{quote_service_server::QuoteService, *};
 use rust_decimal::Decimal;
 use tonic::{transport::Server, Request, Response, Status};
