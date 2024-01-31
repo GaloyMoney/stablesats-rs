@@ -7,10 +7,8 @@ pub mod proto {
     tonic::include_proto!("services.price.v1");
 }
 
-use opentelemetry::{
-    propagation::{Extractor, TextMapPropagator},
-    sdk::propagation::TraceContextPropagator,
-};
+use opentelemetry::propagation::{Extractor, TextMapPropagator};
+use opentelemetry_sdk::propagation::TraceContextPropagator;
 use proto::{price_service_server::PriceService, *};
 use tonic::{transport::Server, Request, Response, Status};
 use tracing::instrument;

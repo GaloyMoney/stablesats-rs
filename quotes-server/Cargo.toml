@@ -21,6 +21,7 @@ chrono = { workspace = true }
 async-trait = { workspace = true }
 derive_builder = { workspace = true }
 opentelemetry = { workspace = true }
+opentelemetry_sdk = { workspace = true }
 rust_decimal = { workspace = true }
 rust_decimal_macros = { workspace = true }
 tracing-opentelemetry = { workspace = true }

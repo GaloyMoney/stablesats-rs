@@ -24,6 +24,7 @@ serde = { workspace = true }
 rust_decimal = { workspace = true }
 tracing = { workspace = true }
 opentelemetry = { workspace = true }
+opentelemetry_sdk = { workspace = true }
 tracing-opentelemetry = { workspace = true }
 rust_decimal_macros = { workspace = true }
 rusty-money = { workspace = true }

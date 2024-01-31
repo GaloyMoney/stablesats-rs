@@ -6,7 +6,7 @@ mod proto {
 use std::collections::HashMap;
 
 use opentelemetry::propagation::TextMapPropagator;
-use opentelemetry::sdk::propagation::TraceContextPropagator;
+use opentelemetry_sdk::propagation::TraceContextPropagator;
 use tracing::instrument;
 use tracing_opentelemetry::OpenTelemetrySpanExt;
 

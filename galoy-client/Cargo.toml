@@ -13,7 +13,6 @@ graphql_client =  { workspace = true }
 reqwest = { workspace = true }
 serde = { workspace = true }
 serde_json = { workspace = true }
-
 thiserror = { workspace = true }
 chrono = { workspace = true }
 tracing = { workspace = true }
@@ -21,6 +20,7 @@ rust_decimal = { workspace = true }
 rust_decimal_macros = { workspace = true }
 opentelemetry = { workspace = true }
 tracing-opentelemetry = { workspace = true }
+opentelemetry_sdk = { workspace = true }
 opentelemetry-http = { workspace = true }
 
 [dev-dependencies]
