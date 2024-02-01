@@ -1,3 +1,13 @@
+# [stablesats release v0.12.2](https://github.com/GaloyMoney/stablesats-rs/releases/tag/0.12.2)
+
+
+### Miscellaneous Tasks
+
+- Bump tracing, opentelemetry and sqlx-ledger (#498)
+- Bump osx building
+- Bump async-trait from 0.1.74 to 0.1.77 (#492)
+- Bump tokio from 1.34.0 to 1.35.1 (#485)
+
 # [stablesats release v0.12.1](https://github.com/GaloyMoney/stablesats-rs/releases/tag/0.12.1)
 
 

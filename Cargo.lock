@@ -382,7 +382,7 @@ dependencies = [
 
 [[package]]
 name = "bria-client"
-version = "0.12.2-dev"
+version = "0.12.2"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -1124,7 +1124,7 @@ dependencies = [
 
 [[package]]
 name = "galoy-client"
-version = "0.12.2-dev"
+version = "0.12.2"
 dependencies = [
  "anyhow",
  "chrono",
@@ -1321,7 +1321,7 @@ dependencies = [
 
 [[package]]
 name = "hedging"
-version = "0.12.2-dev"
+version = "0.12.2"
 dependencies = [
  "anyhow",
  "bria-client",
@@ -1902,7 +1902,7 @@ dependencies = [
 
 [[package]]
 name = "okex-client"
-version = "0.12.2-dev"
+version = "0.12.2"
 dependencies = [
  "anyhow",
  "chrono",
@@ -1925,7 +1925,7 @@ dependencies = [
 
 [[package]]
 name = "okex-price"
-version = "0.12.2-dev"
+version = "0.12.2"
 dependencies = [
  "anyhow",
  "chrono",
@@ -2255,7 +2255,7 @@ dependencies = [
 
 [[package]]
 name = "price-server"
-version = "0.12.2-dev"
+version = "0.12.2"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -2479,7 +2479,7 @@ dependencies = [
 
 [[package]]
 name = "quotes-server"
-version = "0.12.2-dev"
+version = "0.12.2"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -3438,7 +3438,7 @@ dependencies = [
 
 [[package]]
 name = "stablesats"
-version = "0.12.2-dev"
+version = "0.12.2"
 dependencies = [
  "anyhow",
  "axum",
@@ -3473,7 +3473,7 @@ dependencies = [
 
 [[package]]
 name = "stablesats-ledger"
-version = "0.12.2-dev"
+version = "0.12.2"
 dependencies = [
  "anyhow",
  "chrono",
@@ -3493,7 +3493,7 @@ dependencies = [
 
 [[package]]
 name = "stablesats-shared"
-version = "0.12.2-dev"
+version = "0.12.2"
 dependencies = [
  "anyhow",
  "chrono",
@@ -4152,7 +4152,7 @@ checksum = "daf8dba3b7eb870caf1ddeed7bc9d2a049f3cfdfae7cb521b087cc33ae4c49da"
 
 [[package]]
 name = "user-trades"
-version = "0.12.2-dev"
+version = "0.12.2"
 dependencies = [
  "anyhow",
  "chrono",
