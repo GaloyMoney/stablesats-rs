@@ -29,4 +29,4 @@ serde_with = { workspace = true }
 
 [dev-dependencies]
 anyhow = "1.0.70"
-serial_test = "2.0.0"
+serial_test = "3.0.0"
