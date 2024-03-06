@@ -41,7 +41,7 @@ opentelemetry_sdk = { version = "0.22.1", features = ["rt-tokio"] }
 opentelemetry-http = "0.11.0"
 chrono = { version = "0.4", features = ["clock", "serde"], default-features = false }
 ring = "0.16.20"
-uuid = { version = "1.6.1", features = ["v4", "serde"] }
+uuid = { version = "1.7.0", features = ["v4", "serde"] }
 data-encoding = "2.5.0"
 rust_decimal = "1.34.3"
 rust_decimal_macros = "1.29.0"
