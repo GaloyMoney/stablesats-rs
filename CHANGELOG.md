@@ -1,3 +1,12 @@
+# [stablesats release v0.12.3](https://github.com/GaloyMoney/stablesats-rs/releases/tag/0.12.3)
+
+
+### Miscellaneous Tasks
+
+- Add targets in rust-toolchain (#513)
+- Update otel tracing, mio, whoami (#512)
+- Bump deps (#506)
+
 # [stablesats release v0.12.2](https://github.com/GaloyMoney/stablesats-rs/releases/tag/0.12.2)
 
 
