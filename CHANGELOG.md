@@ -1,3 +1,10 @@
+# [stablesats release v0.12.4](https://github.com/GaloyMoney/stablesats-rs/releases/tag/0.12.4)
+
+
+### Miscellaneous Tasks
+
+- Bump tokio, h2, clap, uuid, chrono (#514)
+
 # [stablesats release v0.12.3](https://github.com/GaloyMoney/stablesats-rs/releases/tag/0.12.3)
 
 
