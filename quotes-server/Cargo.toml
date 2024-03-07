@@ -41,5 +41,5 @@ tonic-build = { version = "0.10", features = ["prost"] }
 [dev-dependencies]
 anyhow = "1.0.70"
 serde = "1.0.194"
-serde_json = "1.0.93"
+serde_json = "1.0.114"
 serial_test = { version = "*" , features = [ "file_locks"] }
