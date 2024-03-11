@@ -130,5 +130,5 @@ fn default_high_bound_buffer_percentage() -> Decimal {
     dec!(0.9)
 }
 fn default_deposit_lost_timeout_seconds() -> chrono::Duration {
-    chrono::Duration::seconds(3600)
+    chrono::Duration::try_seconds(3600).expect("should always be able to create a timeout duration")
 }

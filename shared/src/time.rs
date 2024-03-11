@@ -58,8 +58,7 @@ impl TryFrom<&TimeStampMilliStr> for TimeStamp {
 
     fn try_from(value: &TimeStampMilliStr) -> Result<Self, Self::Error> {
         let millis = value.0.parse::<i64>()?;
-        if let Some(naive) = NaiveDateTime::from_timestamp_opt(millis / 1000, 0) {
-            let datetime: DateTime<Utc> = DateTime::from_naive_utc_and_offset(naive, Utc);
+        if let Some(datetime) = DateTime::from_timestamp(millis / 1000, 0) {
             Ok(Self(datetime))
         } else {
             Err(TimeStampError::EmptyNaiveDateTime(
