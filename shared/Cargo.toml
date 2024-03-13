@@ -35,4 +35,4 @@ lazy_static = { workspace = true }
 
 [dev-dependencies]
 anyhow = "1.0.70"
-serde_yaml = "0.9.27"
+serde_yaml = "0.9.32"
