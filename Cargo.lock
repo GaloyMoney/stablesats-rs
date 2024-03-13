@@ -384,7 +384,7 @@ dependencies = [
  "stablesats-shared",
  "thiserror",
  "tokio",
- "tonic 0.10.2",
+ "tonic",
  "tonic-build",
  "tracing",
  "tracing-opentelemetry",
@@ -2048,7 +2048,7 @@ dependencies = [
  "reqwest",
  "thiserror",
  "tokio",
- "tonic 0.11.0",
+ "tonic",
 ]
 
 [[package]]
@@ -2060,7 +2060,7 @@ dependencies = [
  "opentelemetry",
  "opentelemetry_sdk",
  "prost",
- "tonic 0.11.0",
+ "tonic",
 ]
 
 [[package]]
@@ -2278,7 +2278,7 @@ dependencies = [
  "stablesats-shared",
  "thiserror",
  "tokio",
- "tonic 0.10.2",
+ "tonic",
  "tonic-build",
  "tracing",
  "tracing-opentelemetry",
@@ -2504,7 +2504,7 @@ dependencies = [
  "stablesats-shared",
  "thiserror",
  "tokio",
- "tonic 0.10.2",
+ "tonic",
  "tonic-build",
  "tracing",
  "tracing-opentelemetry",
@@ -3476,7 +3476,7 @@ dependencies = [
  "stablesats-ledger",
  "stablesats-shared",
  "tokio",
- "tonic 0.10.2",
+ "tonic",
  "tracing",
  "tracing-opentelemetry",
  "tracing-subscriber",
@@ -3860,33 +3860,6 @@ dependencies = [
  "indexmap 2.2.3",
  "toml_datetime",
  "winnow",
-]
-
-[[package]]
-name = "tonic"
-version = "0.10.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d560933a0de61cf715926b9cac824d4c883c2c43142f787595e48280c40a1d0e"
-dependencies = [
- "async-stream",
- "async-trait",
- "axum",
- "base64",
- "bytes",
- "h2 0.3.24",
- "http 0.2.9",
- "http-body",
- "hyper",
- "hyper-timeout",
- "percent-encoding",
- "pin-project",
- "prost",
- "tokio",
- "tokio-stream",
- "tower",
- "tower-layer",
- "tower-service",
- "tracing",
 ]
 
 [[package]]
