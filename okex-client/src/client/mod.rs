@@ -32,7 +32,7 @@ lazy_static::lazy_static! {
 }
 
 const TESTNET_BURNER_ADDRESS: &str = "tb1qfqh7ksqcrhjgq35clnf06l5d9s6tk2ke46ecrj";
-const OKEX_API_URL: &str = "https://www.okex.com";
+const OKEX_API_URL: &str = "https://www.okx.com";
 pub const OKEX_MINIMUM_WITHDRAWAL_FEE: Decimal = dec!(0.0002);
 pub const OKEX_MAXIMUM_WITHDRAWAL_FEE: Decimal = dec!(0.0004);
 pub const OKEX_MINIMUM_WITHDRAWAL_AMOUNT: Decimal = dec!(0.001);
