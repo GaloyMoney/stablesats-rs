@@ -1,3 +1,14 @@
+# [stablesats release v0.12.5](https://github.com/GaloyMoney/stablesats-rs/releases/tag/0.12.5)
+
+
+### Bug Fixes
+
+- Lock rows and skip them during concurrent poll (#528)
+
+### Miscellaneous Tasks
+
+- Bump chrono, serde, serde_json, derive_builder, rust_decimal_macros (#520)
+
 # [stablesats release v0.12.4](https://github.com/GaloyMoney/stablesats-rs/releases/tag/0.12.4)
 
 
