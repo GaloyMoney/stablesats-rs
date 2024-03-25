@@ -25,5 +25,5 @@ tracing = { workspace = true }
 uuid = { workspace = true }
 
 [dev-dependencies]
-anyhow = "1.0.70"
-serial_test = { version = "*" , features = ["file_locks"] }
+anyhow = { workspace = true }
+serial_test = { workspace = true }

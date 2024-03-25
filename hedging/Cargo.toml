@@ -36,5 +36,5 @@ serde_with = { workspace = true }
 h2 = "0.4.2"
 
 [dev-dependencies]
-anyhow = "1.0.70"
-serial_test = "*"
+anyhow = { workspace = true }
+serial_test = { workspace = true }
