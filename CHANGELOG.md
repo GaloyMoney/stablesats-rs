@@ -1,3 +1,15 @@
+# [stablesats release v0.12.6](https://github.com/GaloyMoney/stablesats-rs/releases/tag/0.12.6)
+
+
+### Bug Fixes
+
+- Use updated okx url (#529)
+
+### Miscellaneous Tasks
+
+- Bump deps (#532)
+- Bump flake (#531)
+
 # [stablesats release v0.12.5](https://github.com/GaloyMoney/stablesats-rs/releases/tag/0.12.5)
 
 
