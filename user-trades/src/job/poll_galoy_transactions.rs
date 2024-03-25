@@ -341,7 +341,7 @@ mod tests {
     #[test]
     fn unify_transactions() {
         let created_at = chrono::Utc::now();
-        let created_earlier = created_at - chrono::Duration::days(1);
+        let created_earlier = created_at - chrono::Duration::try_days(1).unwrap();
         let tx1 = UnpairedTransaction {
             id: "id1".to_string(),
             created_at,

@@ -22,7 +22,7 @@ async fn subscribes_to_tickers_channel() -> anyhow::Result<()> {
     let duration_since = TimeStamp::try_from(&price_tick.data[0].ts)
         .expect("couldn't convert timestamp")
         .duration_since();
-    assert!(duration_since < Duration::seconds(30));
+    assert!(duration_since < Duration::try_seconds(30).unwrap());
 
     let data = &price_tick.data[0];
     assert!(data.ask_px >= data.bid_px);

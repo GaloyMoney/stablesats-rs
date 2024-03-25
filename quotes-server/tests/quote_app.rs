@@ -63,7 +63,7 @@ async fn quotes_app() -> anyhow::Result<()> {
         QuotesExchangePriceCacheConfig::default(),
         ex_cfgs,
         QuotesConfig {
-            expiration_interval: Duration::seconds(2),
+            expiration_interval: Duration::try_seconds(2).expect("valid duration"),
         },
         ledger,
     )
