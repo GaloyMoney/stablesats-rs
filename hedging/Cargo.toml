@@ -33,7 +33,7 @@ uuid = { workspace = true }
 serde_with = { workspace = true }
 
 # To fix vulnerability
-h2 = "0.4.2"
+h2 = "0.4.3"
 
 [dev-dependencies]
 anyhow = { workspace = true }
