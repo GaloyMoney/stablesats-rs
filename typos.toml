@@ -1,2 +1,5 @@
-[files]
-extend-exclude = ["CHANGELOG.md", "dev", "docker-compose.yml"]
+files.extend-exclude = ["CHANGELOG.md", "dev", "docker-compose.yml"]
+
+default.extend-ignore-identifiers-re = [
+  "[Ww][Ss]"
+]
