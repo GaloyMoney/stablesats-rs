@@ -1,3 +1,12 @@
+# [stablesats release v0.12.7](https://github.com/GaloyMoney/stablesats-rs/releases/tag/0.12.7)
+
+
+### Miscellaneous Tasks
+
+- Bump deps (#545)
+- Increase retry attempts for hedging test (#544)
+- Bump deps (#538)
+
 # [stablesats release v0.12.6](https://github.com/GaloyMoney/stablesats-rs/releases/tag/0.12.6)
 
 
