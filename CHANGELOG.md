@@ -1,3 +1,10 @@
+# [stablesats release v0.12.8](https://github.com/GaloyMoney/stablesats-rs/releases/tag/0.12.8)
+
+
+### Miscellaneous Tasks
+
+- Bump h2 to fix vulnerability (#550)
+
 # [stablesats release v0.12.7](https://github.com/GaloyMoney/stablesats-rs/releases/tag/0.12.7)
 
 
