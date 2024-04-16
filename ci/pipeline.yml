@@ -175,7 +175,6 @@ jobs:
       run:
         path: pipeline-tasks/ci/vendor/tasks/docker-prep-docker-build-env.sh
   - task: build
-    privileged: true
     config:
       platform: linux
       image_resource:
