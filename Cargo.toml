@@ -19,7 +19,7 @@ reqwest = { version = "0.12.15", default-features = false, features = [
   "json",
   "rustls-tls",
 ] }
-tokio-tungstenite = { version = "0.20.1", features = [
+tokio-tungstenite = { version = "0.26.2", features = [
   "rustls-tls-webpki-roots",
 ] }
 url = { version = "2.5.0", features = ["serde"] }
@@ -42,7 +42,7 @@ sqlxmq = { git = "https://github.com/HyperparamAI/sqlxmq", rev = "52c3daf6af5541
   "runtime-tokio-rustls",
 ] }
 sqlx-ledger = { version = "0.11.5", features = ["otel"] }
-tokio = { version = "1.37", features = ["full"] }
+tokio = { version = "1.44.2", features = ["full"] }
 futures = "0.3.30"
 async-trait = "0.1.78"
 thiserror = "1.0.58"
