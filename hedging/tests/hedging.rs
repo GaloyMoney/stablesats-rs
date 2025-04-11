@@ -73,22 +73,26 @@ async fn hedging() -> anyhow::Result<()> {
     let ledger_clone = ledger.clone();
     tokio::spawn(async move {
         let (_, recv) = futures::channel::mpsc::unbounded();
-        let _ = send.try_send(
-            HedgingApp::run(
-                pool,
-                recv,
-                HedgingAppConfig {
-                    ..Default::default()
-                },
-                okex_config(),
-                galoy_client_config(),
-                bria_client_config(),
-                tick_recv.resubscribe(),
-                ledger_clone,
-            )
-            .await
-            .expect("HedgingApp failed"),
-        );
+
+        // Signal that we're about to start the app
+        let _ = send
+            .try_send("starting")
+            .expect("Failed to send starting message");
+
+        HedgingApp::run(
+            pool,
+            recv,
+            HedgingAppConfig {
+                ..Default::default()
+            },
+            okex_config(),
+            galoy_client_config(),
+            bria_client_config(),
+            tick_recv.resubscribe(),
+            ledger_clone,
+        )
+        .await
+        .expect("HedgingApp failed");
     });
     let _reason = receive.recv().await.expect("Didn't receive msg");
     tokio::time::sleep(std::time::Duration::from_secs(10)).await;
