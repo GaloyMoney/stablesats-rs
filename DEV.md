@@ -86,7 +86,7 @@ $ stablesats
 
 To run the configured processes:
 - Make a copy of the [stablesats](stablesats.yml) configuration file and rename the file. Ensure that this new configuration is not committed (add to global `.gitignore`) if contributing to the project.
-- Uncomment the file and update the `galoy.api` and `galoy.phone_number` config values with values contained [here](https://github.com/GaloyMoney/galoy/blob/main/src/graphql/docs/README.md). Change the `okex.simulated` value to `true`.
+- Uncomment the file and update the `galoy.api` config value with the API endpoint. Change the `okex.simulated` value to `true`.
 - Run the CLI
 ```
 $ stablesats -c $NEW_CONFIGURATION_FILE run

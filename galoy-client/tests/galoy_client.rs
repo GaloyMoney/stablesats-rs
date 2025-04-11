@@ -4,15 +4,9 @@ use galoy_client::*;
 
 async fn configured_client() -> anyhow::Result<GaloyClient> {
     let api = env::var("GALOY_GRAPHQL_URI")?;
-    let phone_number = env::var("GALOY_PHONE_NUMBER")?;
-    let code = env::var("GALOY_PHONE_CODE")?;
+    let api_key = env::var("GALOY_API_KEY")?;
 
-    let client = GaloyClient::connect(GaloyClientConfig {
-        api,
-        phone_number,
-        auth_code: code,
-    })
-    .await?;
+    let client = GaloyClient::connect(GaloyClientConfig { api, api_key }).await?;
 
     Ok(client)
 }

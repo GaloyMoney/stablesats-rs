@@ -5,7 +5,5 @@ pub struct GaloyClientConfig {
     #[serde(default)]
     pub api: String,
     #[serde(default)]
-    pub auth_code: String,
-    #[serde(default)]
-    pub phone_number: String,
+    pub api_key: String,
 }

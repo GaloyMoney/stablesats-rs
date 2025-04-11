@@ -42,7 +42,7 @@ pub struct EnvOverride {
     pub pg_con: String,
     pub okex_secret_key: String,
     pub okex_passphrase: String,
-    pub galoy_phone_code: String,
+    pub galoy_api_key: String,
     pub bria_profile_api_key: String,
 }
 
@@ -50,7 +50,7 @@ impl Config {
     pub fn from_path(
         path: impl AsRef<Path>,
         EnvOverride {
-            galoy_phone_code,
+            galoy_api_key,
             okex_passphrase,
             okex_secret_key,
             pg_con: stablesats_pg_con,
@@ -61,7 +61,7 @@ impl Config {
         let mut config: Config =
             serde_yaml::from_str(&config_file).context("Couldn't parse config file")?;
 
-        config.galoy.auth_code = galoy_phone_code;
+        config.galoy.api_key = galoy_api_key;
 
         if let Some(okex) = config.exchanges.okex.as_mut() {
             okex.config.client.secret_key = okex_secret_key;

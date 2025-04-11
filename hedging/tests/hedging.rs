@@ -30,14 +30,9 @@ fn okex_config() -> OkexConfig {
 
 fn galoy_client_config() -> GaloyClientConfig {
     let api = env::var("GALOY_GRAPHQL_URI").expect("GALOY_GRAPHQL_URI not set");
-    let phone_number = env::var("GALOY_PHONE_NUMBER").expect("GALOY_PHONE_NUMBER not set");
-    let code = env::var("GALOY_PHONE_CODE").expect("GALOY_PHONE_CODE not set");
+    let api_key = env::var("GALOY_API_KEY").expect("GALOY_API_KEY not set");
 
-    GaloyClientConfig {
-        api,
-        phone_number,
-        auth_code: code,
-    }
+    GaloyClientConfig { api, api_key }
 }
 
 fn bria_client_config() -> BriaClientConfig {

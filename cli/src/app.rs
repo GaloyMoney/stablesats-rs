@@ -35,9 +35,9 @@ enum Command {
         /// Connection string for the stablesats database
         #[clap(env = "PG_CON", default_value = "")]
         pg_con: String,
-        /// Phone code for the galoy client
-        #[clap(env = "GALOY_PHONE_CODE", default_value = "")]
-        galoy_phone_code: String,
+        /// API key for the galoy client
+        #[clap(env = "GALOY_API_KEY", default_value = "")]
+        galoy_api_key: String,
         /// Okex secret key
         #[clap(env = "OKEX_SECRET_KEY", default_value = "")]
         okex_secret_key: String,
@@ -90,7 +90,7 @@ pub async fn run() -> anyhow::Result<()> {
     match cli.command {
         Command::Run {
             crash_report_config,
-            galoy_phone_code,
+            galoy_api_key,
             okex_passphrase,
             okex_secret_key,
             pg_con,
@@ -99,7 +99,7 @@ pub async fn run() -> anyhow::Result<()> {
             let config = Config::from_path(
                 cli.config,
                 EnvOverride {
-                    galoy_phone_code,
+                    galoy_api_key,
                     okex_passphrase,
                     okex_secret_key,
                     pg_con,
