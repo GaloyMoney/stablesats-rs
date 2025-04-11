@@ -131,7 +131,7 @@ impl OkexEngine {
                             let span = info_span!(
                                 "hedging.okex.usd_liability_balance_event_received",
                                 correlation_id = %correlation_id,
-                                event_json = &tracing::field::display(
+                                event_json = tracing::field::display(
                                     serde_json::to_string(&data)
                                         .expect("failed to serialize event data")
                                 ),
@@ -240,7 +240,7 @@ impl OkexEngine {
         let action = self
             .hedging_adjustment
             .determine_action(amount, signed_usd_exposure);
-        tracing::Span::current().record("hedging_action", &tracing::field::display(&action));
+        tracing::Span::current().record("hedging_action", tracing::field::display(&action));
         if action.action_required() {
             job::spawn_adjust_hedge(&self.pool, correlation_id).await?;
         }
@@ -274,7 +274,7 @@ impl OkexEngine {
             last_price_in_usd_cents,
             funding_available_balance.total_amt_in_btc,
         );
-        tracing::Span::current().record("funding_action", &tracing::field::display(&action));
+        tracing::Span::current().record("funding_action", tracing::field::display(&action));
         if action.action_required() {
             job::spawn_adjust_funding(&self.pool, correlation_id).await?;
         }

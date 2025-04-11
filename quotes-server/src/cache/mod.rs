@@ -49,7 +49,7 @@ impl PriceProvider for ExchangeTickCache {
         span.add_link(tick.span_context.clone());
         span.record(
             "correlation_id",
-            &tracing::field::display(tick.correlation_id),
+            tracing::field::display(tick.correlation_id),
         );
         Ok(Box::new(tick))
     }

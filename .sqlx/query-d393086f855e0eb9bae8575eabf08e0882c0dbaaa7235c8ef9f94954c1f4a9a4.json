@@ -1,0 +1,20 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT client_transfer_id FROM okex_transfers WHERE action = 'withdraw' AND state = 'pending'",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "client_transfer_id",
+        "type_info": "Varchar"
+      }
+    ],
+    "parameters": {
+      "Left": []
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "d393086f855e0eb9bae8575eabf08e0882c0dbaaa7235c8ef9f94954c1f4a9a4"
+}

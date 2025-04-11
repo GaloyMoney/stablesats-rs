@@ -64,9 +64,9 @@ impl UserTrades {
         Self {}
     }
 
-    pub async fn persist_all<'a>(
+    pub async fn persist_all(
         &self,
-        tx: &mut Transaction<'a, Postgres>,
+        tx: &mut Transaction<'_, Postgres>,
         new_user_trades: Vec<NewUserTrade>,
     ) -> Result<(), UserTradesError> {
         if new_user_trades.is_empty() {

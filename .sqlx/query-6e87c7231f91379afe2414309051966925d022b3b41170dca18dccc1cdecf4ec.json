@@ -1,0 +1,34 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n                SELECT q.id, e.sequence, e.event\n                FROM stablesats_quotes q\n                JOIN stablesats_quote_events e ON q.id = e.id\n                WHERE q.id = $1\n                ORDER BY q.created_at, q.id, e.sequence\n            ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 1,
+        "name": "sequence",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 2,
+        "name": "event",
+        "type_info": "Jsonb"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false
+    ]
+  },
+  "hash": "6e87c7231f91379afe2414309051966925d022b3b41170dca18dccc1cdecf4ec"
+}

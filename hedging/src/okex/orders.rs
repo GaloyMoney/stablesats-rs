@@ -25,9 +25,9 @@ impl OkexOrders {
         Ok(Self { pool })
     }
 
-    pub async fn reserve_order_slot<'a>(
+    pub async fn reserve_order_slot(
         &self,
-        reservation: OrderReservation<'a>,
+        reservation: OrderReservation<'_>,
     ) -> Result<Option<ClientOrderId>, HedgingError> {
         let mut tx = self.pool.begin().await?;
         tx.execute("SET TRANSACTION ISOLATION LEVEL SERIALIZABLE")

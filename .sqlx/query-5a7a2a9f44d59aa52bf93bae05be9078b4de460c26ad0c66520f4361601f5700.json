@@ -1,0 +1,12 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "DELETE FROM okex_orders WHERE lost = true AND complete = false AND created_at < now() - interval '5 hour'",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": []
+    },
+    "nullable": []
+  },
+  "hash": "5a7a2a9f44d59aa52bf93bae05be9078b4de460c26ad0c66520f4361601f5700"
+}

@@ -12,7 +12,7 @@ impl<'a> TickCurrencyConverter<'a> {
     }
 }
 
-impl<'a> VolumePicker for TickCurrencyConverter<'a> {
+impl VolumePicker for TickCurrencyConverter<'_> {
     fn cents_from_sats(&self, volume: Satoshis) -> UsdCents {
         UsdCents::from(volume.amount() * self.price_of_one_sat.amount())
     }

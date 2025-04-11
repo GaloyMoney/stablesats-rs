@@ -37,9 +37,9 @@ impl OkexTransfers {
         Ok(Self { pool })
     }
 
-    pub async fn reserve_transfer_slot<'a>(
+    pub async fn reserve_transfer_slot(
         &self,
-        reservation: TransferReservation<'a>,
+        reservation: TransferReservation<'_>,
     ) -> Result<Option<ClientTransferId>, HedgingError> {
         let mut tx = self.pool.begin().await?;
         tx.execute("SET TRANSACTION ISOLATION LEVEL SERIALIZABLE")
@@ -56,9 +56,9 @@ impl OkexTransfers {
         let id = ClientTransferId::new();
         sqlx::query!(
             r#"INSERT INTO okex_transfers (
-                client_transfer_id, 
-                correlation_id, 
-                action, 
+                client_transfer_id,
+                correlation_id,
+                action,
                 currency,
                 amount,
                 fee,

@@ -76,16 +76,16 @@ impl<P: MessagePayload> Publisher<P> {
         let span = tracing::Span::current();
         span.record(
             "payload_type",
-            &tracing::field::display(<P as MessagePayload>::message_type()),
+            tracing::field::display(<P as MessagePayload>::message_type()),
         );
         span.record(
             "payload_json",
-            &tracing::field::display(serde_json::to_string(&payload).expect("Could not serialize")),
+            tracing::field::display(serde_json::to_string(&payload).expect("Could not serialize")),
         );
         let msg = Envelope::new(payload);
         span.record(
             "published_at",
-            &tracing::field::display(&msg.meta.published_at),
+            tracing::field::display(&msg.meta.published_at),
         );
 
         crate::tracing::record_error(tracing::Level::WARN, || async move { self.inner.send(msg) })
