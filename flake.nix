@@ -46,6 +46,8 @@
         ]
         ++ lib.optionals pkgs.stdenv.isLinux [
           openssl
+          pkg-config
+          openssl.dev
         ];
 
       devEnvVars = rec {
