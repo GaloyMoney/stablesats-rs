@@ -1,0 +1,79 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE user_trades\n               SET correction_ledger_tx_id = $1\n               WHERE id = (\n                 SELECT id FROM user_trades WHERE ledger_tx_id IS NOT NULL AND correction_ledger_tx_id = $2 ORDER BY external_ref->>'timestamp' LIMIT 1\n               ) RETURNING id, ledger_tx_id, buy_amount, buy_unit as \"buy_unit: UserTradeUnit\", sell_amount, sell_unit as \"sell_unit: UserTradeUnit\", external_ref",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 1,
+        "name": "ledger_tx_id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 2,
+        "name": "buy_amount",
+        "type_info": "Numeric"
+      },
+      {
+        "ordinal": 3,
+        "name": "buy_unit: UserTradeUnit",
+        "type_info": {
+          "Custom": {
+            "name": "usertradeunit",
+            "kind": {
+              "Enum": [
+                "usd_cent",
+                "satoshi"
+              ]
+            }
+          }
+        }
+      },
+      {
+        "ordinal": 4,
+        "name": "sell_amount",
+        "type_info": "Numeric"
+      },
+      {
+        "ordinal": 5,
+        "name": "sell_unit: UserTradeUnit",
+        "type_info": {
+          "Custom": {
+            "name": "usertradeunit",
+            "kind": {
+              "Enum": [
+                "usd_cent",
+                "satoshi"
+              ]
+            }
+          }
+        }
+      },
+      {
+        "ordinal": 6,
+        "name": "external_ref",
+        "type_info": "Jsonb"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      false,
+      true,
+      false,
+      false,
+      false,
+      false,
+      false
+    ]
+  },
+  "hash": "fee34cfbdb19294324dc4ceb3cc20fcf3bd61814cd8f1a680564ba14a14b2185"
+}

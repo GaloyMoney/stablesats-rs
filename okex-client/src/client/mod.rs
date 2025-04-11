@@ -627,9 +627,9 @@ impl OkexClient {
         }) = Self::extract_optional_response_data::<PositionData>(response).await?
         {
             let span = tracing::Span::current();
-            span.record("notional_usd", &tracing::field::display(&notional_usd));
-            span.record("position_in_ct", &tracing::field::display(&pos));
-            span.record("last_price", &tracing::field::display(&last));
+            span.record("notional_usd", tracing::field::display(&notional_usd));
+            span.record("position_in_ct", tracing::field::display(&pos));
+            span.record("last_price", tracing::field::display(&last));
 
             // Position responses with data:
             //  No position on account: pos = 0 and everything else is empty

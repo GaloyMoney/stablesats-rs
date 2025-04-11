@@ -18,7 +18,7 @@ pub(super) async fn execute(
 ) -> Result<(), HedgingError> {
     let span = tracing::Span::current();
     if !crate::hack_user_trades_lag::lag_ok(pool).await? {
-        span.record("lag_ok", &tracing::field::display(false));
+        span.record("lag_ok", tracing::field::display(false));
         return Ok(());
     }
     let target_liability = ledger
@@ -28,16 +28,16 @@ pub(super) async fn execute(
         .okex_allocation;
     span.record(
         "target_liability",
-        &tracing::field::display(target_liability),
+        tracing::field::display(target_liability),
     );
     let current_position = okex.get_position_in_signed_usd_cents().await?.usd_cents;
     span.record(
         "current_position",
-        &tracing::field::display(current_position),
+        tracing::field::display(current_position),
     );
 
     let action = hedging_adjustment.determine_action(target_liability, current_position.into());
-    span.record("action", &tracing::field::display(&action));
+    span.record("action", tracing::field::display(&action));
     match action {
         OkexHedgeAdjustment::DoNothing => {}
         _ => {
@@ -50,7 +50,7 @@ pub(super) async fn execute(
             if let Some(order_id) = okex_orders.reserve_order_slot(reservation).await? {
                 span.record(
                     "client_order_id",
-                    &tracing::field::display(String::from(order_id.clone())),
+                    tracing::field::display(String::from(order_id.clone())),
                 );
                 match action {
                     OkexHedgeAdjustment::ClosePosition => {
@@ -66,9 +66,9 @@ pub(super) async fn execute(
                     }
                     _ => unreachable!(),
                 }
-                span.record("placed_order", &tracing::field::display(true));
+                span.record("placed_order", tracing::field::display(true));
             } else {
-                span.record("placed_order", &tracing::field::display(false));
+                span.record("placed_order", tracing::field::display(false));
             }
         }
     };

@@ -12,6 +12,7 @@ pub struct OkexResponse<T> {
 
 #[derive(Deserialize, Debug)]
 #[serde(rename_all = "camelCase")]
+#[allow(dead_code)]
 pub struct DepositAddressData {
     pub chain: Chain,
     pub ct_addr: String,
@@ -47,6 +48,7 @@ pub struct TransferStateData {
 
 #[derive(Deserialize, Debug)]
 #[serde(rename_all = "camelCase")]
+#[allow(dead_code)]
 pub struct TransferData {
     pub trans_id: String,
     pub ccy: String,
@@ -58,6 +60,7 @@ pub struct TransferData {
 
 #[derive(Deserialize, Debug)]
 #[serde(rename_all = "camelCase")]
+#[allow(dead_code)]
 pub struct FundingBalanceData {
     pub avail_bal: Decimal,
     pub bal: Decimal,
@@ -67,6 +70,7 @@ pub struct FundingBalanceData {
 
 #[derive(Deserialize, Debug, Clone)]
 #[serde(rename_all = "camelCase")]
+#[allow(dead_code)]
 pub struct TradingBalanceData {
     pub adj_eq: String,
     pub details: Vec<TradingBalanceDetails>,
@@ -82,6 +86,7 @@ pub struct TradingBalanceData {
 
 #[derive(Deserialize, Debug, Clone)]
 #[serde(rename_all = "camelCase")]
+#[allow(dead_code)]
 pub struct TradingBalanceDetails {
     pub avail_bal: String,
     pub avail_eq: Decimal,
@@ -111,6 +116,7 @@ pub struct TradingBalanceDetails {
 
 #[derive(Deserialize, Debug)]
 #[serde(rename_all = "camelCase")]
+#[allow(dead_code)]
 pub struct WithdrawData {
     pub amt: String,
     pub wd_id: String,
@@ -121,6 +127,7 @@ pub struct WithdrawData {
 
 #[derive(Deserialize, Debug)]
 #[serde(rename_all = "camelCase")]
+#[allow(dead_code)]
 pub struct DepositHistoryData {
     pub actual_dep_blk_confirm: String,
     pub amt: String,
@@ -136,6 +143,7 @@ pub struct DepositHistoryData {
 
 #[derive(Deserialize, Debug)]
 #[serde(rename_all = "camelCase")]
+#[allow(dead_code)]
 pub struct WithdrawalHistoryData {
     pub ccy: String,
     pub chain: String,
@@ -151,6 +159,7 @@ pub struct WithdrawalHistoryData {
 
 #[derive(Deserialize, Debug)]
 #[serde(rename_all = "camelCase")]
+#[allow(dead_code)]
 pub struct OrderData {
     pub cl_ord_id: String,
     pub ord_id: String,
@@ -174,6 +183,7 @@ pub struct OrderDetails {
 
 #[derive(Deserialize, Debug)]
 #[serde(rename_all = "camelCase")]
+#[allow(dead_code)]
 pub struct LastPriceData {
     pub inst_type: String,
     pub inst_id: String,
@@ -187,6 +197,7 @@ pub struct LastPriceData {
 
 #[derive(Deserialize, Debug)]
 #[serde(rename_all = "camelCase")]
+#[allow(dead_code)]
 pub struct PositionData {
     pub adl: String,
     pub avail_pos: String,
@@ -230,6 +241,7 @@ pub struct PositionData {
 
 #[derive(Deserialize, Debug)]
 #[serde(rename_all = "camelCase")]
+#[allow(dead_code)]
 pub struct ClosePositionData {
     pub inst_id: String,
     pub pos_side: String,
@@ -237,6 +249,7 @@ pub struct ClosePositionData {
 
 #[derive(Deserialize, Debug)]
 #[serde(rename_all = "camelCase")]
+#[allow(dead_code)]
 pub struct OkexAccountConfigurationData {
     pub acct_lv: String,
     pub auto_loan: bool,

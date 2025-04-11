@@ -128,19 +128,19 @@ async fn adjust_exchange_allocation(
     let span = tracing::Span::current();
     span.record(
         "unallocated_usd",
-        &tracing::field::display(liability_balances.unallocated_usd),
+        tracing::field::display(liability_balances.unallocated_usd),
     );
     span.record(
         "okex",
-        &tracing::field::display(liability_balances.okex_allocation),
+        tracing::field::display(liability_balances.okex_allocation),
     );
     span.record(
         "bitfinex",
-        &tracing::field::display(liability_balances.bitfinex_allocation),
+        tracing::field::display(liability_balances.bitfinex_allocation),
     );
     span.record(
         "omnibus",
-        &tracing::field::display(liability_balances.total_liability),
+        tracing::field::display(liability_balances.total_liability),
     );
     span.record("execute_adjustment", false);
     let tx = pool.begin().await?;

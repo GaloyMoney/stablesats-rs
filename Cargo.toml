@@ -15,19 +15,33 @@ members = [
 ]
 
 [workspace.dependencies]
-reqwest = { version = "0.11.27", default-features = false, features = ["json", "rustls-tls"] }
-tokio-tungstenite = { version = "0.20.1", features = ["rustls-tls-webpki-roots"]  }
+reqwest = { version = "0.12.15", default-features = false, features = [
+  "json",
+  "rustls-tls",
+] }
+tokio-tungstenite = { version = "0.20.1", features = [
+  "rustls-tls-webpki-roots",
+] }
 url = { version = "2.5.0", features = ["serde"] }
 axum = "0.6.11"
 axum-core = "0.3.4"
-serial_test = { version = "*" , features = ["file_locks"] }
+serial_test = { version = "*", features = ["file_locks"] }
 serde = { version = "1.0.197", features = ["derive"] }
 serde_json = "1.0.115"
 serde_yaml = "0.9.34"
 serde_with = { version = "3.7.0", features = ["chrono_0_4"] }
-sqlx = { version = "0.7.4", features = [ "runtime-tokio-rustls", "postgres", "rust_decimal", "uuid", "chrono", "json" ] }
-sqlxmq = { version = "0.5.0", default-features = false, features = ["runtime-tokio-rustls"] }
-sqlx-ledger = { version = "0.11.3", features = ["otel"] }
+sqlx = { version = "0.8.3", features = [
+  "runtime-tokio-rustls",
+  "postgres",
+  "rust_decimal",
+  "uuid",
+  "chrono",
+  "json",
+] }
+sqlxmq = { git = "https://github.com/HyperparamAI/sqlxmq", rev = "52c3daf6af55416aefa4b1114e108f968f6c57d4", default-features = false, features = [
+  "runtime-tokio-rustls",
+] }
+sqlx-ledger = { version = "0.11.5", features = ["otel"] }
 tokio = { version = "1.37", features = ["full"] }
 futures = "0.3.30"
 async-trait = "0.1.78"
@@ -35,13 +49,19 @@ thiserror = "1.0.58"
 anyhow = "1.0.97"
 tracing = "0.1.40"
 tracing-subscriber = { version = "0.3.18", features = ["env-filter", "json"] }
-tracing-opentelemetry = "0.23.0"
-opentelemetry-otlp = { version = "0.15.0", features = ["http-proto", "reqwest-client"] }
-opentelemetry = { version = "0.22.0" }
-opentelemetry_sdk = { version = "0.22.1", features = ["rt-tokio"] }
-opentelemetry-http = "0.11.1"
-chrono = { version = "0.4.37", features = ["clock", "serde"], default-features = false }
-ring = "0.16.20"
+tracing-opentelemetry = "0.28.0"
+opentelemetry-otlp = { version = "0.27.0", features = [
+  "http-proto",
+  "reqwest-client",
+] }
+opentelemetry = { version = "0.27.0" }
+opentelemetry_sdk = { version = "0.27.0", features = ["rt-tokio"] }
+opentelemetry-http = "0.27.0"
+chrono = { version = "0.4.37", features = [
+  "clock",
+  "serde",
+], default-features = false }
+ring = "0.17.14"
 uuid = { version = "1.8.0", features = ["v4", "serde"] }
 data-encoding = "2.5.0"
 rust_decimal = "1.35.0"
@@ -56,8 +76,8 @@ tonic = "0.11"
 tonic-build = { version = "0.11", features = ["prost"] }
 protobuf-src = { version = "1.1.0" }
 prost = "0.12.3"
-prost-wkt-types = { version = "0.5.0", features = ["vendored-protoc"]}
-graphql_client = {version = "0.12.0", features = ["reqwest"]}
+prost-wkt-types = { version = "0.5.0", features = ["vendored-protoc"] }
+graphql_client = { version = "0.12.0", features = ["reqwest"] }
 rusty-money = "0.4.1"
 derive_builder = "0.20.0"
 h2 = "0.4.3"

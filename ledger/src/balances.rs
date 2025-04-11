@@ -19,7 +19,7 @@ pub struct LiabilityAllocations {
     pub total_liability: SyntheticCentLiability,
 }
 
-impl<'a> Balances<'a> {
+impl Balances<'_> {
     #[instrument(
         name = "ledger.balances.usd_liability_balances",
         skip(self),
@@ -77,14 +77,12 @@ impl<'a> Balances<'a> {
         };
         tracing::Span::current().record(
             "unallocated_usd",
-            &tracing::field::display(ret.unallocated_usd),
+            tracing::field::display(ret.unallocated_usd),
         );
-        tracing::Span::current().record("okex", &tracing::field::display(ret.okex_allocation));
-        tracing::Span::current().record(
-            "bitfinex",
-            &tracing::field::display(ret.bitfinex_allocation),
-        );
-        tracing::Span::current().record("omnibus", &tracing::field::display(ret.total_liability));
+        tracing::Span::current().record("okex", tracing::field::display(ret.okex_allocation));
+        tracing::Span::current()
+            .record("bitfinex", tracing::field::display(ret.bitfinex_allocation));
+        tracing::Span::current().record("omnibus", tracing::field::display(ret.total_liability));
         Ok(ret)
     }
 

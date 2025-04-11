@@ -14,7 +14,7 @@ pub struct CorrelationId(Uuid);
 impl CorrelationId {
     pub fn new() -> Self {
         let id = Uuid::new_v4();
-        tracing::Span::current().record("correlation_id", &tracing::field::display(id));
+        tracing::Span::current().record("correlation_id", tracing::field::display(id));
         Self(id)
     }
 }

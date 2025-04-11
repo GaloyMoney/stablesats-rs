@@ -40,36 +40,33 @@ impl<'a> JobExecutor<'a> {
         R: std::future::Future<Output = Result<T, E>>,
         F: FnOnce(Option<T>) -> R,
     {
-        Span::current().record("stage", &tracing::field::display("execute"));
+        Span::current().record("stage", tracing::field::display("execute"));
         let mut data = JobData::<T>::from_raw_payload(self.job.raw_json())?;
-        Span::current().record("stage", &tracing::field::display("from_raw_payload"));
+        Span::current().record("stage", tracing::field::display("from_raw_payload"));
         let completed = self.checkpoint_attempt::<T, E>(&mut data).await?;
-        Span::current().record("stage", &tracing::field::display("checkpoint_attempt"));
+        Span::current().record("stage", tracing::field::display("checkpoint_attempt"));
         let result = func(data.data).await;
-        Span::current().record("stage", &tracing::field::display("func"));
+        Span::current().record("stage", tracing::field::display("func"));
         if let Err(ref e) = result {
-            Span::current().record("stage", &tracing::field::display("errored"));
+            Span::current().record("stage", tracing::field::display("errored"));
             self.handle_error(data.job_meta, e).await;
         } else if !completed {
-            Span::current().record("stage", &tracing::field::display("succeeded"));
+            Span::current().record("stage", tracing::field::display("succeeded"));
             self.job.complete().await?;
-            Span::current().record("stage", &tracing::field::display("completed"));
+            Span::current().record("stage", tracing::field::display("completed"));
         }
         result
     }
 
     async fn handle_error<E: JobExecutionError>(&mut self, meta: JobMeta, error: &E) {
-        Span::current().record("error", &tracing::field::display("true"));
-        Span::current().record("error.message", &tracing::field::display(&error));
+        Span::current().record("error", tracing::field::display("true"));
+        Span::current().record("error.message", tracing::field::display(&error));
         if meta.attempts <= self.warn_retries {
-            Span::current().record(
-                "error.level",
-                &tracing::field::display(tracing::Level::WARN),
-            );
+            Span::current().record("error.level", tracing::field::display(tracing::Level::WARN));
         } else {
             Span::current().record(
                 "error.level",
-                &tracing::field::display(tracing::Level::ERROR),
+                tracing::field::display(tracing::Level::ERROR),
             );
         }
     }
@@ -92,12 +89,12 @@ impl<'a> JobExecutor<'a> {
         data.job_meta.attempts += 1;
         data.job_meta.tracing_data = Some(crate::tracing::extract_tracing_data());
 
-        span.record("job_id", &tracing::field::display(self.job.id()));
-        span.record("job_name", &tracing::field::display(self.job.name()));
-        span.record("attempt", &tracing::field::display(data.job_meta.attempts));
+        span.record("job_id", tracing::field::display(self.job.id()));
+        span.record("job_name", tracing::field::display(self.job.name()));
+        span.record("attempt", tracing::field::display(data.job_meta.attempts));
         span.record(
             "checkpoint_json",
-            &tracing::field::display(serde_json::to_string(&data)?),
+            tracing::field::display(serde_json::to_string(&data)?),
         );
 
         let mut checkpoint =
@@ -114,11 +111,11 @@ impl<'a> JobExecutor<'a> {
         self.job.checkpoint(&checkpoint).await?;
 
         if data.job_meta.attempts >= self.max_attempts {
-            span.record("last_attempt", &tracing::field::display(true));
+            span.record("last_attempt", tracing::field::display(true));
             self.job.complete().await?;
             Ok(true)
         } else {
-            span.record("last_attempt", &tracing::field::display(false));
+            span.record("last_attempt", tracing::field::display(false));
             Ok(false)
         }
     }

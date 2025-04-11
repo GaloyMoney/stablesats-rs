@@ -1,6 +1,8 @@
+use opentelemetry::trace::TracerProvider as _;
 use opentelemetry::KeyValue;
 use opentelemetry_otlp::WithExportConfig;
-use opentelemetry_sdk::trace::Sampler;
+use opentelemetry_sdk::trace::{Sampler, TracerProvider};
+use opentelemetry_sdk::Resource;
 use serde::{Deserialize, Serialize};
 use tracing_subscriber::{filter::EnvFilter, fmt, layer::SubscriberExt, util::SubscriberInitExt};
 
@@ -23,23 +25,24 @@ impl Default for TracingConfig {
 
 pub fn init_tracer(config: TracingConfig) -> anyhow::Result<()> {
     let tracing_endpoint = format!("http://{}:{}", config.host, config.port);
+    let service_name = config.service_name;
     println!("Sending traces to {tracing_endpoint}");
-    let tracer = opentelemetry_otlp::new_pipeline()
-        .tracing()
-        .with_exporter(
-            opentelemetry_otlp::new_exporter()
-                .http()
-                .with_endpoint(tracing_endpoint),
-        )
-        .with_trace_config(
-            opentelemetry_sdk::trace::config()
-                .with_sampler(Sampler::AlwaysOn)
-                .with_resource(opentelemetry_sdk::Resource::new(vec![KeyValue::new(
-                    "service.name",
-                    config.service_name,
-                )])),
-        )
-        .install_batch(opentelemetry_sdk::runtime::Tokio)?;
+
+    let exporter = opentelemetry_otlp::SpanExporter::builder()
+        .with_tonic()
+        .with_endpoint(tracing_endpoint)
+        .build()?;
+
+    let provider = TracerProvider::builder()
+        .with_batch_exporter(exporter, opentelemetry_sdk::runtime::Tokio)
+        .with_sampler(Sampler::AlwaysOn)
+        .with_resource(Resource::new(vec![KeyValue::new(
+            "service.name",
+            service_name.clone(),
+        )]))
+        .build();
+    let tracer = provider.tracer(service_name);
+
     let telemetry = tracing_opentelemetry::layer().with_tracer(tracer);
 
     let fmt_layer = fmt::layer().json();

@@ -116,7 +116,7 @@ pub struct CurrencyConverter<'a> {
     price_of_one_sat: &'a UsdCents,
 }
 
-impl<'a> VolumePicker for CurrencyConverter<'a> {
+impl VolumePicker for CurrencyConverter<'_> {
     fn cents_from_sats(&self, volume: Sats) -> UsdCents {
         UsdCents::from_decimal(volume.amount() * self.price_of_one_sat.amount())
     }

@@ -1,0 +1,14 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "INSERT INTO stablesats_quotes (id)\n               VALUES ($1)",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "a9f2e532a8cedde9ff6c74ce159591ff133ed437f2169d48ee162189b8f4f5c8"
+}

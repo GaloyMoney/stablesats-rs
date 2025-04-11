@@ -1,0 +1,20 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n                WITH do_update AS (\n                    UPDATE galoy_transactions\n                    SET unpaired_last_checked_at = NOW()\n                    WHERE id = (\n                        SELECT id\n                        FROM galoy_transactions\n                        WHERE is_paired = false\n                        AND amount_in_usd_cents != 0\n                        AND NOW() - unpaired_last_checked_at >  INTERVAL '1' day\n                        ORDER BY created_at\n                        LIMIT 1\n                    )\n                    RETURNING created_at\n                )\n                SELECT id as cursor\n                FROM galoy_transactions\n                WHERE created_at < (SELECT created_at FROM do_update)\n                ORDER BY created_at DESC, id ASC\n                LIMIT 1\n         ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "cursor",
+        "type_info": "Varchar"
+      }
+    ],
+    "parameters": {
+      "Left": []
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "e232bc879d083e5ed3f97f7b4a784c353d97703588b64cd44452d4f07b858cfa"
+}

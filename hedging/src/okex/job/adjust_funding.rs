@@ -27,7 +27,7 @@ pub(super) async fn execute(
 ) -> Result<(), HedgingError> {
     let span = tracing::Span::current();
     if !crate::hack_user_trades_lag::lag_ok(pool).await? {
-        span.record("lag_ok", &tracing::field::display(false));
+        span.record("lag_ok", tracing::field::display(false));
         return Ok(());
     }
 
@@ -38,13 +38,13 @@ pub(super) async fn execute(
         .okex_allocation;
     span.record(
         "target_liability",
-        &tracing::field::display(target_liability_in_cents),
+        tracing::field::display(target_liability_in_cents),
     );
 
     let current_position = okex.get_position_in_signed_usd_cents().await?;
     span.record(
         "current_position",
-        &tracing::field::display(current_position.usd_cents),
+        tracing::field::display(current_position.usd_cents),
     );
 
     let mut last_price_in_usd_cents = current_position.last_price_in_usd_cents;
@@ -54,19 +54,19 @@ pub(super) async fn execute(
 
     span.record(
         "last_price_in_usd_cents",
-        &tracing::field::display(last_price_in_usd_cents),
+        tracing::field::display(last_price_in_usd_cents),
     );
 
     let funding_available_balance = okex.funding_account_balance().await?;
     span.record(
         "funding_available_balance",
-        &tracing::field::display(&funding_available_balance),
+        tracing::field::display(&funding_available_balance),
     );
 
     let trading_available_balance = okex.trading_account_balance().await?;
     span.record(
         "trading_available_balance",
-        &tracing::field::display(&trading_available_balance),
+        tracing::field::display(&trading_available_balance),
     );
     let action = funding_adjustment.determine_action(
         target_liability_in_cents,
@@ -75,10 +75,10 @@ pub(super) async fn execute(
         last_price_in_usd_cents,
         funding_available_balance.total_amt_in_btc,
     );
-    span.record("action", &tracing::field::display(&action));
+    span.record("action", tracing::field::display(&action));
 
     let fees = okex.get_onchain_fees().await?;
-    span.record("onchain_fees", &tracing::field::display(&fees));
+    span.record("onchain_fees", tracing::field::display(&fees));
 
     let shared = TransferReservationSharedData {
         correlation_id,
@@ -109,7 +109,7 @@ pub(super) async fn execute(
                     {
                         span.record(
                             "client_transfer_id",
-                            &tracing::field::display(String::from(client_id.clone())),
+                            tracing::field::display(String::from(client_id.clone())),
                         );
 
                         let _ = okex.transfer_trading_to_funding(client_id, amount).await?;
@@ -128,7 +128,7 @@ pub(super) async fn execute(
                     {
                         span.record(
                             "client_transfer_id",
-                            &tracing::field::display(String::from(client_id.clone())),
+                            tracing::field::display(String::from(client_id.clone())),
                         );
 
                         let _ = okex.transfer_funding_to_trading(client_id, amount).await?;
@@ -160,7 +160,7 @@ pub(super) async fn execute(
                         span.record("client_transfer_id", &client_transfer_id);
                         span.record(
                             "amount_with_jitter",
-                            &tracing::field::display(amount_with_jitter),
+                            tracing::field::display(amount_with_jitter),
                         );
 
                         let amount_in_sats = amount_with_jitter * SATS_PER_BTC;
@@ -190,7 +190,7 @@ pub(super) async fn execute(
                     {
                         span.record(
                             "client_transfer_id",
-                            &tracing::field::display(String::from(client_id.clone())),
+                            tracing::field::display(String::from(client_id.clone())),
                         );
 
                         okex.withdraw_btc_onchain(client_id, amount, fees.min_fee, deposit_address)
@@ -199,7 +199,7 @@ pub(super) async fn execute(
                 }
                 _ => unreachable!(),
             }
-            span.record("transferred_funding", &tracing::field::display(true));
+            span.record("transferred_funding", tracing::field::display(true));
         }
     };
     Ok(())

@@ -7,6 +7,10 @@ license = "MIT"
 repository = "https://github.com/GaloyMoney/stablesats-rs"
 description = "The stablesats cli binary"
 
+[features]
+
+fail-on-warnings = []
+
 [dependencies]
 shared = { path = "../shared", package = "stablesats-shared" }
 price-server = { path = "../price-server" }

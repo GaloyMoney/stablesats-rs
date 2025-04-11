@@ -160,9 +160,9 @@ impl GaloyTransactions {
         })
     }
 
-    pub async fn update_paired_ids<'a>(
+    pub async fn update_paired_ids(
         &self,
-        tx: &mut Transaction<'a, Postgres>,
+        tx: &mut Transaction<'_, Postgres>,
         ids: &[String],
     ) -> Result<(), UserTradesError> {
         if ids.is_empty() {

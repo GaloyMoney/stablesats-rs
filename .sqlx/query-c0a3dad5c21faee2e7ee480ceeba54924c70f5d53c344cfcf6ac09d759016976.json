@@ -1,0 +1,15 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE user_trades SET correction_ledger_tx_id = $1 WHERE id = ANY($2) AND correction_ledger_tx_id IS NULL",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Int4Array"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "c0a3dad5c21faee2e7ee480ceeba54924c70f5d53c344cfcf6ac09d759016976"
+}

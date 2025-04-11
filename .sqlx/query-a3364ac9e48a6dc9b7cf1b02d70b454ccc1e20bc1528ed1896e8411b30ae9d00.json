@@ -1,0 +1,22 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "INSERT INTO okex_orders (\n              client_order_id, correlation_id, instrument,\n              action, size, unit, size_usd_value, target_usd_value,\n              position_usd_value_before_order\n            ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Varchar",
+        "Uuid",
+        "Varchar",
+        "Varchar",
+        "Numeric",
+        "Varchar",
+        "Numeric",
+        "Numeric",
+        "Numeric"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "a3364ac9e48a6dc9b7cf1b02d70b454ccc1e20bc1528ed1896e8411b30ae9d00"
+}

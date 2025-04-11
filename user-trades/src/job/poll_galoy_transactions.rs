@@ -46,9 +46,9 @@ async fn import_galoy_transactions(
         .await?;
     tracing::Span::current().record(
         "n_galoy_txs",
-        &tracing::field::display(transactions.list.len()),
+        tracing::field::display(transactions.list.len()),
     );
-    tracing::Span::current().record("has_more", &tracing::field::display(transactions.has_more));
+    tracing::Span::current().record("has_more", tracing::field::display(transactions.has_more));
     if !transactions.list.is_empty() {
         galoy_transactions.persist_all(transactions.list).await?;
     }
@@ -68,11 +68,11 @@ async fn reimport_unpaired_galoy_transactions(
                 .await?;
             tracing::Span::current().record(
                 "unpaired_reimport_cursor",
-                &tracing::field::display(cursor.0),
+                tracing::field::display(cursor.0),
             );
             tracing::Span::current().record(
                 "unpaired_reimport_n_txs",
-                &tracing::field::display(unpaired_transactions.list.len()),
+                tracing::field::display(unpaired_transactions.list.len()),
             );
             if !unpaired_transactions.list.is_empty() {
                 galoy_transactions
@@ -101,7 +101,7 @@ async fn update_user_trades(
         .find_already_paired_trades(&mut tx, paired_ids)
         .await?;
     let (trades, bad_pairings) = find_trades_needing_correction(trades, lookup);
-    tracing::Span::current().record("n_user_trades", &tracing::field::display(trades.len()));
+    tracing::Span::current().record("n_user_trades", tracing::field::display(trades.len()));
     if !bad_pairings.is_empty() {
         user_trades.mark_bad_trades(&mut tx, bad_pairings).await?;
     }
@@ -135,7 +135,7 @@ fn find_trades_needing_correction(
             }
         }
     }
-    tracing::Span::current().record("n_bad_trades", &tracing::field::display(bad_trades.len()));
+    tracing::Span::current().record("n_bad_trades", tracing::field::display(bad_trades.len()));
     (filtered_trades, bad_trades)
 }
 
@@ -298,7 +298,7 @@ fn unify(unpaired_transactions: Vec<UnpairedTransaction>) -> (Vec<NewUserTrade>,
             }
         }
     }
-    tracing::Span::current().record("n_unpaired_txs", &tracing::field::display(unpaired));
+    tracing::Span::current().record("n_unpaired_txs", tracing::field::display(unpaired));
     (user_trades, paired_ids)
 }
 
